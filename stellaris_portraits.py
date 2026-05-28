@@ -134,21 +134,14 @@ CREATE TABLE IF NOT EXISTS species_class (
     source_file          TEXT
 );
 
-CREATE TABLE IF NOT EXISTS portrait (
-    id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    species_class_key TEXT    NOT NULL,
-    portrait_id       TEXT    NOT NULL,          -- e.g. "mam1", "rep3"
-    position_in_class INTEGER,
-    UNIQUE(species_class_key, portrait_id),
-    FOREIGN KEY(species_class_key) REFERENCES species_class(key)
-);
-
 CREATE TABLE IF NOT EXISTS portrait_set (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    set_key     TEXT NOT NULL,                   -- e.g. "portrait_set_mammalian"
-    portrait_id TEXT NOT NULL,
-    source_file TEXT,
-    UNIQUE(set_key, portrait_id)
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    set_key           TEXT NOT NULL,             -- e.g. "mammalians"
+    species_class_key TEXT,                      -- e.g. "MAM" (from species_class = MAM)
+    portrait_id       TEXT NOT NULL,             -- e.g. "mam1", "rep3"
+    source_file       TEXT,
+    UNIQUE(set_key, portrait_id),
+    FOREIGN KEY(species_class_key) REFERENCES species_class(key)
 );
 
 CREATE TABLE IF NOT EXISTS species_class_attribute (
@@ -242,7 +235,7 @@ class Writer:
 
 KNOWN_TOP_KEYS = {
     'archetype', 'graphical_culture', 'move_pop_sound_group',
-    'portrait_modding', 'possible', 'portraits',
+    'portrait_modding', 'possible',
     'species_name', 'species_female_name', 'species_plural',
     'species_adjective', 'species_female_adjective',
     'species_name_noun', 'species_female_name_noun',
@@ -254,7 +247,7 @@ KNOWN_TOP_KEYS = {
 # Keys handled explicitly and excluded from the generic attribute table
 EXTRACTED_KEYS = {
     'archetype', 'graphical_culture', 'move_pop_sound_group',
-    'portrait_modding', 'possible', 'portraits',
+    'portrait_modding', 'possible',
 }
 
 
@@ -280,21 +273,6 @@ def extract_species_classes(data: dict, source_file: str, w: Writer, verbose: bo
         if verbose:
             print(f"  Class: {class_key} | archetype: {archetype} | culture: {graphical_culture}")
 
-        portraits = class_data.get('portraits', [])
-        if isinstance(portraits, str):
-            portraits = [portraits]
-        elif isinstance(portraits, dict):
-            portraits = list(portraits.keys())
-
-        for pos, pid in enumerate(portraits):
-            w.execute("""
-                INSERT OR IGNORE INTO portrait (species_class_key, portrait_id, position_in_class)
-                VALUES (?, ?, ?)
-            """, (class_key, pid, pos))
-
-        if verbose:
-            print(f"    -> {len(portraits)} portrait(s)")
-
         # All remaining fields go into the generic attribute table
         for attr_key, attr_val in class_data.items():
             if attr_key in EXTRACTED_KEYS:
@@ -318,6 +296,8 @@ def extract_portrait_sets(data: dict, source_file: str, w: Writer, verbose: bool
         if not isinstance(set_data, dict):
             continue
 
+        species_class_key = set_data.get('species_class') or None
+
         portraits = set_data.get('portraits', [])
         if isinstance(portraits, str):
             portraits = [portraits]
@@ -325,13 +305,13 @@ def extract_portrait_sets(data: dict, source_file: str, w: Writer, verbose: bool
             portraits = list(portraits.keys())
 
         if verbose:
-            print(f"  Set: {set_key} | {len(portraits)} portrait(s)")
+            print(f"  Set: {set_key} | class: {species_class_key} | {len(portraits)} portrait(s)")
 
         for pid in portraits:
             w.execute("""
-                INSERT OR IGNORE INTO portrait_set (set_key, portrait_id, source_file)
-                VALUES (?, ?, ?)
-            """, (set_key, pid, source_file))
+                INSERT OR IGNORE INTO portrait_set (set_key, species_class_key, portrait_id, source_file)
+                VALUES (?, ?, ?, ?)
+            """, (set_key, species_class_key, pid, source_file))
 
     w.commit()
 
@@ -424,8 +404,8 @@ Examples:
     if sqlite_path:
         tmp = sqlite3.connect(sqlite_path)
         n_classes   = tmp.execute("SELECT COUNT(*) FROM species_class").fetchone()[0]
-        n_portraits = tmp.execute("SELECT COUNT(*) FROM portrait").fetchone()[0]
-        n_sets      = tmp.execute("SELECT COUNT(*) FROM portrait_set").fetchone()[0]
+        n_sets      = tmp.execute("SELECT COUNT(DISTINCT set_key) FROM portrait_set").fetchone()[0]
+        n_portraits = tmp.execute("SELECT COUNT(*) FROM portrait_set").fetchone()[0]
         n_attrs     = tmp.execute("SELECT COUNT(*) FROM species_class_attribute").fetchone()[0]
         tmp.close()
         print(f"""
@@ -433,8 +413,8 @@ Examples:
 |  Extraction complete                  |
 +---------------------------------------+
 |  Species classes    : {n_classes:<17}|
-|  Portraits (class)  : {n_portraits:<17}|
-|  Portrait set entries: {n_sets:<16}|
+|  Portrait sets      : {n_sets:<17}|
+|  Portraits (total)  : {n_portraits:<17}|
 |  Attributes         : {n_attrs:<17}|
 +---------------------------------------+""", file=progress)
     elif sql_path:

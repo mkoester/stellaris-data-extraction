@@ -42,49 +42,16 @@ python3 stellaris_portraits.py /path/to/Stellaris --out portraits.sql --sqlite .
 ```sql
 species_class         -- key, archetype, graphical_culture, move_pop_sound_group,
                       --   portrait_modding (0/1), possible_block, source_file
-portrait              -- species_class_key, portrait_id, position_in_class
-portrait_set          -- set_key, portrait_id, source_file
+portrait_set          -- set_key, species_class_key, portrait_id, source_file
+                      --   set_key e.g. "mammalians", species_class_key e.g. "MAM"
 species_class_attribute -- species_class_key, attribute_key, attribute_value
 ```
 
----
-
-## Known Bug
-
-**Portraits are not extracted from real Stellaris files.**
-
-Last run output:
-```
-Species classes    : 42
-Portraits (class)  : 0        <-- should be hundreds
-Portrait set entries: 170
-Attributes         : 191
-```
-
-The mock test data used a simple list block:
-```
-portraits = {
-    mam1
-    mam2
-}
-```
-
-The real Stellaris files likely use a different structure, e.g.:
-```
-portraits = {
-    portrait = { ... }
-    portrait = "mam1"
-}
-```
-or nested groups. **Next step: inspect the actual file structure:**
-
-```bash
-head -80 ~/.local/share/Steam/steamapps/common/Stellaris/common/species_classes/00_species_classes.txt
-```
-
-Then fix `extract_species_classes()` in the parser accordingly.
+Portraits are defined in `portrait_sets/` files (not in `species_classes/`). Each set
+has a `species_class = MAM` field that links it to a species class.
 
 ---
+
 
 ## Source Files Parsed
 
@@ -128,6 +95,5 @@ Writer                  dual-output: StringIO buffer (.sql / stdout) + sqlite3 c
 
 ## Next Steps
 
-1. **Fix portrait extraction** — inspect real file format, update `extract_species_classes()`
-2. Possibly extend to `common/species_names/` for name list data
-3. Evaluate additional data from `common/portrait_sets/` (already working)
+1. Possibly extend to `common/species_names/` for name list data
+2. Consider capturing `conditional_portraits` and `non_randomized_portraits` from portrait_sets
