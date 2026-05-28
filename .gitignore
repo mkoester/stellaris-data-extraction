@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+
+# SQLite databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Keep sql/ directory tracked (negate any accidental ignores)
+!sql/
+!sql/*
+
+# OS
+.DS_Store
+Thumbs.db
