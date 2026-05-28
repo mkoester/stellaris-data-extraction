@@ -43,22 +43,26 @@ python3 stellaris_portraits.py /path/to/Stellaris --out portraits.sql --sqlite .
 ## SQLite Schema
 
 ```sql
+dlc                     -- name (PK, matches host_has_dlc), steam_id, affects_gameplay
 species_class           -- key, archetype, graphical_culture, move_pop_sound_effect,
                         --   portrait_modding (0/1), possible_block, source_file
-portrait_set            -- set_key, species_class_key, portrait_id, source_file
-                        --   set_key e.g. "mammalians", species_class_key e.g. "MAM"
+portrait_set            -- set_key, species_class_key, portrait_id, required_dlc, source_file
+                        --   required_dlc NULL = base game; conditional_portraits blocks captured too
 species_class_attribute -- species_class_key, attribute_key, attribute_value
 
 trait                   -- key, cost (base points), category, initial (0/1), randomized (0/1),
-                        --   hidden (0/1), source_file
+                        --   hidden (0/1), required_dlc, source_file
 trait_archetype         -- trait_key, archetype (BIOLOGICAL/LITHOID/ROBOT/MACHINE/…)
 trait_species_class     -- trait_key, species_class_key (e.g. LITHOID, PSIONIC)
 trait_opposite          -- trait_key, opposite_key (mutually exclusive pairs)
 trait_tag               -- trait_key, tag (e.g. organic, positive, pop_output)
 ```
 
-Portraits are defined in `portrait_sets/` files (not in `species_classes/`). Each set
-has a `species_class = MAM` field that links it to a species class.
+DLC metadata comes from `dlc_metadata/dlc_info.txt`. The `host_has_dlc` field in trait
+and portrait definitions names the required DLC exactly as it appears in `dlc.name`.
+
+Portraits are defined in `portrait_sets/` files (not in `species_classes/`). Both the
+base `portraits = {}` block and `conditional_portraits = {}` blocks are extracted.
 
 Traits come from `common/traits/`; leader trait files are skipped (filtered by filename).
 Some source files contain duplicate keys (Stellaris bug) — the parser merges them;

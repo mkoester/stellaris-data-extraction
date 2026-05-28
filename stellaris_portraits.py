@@ -123,6 +123,12 @@ def parse_file(path: Path) -> dict:
 # ---------------------------------------------------------------------------
 
 SCHEMA = """\
+CREATE TABLE IF NOT EXISTS dlc (
+    name             TEXT PRIMARY KEY,   -- matches host_has_dlc values, e.g. "Toxoids Species Pack"
+    steam_id         TEXT,
+    affects_gameplay INTEGER DEFAULT 0   -- 0/1
+);
+
 CREATE TABLE IF NOT EXISTS species_class (
     id                   INTEGER PRIMARY KEY AUTOINCREMENT,
     key                  TEXT UNIQUE NOT NULL,   -- e.g. "MAMMALIAN"
@@ -139,9 +145,11 @@ CREATE TABLE IF NOT EXISTS portrait_set (
     set_key           TEXT NOT NULL,             -- e.g. "mammalians"
     species_class_key TEXT,                      -- e.g. "MAM" (from species_class = MAM)
     portrait_id       TEXT NOT NULL,             -- e.g. "mam1", "rep3"
+    required_dlc      TEXT,                      -- NULL = base game; FK to dlc.name
     source_file       TEXT,
     UNIQUE(set_key, portrait_id),
-    FOREIGN KEY(species_class_key) REFERENCES species_class(key)
+    FOREIGN KEY(species_class_key) REFERENCES species_class(key),
+    FOREIGN KEY(required_dlc)      REFERENCES dlc(name)
 );
 
 CREATE TABLE IF NOT EXISTS species_class_attribute (
@@ -153,14 +161,16 @@ CREATE TABLE IF NOT EXISTS species_class_attribute (
 );
 
 CREATE TABLE IF NOT EXISTS trait (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    key        TEXT UNIQUE NOT NULL,
-    cost       INTEGER,               -- base point cost; NULL if not specified
-    category   TEXT,                  -- normal, cyborg, robotic, psionic, advanced_genetic, …
-    initial    INTEGER DEFAULT 1,     -- 0=no, 1=yes; whether selectable at species creation
-    randomized INTEGER DEFAULT 1,     -- 0=no, 1=yes
-    hidden     INTEGER DEFAULT 0,     -- 0=no, 1=yes
-    source_file TEXT
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    key          TEXT UNIQUE NOT NULL,
+    cost         INTEGER,               -- base point cost; NULL if not specified
+    category     TEXT,                  -- normal, cyborg, robotic, psionic, advanced_genetic, …
+    initial      INTEGER DEFAULT 1,     -- 0=no, 1=yes; whether selectable at species creation
+    randomized   INTEGER DEFAULT 1,     -- 0=no, 1=yes
+    hidden       INTEGER DEFAULT 0,     -- 0=no, 1=yes
+    required_dlc TEXT,                  -- NULL = base game; FK to dlc.name
+    source_file  TEXT,
+    FOREIGN KEY (required_dlc) REFERENCES dlc(name)
 );
 
 CREATE TABLE IF NOT EXISTS trait_archetype (
@@ -269,6 +279,31 @@ class Writer:
 
 
 # ---------------------------------------------------------------------------
+# Extraction: DLC metadata
+# ---------------------------------------------------------------------------
+
+def extract_dlc(data: dict, w: Writer, verbose: bool):
+    dlcs = data.get('dlcs', {})
+    if not isinstance(dlcs, dict):
+        return
+    for _key, dlc_data in dlcs.items():
+        if not isinstance(dlc_data, dict):
+            continue
+        name             = dlc_data.get('name')
+        steam_id         = dlc_data.get('steam_id') or None
+        affects_gameplay = 1 if dlc_data.get('affects_gameplay', 'no') == 'yes' else 0
+        if not name:
+            continue
+        w.execute("""
+            INSERT OR IGNORE INTO dlc (name, steam_id, affects_gameplay)
+            VALUES (?, ?, ?)
+        """, (name, steam_id, affects_gameplay))
+        if verbose:
+            print(f"  DLC: {name} | steam_id: {steam_id} | gameplay: {affects_gameplay}")
+    w.commit()
+
+
+# ---------------------------------------------------------------------------
 # Extraction: species_classes
 # ---------------------------------------------------------------------------
 
@@ -330,6 +365,26 @@ def extract_species_classes(data: dict, source_file: str, w: Writer, verbose: bo
 # Extraction: portrait_sets
 # ---------------------------------------------------------------------------
 
+def _portrait_set_insert(w: Writer, set_key: str, species_class_key, portrait_id: str,
+                         required_dlc, source_file: str):
+    w.execute("""
+        INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, source_file)
+        VALUES (?, ?, ?, ?, ?)
+    """, (set_key, species_class_key, portrait_id, required_dlc, source_file))
+
+
+def _dlc_from_condition(cond_block: dict) -> str | None:
+    """Extract host_has_dlc from a randomizable/playable sub-block."""
+    for sub_key in ('randomizable', 'playable'):
+        sub = cond_block.get(sub_key)
+        if isinstance(sub, dict):
+            dlc = sub.get('host_has_dlc')
+            if dlc:
+                return dlc
+    return None
+
+
 def extract_portrait_sets(data: dict, source_file: str, w: Writer, verbose: bool):
     for set_key, set_data in data.items():
         if not isinstance(set_data, dict):
@@ -337,20 +392,25 @@ def extract_portrait_sets(data: dict, source_file: str, w: Writer, verbose: bool
 
         species_class_key = set_data.get('species_class') or None
 
-        portraits = set_data.get('portraits', [])
-        if isinstance(portraits, str):
-            portraits = [portraits]
-        elif isinstance(portraits, dict):
-            portraits = list(portraits.keys())
+        # Base portraits (no DLC required)
+        base_portraits = _to_list(set_data.get('portraits'))
+        for pid in base_portraits:
+            _portrait_set_insert(w, set_key, species_class_key, pid, None, source_file)
+
+        # DLC-gated portraits inside conditional_portraits blocks
+        cond_raw = set_data.get('conditional_portraits')
+        cond_blocks = _to_list(cond_raw) if cond_raw else []
+        for block in cond_blocks:
+            if not isinstance(block, dict):
+                continue
+            required_dlc = _dlc_from_condition(block)
+            for pid in _to_list(block.get('portraits')):
+                _portrait_set_insert(w, set_key, species_class_key, pid, required_dlc, source_file)
 
         if verbose:
-            print(f"  Set: {set_key} | class: {species_class_key} | {len(portraits)} portrait(s)")
-
-        for pid in portraits:
-            w.execute("""
-                INSERT OR IGNORE INTO portrait_set (set_key, species_class_key, portrait_id, source_file)
-                VALUES (?, ?, ?, ?)
-            """, (set_key, species_class_key, pid, source_file))
+            n_base = len(base_portraits)
+            n_cond = sum(len(_to_list(b.get('portraits'))) for b in cond_blocks if isinstance(b, dict))
+            print(f"  Set: {set_key} | class: {species_class_key} | {n_base} base + {n_cond} conditional portrait(s)")
 
     w.commit()
 
@@ -410,17 +470,18 @@ def extract_traits(data: dict, source_file: str, w: Writer, verbose: bool):
         if not isinstance(trait_data, dict):
             continue
 
-        cost       = _parse_cost(trait_data.get('cost'))
-        category   = trait_data.get('category')
-        initial    = 0 if trait_data.get('initial',    'yes') == 'no' else 1
-        randomized = 0 if trait_data.get('randomized', 'yes') == 'no' else 1
-        hidden     = 1 if trait_data.get('hidden',     'no')  == 'yes' else 0
+        cost         = _parse_cost(trait_data.get('cost'))
+        category     = trait_data.get('category')
+        initial      = 0 if trait_data.get('initial',    'yes') == 'no' else 1
+        randomized   = 0 if trait_data.get('randomized', 'yes') == 'no' else 1
+        hidden       = 1 if trait_data.get('hidden',     'no')  == 'yes' else 0
+        required_dlc = trait_data.get('host_has_dlc') or None
 
         w.execute("""
             INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, source_file)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (trait_key, cost, category, initial, randomized, hidden, source_file))
+                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (trait_key, cost, category, initial, randomized, hidden, required_dlc, source_file))
 
         for arch in _to_list(trait_data.get('allowed_archetypes')):
             w.execute(
@@ -487,6 +548,7 @@ Examples:
         print(f"ERROR: directory not found: {install_dir}", file=sys.stderr)
         sys.exit(1)
 
+    dlc_info     = install_dir / 'dlc_metadata' / 'dlc_info.txt'
     species_dir  = install_dir / 'common' / 'species_classes'
     portrait_dir = install_dir / 'common' / 'portrait_sets'
     traits_dir   = install_dir / 'common' / 'traits'
@@ -509,6 +571,20 @@ Examples:
         print(f"SQLite DB    : {sqlite_path}", file=progress)
 
     w = Writer(sql_path, sqlite_path, stdout=stdout_mode)
+
+    # --- DLC metadata ---
+    print(f"\n[0/3] DLC metadata", file=progress)
+    if dlc_info.exists():
+        try:
+            data = parse_file(dlc_info)
+            extract_dlc(data, w, args.verbose)
+            if not args.verbose:
+                n = sum(1 for v in data.get('dlcs', {}).values() if isinstance(v, dict))
+                print(f"  Loaded {n} DLC entries", file=progress)
+        except Exception as e:
+            print(f"  WARNING: failed to parse dlc_info.txt: {e}", file=sys.stderr)
+    else:
+        print(f"  dlc_info.txt not found, skipping", file=progress)
 
     # --- species_classes ---
     sc_files = sorted(species_dir.glob('*.txt'))
@@ -550,22 +626,28 @@ Examples:
     # --- Summary ---
     if sqlite_path:
         tmp = sqlite3.connect(sqlite_path)
-        n_classes   = tmp.execute("SELECT COUNT(*) FROM species_class").fetchone()[0]
-        n_sets      = tmp.execute("SELECT COUNT(DISTINCT set_key) FROM portrait_set").fetchone()[0]
-        n_portraits = tmp.execute("SELECT COUNT(*) FROM portrait_set").fetchone()[0]
-        n_attrs     = tmp.execute("SELECT COUNT(*) FROM species_class_attribute").fetchone()[0]
-        n_traits    = tmp.execute("SELECT COUNT(*) FROM trait").fetchone()[0]
+        n_dlcs          = tmp.execute("SELECT COUNT(*) FROM dlc").fetchone()[0]
+        n_classes       = tmp.execute("SELECT COUNT(*) FROM species_class").fetchone()[0]
+        n_sets          = tmp.execute("SELECT COUNT(DISTINCT set_key) FROM portrait_set").fetchone()[0]
+        n_portraits     = tmp.execute("SELECT COUNT(*) FROM portrait_set WHERE required_dlc IS NULL").fetchone()[0]
+        n_portraits_dlc = tmp.execute("SELECT COUNT(*) FROM portrait_set WHERE required_dlc IS NOT NULL").fetchone()[0]
+        n_attrs         = tmp.execute("SELECT COUNT(*) FROM species_class_attribute").fetchone()[0]
+        n_traits        = tmp.execute("SELECT COUNT(*) FROM trait WHERE required_dlc IS NULL").fetchone()[0]
+        n_traits_dlc    = tmp.execute("SELECT COUNT(*) FROM trait WHERE required_dlc IS NOT NULL").fetchone()[0]
         tmp.close()
         print(f"""
-+---------------------------------------+
-|  Extraction complete                  |
-+---------------------------------------+
-|  Species classes    : {n_classes:<17}|
-|  Portrait sets      : {n_sets:<17}|
-|  Portraits (total)  : {n_portraits:<17}|
-|  Attributes         : {n_attrs:<17}|
-|  Traits             : {n_traits:<17}|
-+---------------------------------------+""", file=progress)
++------------------------------------------+
+|  Extraction complete                     |
++------------------------------------------+
+|  DLCs               : {n_dlcs:<20}|
+|  Species classes    : {n_classes:<20}|
+|  Portrait sets      : {n_sets:<20}|
+|  Portraits (base)   : {n_portraits:<20}|
+|  Portraits (DLC)    : {n_portraits_dlc:<20}|
+|  Attributes         : {n_attrs:<20}|
+|  Traits (base)      : {n_traits:<20}|
+|  Traits (DLC)       : {n_traits_dlc:<20}|
++------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size
         print(f"\nDone. SQL file: {sql_path} ({sql_size:,} bytes)", file=progress)
