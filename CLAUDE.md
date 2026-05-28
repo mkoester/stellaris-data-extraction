@@ -50,6 +50,13 @@ portrait_set            -- set_key, species_class_key, portrait_id, required_dlc
                         --   required_dlc NULL = base game; conditional_portraits blocks captured too
 species_class_attribute -- species_class_key, attribute_key, attribute_value
 
+species_archetype       -- key (BIOLOGICAL/LITHOID/ROBOT/MACHINE/…),
+                        --   trait_points, max_traits (from common/species_archetypes/),
+                        --   robotic (0/1), inherit_trait_points_from,
+                        --   base_trait (canonical always-assigned trait, 0 cost, free slot),
+                        --   source_file
+                        --   ROBOT has no portrait class; base_trait hardcoded to trait_mechanical
+
 trait                   -- key, cost (base points), category, initial (0/1), randomized (0/1),
                         --   hidden (0/1), required_dlc, source_file
 trait_archetype         -- trait_key, archetype (BIOLOGICAL/LITHOID/ROBOT/MACHINE/…)
@@ -76,6 +83,7 @@ Some source files contain duplicate keys (Stellaris bug) — the parser merges t
 | Directory | Files |
 |---|---|
 | `common/species_classes/` | `00_species_classes.txt`, `01_base_species_classes.txt` |
+| `common/species_archetypes/` | `00_species_archetypes.txt` |
 | `common/portrait_sets/` | `00_portrait_sets.txt` |
 
 ---
@@ -102,12 +110,17 @@ sqlite/                  SQLite DB output (gitignored)
 
 ```
 tokenize(text)          strip comments, split into tokens
+                          @identifier kept as single token (e.g. @robot_trait_points)
+                          so @variable references survive into the parsed dict
 Parser.parse()          top-level file -> dict
 Parser.parse_block()    { } block -> dict or list
                           - list: no '=' found (e.g. plain portrait IDs)
                           - dict: key = value pairs
 Writer                  dual-output: StringIO buffer (.sql / stdout) + sqlite3 connection
 ```
+
+`@variable` resolution happens per-extractor after parsing (see `extract_species_archetypes`).
+Inheritance (`inherit_trait_points_from`) is resolved in a second pass within that function.
 
 ---
 

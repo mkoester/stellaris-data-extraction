@@ -37,8 +37,9 @@ def tokenize(text: str) -> list[str]:
     """Split Clausewitz script text into tokens: keys, =, {, }, values."""
     # Strip comments
     text = re.sub(r'#[^\n]*', '', text)
-    # Tokens: quoted strings, operators, identifiers
-    pattern = r'"[^"]*"|[{}=<>!@]|[^\s{}=<>!@"]+'
+    # Tokens: quoted strings, @variable names, operators, identifiers
+    # @identifier is kept as a single token so variable references survive parsing
+    pattern = r'"[^"]*"|@[a-zA-Z_]\w*|[{}=<>!]|[^\s{}=<>!@"]+'
     return re.findall(pattern, text)
 
 
@@ -199,6 +200,17 @@ CREATE TABLE IF NOT EXISTS trait_tag (
     tag       TEXT NOT NULL,          -- e.g. organic, positive, pop_output, research
     PRIMARY KEY (trait_key, tag),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+CREATE TABLE IF NOT EXISTS species_archetype (
+    key                     TEXT PRIMARY KEY,
+    trait_points            INTEGER,   -- base point budget for species creation
+    max_traits              INTEGER,   -- pick limit (cost=0 traits don't count)
+    robotic                 INTEGER DEFAULT 0,
+    inherit_trait_points_from TEXT,    -- resolved before insert; kept for reference
+    base_trait              TEXT,      -- canonical always-assigned trait (cost 0, free pick slot)
+    source_file             TEXT,
+    FOREIGN KEY (inherit_trait_points_from) REFERENCES species_archetype(key)
 );
 """
 
@@ -511,6 +523,89 @@ def extract_traits(data: dict, source_file: str, w: Writer, verbose: bool):
 
 
 # ---------------------------------------------------------------------------
+# Extraction: species_archetypes
+# ---------------------------------------------------------------------------
+
+# ROBOT has no dedicated portrait class in the game files; its base trait is
+# assigned by game code rather than a species_class entry.
+_ROBOT_BASE_TRAIT = 'trait_mechanical'
+
+
+def extract_species_archetypes(
+    data: dict,
+    source_file: str,
+    archetype_base_traits: dict[str, str],
+    w: Writer,
+    verbose: bool,
+):
+    # Collect @variable definitions (top-level keys starting with @)
+    variables: dict[str, int] = {}
+    for key, val in data.items():
+        if key.startswith('@'):
+            try:
+                variables[key] = int(val)
+            except (ValueError, TypeError):
+                pass
+
+    def resolve_int(raw) -> int | None:
+        if raw is None:
+            return None
+        s = str(raw)
+        if s.startswith('@'):
+            return variables.get(s)
+        try:
+            return int(s)
+        except ValueError:
+            return None
+
+    # First pass: parse each archetype block
+    arch_values: dict[str, dict] = {}
+    for arch_key, arch_data in data.items():
+        if arch_key.startswith('@') or not isinstance(arch_data, dict):
+            continue
+        trait_points = resolve_int(arch_data.get('species_trait_points'))
+        max_traits   = resolve_int(arch_data.get('species_max_traits'))
+        robotic      = 1 if arch_data.get('robotic') == 'yes' else 0
+        inherit_from = arch_data.get('inherit_trait_points_from') or None
+        base_trait   = archetype_base_traits.get(arch_key)
+        if base_trait is None and arch_key == 'ROBOT':
+            base_trait = _ROBOT_BASE_TRAIT
+        arch_values[arch_key] = {
+            'trait_points': trait_points,
+            'max_traits':   max_traits,
+            'robotic':      robotic,
+            'inherit_from': inherit_from,
+            'base_trait':   base_trait,
+        }
+
+    # Second pass: resolve inheritance (single level is enough for vanilla)
+    for av in arch_values.values():
+        parent = arch_values.get(av['inherit_from'] or '') if av['inherit_from'] else None
+        if parent:
+            if av['trait_points'] is None:
+                av['trait_points'] = parent['trait_points']
+            if av['max_traits'] is None:
+                av['max_traits'] = parent['max_traits']
+            if av['base_trait'] is None:
+                av['base_trait'] = parent['base_trait']
+
+    for arch_key, av in arch_values.items():
+        w.execute("""
+            INSERT OR REPLACE INTO species_archetype
+                (key, trait_points, max_traits, robotic,
+                 inherit_trait_points_from, base_trait, source_file)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (arch_key, av['trait_points'], av['max_traits'], av['robotic'],
+              av['inherit_from'], av['base_trait'], source_file))
+        if verbose:
+            print(f"  Archetype: {arch_key} | pts: {av['trait_points']} "
+                  f"| max: {av['max_traits']} | robotic: {av['robotic']} "
+                  f"| base: {av['base_trait']}")
+
+    w.commit()
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -548,10 +643,11 @@ Examples:
         print(f"ERROR: directory not found: {install_dir}", file=sys.stderr)
         sys.exit(1)
 
-    dlc_info     = install_dir / 'dlc_metadata' / 'dlc_info.txt'
-    species_dir  = install_dir / 'common' / 'species_classes'
-    portrait_dir = install_dir / 'common' / 'portrait_sets'
-    traits_dir   = install_dir / 'common' / 'traits'
+    dlc_info       = install_dir / 'dlc_metadata' / 'dlc_info.txt'
+    species_dir    = install_dir / 'common' / 'species_classes'
+    archetypes_dir = install_dir / 'common' / 'species_archetypes'
+    portrait_dir   = install_dir / 'common' / 'portrait_sets'
+    traits_dir     = install_dir / 'common' / 'traits'
 
     if not species_dir.exists():
         print(f"ERROR: {species_dir} not found -- is this really the Stellaris directory?",
@@ -573,7 +669,7 @@ Examples:
     w = Writer(sql_path, sqlite_path, stdout=stdout_mode)
 
     # --- DLC metadata ---
-    print(f"\n[0/3] DLC metadata", file=progress)
+    print(f"\n[0/4] DLC metadata", file=progress)
     if dlc_info.exists():
         try:
             data = parse_file(dlc_info)
@@ -588,18 +684,37 @@ Examples:
 
     # --- species_classes ---
     sc_files = sorted(species_dir.glob('*.txt'))
-    print(f"\n[1/3] species_classes: {len(sc_files)} file(s)", file=progress)
+    print(f"\n[1/4] species_classes: {len(sc_files)} file(s)", file=progress)
+    archetype_base_traits: dict[str, str] = {'ROBOT': _ROBOT_BASE_TRAIT}
     for f in sc_files:
         print(f"  Reading: {f.name}", file=progress)
         try:
             data = parse_file(f)
+            # Collect archetype → base_trait before writing to DB
+            for class_data in data.values():
+                if isinstance(class_data, dict):
+                    arch  = class_data.get('archetype')
+                    trait = class_data.get('trait')
+                    if arch and trait and arch not in archetype_base_traits:
+                        archetype_base_traits[arch] = str(trait).strip('"')
             extract_species_classes(data, f.name, w, args.verbose)
+        except Exception as e:
+            print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+
+    # --- species_archetypes ---
+    sa_files = sorted(archetypes_dir.glob('*.txt')) if archetypes_dir.exists() else []
+    print(f"\n[2/4] species_archetypes: {len(sa_files)} file(s)", file=progress)
+    for f in sa_files:
+        print(f"  Reading: {f.name}", file=progress)
+        try:
+            data = parse_file(f)
+            extract_species_archetypes(data, f.name, archetype_base_traits, w, args.verbose)
         except Exception as e:
             print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
 
     # --- portrait_sets ---
     ps_files = sorted(portrait_dir.glob('*.txt')) if portrait_dir.exists() else []
-    print(f"\n[2/3] portrait_sets: {len(ps_files)} file(s)", file=progress)
+    print(f"\n[3/4] portrait_sets: {len(ps_files)} file(s)", file=progress)
     for f in ps_files:
         print(f"  Reading: {f.name}", file=progress)
         try:
@@ -612,7 +727,7 @@ Examples:
     tr_files = sorted(
         f for f in traits_dir.glob('*.txt') if is_species_trait_file(f)
     ) if traits_dir.exists() else []
-    print(f"\n[3/3] traits: {len(tr_files)} file(s)", file=progress)
+    print(f"\n[4/4] traits: {len(tr_files)} file(s)", file=progress)
     for f in tr_files:
         print(f"  Reading: {f.name}", file=progress)
         try:
@@ -628,6 +743,7 @@ Examples:
         tmp = sqlite3.connect(sqlite_path)
         n_dlcs          = tmp.execute("SELECT COUNT(*) FROM dlc").fetchone()[0]
         n_classes       = tmp.execute("SELECT COUNT(*) FROM species_class").fetchone()[0]
+        n_archetypes    = tmp.execute("SELECT COUNT(*) FROM species_archetype").fetchone()[0]
         n_sets          = tmp.execute("SELECT COUNT(DISTINCT set_key) FROM portrait_set").fetchone()[0]
         n_portraits     = tmp.execute("SELECT COUNT(*) FROM portrait_set WHERE required_dlc IS NULL").fetchone()[0]
         n_portraits_dlc = tmp.execute("SELECT COUNT(*) FROM portrait_set WHERE required_dlc IS NOT NULL").fetchone()[0]
@@ -641,6 +757,7 @@ Examples:
 +------------------------------------------+
 |  DLCs               : {n_dlcs:<20}|
 |  Species classes    : {n_classes:<20}|
+|  Species archetypes : {n_archetypes:<20}|
 |  Portrait sets      : {n_sets:<20}|
 |  Portraits (base)   : {n_portraits:<20}|
 |  Portraits (DLC)    : {n_portraits_dlc:<20}|
