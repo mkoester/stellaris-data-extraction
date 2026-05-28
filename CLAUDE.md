@@ -1,9 +1,12 @@
-# Stellaris Portrait Extractor
+# Stellaris Data Extraction
 
 ## Goal
 
-Parse Stellaris vanilla scripts and store species classes, portraits, and
-attributes in a structured SQLite database (with SQL dump for Git).
+**Short-term:** Build a tool that generates valid species setups (including traits) for vanilla Stellaris.
+
+**Long-term:** Generate full empires and output proper files usable directly in Stellaris (save files or mods).
+
+The data extraction work here (parsing game scripts → SQLite) is the foundation — it captures species classes, portraits, traits, etc. from vanilla game files so the generator has an accurate source of truth to work from.
 
 ---
 
@@ -95,5 +98,12 @@ Writer                  dual-output: StringIO buffer (.sql / stdout) + sqlite3 c
 
 ## Next Steps
 
-1. Possibly extend to `common/species_names/` for name list data
-2. Consider capturing `conditional_portraits` and `non_randomized_portraits` from portrait_sets
+### Immediate: traits extraction
+Traits are the next critical piece for the species generator. They live in `common/traits/`.
+Key fields needed: `cost`, `allowed_archetypes`, `opposites` (mutual exclusions), `forced_happiness`, `initial`, `randomized`, `species_potential_add`, etc.
+
+### Later
+- `common/species_names/` for name list data
+- `conditional_portraits` and `non_randomized_portraits` from portrait_sets
+- Species generator / validator (uses extracted DB as source of truth)
+- Full empire generation + Stellaris file output
