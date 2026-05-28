@@ -32,6 +32,18 @@ import argparse
 from pathlib import Path
 from io import StringIO
 
+_LOC_INLINE_REF = re.compile(r'\$(\w+)\$')
+_LOC_FMT_CODE   = re.compile(r'§.|£\w+£')
+
+def _clean_loc(s: str, loc: dict[str, str]) -> str:
+    """Expand $KEY$ inline references (up to 4 rounds) and strip §X/£icon£ codes."""
+    for _ in range(4):
+        expanded = _LOC_INLINE_REF.sub(lambda m: loc.get(m.group(1), m.group(0)), s)
+        if expanded == s:
+            break
+        s = expanded
+    return re.sub(r'\s+', ' ', _LOC_FMT_CODE.sub('', s)).strip()
+
 
 # ---------------------------------------------------------------------------
 # Clausewitz parser
@@ -210,6 +222,20 @@ CREATE TABLE IF NOT EXISTS trait_tag (
     tag       TEXT NOT NULL,          -- e.g. organic, positive, pop_output, research
     PRIMARY KEY (trait_key, tag),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+CREATE TABLE IF NOT EXISTS trait_modifier (
+    trait_key      TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (trait_key, modifier_key),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+CREATE TABLE IF NOT EXISTS modifier_label (
+    modifier_key TEXT PRIMARY KEY,
+    label        TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS species_archetype (
@@ -625,6 +651,85 @@ def extract_traits(data: dict, source_file: str, w: Writer, verbose: bool):
 
 
 # ---------------------------------------------------------------------------
+# Extraction: trait modifiers (flat modifier {} block only — Phase 1)
+# ---------------------------------------------------------------------------
+
+def extract_trait_modifiers(data: dict, source_file: str, loc: dict[str, str],
+                             w: Writer, verbose: bool):
+    # Collect @variable definitions (float) from this file's top level
+    variables: dict[str, float] = {}
+    for key, val in data.items():
+        if key.startswith('@'):
+            try:
+                variables[key] = float(val)
+            except (ValueError, TypeError):
+                pass
+
+    def resolve_float(raw) -> float | None:
+        if raw is None:
+            return None
+        s = str(raw).strip()
+        if s.startswith('@'):
+            return variables.get(s)
+        try:
+            return float(s)
+        except ValueError:
+            return None
+
+    for trait_key, trait_data in data.items():
+        if trait_key.startswith('@') or not isinstance(trait_data, dict):
+            continue
+
+        modifier = trait_data.get('modifier')
+        if modifier is None:
+            continue
+
+        # Multiple modifier = {} blocks in one trait get promoted to a list by the parser
+        if isinstance(modifier, list):
+            merged: dict = {}
+            for m in modifier:
+                if isinstance(m, dict):
+                    merged.update(m)
+            modifier = merged
+        if not isinstance(modifier, dict):
+            continue
+
+        for order, (mod_key, mod_val) in enumerate(modifier.items()):
+            # Duplicate values within one block are unusual; take the last
+            if isinstance(mod_val, list):
+                mod_val = mod_val[-1]
+            value = resolve_float(mod_val)
+            if value is None:
+                continue
+
+            w.execute(
+                """INSERT OR IGNORE INTO trait_modifier
+                       (trait_key, modifier_key, modifier_value, sort_order)
+                   VALUES (?, ?, ?, ?)""",
+                (trait_key, mod_key, value, order),
+            )
+
+            # Lookup order: MOD_<UPPER>, mod_<lower>, key as-is
+            raw_label = (
+                loc.get('MOD_' + mod_key.upper()) or
+                loc.get('mod_' + mod_key) or
+                loc.get(mod_key)
+            )
+            if raw_label:
+                label = _clean_loc(raw_label, loc)
+                if '$' not in label:  # skip if references still unresolved
+                    w.execute(
+                        "INSERT OR REPLACE INTO modifier_label (modifier_key, label) VALUES (?, ?)",
+                        (mod_key, label),
+                    )
+
+            if verbose:
+                print(f"  Modifier: {trait_key} | {mod_key} = {value}")
+
+    w.commit()
+
+
+# ---------------------------------------------------------------------------
 # Extraction: species_archetypes
 # ---------------------------------------------------------------------------
 
@@ -869,6 +974,7 @@ Examples:
         try:
             data = parse_file(f)
             extract_traits(data, f.name, w, args.verbose)
+            extract_trait_modifiers(data, f.name, loc, w, args.verbose)
         except Exception as e:
             print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
 
@@ -900,6 +1006,8 @@ Examples:
         n_attrs         = tmp.execute("SELECT COUNT(*) FROM species_class_attribute").fetchone()[0]
         n_traits        = tmp.execute("SELECT COUNT(*) FROM trait WHERE required_dlc IS NULL").fetchone()[0]
         n_traits_dlc    = tmp.execute("SELECT COUNT(*) FROM trait WHERE required_dlc IS NOT NULL").fetchone()[0]
+        n_modifiers     = tmp.execute("SELECT COUNT(*) FROM trait_modifier").fetchone()[0]
+        n_mod_labels    = tmp.execute("SELECT COUNT(*) FROM modifier_label").fetchone()[0]
         n_colors        = tmp.execute("SELECT COUNT(*) FROM named_color").fetchone()[0]
         n_categories    = tmp.execute("SELECT COUNT(*) FROM trait_category").fetchone()[0]
         n_labeled       = tmp.execute("SELECT COUNT(*) FROM species_class WHERE label IS NOT NULL").fetchone()[0]
@@ -918,6 +1026,8 @@ Examples:
 |  Attributes         : {n_attrs:<20}|
 |  Traits (base)      : {n_traits:<20}|
 |  Traits (DLC)       : {n_traits_dlc:<20}|
+|  Trait modifiers    : {n_modifiers:<20}|
+|  Modifier labels    : {n_mod_labels:<20}|
 |  Named colors       : {n_colors:<20}|
 |  Trait categories   : {n_categories:<20}|
 +------------------------------------------+""", file=progress)
