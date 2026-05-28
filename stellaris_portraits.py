@@ -182,6 +182,9 @@ class Writer:
         self._conn = None
 
         if sqlite_path:
+            parent = Path(sqlite_path).parent
+            if not parent.exists():
+                raise SystemExit(f"Error: directory does not exist: {parent}")
             self._conn = sqlite3.connect(sqlite_path)
 
         # Write schema to both targets
