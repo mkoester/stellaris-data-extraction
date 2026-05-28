@@ -151,6 +151,45 @@ CREATE TABLE IF NOT EXISTS species_class_attribute (
     attribute_value   TEXT NOT NULL,
     FOREIGN KEY(species_class_key) REFERENCES species_class(key)
 );
+
+CREATE TABLE IF NOT EXISTS trait (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    key        TEXT UNIQUE NOT NULL,
+    cost       INTEGER,               -- base point cost; NULL if not specified
+    category   TEXT,                  -- normal, cyborg, robotic, psionic, advanced_genetic, …
+    initial    INTEGER DEFAULT 1,     -- 0=no, 1=yes; whether selectable at species creation
+    randomized INTEGER DEFAULT 1,     -- 0=no, 1=yes
+    hidden     INTEGER DEFAULT 0,     -- 0=no, 1=yes
+    source_file TEXT
+);
+
+CREATE TABLE IF NOT EXISTS trait_archetype (
+    trait_key TEXT NOT NULL,
+    archetype TEXT NOT NULL,          -- BIOLOGICAL, LITHOID, ROBOT, MACHINE
+    PRIMARY KEY (trait_key, archetype),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+CREATE TABLE IF NOT EXISTS trait_species_class (
+    trait_key         TEXT NOT NULL,
+    species_class_key TEXT NOT NULL,  -- e.g. LITHOID, PSIONIC, PLANT
+    PRIMARY KEY (trait_key, species_class_key),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+CREATE TABLE IF NOT EXISTS trait_opposite (
+    trait_key    TEXT NOT NULL,
+    opposite_key TEXT NOT NULL,       -- mutually exclusive trait
+    PRIMARY KEY (trait_key, opposite_key),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+CREATE TABLE IF NOT EXISTS trait_tag (
+    trait_key TEXT NOT NULL,
+    tag       TEXT NOT NULL,          -- e.g. organic, positive, pop_output, research
+    PRIMARY KEY (trait_key, tag),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
 """
 
 
@@ -317,6 +356,100 @@ def extract_portrait_sets(data: dict, source_file: str, w: Writer, verbose: bool
 
 
 # ---------------------------------------------------------------------------
+# Extraction: traits
+# ---------------------------------------------------------------------------
+
+# Skip leader traits and documentation files — only species trait files wanted
+_LEADER_FILE_TOKENS = {
+    'leader', 'admiral', 'general', 'governor', 'scientist',
+    'ambassador', 'delegate', 'paragon', 'subclass', 'npc_crisis',
+    'starting_ruler', 'documentation',
+}
+
+def is_species_trait_file(path: Path) -> bool:
+    name = path.stem.lower()
+    return not any(tok in name for tok in _LEADER_FILE_TOKENS)
+
+
+def _parse_cost(cost_raw) -> int | None:
+    if isinstance(cost_raw, str):
+        try:
+            return int(cost_raw)
+        except ValueError:
+            return None
+    if isinstance(cost_raw, dict):
+        base = cost_raw.get('base')
+        try:
+            return int(base) if base is not None else None
+        except (ValueError, TypeError):
+            return None
+    return None
+
+
+def _to_list(value) -> list:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        # Flatten one level: duplicate keys in source files produce nested lists
+        result = []
+        for item in value:
+            if isinstance(item, list):
+                result.extend(item)
+            else:
+                result.append(item)
+        return result
+    if isinstance(value, dict):
+        return list(value.keys())
+    return []
+
+
+def extract_traits(data: dict, source_file: str, w: Writer, verbose: bool):
+    for trait_key, trait_data in data.items():
+        if not isinstance(trait_data, dict):
+            continue
+
+        cost       = _parse_cost(trait_data.get('cost'))
+        category   = trait_data.get('category')
+        initial    = 0 if trait_data.get('initial',    'yes') == 'no' else 1
+        randomized = 0 if trait_data.get('randomized', 'yes') == 'no' else 1
+        hidden     = 1 if trait_data.get('hidden',     'no')  == 'yes' else 0
+
+        w.execute("""
+            INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (trait_key, cost, category, initial, randomized, hidden, source_file))
+
+        for arch in _to_list(trait_data.get('allowed_archetypes')):
+            w.execute(
+                "INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES (?, ?)",
+                (trait_key, arch))
+
+        for sc in _to_list(trait_data.get('species_class')):
+            w.execute(
+                "INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES (?, ?)",
+                (trait_key, sc))
+
+        for opp in _to_list(trait_data.get('opposites')):
+            w.execute(
+                "INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES (?, ?)",
+                (trait_key, opp))
+
+        for tag in _to_list(trait_data.get('tags')):
+            w.execute(
+                "INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES (?, ?)",
+                (trait_key, tag))
+
+        if verbose:
+            archs = _to_list(trait_data.get('allowed_archetypes'))
+            print(f"  Trait: {trait_key} | cost: {cost} | archetypes: {archs}")
+
+    w.commit()
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -356,6 +489,7 @@ Examples:
 
     species_dir  = install_dir / 'common' / 'species_classes'
     portrait_dir = install_dir / 'common' / 'portrait_sets'
+    traits_dir   = install_dir / 'common' / 'traits'
 
     if not species_dir.exists():
         print(f"ERROR: {species_dir} not found -- is this really the Stellaris directory?",
@@ -378,7 +512,7 @@ Examples:
 
     # --- species_classes ---
     sc_files = sorted(species_dir.glob('*.txt'))
-    print(f"\n[1/2] species_classes: {len(sc_files)} file(s)", file=progress)
+    print(f"\n[1/3] species_classes: {len(sc_files)} file(s)", file=progress)
     for f in sc_files:
         print(f"  Reading: {f.name}", file=progress)
         try:
@@ -389,12 +523,25 @@ Examples:
 
     # --- portrait_sets ---
     ps_files = sorted(portrait_dir.glob('*.txt')) if portrait_dir.exists() else []
-    print(f"\n[2/2] portrait_sets: {len(ps_files)} file(s)", file=progress)
+    print(f"\n[2/3] portrait_sets: {len(ps_files)} file(s)", file=progress)
     for f in ps_files:
         print(f"  Reading: {f.name}", file=progress)
         try:
             data = parse_file(f)
             extract_portrait_sets(data, f.name, w, args.verbose)
+        except Exception as e:
+            print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+
+    # --- traits ---
+    tr_files = sorted(
+        f for f in traits_dir.glob('*.txt') if is_species_trait_file(f)
+    ) if traits_dir.exists() else []
+    print(f"\n[3/3] traits: {len(tr_files)} file(s)", file=progress)
+    for f in tr_files:
+        print(f"  Reading: {f.name}", file=progress)
+        try:
+            data = parse_file(f)
+            extract_traits(data, f.name, w, args.verbose)
         except Exception as e:
             print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
 
@@ -407,6 +554,7 @@ Examples:
         n_sets      = tmp.execute("SELECT COUNT(DISTINCT set_key) FROM portrait_set").fetchone()[0]
         n_portraits = tmp.execute("SELECT COUNT(*) FROM portrait_set").fetchone()[0]
         n_attrs     = tmp.execute("SELECT COUNT(*) FROM species_class_attribute").fetchone()[0]
+        n_traits    = tmp.execute("SELECT COUNT(*) FROM trait").fetchone()[0]
         tmp.close()
         print(f"""
 +---------------------------------------+
@@ -416,6 +564,7 @@ Examples:
 |  Portrait sets      : {n_sets:<17}|
 |  Portraits (total)  : {n_portraits:<17}|
 |  Attributes         : {n_attrs:<17}|
+|  Traits             : {n_traits:<17}|
 +---------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size

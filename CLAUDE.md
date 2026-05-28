@@ -43,15 +43,26 @@ python3 stellaris_portraits.py /path/to/Stellaris --out portraits.sql --sqlite .
 ## SQLite Schema
 
 ```sql
-species_class         -- key, archetype, graphical_culture, move_pop_sound_group,
-                      --   portrait_modding (0/1), possible_block, source_file
-portrait_set          -- set_key, species_class_key, portrait_id, source_file
-                      --   set_key e.g. "mammalians", species_class_key e.g. "MAM"
+species_class           -- key, archetype, graphical_culture, move_pop_sound_effect,
+                        --   portrait_modding (0/1), possible_block, source_file
+portrait_set            -- set_key, species_class_key, portrait_id, source_file
+                        --   set_key e.g. "mammalians", species_class_key e.g. "MAM"
 species_class_attribute -- species_class_key, attribute_key, attribute_value
+
+trait                   -- key, cost (base points), category, initial (0/1), randomized (0/1),
+                        --   hidden (0/1), source_file
+trait_archetype         -- trait_key, archetype (BIOLOGICAL/LITHOID/ROBOT/MACHINE/…)
+trait_species_class     -- trait_key, species_class_key (e.g. LITHOID, PSIONIC)
+trait_opposite          -- trait_key, opposite_key (mutually exclusive pairs)
+trait_tag               -- trait_key, tag (e.g. organic, positive, pop_output)
 ```
 
 Portraits are defined in `portrait_sets/` files (not in `species_classes/`). Each set
 has a `species_class = MAM` field that links it to a species class.
+
+Traits come from `common/traits/`; leader trait files are skipped (filtered by filename).
+Some source files contain duplicate keys (Stellaris bug) — the parser merges them;
+`_to_list()` flattens the resulting nested lists.
 
 ---
 
@@ -98,12 +109,7 @@ Writer                  dual-output: StringIO buffer (.sql / stdout) + sqlite3 c
 
 ## Next Steps
 
-### Immediate: traits extraction
-Traits are the next critical piece for the species generator. They live in `common/traits/`.
-Key fields needed: `cost`, `allowed_archetypes`, `opposites` (mutual exclusions), `forced_happiness`, `initial`, `randomized`, `species_potential_add`, etc.
-
-### Later
+- Species generator / validator (uses extracted DB as source of truth)
 - `common/species_names/` for name list data
 - `conditional_portraits` and `non_randomized_portraits` from portrait_sets
-- Species generator / validator (uses extracted DB as source of truth)
 - Full empire generation + Stellaris file output

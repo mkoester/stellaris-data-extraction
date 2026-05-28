@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS species_class (
     key                  TEXT UNIQUE NOT NULL,   -- e.g. "MAMMALIAN"
     archetype            TEXT,                   -- e.g. "BIOLOGICAL"
     graphical_culture    TEXT,                   -- e.g. "mammalian_01"
-    move_pop_sound_group TEXT,
-    portrait_modding     INTEGER DEFAULT 0,      -- boolean (0/1)
+    move_pop_sound_effect TEXT,
+    portrait_modding      INTEGER DEFAULT 1,     -- boolean (0/1), default yes per game docs
     possible_block       TEXT,                   -- raw text of the possible condition
     source_file          TEXT
 );
@@ -30,20 +30,57 @@ CREATE TABLE IF NOT EXISTS species_class_attribute (
     FOREIGN KEY(species_class_key) REFERENCES species_class(key)
 );
 
+CREATE TABLE IF NOT EXISTS trait (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    key        TEXT UNIQUE NOT NULL,
+    cost       INTEGER,               -- base point cost; NULL if not specified
+    category   TEXT,                  -- normal, cyborg, robotic, psionic, advanced_genetic, …
+    initial    INTEGER DEFAULT 1,     -- 0=no, 1=yes; whether selectable at species creation
+    randomized INTEGER DEFAULT 1,     -- 0=no, 1=yes
+    hidden     INTEGER DEFAULT 0,     -- 0=no, 1=yes
+    source_file TEXT
+);
+
+CREATE TABLE IF NOT EXISTS trait_archetype (
+    trait_key TEXT NOT NULL,
+    archetype TEXT NOT NULL,          -- BIOLOGICAL, LITHOID, ROBOT, MACHINE
+    PRIMARY KEY (trait_key, archetype),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+CREATE TABLE IF NOT EXISTS trait_species_class (
+    trait_key         TEXT NOT NULL,
+    species_class_key TEXT NOT NULL,  -- e.g. LITHOID, PSIONIC, PLANT
+    PRIMARY KEY (trait_key, species_class_key),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+CREATE TABLE IF NOT EXISTS trait_opposite (
+    trait_key    TEXT NOT NULL,
+    opposite_key TEXT NOT NULL,       -- mutually exclusive trait
+    PRIMARY KEY (trait_key, opposite_key),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+CREATE TABLE IF NOT EXISTS trait_tag (
+    trait_key TEXT NOT NULL,
+    tag       TEXT NOT NULL,          -- e.g. organic, positive, pop_output, research
+    PRIMARY KEY (trait_key, tag),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
 -- Data
 
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('HUM', 'BIOLOGICAL', 'humanoid_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '00_species_classes.txt');
+            VALUES ('HUM', 'BIOLOGICAL', 'humanoid_01', 'moving_pop_confirmation', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('HUM', 'trait', 'trait_organic');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('HUM', 'move_pop_sound_effect', 'moving_pop_confirmation');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PRE_MAM', 'PRESAPIENT', 'mammalian_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('PRE_MAM', 'PRESAPIENT', 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_MAM', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -51,13 +88,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_MAM', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_MAM', 'move_pop_sound_effect', 'moving_pop_confirmation');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_MAM', 'uplifted_into', 'MAM');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PRE_REP', 'PRESAPIENT', 'reptilian_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('PRE_REP', 'PRESAPIENT', 'reptilian_01', 'reptilian_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_REP', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -65,13 +100,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_REP', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_REP', 'move_pop_sound_effect', 'reptilian_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_REP', 'uplifted_into', 'REP');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PRE_AVI', 'PRESAPIENT', 'avian_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('PRE_AVI', 'PRESAPIENT', 'avian_01', 'avian_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_AVI', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -79,13 +112,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_AVI', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_AVI', 'move_pop_sound_effect', 'avian_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_AVI', 'uplifted_into', 'AVI');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PRE_ART', 'PRESAPIENT', 'arthropoid_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('PRE_ART', 'PRESAPIENT', 'arthropoid_01', 'arthopoid_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_ART', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -93,13 +124,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_ART', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_ART', 'move_pop_sound_effect', 'arthopoid_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_ART', 'uplifted_into', 'ART');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PRE_MOL', 'PRESAPIENT', 'molluscoid_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('PRE_MOL', 'PRESAPIENT', 'molluscoid_01', 'molluscoid_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_MOL', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -107,13 +136,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_MOL', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_MOL', 'move_pop_sound_effect', 'molluscoid_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_MOL', 'uplifted_into', 'MOL');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PRE_FUN', 'PRESAPIENT', 'fungoid_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('PRE_FUN', 'PRESAPIENT', 'fungoid_01', 'fungoid_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_FUN', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -121,13 +148,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_FUN', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_FUN', 'move_pop_sound_effect', 'fungoid_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_FUN', 'uplifted_into', 'FUN');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PRE_PLANT', 'PRESAPIENT', 'plantoid_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('PRE_PLANT', 'PRESAPIENT', 'plantoid_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_PLANT', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -135,13 +160,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_PLANT', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_PLANT', 'move_pop_sound_effect', 'moving_pop_confirmation');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_PLANT', 'uplifted_into', 'PLANT');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PRE_LITHOID', 'PRESAPIENT', 'lithoid_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('PRE_LITHOID', 'PRESAPIENT', 'lithoid_01', 'reptilian_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_LITHOID', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -149,13 +172,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_LITHOID', 'trait', 'trait_lithoid');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_LITHOID', 'move_pop_sound_effect', 'reptilian_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_LITHOID', 'uplifted_into', 'LITHOID');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PRE_AQUATIC', 'PRESAPIENT', 'aquatic_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('PRE_AQUATIC', 'PRESAPIENT', 'aquatic_01', 'molluscoid_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_AQUATIC', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -163,13 +184,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_AQUATIC', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_AQUATIC', 'move_pop_sound_effect', 'molluscoid_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_AQUATIC', 'uplifted_into', 'AQUATIC');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PRE_TOX', 'PRESAPIENT', 'toxoid_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('PRE_TOX', 'PRESAPIENT', 'toxoid_01', 'molluscoid_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_TOX', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -177,13 +196,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_TOX', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_TOX', 'move_pop_sound_effect', 'molluscoid_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_TOX', 'uplifted_into', 'TOX');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PRE_INF', 'PRESAPIENT', 'infernal_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('PRE_INF', 'PRESAPIENT', 'infernal_01', 'molluscoid_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_INF', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -191,13 +208,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_INF', 'trait', 'trait_infernal');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_INF', 'move_pop_sound_effect', 'molluscoid_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_INF', 'uplifted_into', 'INF');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('AI', NULL, 'ai_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('AI', NULL, 'ai_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('AI', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -205,25 +220,21 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('AI', 'gender', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('AI', 'move_pop_sound_effect', 'moving_pop_confirmation');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('AI', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('SWARM', 'OTHER', 'swarm_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('SWARM', 'OTHER', 'swarm_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SWARM', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SWARM', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SWARM', 'gender', 'no');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('SWARM', 'move_pop_sound_effect', 'moving_pop_confirmation');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('EXD', 'OTHER', 'extra_dimensional_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('EXD', 'OTHER', 'extra_dimensional_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('EXD', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -231,13 +242,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('EXD', 'gender', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('EXD', 'move_pop_sound_effect', 'moving_pop_confirmation');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('EXD', 'trait', 'trait_exd');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('ROBOT', 'ROBOT', 'ai_01', NULL, 1, '', '00_species_classes.txt');
+            VALUES ('ROBOT', 'ROBOT', 'ai_01', 'robot_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('ROBOT', 'playable', '{''has_global_flag'': ''game_started''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -251,13 +260,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('ROBOT', 'leader_age_max', '10');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('ROBOT', 'move_pop_sound_effect', 'robot_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('ROBOT', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('MACHINE', 'MACHINE', 'synthetics_01', NULL, 1, '{''AND'': [{''limit'': {''has_machine_age_dlc'': ''yes''}, ''authority'': {''NOT'': {''value'': ''auth_hive_mind''}}}, {''limit'': {''has_machine_age_dlc'': ''no''}, ''authority'': {''NOR'': {''value'': [''auth_democratic'', ''auth_oligarchic'', ''auth_dictatorial'', ''auth_imperial'', ''auth_hive_mind'', ''auth_ancient_machine_intelligence'', ''auth_corporate''], ''text'': ''SPECIES_CLASS_MUST_USE_MACHINE_INTELLIGENCE''}}, ''ethics'': {''NOR'': {''value'': [''ethic_fanatic_authoritarian'', ''ethic_authoritarian'', ''ethic_fanatic_egalitarian'', ''ethic_egalitarian'', ''ethic_fanatic_xenophobe'', ''ethic_xenophobe'', ''ethic_fanatic_xenophile'', ''ethic_xenophile'', ''ethic_fanatic_militarist'', ''ethic_militarist'', ''ethic_fanatic_pacifist'', ''ethic_pacifist'', ''ethic_fanatic_spiritualist'', ''ethic_spiritualist'', ''ethic_fanatic_materialist'', ''ethic_materialist''], ''text'': ''SPECIES_CLASS_MUST_USE_GESTALT_CONSCIOUSNESS''}}}]}', '00_species_classes.txt');
+            VALUES ('MACHINE', 'MACHINE', 'synthetics_01', 'robot_pops_move', 1, '{''AND'': [{''limit'': {''has_machine_age_dlc'': ''yes''}, ''authority'': {''NOT'': {''value'': ''auth_hive_mind''}}}, {''limit'': {''has_machine_age_dlc'': ''no''}, ''authority'': {''NOR'': {''value'': [''auth_democratic'', ''auth_oligarchic'', ''auth_dictatorial'', ''auth_imperial'', ''auth_hive_mind'', ''auth_ancient_machine_intelligence'', ''auth_corporate''], ''text'': ''SPECIES_CLASS_MUST_USE_MACHINE_INTELLIGENCE''}}, ''ethics'': {''NOR'': {''value'': [''ethic_fanatic_authoritarian'', ''ethic_authoritarian'', ''ethic_fanatic_egalitarian'', ''ethic_egalitarian'', ''ethic_fanatic_xenophobe'', ''ethic_xenophobe'', ''ethic_fanatic_xenophile'', ''ethic_xenophile'', ''ethic_fanatic_militarist'', ''ethic_militarist'', ''ethic_fanatic_pacifist'', ''ethic_pacifist'', ''ethic_fanatic_spiritualist'', ''ethic_spiritualist'', ''ethic_fanatic_materialist'', ''ethic_materialist''], ''text'': ''SPECIES_CLASS_MUST_USE_GESTALT_CONSCIOUSNESS''}}}]}', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MACHINE', 'possible_secondary', '{''always'': ''no'', ''text'': ''SECONDARY_SPECIES_CLASS_INVALID''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -271,8 +278,6 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MACHINE', 'leader_age_max', '10');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('MACHINE', 'move_pop_sound_effect', 'robot_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MACHINE', 'resources', '{}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MACHINE', 'random_weight', '{''base'': ''1''}');
@@ -281,57 +286,49 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MACHINE', 'preferred_ethics_weight', '{''base'': ''6.5''}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('SALVAGER', 'BIOLOGICAL', 'mammalian_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('SALVAGER', 'BIOLOGICAL', 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SALVAGER', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SALVAGER', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SALVAGER', 'gender', 'no');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('SALVAGER', 'move_pop_sound_effect', 'moving_pop_confirmation');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('SHROUDWALKER', 'BIOLOGICAL', 'mammalian_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('SHROUDWALKER', 'BIOLOGICAL', 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SHROUDWALKER', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SHROUDWALKER', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SHROUDWALKER', 'gender', 'no');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('SHROUDWALKER', 'move_pop_sound_effect', 'moving_pop_confirmation');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('MINDWARDEN_ENCLAVE', 'BIOLOGICAL', 'mindwarden_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('MINDWARDEN_ENCLAVE', 'BIOLOGICAL', 'mindwarden_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MINDWARDEN_ENCLAVE', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MINDWARDEN_ENCLAVE', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MINDWARDEN_ENCLAVE', 'gender', 'no');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('MINDWARDEN_ENCLAVE', 'move_pop_sound_effect', 'moving_pop_confirmation');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PARAGON', 'BIOLOGICAL', 'mammalian_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('PARAGON', 'BIOLOGICAL', 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PARAGON', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PARAGON', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PARAGON', 'gender', 'no');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PARAGON', 'move_pop_sound_effect', 'moving_pop_confirmation');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('MSI_SLAVER', 'BIOLOGICAL', 'mammalian_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('MSI_SLAVER', 'BIOLOGICAL', 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MSI_SLAVER', 'playable', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -340,82 +337,66 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
                 VALUES ('MSI_SLAVER', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MSI_SLAVER', 'gender', 'yes');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('MSI_SLAVER', 'move_pop_sound_effect', 'moving_pop_confirmation');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('SOLARPUNK', 'BIOLOGICAL', 'solarpunk_01', NULL, 0, '', '00_species_classes.txt');
+            VALUES ('SOLARPUNK', 'BIOLOGICAL', 'solarpunk_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SOLARPUNK', 'playable', '{''has_first_contact_dlc'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SOLARPUNK', 'randomized', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SOLARPUNK', 'generate_shipset', 'no');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('SOLARPUNK', 'move_pop_sound_effect', 'moving_pop_confirmation');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('MAM', 'BIOLOGICAL', 'mammalian_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('MAM', 'BIOLOGICAL', 'mammalian_01', 'moving_pop_confirmation', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MAM', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('MAM', 'move_pop_sound_effect', 'moving_pop_confirmation');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MAM', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('REP', 'BIOLOGICAL', 'reptilian_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('REP', 'BIOLOGICAL', 'reptilian_01', 'reptilian_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('REP', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('REP', 'move_pop_sound_effect', 'reptilian_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('REP', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('AVI', 'BIOLOGICAL', 'avian_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('AVI', 'BIOLOGICAL', 'avian_01', 'avian_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('AVI', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('AVI', 'move_pop_sound_effect', 'avian_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('AVI', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('ART', 'BIOLOGICAL', 'arthropoid_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('ART', 'BIOLOGICAL', 'arthropoid_01', 'arthopoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('ART', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('ART', 'move_pop_sound_effect', 'arthopoid_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('ART', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('MOL', 'BIOLOGICAL', 'molluscoid_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('MOL', 'BIOLOGICAL', 'molluscoid_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MOL', 'trait', 'trait_organic');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('MOL', 'move_pop_sound_effect', 'molluscoid_pops_move');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('FUN', 'BIOLOGICAL', 'fungoid_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('FUN', 'BIOLOGICAL', 'fungoid_01', 'fungoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('FUN', 'trait', 'trait_organic');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('FUN', 'move_pop_sound_effect', 'fungoid_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('FUN', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PLANT', 'BIOLOGICAL', 'plantoid_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('PLANT', 'BIOLOGICAL', 'plantoid_01', NULL, 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PLANT', 'playable', '{''OR'': {''host_has_dlc'': ''Plantoids Species Pack'', ''local_has_dlc'': ''Ancient Relics Story Pack''}}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -425,23 +406,21 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PLANT', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('LITHOID', 'LITHOID', 'lithoid_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('LITHOID', 'LITHOID', 'lithoid_01', 'reptilian_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('LITHOID', 'playable', '{''has_lithoids'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('LITHOID', 'randomized', '{''has_lithoids'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('LITHOID', 'move_pop_sound_effect', 'reptilian_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('LITHOID', 'resources', '{}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('LITHOID', 'trait', 'trait_lithoid');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('NECROID', 'BIOLOGICAL', 'necroid_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('NECROID', 'BIOLOGICAL', 'necroid_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('NECROID', 'playable', '{''OR'': {''has_necroids'': ''yes'', ''has_vipra_the_vapor_dlc'': ''yes''}}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -451,21 +430,19 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('NECROID', 'gender', 'yes');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('NECROID', 'move_pop_sound_effect', 'molluscoid_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('NECROID', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('IMPERIAL', NULL, 'nemesis_01', NULL, 0, '', '01_base_species_classes.txt');
+            VALUES ('IMPERIAL', NULL, 'nemesis_01', NULL, 1, '', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('IMPERIAL', 'playable', '{''has_nemesis'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('IMPERIAL', 'randomized', '{''always'': ''no''}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('AQUATIC', 'BIOLOGICAL', 'aquatic_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('AQUATIC', 'BIOLOGICAL', 'aquatic_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('AQUATIC', 'playable', '{''OR'': {''has_aquatics'': ''yes'', ''has_shroud_dlc'': ''yes''}}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -475,13 +452,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('AQUATIC', 'gender', 'yes');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('AQUATIC', 'move_pop_sound_effect', 'molluscoid_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('AQUATIC', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('TOX', 'BIOLOGICAL', 'toxoid_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('TOX', 'BIOLOGICAL', 'toxoid_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('TOX', 'playable', '{''has_toxoids'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -491,27 +466,25 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('TOX', 'gender', 'yes');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('TOX', 'move_pop_sound_effect', 'molluscoid_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('TOX', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('CYBERNETIC', NULL, 'cybernetics_01', NULL, 0, '', '01_base_species_classes.txt');
+            VALUES ('CYBERNETIC', NULL, 'cybernetics_01', NULL, 1, '', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('CYBERNETIC', 'randomized', '{''always'': ''no''}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('BIOGENESIS_02', NULL, 'biogenesis_02', NULL, 0, '', '01_base_species_classes.txt');
+            VALUES ('BIOGENESIS_02', NULL, 'biogenesis_02', NULL, 1, '', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('BIOGENESIS_02', 'playable', '{''has_biogenesis_dlc'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('BIOGENESIS_02', 'randomized', '{''always'': ''no''}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('BIOGENESIS_01', 'BIOLOGICAL', 'biogenesis_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('BIOGENESIS_01', 'BIOLOGICAL', 'biogenesis_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('BIOGENESIS_01', 'playable', '{''has_biogenesis_dlc'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -521,13 +494,11 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('BIOGENESIS_01', 'gender', 'yes');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('BIOGENESIS_01', 'move_pop_sound_effect', 'molluscoid_pops_move');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('BIOGENESIS_01', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('WILDERNESS', NULL, 'wilderness_01', NULL, 0, '', '01_base_species_classes.txt');
+            VALUES ('WILDERNESS', NULL, 'wilderness_01', NULL, 1, '', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('WILDERNESS', 'playable', '{''has_biogenesis_dlc'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -535,17 +506,17 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('WILDERNESS', 'generate_shipset', 'no');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('PSIONIC', NULL, 'psionic_01', NULL, 0, '', '01_base_species_classes.txt');
+            VALUES ('PSIONIC', NULL, 'psionic_01', NULL, 1, '', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PSIONIC', 'playable', '{''has_shroud_dlc'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PSIONIC', 'randomized', '{''always'': ''no''}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('MINDWARDEN', 'BIOLOGICAL', 'mindwarden_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('MINDWARDEN', 'BIOLOGICAL', 'mindwarden_01', 'moving_pop_confirmation', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MINDWARDEN', 'playable', '{''has_shroud_dlc'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -555,21 +526,17 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MINDWARDEN', 'gender', 'yes');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('MINDWARDEN', 'move_pop_sound_effect', 'moving_pop_confirmation');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MINDWARDEN', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES ('INF', 'BIOLOGICAL', 'infernal_01', NULL, 0, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+            VALUES ('INF', 'BIOLOGICAL', 'infernal_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('INF', 'playable', '{''has_infernals'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('INF', 'randomized', '{''has_infernals'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('INF', 'gender', 'yes');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('INF', 'move_pop_sound_effect', 'molluscoid_pops_move');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('INF', 'resources', '{}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -922,3 +889,4161 @@ INSERT OR IGNORE INTO portrait_set (set_key, species_class_key, portrait_id, sou
                 VALUES ('msi_slavers', 'MSI_SLAVER', 'msi_slaver1_male', '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set (set_key, species_class_key, portrait_id, source_file)
                 VALUES ('msi_slavers', 'MSI_SLAVER', 'msi_slaver1_female', '00_portrait_sets.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_desert_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_desert_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_desert_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_desert_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_arid_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_arid_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_arid_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_arid_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_savannah_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_savannah_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_savannah_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_savannah_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_tropical_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_tropical_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_tropical_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_tropical_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_continental_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_continental_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_continental_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_continental_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_ocean_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ocean_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ocean_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ocean_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_arctic_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_arctic_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_arctic_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_arctic_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_tundra_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_tundra_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_tundra_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_tundra_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_alpine_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_alpine_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_alpine_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_alpine_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_volcanic_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_volcanic_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_volcanic_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_volcanic_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_ai_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ai_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ai_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ai_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_nuked_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_nuked_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_nuked_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_nuked_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_gaia_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_gaia_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_gaia_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_gaia_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_ringworld_habitable_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ringworld_habitable_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ringworld_habitable_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ringworld_habitable_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_habitat_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_habitat_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_habitat_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_habitat_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_machine_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_machine_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_machine_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_machine_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_hive_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_hive_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_hive_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_hive_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_relic_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_relic_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_relic_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_relic_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_shattered_ring_habitable_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_shattered_ring_habitable_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_shattered_ring_habitable_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_shattered_ring_habitable_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_gaia_preference_terraforming', NULL, NULL, 0, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_gaia_preference_terraforming', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_gaia_preference_terraforming', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_gaia_preference_terraforming', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_city_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_city_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_city_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_city_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_dry_planet_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_dry_planet_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_dry_planet_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_volcanic_planet_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_volcanic_planet_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_volcanic_planet_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_wet_planet_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_wet_planet_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_wet_planet_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cold_planet_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cold_planet_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cold_planet_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_machine_habitat_planet_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_habitat_planet_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_habitat_planet_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pc_cosmogenesis_world_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_cosmogenesis_world_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_cosmogenesis_world_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_cosmogenesis_world_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_cosmogenesis_world_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_cosmogenesis_world_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_machine_pc_gaia_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_gaia_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_gaia_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_machine_pc_machine_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_machine_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_machine_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_machine_pc_shattered_ring_habitable_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_shattered_ring_habitable_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_shattered_ring_habitable_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_machine_pc_ringworld_habitable_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_ringworld_habitable_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_ringworld_habitable_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_machine_pc_relic_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_relic_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_relic_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_relic_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_relic_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_machine_pc_nuked_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_nuked_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_nuked_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_machine_pc_nanotech_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_nanotech_preference', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_nanotech_preference', 'MACHINE');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_hab_preference', NULL, NULL, 0, 0, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_hab_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_hab_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_hab_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_wet_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_cold_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_dry_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_pc_nuked_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_pc_gaia_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_pc_habitat_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_pc_city_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_pc_relic_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_pc_hive_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_pc_ringworld_habitable_preference', NULL, NULL, 0, 1, 1, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_pc_ringworld_habitable_preference', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_pc_ringworld_habitable_preference', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_pc_ringworld_habitable_preference', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_pc_cosmogenesis_world_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_pc_volcanic_preference', NULL, NULL, 1, 1, 0, '01_species_traits_habitability.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_hive_mind', 0, NULL, 0, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_hive_mind', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_hive_mind', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hive_mind', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hive_mind', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hive_mind', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_machine_unit', 0, NULL, 0, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_unit', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_unit', 'ROBOT');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_machine_unit', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_machine_unit', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_machine_unit', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_machine_unit', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_machine_unit', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_mechanical', 0, NULL, 0, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_mechanical', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_mechanical', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_mechanical', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_mechanical', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_mechanical', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_mechanical', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_syncretic_proles', 1, NULL, 0, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_syncretic_proles', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_syncretic_proles', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_intelligent');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_erudite');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_natural_engineers');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_natural_physicists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_natural_sociologists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_machine_unit');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_talented');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_quick_learners');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_slow_learners');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_enduring');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_venerable');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_fleeting');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_fleeting_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_humanoid_jinxed');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_decadent');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_elevated_synapses');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_gene_mentorship');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_artificial_intelligence');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_syncretic_proles', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_syncretic_proles', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_syncretic_proles', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_syncretic_proles', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_syncretic_proles', 'blocks_leaders');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_syncretic_proles', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_organic', 0, NULL, 1, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_organic', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_organic', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_organic', 'trait_infernal');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_organic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_organic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_organic', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_lithoid', 0, NULL, 1, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid', 'LITHOID');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid', 'lithoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_aquatic', 2, NULL, 1, 1, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_aquatic', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_aquatic', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'drawbacks');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_aquatic', 2, NULL, 1, 1, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_aquatic', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_aquatic', 'ROBOT');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_aquatic', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_aquatic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_aquatic', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_aquatic', 'drawbacks');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_aquatic', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_necrophage', 0, NULL, 0, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_necrophage', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_necrophage', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_necrophage', 'trait_plantoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_necrophage', 'trait_lithoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_necrophage', 'trait_tiyanki');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_necrophage', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_necrophage', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_necrophage', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_necrophage', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_necrophage', 'drawbacks');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_necrophage', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_clone_soldier_infertile', 0, NULL, 0, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_clone_soldier_infertile', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_clone_soldier_infertile', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile', 'trait_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile', 'trait_rapid_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile', 'trait_clone_soldier_infertile_full_potential');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile', 'trait_clone_soldier_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile', 'trait_plantoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile', 'trait_lithoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile', 'trait_tiyanki');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile', 'trait_humanoid_psychological_infertility');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile', 'trait_humanoid_existential_iteroparity');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile', 'ethic_attraction');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile', 'drawbacks');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_clone_soldier_infertile_full_potential', 0, NULL, 0, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_clone_soldier_infertile_full_potential', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_clone_soldier_infertile_full_potential', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile_full_potential', 'trait_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile_full_potential', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile_full_potential', 'trait_rapid_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile_full_potential', 'trait_clone_soldier_infertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile_full_potential', 'trait_clone_soldier_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile_full_potential', 'trait_plantoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile_full_potential', 'trait_lithoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile_full_potential', 'trait_tiyanki');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile_full_potential', 'trait_humanoid_psychological_infertility');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile_full_potential', 'trait_humanoid_existential_iteroparity');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile_full_potential', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile_full_potential', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile_full_potential', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile_full_potential', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile_full_potential', 'ethic_attraction');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile_full_potential', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile_full_potential', 'drawbacks');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile_full_potential', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_clone_soldier_fertile', 0, NULL, 0, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_clone_soldier_fertile', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_clone_soldier_fertile', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_fertile', 'trait_vat_grown');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_fertile', 'trait_clone_soldier_infertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_fertile', 'trait_clone_soldier_infertile_full_potential');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_fertile', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_fertile', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_fertile', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_fertile', 'ethic_attraction');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_fertile', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cave_dweller', 0, NULL, 0, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cave_dweller', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cave_dweller', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cave_dweller', 'trait_plantoid_phototrophic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cave_dweller', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cave_dweller', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cave_dweller', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cave_dweller', 'mineral');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cave_dweller', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cave_dweller', 'interesting');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cave_dweller', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_cave_dweller', 0, NULL, 0, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_cave_dweller', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_cave_dweller', 'ROBOT');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_cave_dweller', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_cave_dweller', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_cave_dweller', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_cave_dweller', 'mineral');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_cave_dweller', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_cave_dweller', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_shroud_forged', 0, NULL, 0, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_shroud_forged', 'ROBOT');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_perfected_genes', 0, NULL, 0, 0, 0, '02_species_traits_basic_characteristics.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_perfected_genes', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_perfected_genes', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_perfected_genes', 'trait_fleeting');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_perfected_genes', 'trait_weak');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_perfected_genes', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_perfected_genes', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_perfected_genes', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_perfected_genes', 'drawbacks');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_perfected_genes', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_presapient_starborn', 0, NULL, 0, 1, 0, '03_species_traits_presapients.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_starborn', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_starborn', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_starborn', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_starborn', 'trait_presapient_earthbound');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_starborn', 'trait_sedentary');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_starborn', 'trait_stargazer');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_starborn', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_starborn', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_starborn', 'migration');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_starborn', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_starborn', 'presapient');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_presapient_earthbound', 0, NULL, 0, 1, 0, '03_species_traits_presapients.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_earthbound', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_earthbound', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_earthbound', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_earthbound', 'trait_presapient_starborn');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_earthbound', 'trait_nomadic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_earthbound', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_earthbound', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_earthbound', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_earthbound', 'energy');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_earthbound', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_earthbound', 'presapient');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_presapient_natural_intellectuals', 0, NULL, 0, 1, 0, '03_species_traits_presapients.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_natural_intellectuals', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_natural_intellectuals', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_natural_intellectuals', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_natural_intellectuals', 'trait_presapient_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_natural_intellectuals', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_natural_intellectuals', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_natural_intellectuals', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_natural_intellectuals', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_natural_intellectuals', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_natural_intellectuals', 'mineral');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_natural_intellectuals', 'presapient');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_presapient_proles', 0, NULL, 0, 1, 0, '03_species_traits_presapients.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_proles', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_proles', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_proles', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_proles', 'trait_presapient_natural_intellectuals');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_proles', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_proles', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_proles', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_proles', 'mineral');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_proles', 'food');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_proles', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_proles', 'presapient');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_presapient_conservative', 0, NULL, 0, 1, 0, '03_species_traits_presapients.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_conservative', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_conservative', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_conservative', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_conservative', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_conservative', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_conservative', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_conservative', 'ethic_attraction');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_conservative', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_conservative', 'presapient');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_presapient_irradiated', 0, NULL, 0, 1, 0, '03_species_traits_presapients.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_irradiated', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_irradiated', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_irradiated', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_irradiated', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_irradiated', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_irradiated', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_irradiated', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_irradiated', 'presapient');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_presapient_docile_livestock', 0, NULL, 0, 0, 0, '03_species_traits_presapients.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_docile_livestock', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_docile_livestock', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_docile_livestock', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_docile_livestock', 'trait_intelligent');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_docile_livestock', 'trait_erudite');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_docile_livestock', 'trait_natural_engineers');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_docile_livestock', 'trait_natural_physicists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_docile_livestock', 'trait_natural_sociologists');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_docile_livestock', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_docile_livestock', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_docile_livestock', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_docile_livestock', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_docile_livestock', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_docile_livestock', 'energy');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_docile_livestock', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_docile_livestock', 'presapient');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_presapient_forcefully_devolved', 0, NULL, 0, 1, 0, '03_species_traits_presapients.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_forcefully_devolved', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_forcefully_devolved', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_forcefully_devolved', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_forcefully_devolved', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_forcefully_devolved', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_forcefully_devolved', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_forcefully_devolved', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_forcefully_devolved', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_forcefully_devolved', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_forcefully_devolved', 'presapient');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_forcefully_devolved', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_presapient_unintelligent', 0, NULL, 0, 0, 0, '03_species_traits_presapients.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_unintelligent', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_unintelligent', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_unintelligent', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_unintelligent', 'trait_intelligent');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_unintelligent', 'trait_erudite');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_unintelligent', 'trait_natural_engineers');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_unintelligent', 'trait_natural_physicists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_presapient_unintelligent', 'trait_natural_sociologists');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_unintelligent', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_unintelligent', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_unintelligent', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_unintelligent', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_unintelligent', 'presapient');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_presapient_stage', 0, NULL, 0, 0, 0, '03_species_traits_presapients.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_stage', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_stage', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_stage', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_stage', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_stage', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_stage', 'presapient');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_stage', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_mod_biological', 3, 'normal', 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_biological', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_biological', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_auto_mod_biological', 'trait_wilderness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_biological', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_biological', 'automod');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_biological', 'positive');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_agrarian', 2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_agrarian', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_agrarian', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_agrarian', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_agrarian', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_agrarian', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_agrarian', 'food');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_ingenious', 2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_ingenious', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_ingenious', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ingenious', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ingenious', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ingenious', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ingenious', 'energy');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_industrious', 2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_industrious', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_industrious', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_industrious', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_industrious', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_industrious', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_industrious', 'mineral');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_intelligent', 2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_intelligent', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_intelligent', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_intelligent', 'trait_nerve_stapled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_intelligent', 'trait_erudite');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_intelligent', 'trait_enigmatic_intelligence_poor');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_intelligent', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_intelligent', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_intelligent', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_intelligent', 'research');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_thrifty', 2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_thrifty', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_thrifty', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_thrifty', 'trait_cyborg_scarcity_algorithms');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_thrifty', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_thrifty', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_thrifty', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_thrifty', 'trade');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_natural_engineers', 1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_engineers', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_engineers', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_engineers', 'trait_natural_physicists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_engineers', 'trait_natural_sociologists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_engineers', 'trait_nerve_stapled');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_engineers', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_engineers', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_engineers', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_engineers', 'research');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_natural_physicists', 1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_physicists', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_physicists', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_physicists', 'trait_natural_engineers');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_physicists', 'trait_natural_sociologists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_physicists', 'trait_nerve_stapled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_physicists', 'trait_camouflage');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_physicists', 'trait_chromalogs');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_physicists', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_physicists', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_physicists', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_physicists', 'research');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_natural_sociologists', 1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_sociologists', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_sociologists', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_sociologists', 'trait_natural_physicists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_sociologists', 'trait_natural_engineers');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_sociologists', 'trait_nerve_stapled');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_sociologists', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_sociologists', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_sociologists', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_sociologists', 'research');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_extremely_adaptive', 4, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_extremely_adaptive', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_extremely_adaptive', 'trait_nonadaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_extremely_adaptive', 'trait_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_extremely_adaptive', 'trait_robust');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_extremely_adaptive', 'trait_adaptive_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_extremely_adaptive', 'trait_shelled');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_extremely_adaptive', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_extremely_adaptive', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_extremely_adaptive', 'habitability');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_adaptive', 2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive', 'trait_nonadaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive', 'trait_extremely_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive', 'trait_robust');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive', 'trait_adaptive_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive', 'trait_shelled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive', 'trait_permeable_skin');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive', 'habitability');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_nonadaptive', -2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nonadaptive', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nonadaptive', 'trait_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nonadaptive', 'trait_extremely_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nonadaptive', 'trait_robust');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nonadaptive', 'trait_adaptive_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nonadaptive', 'trait_shelled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nonadaptive', 'trait_permeable_skin');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nonadaptive', 'trait_genetic_memory');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nonadaptive', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nonadaptive', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nonadaptive', 'habitability');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_rapid_breeders', 2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_rapid_breeders', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders', 'trait_pyroclastic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders', 'trait_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders', 'trait_rapid_breeders_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders', 'trait_plantoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders', 'trait_lithoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders', 'trait_vat_grown');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders', 'trait_tiyanki');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders', 'trait_humanoid_existential_iteroparity');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders', 'pop_growth');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_slow_breeders', -2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_slow_breeders', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_pyroclastic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_rapid_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_rapid_breeders_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_plantoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_lithoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_vat_grown');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_tiyanki');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_humanoid_psychological_infertility');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_humanoid_existential_iteroparity');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_nascent_stage');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_slow_breeders', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_slow_breeders', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_slow_breeders', 'pop_growth');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_talented', 1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_talented', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_talented', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_talented', 'trait_nerve_stapled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_talented', 'trait_syncretic_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_talented', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_talented', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_talented', 'leader');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_quick_learners', 1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_quick_learners', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_quick_learners', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_quick_learners', 'trait_slow_learners');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_quick_learners', 'trait_syncretic_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_quick_learners', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_quick_learners', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_quick_learners', 'leader');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_slow_learners', -1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_slow_learners', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_slow_learners', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_learners', 'trait_quick_learners');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_learners', 'trait_enigmatic_intelligence');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_learners', 'trait_syncretic_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_slow_learners', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_slow_learners', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_slow_learners', 'leader');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_traditional', 1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_traditional', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_traditional', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_traditional', 'trait_quarrelsome');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_traditional', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_traditional', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_traditional', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_traditional', 'unity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_quarrelsome', -1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_quarrelsome', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_quarrelsome', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_quarrelsome', 'trait_traditional');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_quarrelsome', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_quarrelsome', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_quarrelsome', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_quarrelsome', 'unity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_docile', 2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_docile', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_docile', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_docile', 'trait_unruly');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_docile', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_docile', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_docile', 'empire_size');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_unruly', -2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unruly', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unruly', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_unruly', 'trait_docile');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unruly', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unruly', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unruly', 'empire_size');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_very_strong', 3, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_very_strong', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_very_strong', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_very_strong', 'trait_weak');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_very_strong', 'trait_strong');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_very_strong', 'trait_hollow_bones');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_very_strong', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_very_strong', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_very_strong', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_very_strong', 'army');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_strong', 1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_strong', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_strong', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_strong', 'trait_weak');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_strong', 'trait_very_strong');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_strong', 'trait_hollow_bones');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_strong', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_strong', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_strong', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_strong', 'army');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_weak', -1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_weak', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_weak', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_weak', 'trait_strong');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_weak', 'trait_very_strong');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_weak', 'trait_tankbound');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_weak', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_weak', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_weak', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_weak', 'army');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_nomadic', 1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nomadic', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nomadic', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nomadic', 'trait_sedentary');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nomadic', 'trait_rooted');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nomadic', 'trait_wilderness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nomadic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nomadic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nomadic', 'migration');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_sedentary', -1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_sedentary', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_sedentary', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_sedentary', 'trait_nomadic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_sedentary', 'trait_rooted');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_sedentary', 'trait_wilderness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_sedentary', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_sedentary', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_sedentary', 'migration');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_communal', 1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_communal', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_communal', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_communal', 'trait_solitary');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_communal', 'trait_shelled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_communal', 'trait_spatial_mastery');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_communal', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_communal', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_communal', 'housing');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_solitary', -1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_solitary', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_solitary', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_solitary', 'trait_communal');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_solitary', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_solitary', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_solitary', 'housing');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_charismatic', 2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_charismatic', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_charismatic', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_charismatic', 'trait_repugnant');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_charismatic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_charismatic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_charismatic', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_charismatic', 'amenities');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_repugnant', -2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_repugnant', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_repugnant', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_repugnant', 'trait_charismatic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_repugnant', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_repugnant', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_repugnant', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_repugnant', 'amenities');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_uplifted', 0, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_uplifted', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_uplifted', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uplifted', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uplifted', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uplifted', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_conformists', 2, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_conformists', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_conformists', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_conformists', 'trait_deviants');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_conformists', 'trait_hive_mind');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_conformists', 'trait_machine_unit');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conformists', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conformists', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conformists', 'ethic_attraction');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conformists', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_deviants', -1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_deviants', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_deviants', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_deviants', 'trait_conformists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_deviants', 'trait_hive_mind');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_deviants', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_deviants', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_deviants', 'ethic_attraction');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_deviants', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_venerable', 4, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_venerable', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_venerable', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_venerable', 'trait_enduring');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_venerable', 'trait_fleeting');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_venerable', 'trait_fleeting_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_venerable', 'trait_syncretic_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_venerable', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_venerable', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_venerable', 'leader');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_enduring', 1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enduring', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enduring', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_enduring', 'trait_venerable');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_enduring', 'trait_fleeting');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_enduring', 'trait_fleeting_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_enduring', 'trait_syncretic_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enduring', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enduring', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enduring', 'leader');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_fleeting', -1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_fleeting', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fleeting', 'trait_venerable');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fleeting', 'trait_enduring');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fleeting', 'trait_fleeting_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fleeting', 'trait_syncretic_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting', 'leader');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_fleeting_lithoid', -1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_fleeting_lithoid', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fleeting_lithoid', 'trait_venerable');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fleeting_lithoid', 'trait_enduring');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fleeting_lithoid', 'trait_fleeting');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fleeting_lithoid', 'trait_syncretic_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting_lithoid', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting_lithoid', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting_lithoid', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting_lithoid', 'lithoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting_lithoid', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_decadent', -1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_decadent', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_decadent', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_decadent', 'trait_hive_mind');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_decadent', 'trait_syncretic_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_decadent', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_decadent', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_decadent', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_decadent', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_resilient', 1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_resilient', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_resilient', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_resilient', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_resilient', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_resilient', 'army');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_conservational', 1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_conservational', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_conservational', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_conservational', 'trait_wasteful');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_conservational', 'trait_hive_mind');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conservational', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conservational', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conservational', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conservational', 'consumer_goods');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conservational', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_wasteful', -1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_wasteful', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_wasteful', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_wasteful', 'trait_conservational');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_wasteful', 'trait_hive_mind');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_wasteful', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_wasteful', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_wasteful', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_wasteful', 'consumer_goods');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_wasteful', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cybernetic', 0, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cybernetic', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cybernetic', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cybernetic', 'trait_latent_psionic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cybernetic', 'trait_psionic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cybernetic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cybernetic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cybernetic', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cybernetic', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cybernetic', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cybernetic', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_latent_psionic', 0, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_latent_psionic', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_latent_psionic', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_latent_psionic', 'trait_cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_latent_psionic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_latent_psionic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_latent_psionic', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_latent_psionic', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_latent_psionic', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_latent_psionic', 'psionic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_latent_psionic', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_psionic', 0, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_psionic', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_psionic', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_psionic', 'trait_cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic', 'psionic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_self_modified', 0, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_self_modified', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_self_modified', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_self_modified', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_self_modified', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_survivor', 0, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_survivor', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_survivor', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_survivor', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_survivor', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_survivor', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_survivor', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_survivor', 'interesting');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_survivor', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_enigmatic_intelligence', 0, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enigmatic_intelligence', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enigmatic_intelligence', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_enigmatic_intelligence', 'trait_nerve_stapled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_enigmatic_intelligence', 'trait_erudite');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_enigmatic_intelligence', 'trait_slow_learners');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence', 'presapient');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence', 'interesting');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_enigmatic_intelligence_poor', 0, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enigmatic_intelligence_poor', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enigmatic_intelligence_poor', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_enigmatic_intelligence_poor', 'trait_intelligent');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_poor', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_poor', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_poor', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_poor', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_poor', 'presapient');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_poor', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_enigmatic_intelligence_failed', 0, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enigmatic_intelligence_failed', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enigmatic_intelligence_failed', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_enigmatic_intelligence_failed', 'trait_intelligent');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_failed', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_failed', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_failed', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_failed', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_failed', 'presapient');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_failed', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_bioadaptability', 1, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_bioadaptability', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_bioadaptability', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_bioadaptability', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_bioadaptability', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_bioadaptability', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_bioadaptability', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_bioadaptability', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_bioadaptability', 'interesting');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_bioadaptability', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_social_pheromones', 1, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_social_pheromones', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_social_pheromones', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_social_pheromones', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_social_pheromones', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_social_pheromones', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_social_pheromones', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_social_pheromones', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_social_pheromones', 'interesting');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_social_pheromones', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_limited_regeneration', 1, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_limited_regeneration', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_limited_regeneration', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_regeneration', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_regeneration', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_regeneration', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_regeneration', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_regeneration', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_regeneration', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_regeneration', 'interesting');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_regeneration', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_lithoid_scintillating', 2, NULL, 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_scintillating', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_scintillating', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_lithoid_scintillating', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_scintillating', 'trait_lithoid_volatile_excretions');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_scintillating', 'trait_lithoid_gaseous_byproducts');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_scintillating', 'trait_drake_scaled');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_scintillating', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_scintillating', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_scintillating', 'rare_resource');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_scintillating', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_scintillating', 'lithoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_scintillating', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_lithoid_gaseous_byproducts', 2, NULL, 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_gaseous_byproducts', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_gaseous_byproducts', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_lithoid_gaseous_byproducts', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_gaseous_byproducts', 'trait_lithoid_volatile_excretions');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_gaseous_byproducts', 'trait_lithoid_scintillating');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_gaseous_byproducts', 'trait_drake_scaled');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_gaseous_byproducts', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_gaseous_byproducts', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_gaseous_byproducts', 'rare_resource');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_gaseous_byproducts', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_gaseous_byproducts', 'lithoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_gaseous_byproducts', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_lithoid_volatile_excretions', 2, NULL, 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_volatile_excretions', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_volatile_excretions', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_lithoid_volatile_excretions', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_volatile_excretions', 'trait_lithoid_gaseous_byproducts');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_volatile_excretions', 'trait_lithoid_scintillating');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_volatile_excretions', 'trait_drake_scaled');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_volatile_excretions', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_volatile_excretions', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_volatile_excretions', 'rare_resource');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_volatile_excretions', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_volatile_excretions', 'lithoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_volatile_excretions', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_void_dweller_1', NULL, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_void_dweller_1', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_void_dweller_1', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_1', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_1', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_1', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_1', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_1', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_void_dweller_2', NULL, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_void_dweller_2', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_void_dweller_2', 'ROBOT');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_2', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_2', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_2', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_2', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_2', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_plantoid_bloomed', NULL, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_bloomed', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_bloomed', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_bloomed', 'PLANT');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_bloomed', 'FUN');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_bloomed', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_bloomed', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_bloomed', 'plantoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_bloomed', 'fungoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_bloomed', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_bloomed', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_bloomed', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_bloomed', 'special');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_bloomed', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_plantoid_phototrophic', 1, NULL, 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_phototrophic', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_phototrophic', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_phototrophic', 'PLANT');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_phototrophic', 'FUN');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_phototrophic', 'trait_plantoid_radiotrophic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_phototrophic', 'trait_voidling');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_phototrophic', 'trait_cave_dweller');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_phototrophic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_phototrophic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_phototrophic', 'plantoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_phototrophic', 'fungoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_phototrophic', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_phototrophic', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_plantoid_radiotrophic', 2, NULL, 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_radiotrophic', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_radiotrophic', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_radiotrophic', 'PLANT');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_radiotrophic', 'FUN');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_radiotrophic', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_radiotrophic', 'INF');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_radiotrophic', 'trait_plantoid_phototrophic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_radiotrophic', 'trait_voidling');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_radiotrophic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_radiotrophic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_radiotrophic', 'plantoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_radiotrophic', 'fungoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_radiotrophic', 'lithoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_radiotrophic', 'infernal');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_radiotrophic', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_radiotrophic', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_plantoid_budding', 2, NULL, 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_budding', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_budding', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_budding', 'PLANT');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_budding', 'FUN');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_budding', 'trait_pyroclastic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_budding', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_budding', 'trait_rapid_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_budding', 'trait_rapid_breeders_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_budding', 'trait_necrophage');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_budding', 'trait_clone_soldier_infertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_budding', 'trait_clone_soldier_infertile_full_potential');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_budding', 'trait_lithoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_budding', 'trait_tiyanki');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_plantoid_budding', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_budding', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_budding', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_budding', 'plantoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_budding', 'fungoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_budding', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_budding', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_invasive', 2, NULL, 1, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_invasive', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_invasive', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_invasive', 'PLANT');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_invasive', 'FUN');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_agrarian');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_ingenious');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_industrious');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_intelligent');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_thrifty');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_natural_engineers');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_natural_physicists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_natural_sociologists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_extremely_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_rapid_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_talented');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_quick_learners');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_traditional');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_docile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_very_strong');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_strong');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_nomadic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_communal');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_charismatic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_conformists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_venerable');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_enduring');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_resilient');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_conservational');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_noxious');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_inorganic_breath');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_humanoid_existential_iteroparity');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_incubator');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_delicious');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_nerve_stapled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_robust');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_erudite');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_vat_grown');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_felsic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_natural_machinist');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_drake_scaled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_voidling');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_tiyanki');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_exotic_metabolism');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_chromalogs');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_camouflage');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_shelled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_uncanny_intuition');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_cranial_hypertrophy');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_cranial_megatrophy');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_shell_slag');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_invasive', 'trait_unbreakable_resolve');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_invasive', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_invasive', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_invasive', 'plantoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_invasive', 'fungoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_invasive', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_invasive', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_invasive', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_lithoid_budding', 2, NULL, 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_budding', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_budding', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_lithoid_budding', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_budding', 'trait_pyroclastic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_budding', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_budding', 'trait_rapid_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_budding', 'trait_rapid_breeders_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_budding', 'trait_necrophage');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_budding', 'trait_clone_soldier_infertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_budding', 'trait_clone_soldier_infertile_full_potential');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_budding', 'trait_incubator');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_budding', 'trait_plantoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_budding', 'trait_tiyanki');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_lithoid_budding', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_budding', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_budding', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_budding', 'lithoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_budding', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_budding', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_zombie', 0, NULL, 0, 0, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_zombie', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_zombie', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_zombie', 'trait_nerve_stapled');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_zombie', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_zombie', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_zombie', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_zombie', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_zombie', 'blocks_leaders');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_humanoid_existential_iteroparity', 2, NULL, 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_humanoid_existential_iteroparity', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_humanoid_existential_iteroparity', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_existential_iteroparity', 'trait_pyroclastic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_existential_iteroparity', 'trait_humanoid_psychological_infertility');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_existential_iteroparity', 'trait_rapid_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_existential_iteroparity', 'trait_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_existential_iteroparity', 'trait_rapid_breeders_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_existential_iteroparity', 'trait_plantoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_existential_iteroparity', 'trait_lithoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_existential_iteroparity', 'trait_vat_grown');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_existential_iteroparity', 'trait_tiyanki');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_existential_iteroparity', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_existential_iteroparity', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_existential_iteroparity', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_existential_iteroparity', 'pop_growth');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_humanoid_psychological_infertility', -2, NULL, 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_humanoid_psychological_infertility', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_humanoid_psychological_infertility', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_psychological_infertility', 'trait_humanoid_existential_iteroparity');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_psychological_infertility', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_psychological_infertility', 'trait_vat_grown');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_psychological_infertility', 'trait_necrophage');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_psychological_infertility', 'trait_nascent_stage');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_psychological_infertility', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_psychological_infertility', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_psychological_infertility', 'pop_growth');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_humanoid_jinxed', -1, 'normal', 1, 1, 0, '04_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_humanoid_jinxed', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_humanoid_jinxed', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_jinxed', 'trait_talented');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_jinxed', 'trait_syncretic_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_jinxed', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_jinxed', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_jinxed', 'leader');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_mod_robotic', 3, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_robotic', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_robotic', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_robotic', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_robotic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_robotic', 'automod');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_power_drills', 2, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_power_drills', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_power_drills', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_power_drills', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_power_drills', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_power_drills', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_power_drills', 'mineral');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_harvesters', 2, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_harvesters', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_harvesters', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_harvesters', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_harvesters', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_harvesters', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_harvesters', 'food');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_superconductive', 2, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_superconductive', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_superconductive', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_superconductive', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_superconductive', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_superconductive', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_superconductive', 'energy');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_efficient_processors', 3, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_efficient_processors', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_efficient_processors', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_efficient_processors', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_efficient_processors', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_efficient_processors', 'pop_output');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_logic_engines', 2, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_logic_engines', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_logic_engines', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_logic_engines', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_logic_engines', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_logic_engines', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_logic_engines', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_logic_engines', 'research');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_loyalty_circuits', 2, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_loyalty_circuits', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_loyalty_circuits', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_loyalty_circuits', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_loyalty_circuits', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_loyalty_circuits', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_loyalty_circuits', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_loyalty_circuits', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_domestic_protocols', 2, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_domestic_protocols', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_domestic_protocols', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_protocols', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_protocols', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_protocols', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_protocols', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_protocols', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_protocols', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_double_jointed', 1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_double_jointed', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_double_jointed', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_double_jointed', 'trait_robot_bulky');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_double_jointed', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_double_jointed', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_double_jointed', 'housing');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_bulky', -1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_bulky', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_bulky', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_bulky', 'trait_robot_double_jointed');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_bulky', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_bulky', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_bulky', 'housing');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_enhanced_memory', 2, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_enhanced_memory', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_enhanced_memory', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enhanced_memory', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enhanced_memory', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enhanced_memory', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enhanced_memory', 'leader');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_emotion_emulators', 1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_emotion_emulators', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_emotion_emulators', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_emotion_emulators', 'trait_robot_uncanny');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_emotion_emulators', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_emotion_emulators', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_emotion_emulators', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_emotion_emulators', 'amenities');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_uncanny', -1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_uncanny', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_uncanny', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_uncanny', 'trait_robot_emotion_emulators');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_uncanny', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_uncanny', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_uncanny', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_uncanny', 'amenities');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_durable', 1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_durable', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_durable', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_durable', 'trait_robot_high_maintenance');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_durable', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_durable', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_durable', 'upkeep');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_high_maintenance', -1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_high_maintenance', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_high_maintenance', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_high_maintenance', 'trait_robot_durable');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_high_maintenance', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_high_maintenance', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_high_maintenance', 'upkeep');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_learning_algorithms', 1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_learning_algorithms', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_learning_algorithms', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_learning_algorithms', 'trait_robot_repurposed_hardware');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_learning_algorithms', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_learning_algorithms', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_learning_algorithms', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_learning_algorithms', 'leader');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_repurposed_hardware', -1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_repurposed_hardware', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_repurposed_hardware', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_repurposed_hardware', 'trait_robot_learning_algorithms');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_repurposed_hardware', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_repurposed_hardware', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_repurposed_hardware', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_repurposed_hardware', 'leader');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_mass_produced', 1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_mass_produced', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_mass_produced', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_mass_produced', 'trait_robot_custom_made');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mass_produced', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mass_produced', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mass_produced', 'pop_growth');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_custom_made', -1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_custom_made', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_custom_made', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_custom_made', 'trait_robot_mass_produced');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_custom_made', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_custom_made', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_custom_made', 'pop_growth');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_recycled', 2, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_recycled', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_recycled', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_recycled', 'trait_robot_luxurious');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_recycled', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_recycled', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_recycled', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_recycled', 'pop_growth');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_luxurious', -2, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_luxurious', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_luxurious', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_luxurious', 'trait_robot_recycled');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_luxurious', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_luxurious', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_luxurious', 'pop_growth');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_propaganda_machines', 1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_propaganda_machines', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_propaganda_machines', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_propaganda_machines', 'trait_robot_quarrelsome');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_propaganda_machines', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_propaganda_machines', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_propaganda_machines', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_propaganda_machines', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_propaganda_machines', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_propaganda_machines', 'unity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_streamlined_protocols', 2, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_streamlined_protocols', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_streamlined_protocols', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_streamlined_protocols', 'trait_robot_high_bandwidth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_streamlined_protocols', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_streamlined_protocols', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_streamlined_protocols', 'empire_size');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_high_bandwidth', -2, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_high_bandwidth', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_high_bandwidth', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_high_bandwidth', 'trait_robot_streamlined_protocols');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_high_bandwidth', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_high_bandwidth', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_high_bandwidth', 'empire_size');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_trading_algorithms', 2, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_trading_algorithms', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_trading_algorithms', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_trading_algorithms', 'trait_robot_scarcity_algorithms');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_trading_algorithms', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_trading_algorithms', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_trading_algorithms', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_trading_algorithms', 'trade');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_quarrelsome', -1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_quarrelsome', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_quarrelsome', 'ROBOT');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_quarrelsome', 'trait_robot_propaganda_machines');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_quarrelsome', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_quarrelsome', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_quarrelsome', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_quarrelsome', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_quarrelsome', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_quarrelsome', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_deviants', -1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_deviants', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_deviants', 'ROBOT');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_deviants', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_deviants', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_deviants', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_deviants', 'ethic_attraction');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_deviants', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_decadent', -1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_decadent', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_decadent', 'ROBOT');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_decadent', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_decadent', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_decadent', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_decadent', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_decadent', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_wasteful', -1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_wasteful', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_wasteful', 'ROBOT');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful', 'consumer_goods');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_artificial_engineers', 1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_artificial_engineers', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_artificial_engineers', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_artificial_engineers', 'trait_robot_artificial_physicists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_artificial_engineers', 'trait_robot_artificial_sociologists');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_engineers', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_engineers', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_engineers', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_engineers', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_engineers', 'research');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_artificial_physicists', 1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_artificial_physicists', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_artificial_physicists', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_artificial_physicists', 'trait_robot_artificial_sociologists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_artificial_physicists', 'trait_robot_artificial_engineers');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_physicists', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_physicists', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_physicists', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_physicists', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_physicists', 'research');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_artificial_sociologists', 1, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_artificial_sociologists', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_artificial_sociologists', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_artificial_sociologists', 'trait_robot_artificial_physicists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_artificial_sociologists', 'trait_robot_artificial_engineers');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_sociologists', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_sociologists', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_sociologists', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_sociologists', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_sociologists', 'research');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_integrated_weaponry', 2, 'robotic', 1, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_integrated_weaponry', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_integrated_weaponry', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_integrated_weaponry', 'trait_robot_delicate_frames');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_integrated_weaponry', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_integrated_weaponry', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_integrated_weaponry', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_integrated_weaponry', 'army');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_delicate_frames', -1, 'robotic', 1, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_delicate_frames', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_delicate_frames', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_delicate_frames', 'trait_robot_integrated_weaponry');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_delicate_frames', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_delicate_frames', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_delicate_frames', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_delicate_frames', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_delicate_frames', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_delicate_frames', 'pop_output');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_scarcity_algorithms', -1, 'robotic', 1, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_scarcity_algorithms', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_scarcity_algorithms', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_scarcity_algorithms', 'trait_robot_trading_algorithms');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_scarcity_algorithms', 'trait_robot_matrix_trading');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scarcity_algorithms', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scarcity_algorithms', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scarcity_algorithms', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scarcity_algorithms', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scarcity_algorithms', 'trade');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_ancient_dreadnought', 3, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_ancient_dreadnought', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_ancient_dreadnought', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ancient_dreadnought', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ancient_dreadnought', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ancient_dreadnought', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ancient_dreadnought', 'leviathan');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ancient_dreadnought', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ancient_dreadnought', 'alloys');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ancient_dreadnought', 'pop_output');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_enigmatic_fortress', 3, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_enigmatic_fortress', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_enigmatic_fortress', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enigmatic_fortress', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enigmatic_fortress', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enigmatic_fortress', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enigmatic_fortress', 'leviathan');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enigmatic_fortress', 'amenities');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_infinity_sphere', 3, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_infinity_sphere', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_infinity_sphere', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_infinity_sphere', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_infinity_sphere', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_infinity_sphere', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_infinity_sphere', 'leviathan');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_infinity_sphere', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_infinity_sphere', 'pop_output');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_scavenger_bot', 3, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_scavenger_bot', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_scavenger_bot', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scavenger_bot', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scavenger_bot', 'synthetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scavenger_bot', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scavenger_bot', 'leviathan');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scavenger_bot', 'pop_growth');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_history_warbot', 0, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_warbot', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_warbot', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_warbot', 'trait_robot_history_artbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_warbot', 'trait_robot_history_explorebot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_warbot', 'trait_robot_history_researchbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_warbot', 'trait_robot_history_resourcebot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_warbot', 'trait_robot_history_chatbot');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_warbot', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_warbot', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_warbot', 'background');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_warbot', 'army');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_history_artbot', 0, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_artbot', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_artbot', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_artbot', 'trait_robot_history_warbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_artbot', 'trait_robot_history_explorebot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_artbot', 'trait_robot_history_researchbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_artbot', 'trait_robot_history_resourcebot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_artbot', 'trait_robot_history_chatbot');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_artbot', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_artbot', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_artbot', 'background');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_artbot', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_artbot', 'amenities');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_history_explorebot', 0, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_explorebot', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_explorebot', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_explorebot', 'trait_robot_history_warbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_explorebot', 'trait_robot_history_artbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_explorebot', 'trait_robot_history_researchbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_explorebot', 'trait_robot_history_resourcebot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_explorebot', 'trait_robot_history_chatbot');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_explorebot', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_explorebot', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_explorebot', 'background');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_explorebot', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_explorebot', 'unity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_history_researchbot', 0, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_researchbot', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_researchbot', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_researchbot', 'trait_robot_history_warbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_researchbot', 'trait_robot_history_artbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_researchbot', 'trait_robot_history_explorebot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_researchbot', 'trait_robot_history_resourcebot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_researchbot', 'trait_robot_history_chatbot');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_researchbot', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_researchbot', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_researchbot', 'background');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_researchbot', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_researchbot', 'research');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_history_resourcebot', 0, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_resourcebot', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_resourcebot', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_resourcebot', 'trait_robot_history_warbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_resourcebot', 'trait_robot_history_artbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_resourcebot', 'trait_robot_history_explorebot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_resourcebot', 'trait_robot_history_researchbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_resourcebot', 'trait_robot_history_chatbot');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_resourcebot', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_resourcebot', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_resourcebot', 'background');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_resourcebot', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_resourcebot', 'mineral');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_history_chatbot', 0, 'robotic', 1, 1, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_chatbot', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_chatbot', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_chatbot', 'trait_robot_history_warbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_chatbot', 'trait_robot_history_artbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_chatbot', 'trait_robot_history_explorebot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_chatbot', 'trait_robot_history_researchbot');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_chatbot', 'trait_robot_history_resourcebot');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_chatbot', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_chatbot', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_chatbot', 'background');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_chatbot', 'upkeep');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_survivor', 0, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_survivor', 'MACHINE');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_survivor', 'ROBOT');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_survivor', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_survivor', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_survivor', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_survivor', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_survivor', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_digital_1', 0, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_digital_1', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_digital_1', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_digital_1', 'trait_robot_latent_psionic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_digital_1', 'trait_robot_psionic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_1', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_1', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_1', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_1', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_1', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_digital_2', 0, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_digital_2', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_digital_2', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_digital_2', 'trait_robot_latent_psionic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_digital_2', 'trait_robot_psionic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_2', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_2', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_2', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_2', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_2', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_2', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_suppressed', 3, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_suppressed', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_suppressed', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_suppressed', 'trait_robot_inquisitative_axioms');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_suppressed', 'trait_robot_learning_algorithms');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_suppressed', 'trait_robot_logic_engines');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_suppressed', 'trait_robot_enhanced_memory');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_suppressed', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_suppressed', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_suppressed', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_suppressed', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_suppressed', 'blocks_leaders');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_suppressed', 'modularity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_shielded_components', 3, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_shielded_components', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_shielded_components', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_shielded_components', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_shielded_components', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_shielded_components', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_shielded_components', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_shielded_components', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_shielded_components', 'modularity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_monoform', 4, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_monoform', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_monoform', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_monoform', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_monoform', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_monoform', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_monoform', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_monoform', 'modularity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_inquisitative_axioms', 4, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_inquisitative_axioms', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_inquisitative_axioms', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_inquisitative_axioms', 'trait_robot_suppressed');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_inquisitative_axioms', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_inquisitative_axioms', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_inquisitative_axioms', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_inquisitative_axioms', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_inquisitative_axioms', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_inquisitative_axioms', 'modularity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 2, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 'modularity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_ferro_viscosity_augmentation', 2, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_ferro_viscosity_augmentation', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_ferro_viscosity_augmentation', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ferro_viscosity_augmentation', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ferro_viscosity_augmentation', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ferro_viscosity_augmentation', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ferro_viscosity_augmentation', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ferro_viscosity_augmentation', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ferro_viscosity_augmentation', 'modularity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_biomimetic_assembly', 1, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_biomimetic_assembly', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_biomimetic_assembly', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_biomimetic_assembly', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_biomimetic_assembly', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_biomimetic_assembly', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_biomimetic_assembly', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_biomimetic_assembly', 'modularity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_matrix_trading', 1, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_matrix_trading', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_matrix_trading', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_matrix_trading', 'trait_robot_scarcity_algorithms');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_matrix_trading', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_matrix_trading', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_matrix_trading', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_matrix_trading', 'trade');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_matrix_trading', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_matrix_trading', 'modularity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_mote_powered_tools', 1, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_mote_powered_tools', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_mote_powered_tools', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mote_powered_tools', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mote_powered_tools', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mote_powered_tools', 'alloys');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mote_powered_tools', 'consumer_goods');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mote_powered_tools', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mote_powered_tools', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mote_powered_tools', 'modularity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_exotic_fuel_consumption', 1, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_exotic_fuel_consumption', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_exotic_fuel_consumption', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_exotic_fuel_consumption', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_exotic_fuel_consumption', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_exotic_fuel_consumption', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_exotic_fuel_consumption', 'upkeep');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_rare_crystal_exterior', 1, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_rare_crystal_exterior', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_rare_crystal_exterior', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_rare_crystal_exterior', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_rare_crystal_exterior', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_rare_crystal_exterior', 'alloys');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_rare_crystal_exterior', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_rare_crystal_exterior', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_rare_crystal_exterior', 'upkeep');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_volatile_mote_reactor', 1, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_volatile_mote_reactor', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_volatile_mote_reactor', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_volatile_mote_reactor', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_volatile_mote_reactor', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_volatile_mote_reactor', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_volatile_mote_reactor', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_volatile_mote_reactor', 'upkeep');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_immortality', 4, 'robotic', 1, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_immortality', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_immortality', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_immortality', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_immortality', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_immortality', 'leader');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_synthetic_dawn', 0, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_synthetic_dawn', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_synthetic_dawn', 'MACHINE');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_latent_psionic', 0, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_latent_psionic', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_latent_psionic', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_latent_psionic', 'trait_robot_digital_1');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_latent_psionic', 'trait_robot_digital_2');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_latent_psionic', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_latent_psionic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_latent_psionic', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_latent_psionic', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_latent_psionic', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_latent_psionic', 'psionic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_psionic', 0, 'robotic', 0, 0, 0, '05_species_traits_robotic.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_psionic', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_psionic', 'MACHINE');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_psionic', 'trait_robot_digital_1');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_psionic', 'trait_robot_digital_2');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_psionic', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_psionic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_psionic', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_psionic', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_psionic', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_psionic', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_psionic', 'psionic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_brainslug', NULL, NULL, 0, 0, 0, '06_distant_stars_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_admiral_hells_heart', NULL, NULL, 0, 0, 0, '06_distant_stars_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_admiral_warform', NULL, NULL, 0, 0, 0, '06_distant_stars_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_admiral_warform_node', NULL, NULL, 0, 0, 0, '06_distant_stars_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_governor_gray', 0, NULL, 0, 0, 0, '06_distant_stars_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_govenor_caretaker', NULL, NULL, 0, 0, 0, '06_distant_stars_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_govenor_caretaker_node', NULL, NULL, 0, 0, 0, '06_distant_stars_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_brainslug', 0, NULL, 0, 0, 0, '06_distant_stars_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_brainslug', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_brainslug', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brainslug', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brainslug', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brainslug', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brainslug', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brainslug', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brainslug', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brainslug', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_nivlac', 2, NULL, 0, 0, 0, '06_distant_stars_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nivlac', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nivlac', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nivlac', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nivlac', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nivlac', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nivlac', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_notofthisworld', 0, NULL, 0, 0, 0, '06_distant_stars_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_notofthisworld', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_notofthisworld', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_notofthisworld', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_notofthisworld', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_notofthisworld', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_notofthisworld', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_notofthisworld', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_notofthisworld', 0, NULL, 0, 0, 0, '06_distant_stars_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_notofthisworld', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_notofthisworld', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_notofthisworld', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_notofthisworld', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_notofthisworld', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_notofthisworld', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_notofthisworld', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_notofthisworld', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_caravan_counter', 1, NULL, 0, 0, 0, '07_megacorp_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_nuumismatic_administration', 1, NULL, 0, 0, 0, '07_megacorp_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_waste_management_specialist', 1, NULL, 0, 0, 0, '07_megacorp_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_nuumismatic_priest', 1, NULL, 0, 0, 0, '07_megacorp_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_traumatized', NULL, NULL, 0, 0, 0, '08_ancrel_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_maimed', NULL, NULL, 0, 0, 0, '08_ancrel_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_inspired_archaeologist', NULL, NULL, 0, 0, 0, '08_ancrel_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_inspired_researcher', NULL, NULL, 0, 0, 0, '08_ancrel_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_inspired_surveyor', NULL, NULL, 0, 0, 0, '08_ancrel_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_governor_oracle', NULL, NULL, 0, 0, 0, '08_ancrel_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_adaptive_lithoid', 2, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_lithoid', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive_lithoid', 'trait_nonadaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive_lithoid', 'trait_extremely_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive_lithoid', 'trait_robust');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive_lithoid', 'trait_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive_lithoid', 'trait_shelled');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_lithoid', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_lithoid', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_lithoid', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_lithoid', 'lithoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_lithoid', 'species');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_lithoid', 'genetic_ascension');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_lithoid', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_rapid_breeders_lithoid', 2, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_rapid_breeders_lithoid', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders_lithoid', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders_lithoid', 'trait_rapid_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders_lithoid', 'trait_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders_lithoid', 'trait_plantoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders_lithoid', 'trait_lithoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders_lithoid', 'trait_tiyanki');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders_lithoid', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders_lithoid', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders_lithoid', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders_lithoid', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders_lithoid', 'lithoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders_lithoid', 'species');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders_lithoid', 'genetic_ascension');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders_lithoid', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_delicious', 2, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_delicious', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_delicious', 'trait_infernal');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_delicious', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_delicious', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_delicious', 'food');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_delicious', 'livestock');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_delicious', 'genetic_ascension');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_nerve_stapled', 4, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nerve_stapled', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nerve_stapled', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nerve_stapled', 'trait_intelligent');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nerve_stapled', 'trait_erudite');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nerve_stapled', 'trait_natural_engineers');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nerve_stapled', 'trait_natural_physicists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nerve_stapled', 'trait_natural_sociologists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nerve_stapled', 'trait_talented');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nerve_stapled', 'trait_zombie');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nerve_stapled', 'trait_chromalogs');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nerve_stapled', 'trait_camouflage');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nerve_stapled', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nerve_stapled', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nerve_stapled', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nerve_stapled', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nerve_stapled', 'blocks_leaders');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nerve_stapled', 'empire_size');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nerve_stapled', 'genetic_ascension');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nerve_stapled', 'drawbacks');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_fertile', 4, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_fertile', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_fertile', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fertile', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fertile', 'trait_vat_grown');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fertile', 'trait_clone_soldier_infertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fertile', 'trait_clone_soldier_infertile_full_potential');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fertile', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fertile', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fertile', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fertile', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fertile', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fertile', 'genetic_ascension');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robust', 4, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robust', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robust', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robust', 'trait_nonadaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robust', 'trait_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robust', 'trait_extremely_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robust', 'trait_adaptive_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robust', 'trait_shelled');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robust', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robust', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robust', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robust', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robust', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robust', 'genetic_ascension');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_erudite', 4, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_erudite', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_erudite', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_erudite', 'trait_nerve_stapled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_erudite', 'trait_intelligent');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_erudite', 'trait_syncretic_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_erudite', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_erudite', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_erudite', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_erudite', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_erudite', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_erudite', 'genetic_ascension');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_vat_grown', 2, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_vat_grown', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_vat_grown', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_vat_grown', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_vat_grown', 'trait_rapid_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_vat_grown', 'trait_rapid_breeders_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_vat_grown', 'trait_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_vat_grown', 'trait_necrophage');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_vat_grown', 'trait_clone_soldier_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_vat_grown', 'trait_humanoid_existential_iteroparity');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_vat_grown', 'trait_humanoid_psychological_infertility');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_vat_grown', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_vat_grown', 'trait_incubator');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_vat_grown', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_vat_grown', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_vat_grown', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_vat_grown', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_vat_grown', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_vat_grown', 'genetic_ascension');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_vat_grown', 'drawbacks');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_felsic', 2, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_felsic', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_felsic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_felsic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_felsic', 'livestock');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_felsic', 'mineral');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_felsic', 'genetic_ascension');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_ductile', 2, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_ductile', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_ductile', 'INF');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ductile', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ductile', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ductile', 'alloys');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ductile', 'livestock');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ductile', 'genetic_ascension');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_natural_machinist', 3, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_machinist', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_machinist', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_machinist', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_machinist', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_machinist', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_machinist', 'alloys');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_machinist', 'consumer_goods');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_machinist', 'genetic_ascension');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_drake_scaled', 3, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_drake_scaled', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_drake_scaled', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_drake_scaled', 'trait_lithoid_gaseous_byproducts');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_drake_scaled', 'trait_lithoid_scintillating');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_drake_scaled', 'trait_lithoid_volatile_excretions');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_drake_scaled', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_drake_scaled', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_drake_scaled', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_drake_scaled', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_drake_scaled', 'alloys');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_drake_scaled', 'leviathan');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_drake_scaled', 'genetic_ascension');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_voidling', 3, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_voidling', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_voidling', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_voidling', 'trait_plantoid_phototrophic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_voidling', 'trait_plantoid_radiotrophic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_voidling', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_voidling', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_voidling', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_voidling', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_voidling', 'leviathan');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_voidling', 'genetic_ascension');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_tiyanki', 3, NULL, 0, 0, 0, '09_ascension_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_tiyanki', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_tiyanki', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tiyanki', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tiyanki', 'trait_rapid_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tiyanki', 'trait_rapid_breeders_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tiyanki', 'trait_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tiyanki', 'trait_plantoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tiyanki', 'trait_lithoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tiyanki', 'trait_necrophage');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tiyanki', 'trait_clone_soldier_infertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tiyanki', 'trait_clone_soldier_infertile_full_potential');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tiyanki', 'trait_clone_soldier_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tiyanki', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_tiyanki', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_tiyanki', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_tiyanki', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_tiyanki', 'leviathan');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_tiyanki', 'genetic_ascension');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_bulwark_watcher', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_bulwark_retaliator', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_bulwark_sentinel', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_scholarium_investigator', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_scholarium_explorer', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_scholarium_observer', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_prospectorium_extractor', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_prospectorium_optimizer', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_prospectorium_refiner', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_admiral_mind_wipe_01', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_admiral_mind_wipe_02', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_general_mind_wipe_01', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_general_mind_wipe_02', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_scientist_mind_wipe_01', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_scientist_mind_wipe_02', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_ruler_mind_wipe_01', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_ruler_mind_wipe_02', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('gestalt_trait_commander_mind_wipe_01', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('gestalt_trait_commander_mind_wipe_02', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('gestalt_trait_general_mind_wipe_01', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('gestalt_trait_general_mind_wipe_02', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('gestalt_trait_scientist_mind_wipe_02', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('gestalt_trait_ruler_mind_wipe_01', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('gestalt_trait_ruler_mind_wipe_02', 0, NULL, 0, 0, 0, '09_overlord_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_incubator', 2, NULL, 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_incubator', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_incubator', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_incubator', 'trait_pyroclastic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_incubator', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_incubator', 'trait_rapid_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_incubator', 'trait_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_incubator', 'trait_plantoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_incubator', 'trait_lithoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_incubator', 'trait_rapid_breeders_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_incubator', 'trait_humanoid_existential_iteroparity');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_incubator', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_incubator', 'trait_wilderness');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_incubator', 'trait_vat_grown');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_incubator', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_incubator', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_incubator', 'pop_growth');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_inorganic_breath', 3, NULL, 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_inorganic_breath', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_inorganic_breath', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inorganic_breath', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inorganic_breath', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inorganic_breath', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inorganic_breath', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inorganic_breath', 'drawbacks');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_noxious', 1, NULL, 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_noxious', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_noxious', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_noxious', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_noxious', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_noxious', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_noxious', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_noxious', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_noxious', 'drawbacks');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_exotic_metabolism', 1, NULL, 0, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_exotic_metabolism', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_exotic_metabolism', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exotic_metabolism', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exotic_metabolism', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exotic_metabolism', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exotic_metabolism', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exotic_metabolism', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exotic_metabolism', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exotic_metabolism', 'genetic_ascension');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exotic_metabolism', 'drawbacks');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_mod_overtuned', 2, 'overtuned', 1, 1, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_overtuned', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_overtuned', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_overtuned', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_overtuned', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_overtuned', 'automod');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_overtuned', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_overtuned', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_spliced_adaptability', 1, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_spliced_adaptability', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_spliced_adaptability', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spliced_adaptability', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spliced_adaptability', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spliced_adaptability', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spliced_adaptability', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spliced_adaptability', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_juiced_power', 1, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_juiced_power', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_juiced_power', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_farm_hands', 1, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_farm_hands', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_farm_hands', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'food');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_crack_miner', 1, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_crack_miner', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_crack_miner', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'mineral');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_technical_skill', 1, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_technical_skill', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_technical_skill', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill', 'energy');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_commercial_genius', 1, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_commercial_genius', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_commercial_genius', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_genius', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_genius', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_genius', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_genius', 'trade');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_genius', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_genius', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_crafted_smiles', 1, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_crafted_smiles', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_crafted_smiles', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_low_maintenance', 1, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_low_maintenance', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_low_maintenance', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance', 'consumer_goods');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_artificial_intelligence', 1, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_artificial_intelligence', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_artificial_intelligence', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_artificial_intelligence', 'trait_syncretic_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_artificial_intelligence', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_artificial_intelligence', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_artificial_intelligence', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_artificial_intelligence', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_artificial_intelligence', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_artificial_intelligence', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_gene_mentorship', 1, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_gene_mentorship', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_gene_mentorship', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_gene_mentorship', 'trait_syncretic_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_gene_mentorship', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_gene_mentorship', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_gene_mentorship', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_gene_mentorship', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_expressed_tradition', 1, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_expressed_tradition', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_expressed_tradition', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradition', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradition', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradition', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradition', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradition', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradition', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_elevated_synapses', 2, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_elevated_synapses', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_elevated_synapses', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_elevated_synapses', 'trait_syncretic_proles');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_elevated_synapses', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_elevated_synapses', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_elevated_synapses', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_elevated_synapses', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_elevated_synapses', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_elevated_synapses', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_preplanned_growth', 2, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_preplanned_growth', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_preplanned_growth', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growth', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growth', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growth', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growth', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growth', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growth', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_excessive_endurance', 3, 'overtuned', 1, 0, 0, '09_tox_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_excessive_endurance', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_excessive_endurance', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_excessive_endurance', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_excessive_endurance', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_excessive_endurance', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_excessive_endurance', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_excessive_endurance', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_excessive_endurance', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_auto_mod_cyborg', 2, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_cyborg', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_cyborg', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_cyborg', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_cyborg', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_cyborg', 'automod');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_cyborg', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_power_drills', 1, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_power_drills', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_power_drills', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_drills', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_drills', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_drills', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_drills', 'mineral');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_drills', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_harvesters', 1, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_harvesters', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_harvesters', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_harvesters', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_harvesters', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_harvesters', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_harvesters', 'food');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_harvesters', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_superconductive', 1, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_superconductive', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_superconductive', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_superconductive', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_superconductive', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_superconductive', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_superconductive', 'energy');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_superconductive', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_efficient_processors', 2, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_efficient_processors', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_efficient_processors', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_efficient_processors', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_efficient_processors', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_efficient_processors', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_efficient_processors', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_logic_engines', 1, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_logic_engines', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_logic_engines', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_logic_engines', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_logic_engines', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_logic_engines', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_logic_engines', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_logic_engines', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_loyalty_circuits', 1, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_loyalty_circuits', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_loyalty_circuits', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_loyalty_circuits', 'trait_cyborg_apathy_loops');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_loyalty_circuits', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_loyalty_circuits', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_loyalty_circuits', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_loyalty_circuits', 'cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_loyalty_circuits', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_double_jointed', 1, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_double_jointed', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_double_jointed', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_double_jointed', 'trait_cyborg_bulky');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_double_jointed', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_double_jointed', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_double_jointed', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_double_jointed', 'migration');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_double_jointed', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_bulky', -2, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bulky', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bulky', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_bulky', 'trait_cyborg_double_jointed');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bulky', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bulky', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bulky', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bulky', 'migration');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bulky', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_enhanced_memory', 1, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_enhanced_memory', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_enhanced_memory', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_enhanced_memory', 'trait_cyborg_limited_memory');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enhanced_memory', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enhanced_memory', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enhanced_memory', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enhanced_memory', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_durable', 1, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_durable', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_durable', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_durable', 'trait_cyborg_high_maintenance');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_durable', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_durable', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_durable', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_durable', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_high_maintenance', -2, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_high_maintenance', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_high_maintenance', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_high_maintenance', 'trait_cyborg_durable');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_maintenance', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_maintenance', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_maintenance', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_maintenance', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_learning_algorithms', 1, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_learning_algorithms', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_learning_algorithms', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_learning_algorithms', 'trait_cyborg_neural_limiters');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_learning_algorithms', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_learning_algorithms', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_learning_algorithms', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_learning_algorithms', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_power_intensive', -1, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_power_intensive', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_power_intensive', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_intensive', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_intensive', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_intensive', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_intensive', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_neural_limiters', -2, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_neural_limiters', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_neural_limiters', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_neural_limiters', 'trait_cyborg_learning_algorithms');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_neural_limiters', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_neural_limiters', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_neural_limiters', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_neural_limiters', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_streamlined_protocols', 1, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_streamlined_protocols', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_streamlined_protocols', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_streamlined_protocols', 'trait_cyborg_high_bandwidth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_streamlined_protocols', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_streamlined_protocols', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_streamlined_protocols', 'empire_size');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_streamlined_protocols', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_high_bandwidth', -2, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_high_bandwidth', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_high_bandwidth', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_high_bandwidth', 'trait_cyborg_streamlined_protocols');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_bandwidth', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_bandwidth', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_bandwidth', 'empire_size');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_bandwidth', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_trading_algorithms', 1, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_trading_algorithms', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_trading_algorithms', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_trading_algorithms', 'trait_cyborg_scarcity_algorithms');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_trading_algorithms', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_trading_algorithms', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_trading_algorithms', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_trading_algorithms', 'trade');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_trading_algorithms', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_stainless_steel_smile', 1, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_stainless_steel_smile', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_stainless_steel_smile', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_stainless_steel_smile', 'trait_cyborg_welded_countenance');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_stainless_steel_smile', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_stainless_steel_smile', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_stainless_steel_smile', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_stainless_steel_smile', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_stainless_steel_smile', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_welded_countenance', -2, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_welded_countenance', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_welded_countenance', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_welded_countenance', 'trait_cyborg_stainless_steel_smile');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_welded_countenance', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_welded_countenance', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_welded_countenance', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_welded_countenance', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_apathy_loops', -1, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_apathy_loops', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_apathy_loops', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_apathy_loops', 'trait_cyborg_loyalty_circuits');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_apathy_loops', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_apathy_loops', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_apathy_loops', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_apathy_loops', 'cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_apathy_loops', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_bionic_engineers', 1, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bionic_engineers', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bionic_engineers', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_bionic_engineers', 'trait_cyborg_bionic_physicists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_bionic_engineers', 'trait_cyborg_bionic_sociologists');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_engineers', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_engineers', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_engineers', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_engineers', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_engineers', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_bionic_physicists', 1, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bionic_physicists', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bionic_physicists', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_bionic_physicists', 'trait_cyborg_bionic_engineers');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_bionic_physicists', 'trait_cyborg_bionic_sociologists');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_physicists', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_physicists', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_physicists', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_physicists', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_physicists', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_bionic_sociologists', 1, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bionic_sociologists', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bionic_sociologists', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_bionic_sociologists', 'trait_cyborg_bionic_physicists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_bionic_sociologists', 'trait_cyborg_bionic_engineers');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_sociologists', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_sociologists', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_sociologists', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_sociologists', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_sociologists', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_integrated_weaponry', 1, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_integrated_weaponry', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_integrated_weaponry', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_integrated_weaponry', 'trait_cyborg_delicate_frames');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_integrated_weaponry', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_integrated_weaponry', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_integrated_weaponry', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_integrated_weaponry', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_mass_produced', 1, 'cyborg', 1, 1, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_mass_produced', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_mass_produced', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_mass_produced', 'cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_mass_produced', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_mass_produced', 'pop_growth');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_propaganda_machines', 1, 'cyborg', 1, 1, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_propaganda_machines', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_propaganda_machines', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_propaganda_machines', 'cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_propaganda_machines', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_propaganda_machines', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_propaganda_machines', 'unity');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_delicate_frames', -1, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_delicate_frames', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_delicate_frames', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_delicate_frames', 'trait_cyborg_integrated_weaponry');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_delicate_frames', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_delicate_frames', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_delicate_frames', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_delicate_frames', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_delicate_frames', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_limited_memory', -2, 'cyborg', 1, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_limited_memory', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_limited_memory', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_limited_memory', 'trait_cyborg_enhanced_memory');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_limited_memory', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_limited_memory', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_limited_memory', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_limited_memory', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_scarcity_algorithms', -1, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_scarcity_algorithms', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_scarcity_algorithms', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_scarcity_algorithms', 'trait_cyborg_trading_algorithms');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_scarcity_algorithms', 'trait_thrifty');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scarcity_algorithms', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scarcity_algorithms', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scarcity_algorithms', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scarcity_algorithms', 'trade');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scarcity_algorithms', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_climate_adjustment_dry', 1, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_dry', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_dry', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_dry', 'trait_cyborg_climate_adjustment_wet');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_dry', 'trait_cyborg_climate_adjustment_cold');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_dry', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_dry', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_dry', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_dry', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_climate_adjustment_wet', 1, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_wet', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_wet', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_wet', 'trait_cyborg_climate_adjustment_cold');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_wet', 'trait_cyborg_climate_adjustment_dry');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_wet', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_wet', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_wet', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_wet', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_climate_adjustment_cold', 1, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_cold', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_cold', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_cold', 'trait_cyborg_climate_adjustment_wet');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_cold', 'trait_cyborg_climate_adjustment_dry');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_cold', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_cold', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_cold', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_cold', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_ancient_dreadnought', 2, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_ancient_dreadnought', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_ancient_dreadnought', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ancient_dreadnought', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ancient_dreadnought', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ancient_dreadnought', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ancient_dreadnought', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ancient_dreadnought', 'alloys');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ancient_dreadnought', 'leviathan');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ancient_dreadnought', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_enigmatic_fortress', 2, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_enigmatic_fortress', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_enigmatic_fortress', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enigmatic_fortress', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enigmatic_fortress', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enigmatic_fortress', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enigmatic_fortress', 'leviathan');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enigmatic_fortress', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_infinity_sphere', 2, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_infinity_sphere', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_infinity_sphere', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_infinity_sphere', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_infinity_sphere', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_infinity_sphere', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_infinity_sphere', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_infinity_sphere', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_scavenger_bot', 2, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_scavenger_bot', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_scavenger_bot', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scavenger_bot', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scavenger_bot', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scavenger_bot', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scavenger_bot', 'leviathan');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scavenger_bot', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_creed_of_construction', 0, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_construction', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_construction', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_construction', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_construction', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_construction', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_construction', 'alloys');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_construction', 'consumer_goods');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_construction', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_construction', 'cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_construction', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_creed_of_war', 0, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_war', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_war', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_war', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_war', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_war', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_war', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_war', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_war', 'cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_war', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_creed_of_research', 0, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_research', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_research', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_research', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_research', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_research', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_research', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_research', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_research', 'cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_research', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_creed_of_labor', 0, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_labor', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_labor', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_labor', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_labor', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_labor', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_labor', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_labor', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_labor', 'cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_labor', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cyborg_ritualistic_implants', 0, 'cyborg', 0, 0, 0, '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_ritualistic_implants', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_ritualistic_implants', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ritualistic_implants', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ritualistic_implants', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ritualistic_implants', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ritualistic_implants', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ritualistic_implants', 'alloys');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ritualistic_implants', 'consumer_goods');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ritualistic_implants', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ritualistic_implants', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ritualistic_implants', 'cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ritualistic_implants', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_fotd_scientist', 0, NULL, 0, 0, 0, '11_first_contact_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_fotd_commander', 0, NULL, 0, 0, 0, '11_first_contact_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_preftl_haggler', 1, NULL, 0, 0, 0, '11_first_contact_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_zealot', 0, NULL, 0, 0, 0, '11_first_contact_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_plague_hardened', 0, NULL, 0, 0, 0, '11_first_contact_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_stargazer', 0, NULL, 0, 0, 0, '11_first_contact_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_stargazer', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_stargazer', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_stargazer', 'trait_presapient_earthbound');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_stargazer', 'trait_presapient_starborn');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_stargazer', 'trait_sedentary');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_stargazer', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_stargazer', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_stargazer', 'migration');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_stargazer', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_stargazer', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_rift_warped', NULL, NULL, 0, 0, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_partially_digested', NULL, NULL, 0, 0, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_obelisk_curse', NULL, NULL, 0, 0, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_planar_theorist', NULL, NULL, 1, 1, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_planar_theorist_2', NULL, NULL, 1, 1, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_academic_astral_rift_expert', NULL, NULL, 1, 1, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_academic_astral_rift_expert_2', NULL, NULL, 1, 1, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_academic_astral_rift_expert_3', NULL, NULL, 1, 1, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_foreign_consciousness', NULL, NULL, 0, 0, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_black_light_blinded', NULL, NULL, 0, 0, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_sanitary_drone', NULL, NULL, 0, 0, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_spacebender', NULL, NULL, 0, 0, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_energy_weapon_specialist', NULL, NULL, 0, 0, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_blorg_insight', NULL, NULL, 0, 0, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_plasmic', 0, NULL, 0, 0, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plasmic', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plasmic', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plasmic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plasmic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plasmic', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plasmic', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plasmic', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plasmic', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_exd', 0, NULL, 1, 0, 0, '12_astral_planes_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_exd', 'OTHER');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_exd', 'EXD');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exd', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exd', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exd', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exd', 'production');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exd', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exd', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_storm_touched', 0, NULL, 0, 0, 0, '13_cosmic_storms_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_storm_touched', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_storm_touched', 'LITHOID');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_storm_touched', 'MACHINE');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_storm_rider_commander', 0, NULL, 0, 0, 0, '13_cosmic_storms_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_storm_rider_scientist', 0, NULL, 0, 0, 0, '13_cosmic_storms_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_storm_rider_official', 0, NULL, 0, 0, 0, '13_cosmic_storms_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_storm_fused', 0, NULL, 0, 0, 0, '13_cosmic_storms_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pathogenic_genes', -1, NULL, 0, 0, 0, '13_machine_age_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pathogenic_genes', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pathogenic_genes', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_rapid_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_plantoid_bloomed');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_humanoid_existential_iteroparity');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_humanoid_psychological_infertility');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_incubator');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_exotic_metabolism');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_plasmic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_plantoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_lithoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_vat_grown');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_tiyanki');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_nomadic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_sedentary');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_nonadaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_extremely_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_nascent_stage');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pathogenic_genes', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pathogenic_genes', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pathogenic_genes', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_limited_cybernetic', 0, NULL, 0, 0, 0, '13_machine_age_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_limited_cybernetic', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_limited_cybernetic', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_limited_cybernetic', 'trait_latent_psionic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_limited_cybernetic', 'trait_psionic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_cybernetic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_cybernetic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_cybernetic', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_cybernetic', 'cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_cybernetic', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_limited_cyborg', NULL, NULL, 0, 0, 0, '13_machine_age_traits.txt');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('leader_trait_limited_cyborg', 'leader_trait_psionic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('leader_trait_limited_cyborg', 'leader_trait_chosen');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_robotic_surrogate', NULL, NULL, 0, 0, 0, '13_machine_age_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_ritualistic_implants_cyborg', NULL, NULL, 0, 0, 0, '13_machine_age_traits.txt');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('leader_trait_ritualistic_implants_cyborg', 'leader_trait_psionic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('leader_trait_ritualistic_implants_cyborg', 'leader_trait_chosen');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('leader_trait_ritualistic_implants_cyborg', 'leader_trait_cyborg');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cetanas_prisoner', 0, NULL, 0, 0, 0, '13_machine_age_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cetanas_prisoner', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cetanas_prisoner', 'MACHINE');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_buccaneer', 1, NULL, 0, 0, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_buccaneer_2', NULL, NULL, 0, 1, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_buccaneer_3', NULL, NULL, 0, 1, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_trailblazer', 1, NULL, 0, 0, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_trailblazer_2', NULL, NULL, 0, 1, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_trailblazer_3', NULL, NULL, 0, 1, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_treasure_hoarder', 1, NULL, 0, 0, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_treasure_hoarder_2', NULL, NULL, 0, 1, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_treasure_hoarder_3', NULL, NULL, 0, 1, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_pirate_queen', NULL, NULL, 0, 0, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_trophy_hunter', NULL, NULL, 0, 0, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_gifted_trapper', NULL, NULL, 0, 0, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_void_hunter', NULL, NULL, 1, 1, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_void_hunter_2', NULL, NULL, 1, 1, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_void_tracker', NULL, NULL, 1, 1, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_void_tracker_2', NULL, NULL, 1, 1, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_cutholoid_victim', NULL, NULL, 0, 0, 0, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_egg_laying', 2, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_egg_laying', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_egg_laying', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_egg_laying', 'REP');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_egg_laying', 'AVI');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_egg_laying', 'AQUATIC');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_egg_laying', 'trait_pyroclastic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_egg_laying', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_egg_laying', 'trait_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_egg_laying', 'trait_rapid_breeders_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_egg_laying', 'trait_plantoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_egg_laying', 'trait_lithoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_egg_laying', 'trait_vat_grown');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_egg_laying', 'trait_tiyanki');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_egg_laying', 'trait_humanoid_existential_iteroparity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 'avian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 'reptilian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 'aquatic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_seasonal_dormancy', 2, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_seasonal_dormancy', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_seasonal_dormancy', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_seasonal_dormancy', 'MAM');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_seasonal_dormancy', 'REP');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_seasonal_dormancy', 'trait_wasteful');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_seasonal_dormancy', 'trait_conservational');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_seasonal_dormancy', 'trait_low_maintenance');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_seasonal_dormancy', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_seasonal_dormancy', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_seasonal_dormancy', 'upkeep');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_seasonal_dormancy', 'mammalian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_seasonal_dormancy', 'reptilian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_seasonal_dormancy', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_hollow_bones', -3, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_hollow_bones', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_hollow_bones', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_hollow_bones', 'TOX');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_hollow_bones', 'AVI');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_hollow_bones', 'trait_strong');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_hollow_bones', 'trait_very_strong');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_hollow_bones', 'trait_weak');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_hollow_bones', 'trait_tankbound');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hollow_bones', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hollow_bones', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hollow_bones', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hollow_bones', 'avian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hollow_bones', 'toxoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hollow_bones', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_rooted', -3, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_rooted', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_rooted', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_rooted', 'FUN');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_rooted', 'PLANT');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rooted', 'trait_sedentary');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rooted', 'trait_nomadic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rooted', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rooted', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rooted', 'migration');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rooted', 'fungoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rooted', 'plantoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rooted', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_acidic_vascularity', 1, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_acidic_vascularity', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_acidic_vascularity', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_acidic_vascularity', 'NECROID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_acidic_vascularity', 'TOX');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_acidic_vascularity', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_acidic_vascularity', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_acidic_vascularity', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_acidic_vascularity', 'necroid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_acidic_vascularity', 'toxoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_acidic_vascularity', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_shelled', 3, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_shelled', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_shelled', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_shelled', 'MOL');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_shelled', 'NECROID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_shelled', 'trait_nonadaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_shelled', 'trait_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_shelled', 'trait_extremely_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_shelled', 'trait_robust');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_shelled', 'trait_adaptive_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_shelled', 'trait_communal');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_shelled', 'trait_spatial_mastery');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'necroid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'molluscoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_camouflage', 1, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_camouflage', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_camouflage', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_camouflage', 'AQUATIC');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_camouflage', 'ART');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_camouflage', 'REP');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_camouflage', 'trait_nerve_stapled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_camouflage', 'trait_natural_physicists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_camouflage', 'trait_chromalogs');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'aquatic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'arthropoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'reptilian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_chromalogs', 4, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_chromalogs', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_chromalogs', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_chromalogs', 'AQUATIC');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_chromalogs', 'ART');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_chromalogs', 'REP');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_chromalogs', 'trait_nerve_stapled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_chromalogs', 'trait_natural_physicists');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_chromalogs', 'trait_camouflage');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'aquatic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'arthropoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'reptilian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_brittle', -3, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_brittle', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_brittle', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_brittle', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_brittle', 'NECROID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brittle', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brittle', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brittle', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brittle', 'lithoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brittle', 'necroid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brittle', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_familial', 2, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_familial', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_familial', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_familial', 'HUM');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_familial', 'MAM');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_familial', 'AVI');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'humanoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'mammalian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'avian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'individual');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_permeable_skin', -1, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_permeable_skin', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_permeable_skin', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_permeable_skin', 'MOL');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_permeable_skin', 'AQUATIC');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_permeable_skin', 'trait_adaptive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_permeable_skin', 'trait_extremely_adaptive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_permeable_skin', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_permeable_skin', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_permeable_skin', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_permeable_skin', 'molluscoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_permeable_skin', 'aquatic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_permeable_skin', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_genetic_memory', 3, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_genetic_memory', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_genetic_memory', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_genetic_memory', 'HUM');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_genetic_memory', 'MAM');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_genetic_memory', 'NECROID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_genetic_memory', 'trait_nonadaptive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory', 'humanoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory', 'mammalian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory', 'necroid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_nascent_stage', -2, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nascent_stage', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nascent_stage', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_nascent_stage', 'HUM');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_nascent_stage', 'MAM');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_nascent_stage', 'REP');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_nascent_stage', 'ART');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nascent_stage', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nascent_stage', 'trait_humanoid_psychological_infertility');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nascent_stage', 'trait_unplugged_cybernetic_positives_3');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nascent_stage', 'trait_unplugged_cybernetic_positives_2');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nascent_stage', 'trait_unplugged_cybernetic_positives_1');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nascent_stage', 'trait_pathogenic_genes');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nascent_stage', 'trait_wilderness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 'humanoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 'mammalian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 'reptilian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 'arthropoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_flight', 2, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_flight', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_flight', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_flight', 'AVI');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_flight', 'ART');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_flight', 'trait_spatial_mastery');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'avian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'arthropoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_spatial_mastery', 4, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_spatial_mastery', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_spatial_mastery', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_spatial_mastery', 'AVI');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_spatial_mastery', 'ART');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_spatial_mastery', 'trait_communal');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_spatial_mastery', 'trait_shelled');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_spatial_mastery', 'trait_flight');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery', 'housing');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery', 'avian');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery', 'arthropoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_spare_organs', 2, NULL, 1, 1, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_spare_organs', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_spare_organs', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_spare_organs', 'MOL');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_spare_organs', 'NECROID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_spare_organs', 'TOX');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spare_organs', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spare_organs', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spare_organs', 'army');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spare_organs', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spare_organs', 'molluscoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spare_organs', 'necroid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spare_organs', 'toxoid');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spare_organs', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_malleable_genes', 6, 'malleable', 0, 0, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_genes', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_genes', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_malleable_genes', 'trait_adaptive_mutations');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_genes', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_genes', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_genes', 'automod');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_genes', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_malleable_minerals', 0, 'malleable', 0, 0, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_minerals', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_minerals', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_minerals', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_minerals', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_minerals', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_minerals', 'mineral');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_minerals', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_malleable_energy', 0, 'malleable', 0, 0, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_energy', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_energy', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_energy', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_energy', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_energy', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_energy', 'energy');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_energy', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_malleable_food', 0, 'malleable', 0, 0, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_food', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_food', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_food', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_food', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_food', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_food', 'food');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_food', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_malleable_research', 0, 'malleable', 0, 0, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_research', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_research', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_research', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_research', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_research', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_research', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_research', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_malleable_unity', 0, 'malleable', 0, 0, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_unity', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_unity', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_unity', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_unity', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_unity', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_unity', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_unity', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_malleable_forge', 0, 'malleable', 0, 0, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_forge', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_forge', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_forge', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_forge', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_forge', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_forge', 'alloys');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_forge', 'consumer_goods');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_forge', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_malleable_trade', 0, 'malleable', 0, 0, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_trade', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_trade', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_trade', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_trade', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_trade', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_trade', 'trade');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_trade', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_malleable_ameneties', 0, 'malleable', 0, 0, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_ameneties', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_ameneties', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_ameneties', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_ameneties', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_ameneties', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_ameneties', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_ameneties', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_adaptive_mutations', 0, 'mutation', 0, 0, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_mutations', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_mutations', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive_mutations', 'trait_wilderness');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive_mutations', 'trait_malleable_genes');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_mutations', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_mutations', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_mutations', 'automod');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_mutations', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_adaptive_minerals', 0, 'mutation', 0, 0, 1, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_minerals', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_minerals', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_minerals', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_minerals', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_minerals', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_minerals', 'mineral');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_minerals', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_adaptive_energy', 0, 'mutation', 0, 0, 1, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_energy', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_energy', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_energy', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_energy', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_energy', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_energy', 'energy');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_energy', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_adaptive_food', 0, 'mutation', 0, 0, 1, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_food', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_food', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_food', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_food', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_food', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_food', 'food');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_food', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_adaptive_research', 0, 'mutation', 0, 0, 1, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_research', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_research', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_research', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_research', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_research', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_research', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_research', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_adaptive_unity', 0, 'mutation', 0, 0, 1, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_unity', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_unity', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_unity', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_unity', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_unity', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_unity', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_unity', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_adaptive_forge', 0, 'mutation', 0, 0, 1, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_forge', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_forge', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_forge', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_forge', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_forge', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_forge', 'alloys');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_forge', 'consumer_goods');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_forge', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_adaptive_trade', 0, 'mutation', 0, 0, 1, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_trade', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_trade', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_trade', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_trade', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_trade', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_trade', 'trade');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_trade', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_adaptive_amenities', 0, 'mutation', 0, 0, 1, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_amenities', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_amenities', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_amenities', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_amenities', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_amenities', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_amenities', 'amenities');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_amenities', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_wilderness', 0, NULL, 0, 0, 0, '15_biogenesis_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_wilderness', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_wilderness', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_wilderness', 'trait_incubator');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_wilderness', 'trait_nomadic');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_wilderness', 'trait_sedentary');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_wilderness', 'trait_vat_grown');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_wilderness', 'trait_nascent_stage');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_wilderness', 'trait_auto_mod_biological');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_wilderness', 'trait_adaptive_mutations');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_wilderness', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_wilderness', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_altered_metabolism', NULL, NULL, 0, 0, 0, '15_extreme_frontiers_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_hardened_survivalist', NULL, NULL, 0, 0, 0, '15_extreme_frontiers_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_judicial_subjugation', NULL, NULL, 0, 0, 0, '15_extreme_frontiers_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_judicial_execution', NULL, NULL, 0, 0, 0, '15_extreme_frontiers_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_slimeborn', 0, NULL, 0, 0, 0, '15_extreme_frontiers_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_slimeborn', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_inner_darkness', NULL, NULL, 0, 0, 0, '15_strange_worlds_traits.txt');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inner_darkness', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inner_darkness', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inner_darkness', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inner_darkness', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inner_darkness', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inner_darkness', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inner_darkness', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_geleboric_mutations', NULL, NULL, 0, 0, 0, '15_strange_worlds_traits.txt');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutations', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutations', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutations', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutations', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutations', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutations', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutations', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutations', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_psionic_ephapse', NULL, NULL, 0, 0, 0, '15_strange_worlds_traits.txt');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic_ephapse', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic_ephapse', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic_ephapse', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic_ephapse', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic_ephapse', 'psionic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic_ephapse', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_unplugged_cybernetic_positives_3', 0, NULL, 0, 0, 0, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_positives_3', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_positives_3', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_unplugged_cybernetic_positives_3', 'trait_nascent_stage');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_unplugged_cybernetic_positives_3', NULL, NULL, 1, 0, 0, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_unplugged_cybernetic_positives_2', 0, NULL, 0, 0, 0, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_positives_2', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_positives_2', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_unplugged_cybernetic_positives_2', 'trait_nascent_stage');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_unplugged_cybernetic_positives_2', NULL, NULL, 1, 0, 0, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_unplugged_cybernetic_positives_1', 0, NULL, 0, 0, 0, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_positives_1', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_positives_1', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_unplugged_cybernetic_positives_1', 'trait_nascent_stage');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_unplugged_cybernetic_positives_1', NULL, NULL, 1, 0, 0, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_unplugged_cybernetic_negatives_3', 0, NULL, 0, 0, 0, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_negatives_3', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_negatives_3', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_unplugged_cybernetic_negatives_2', 0, NULL, 0, 0, 0, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_negatives_2', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_negatives_2', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_unplugged_cybernetic_negatives_1', 0, NULL, 0, 0, 0, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_negatives_1', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_negatives_1', 'LITHOID');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_unplugged_decyberized', 0, NULL, 0, 0, 0, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_decyberized', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_decyberized', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_decyberized', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_decyberized', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_decyberized', 'special');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_decyberized', 'happiness');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_decyberized', 'research');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_decyberized', 'unity');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_decyberized', 'ethic_attraction');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_decyberized', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_unplugged_neurocalmed', 0, NULL, 0, 0, 0, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_neurocalmed', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_neurocalmed', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurocalmed', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurocalmed', 'cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurocalmed', 'species');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurocalmed', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurocalmed', 'empire_size');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurocalmed', 'ethic_attraction');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurocalmed', 'individual');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_unplugged_neurosavant', 0, NULL, 0, 0, 0, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_neurosavant', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_neurosavant', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurosavant', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurosavant', 'cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurosavant', 'species');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurosavant', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurosavant', 'leader');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_unplugged_regenoptimized', 0, NULL, 0, 0, 0, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_regenoptimized', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_regenoptimized', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_regenoptimized', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_regenoptimized', 'cybernetic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_regenoptimized', 'species');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_regenoptimized', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_regenoptimized', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_regenoptimized', 'pop_growth');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_infernal', 0, 'normal', 0, 0, 0, '16_infernals_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_infernal', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_infernal', 'PRESAPIENT');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_infernal', 'INF');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_infernal', 'PRE_INF');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_infernal', 'trait_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_infernal', 'trait_organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_infernal', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_infernal', 'species');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_infernal', 'infernal');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_infernal', 'leader');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_infernal', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_infernal', 'special');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_unbreakable_resolve', 2, 'normal', 1, 1, 0, '16_infernals_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unbreakable_resolve', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unbreakable_resolve', 'LITHOID');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unbreakable_resolve', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unbreakable_resolve', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unbreakable_resolve', 'infernal');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unbreakable_resolve', 'stability');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_shell_slag', 2, 'normal', 1, 1, 0, '16_infernals_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_shell_slag', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_shell_slag', 'INF');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_shell_slag', 'trait_invasive');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_shell_slag', 'trait_drake_scaled');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shell_slag', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shell_slag', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shell_slag', 'infernal');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shell_slag', 'species');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shell_slag', 'rare_resource');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shell_slag', 'production');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_robot_assembly_slag', 2, 'robotic', 1, 1, 0, '16_infernals_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_assembly_slag', 'ROBOT');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_assembly_slag', 'MACHINE');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_assembly_slag', 'machine');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_assembly_slag', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_assembly_slag', 'rare_resource');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_assembly_slag', 'production');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_pyroclastic', 1, 'normal', 1, 1, 0, '16_infernals_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pyroclastic', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_pyroclastic', 'INF');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pyroclastic', 'trait_rapid_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pyroclastic', 'trait_incubator');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pyroclastic', 'trait_slow_breeders');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pyroclastic', 'trait_fertile');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pyroclastic', 'trait_rapid_breeders_lithoid');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pyroclastic', 'trait_plantoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pyroclastic', 'trait_lithoid_budding');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pyroclastic', 'trait_vat_grown');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pyroclastic', 'trait_tiyanki');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pyroclastic', 'trait_humanoid_existential_iteroparity');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pyroclastic', 'trait_egg_laying');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pyroclastic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pyroclastic', 'infernal');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pyroclastic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pyroclastic', 'pop_growth');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pyroclastic', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_crucible_community', 1, 'normal', 1, 1, 0, '16_infernals_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_crucible_community', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_crucible_community', 'INF');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crucible_community', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crucible_community', 'infernal');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crucible_community', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crucible_community', 'edict_fund');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('leader_trait_hibernating', NULL, NULL, 0, 0, 0, '16_infernals_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_tankbound', NULL, NULL, 0, 0, 0, '17_shroud_species_traits.txt');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tankbound', 'trait_weak');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tankbound', 'trait_hollow_bones');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_uncanny_intuition', 3, 'psionic', 1, 1, 0, '17_shroud_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_uncanny_intuition', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_uncanny_intuition', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_uncanny_intuition', 'PSIONIC');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uncanny_intuition', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uncanny_intuition', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uncanny_intuition', 'psionic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uncanny_intuition', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cranial_hypertrophy', 2, 'psionic', 1, 1, 0, '17_shroud_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cranial_hypertrophy', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cranial_hypertrophy', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_cranial_hypertrophy', 'PSIONIC');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cranial_hypertrophy', 'trait_intelligent');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cranial_hypertrophy', 'trait_cranial_megatrophy');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_hypertrophy', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_hypertrophy', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_hypertrophy', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_hypertrophy', 'psionic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_hypertrophy', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_cranial_megatrophy', 4, 'psionic', 1, 1, 0, '17_shroud_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cranial_megatrophy', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cranial_megatrophy', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_cranial_megatrophy', 'PSIONIC');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cranial_megatrophy', 'trait_intelligent');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cranial_megatrophy', 'trait_cranial_hypertrophy');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_megatrophy', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_megatrophy', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_megatrophy', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_megatrophy', 'psionic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_megatrophy', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_haunting_visions', -2, 'psionic', 1, 1, 0, '17_shroud_species_traits.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_haunting_visions', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_haunting_visions', 'LITHOID');
+INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_haunting_visions', 'PSIONIC');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_haunting_visions', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_haunting_visions', 'negative');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_haunting_visions', 'pop_output');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_haunting_visions', 'psionic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_haunting_visions', 'species');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_blindness', NULL, NULL, 0, 0, 0, '17_shroud_species_traits.txt');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, source_file)
+            VALUES ('trait_marked', NULL, NULL, 0, 0, 0, '17_shroud_species_traits.txt');
