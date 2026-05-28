@@ -176,9 +176,10 @@ class Writer:
     Both modes can be active simultaneously.
     """
 
-    def __init__(self, sql_path: str | None, sqlite_path: str | None):
-        self._buf = StringIO() if sql_path else None
+    def __init__(self, sql_path: str | None, sqlite_path: str | None, stdout: bool = False):
+        self._buf = StringIO() if (sql_path or stdout) else None
         self._sql_path = sql_path
+        self._stdout = stdout
         self._conn = None
 
         if sqlite_path:
@@ -225,7 +226,11 @@ class Writer:
 
     def close(self):
         if self._buf is not None:
-            Path(self._sql_path).write_text(self._buf.getvalue(), encoding='utf-8')
+            content = self._buf.getvalue()
+            if self._stdout:
+                sys.stdout.write(content)
+            else:
+                Path(self._sql_path).write_text(content, encoding='utf-8')
         if self._conn is not None:
             self._conn.commit()
             self._conn.close()
@@ -341,13 +346,13 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # SQL file (default, ideal for Git)
+  # Print SQL to stdout
   python3 stellaris_portraits.py /path/to/Stellaris
 
-  # Custom file name
+  # Write SQL to a file
   python3 stellaris_portraits.py /path/to/Stellaris --out portraits.sql
 
-  # Write directly to SQLite (no SQL dump)
+  # Write directly to SQLite
   python3 stellaris_portraits.py /path/to/Stellaris --sqlite portraits.db
 
   # Both at once
@@ -356,12 +361,10 @@ Examples:
     )
     ap.add_argument('install_dir',
                     help='Path to the Stellaris installation directory')
-    ap.add_argument('--out', default='portraits.sql', metavar='FILE',
-                    help='Output SQL file (default: portraits.sql); use --no-sql to disable')
-    ap.add_argument('--no-sql', action='store_true',
-                    help='Do not write a .sql file')
+    ap.add_argument('--out', default=None, metavar='FILE',
+                    help='Write SQL statements to this file')
     ap.add_argument('--sqlite', metavar='FILE', default=None,
-                    help='Also write directly to this SQLite database')
+                    help='Write directly to this SQLite database')
     ap.add_argument('--verbose', '-v', action='store_true',
                     help='Verbose output')
     args = ap.parse_args()
@@ -379,26 +382,25 @@ Examples:
               file=sys.stderr)
         sys.exit(1)
 
-    sql_path    = None if args.no_sql else args.out
+    sql_path    = args.out
     sqlite_path = args.sqlite
+    stdout_mode = not sql_path and not sqlite_path
 
-    if not sql_path and not sqlite_path:
-        print("ERROR: no output target specified. Either drop --no-sql or pass --sqlite.",
-              file=sys.stderr)
-        sys.exit(1)
+    # In stdout mode progress goes to stderr so SQL output stays clean
+    progress = sys.stderr if stdout_mode else sys.stdout
 
     if sql_path:
-        print(f"SQL output   : {sql_path}")
+        print(f"SQL output   : {sql_path}", file=progress)
     if sqlite_path:
-        print(f"SQLite DB    : {sqlite_path}")
+        print(f"SQLite DB    : {sqlite_path}", file=progress)
 
-    w = Writer(sql_path, sqlite_path)
+    w = Writer(sql_path, sqlite_path, stdout=stdout_mode)
 
     # --- species_classes ---
     sc_files = sorted(species_dir.glob('*.txt'))
-    print(f"\n[1/2] species_classes: {len(sc_files)} file(s)")
+    print(f"\n[1/2] species_classes: {len(sc_files)} file(s)", file=progress)
     for f in sc_files:
-        print(f"  Reading: {f.name}")
+        print(f"  Reading: {f.name}", file=progress)
         try:
             data = parse_file(f)
             extract_species_classes(data, f.name, w, args.verbose)
@@ -407,9 +409,9 @@ Examples:
 
     # --- portrait_sets ---
     ps_files = sorted(portrait_dir.glob('*.txt')) if portrait_dir.exists() else []
-    print(f"\n[2/2] portrait_sets: {len(ps_files)} file(s)")
+    print(f"\n[2/2] portrait_sets: {len(ps_files)} file(s)", file=progress)
     for f in ps_files:
-        print(f"  Reading: {f.name}")
+        print(f"  Reading: {f.name}", file=progress)
         try:
             data = parse_file(f)
             extract_portrait_sets(data, f.name, w, args.verbose)
@@ -434,10 +436,12 @@ Examples:
 |  Portraits (class)  : {n_portraits:<17}|
 |  Portrait set entries: {n_sets:<16}|
 |  Attributes         : {n_attrs:<17}|
-+---------------------------------------+""")
-    else:
++---------------------------------------+""", file=progress)
+    elif sql_path:
         sql_size = Path(sql_path).stat().st_size
-        print(f"\nDone. SQL file: {sql_path} ({sql_size:,} bytes)")
+        print(f"\nDone. SQL file: {sql_path} ({sql_size:,} bytes)", file=progress)
+    else:
+        print("\nDone.", file=progress)
 
 
 if __name__ == '__main__':
