@@ -128,8 +128,8 @@ CREATE TABLE IF NOT EXISTS species_class (
     key                  TEXT UNIQUE NOT NULL,   -- e.g. "MAMMALIAN"
     archetype            TEXT,                   -- e.g. "BIOLOGICAL"
     graphical_culture    TEXT,                   -- e.g. "mammalian_01"
-    move_pop_sound_group TEXT,
-    portrait_modding     INTEGER DEFAULT 0,      -- boolean (0/1)
+    move_pop_sound_effect TEXT,
+    portrait_modding      INTEGER DEFAULT 1,     -- boolean (0/1), default yes per game docs
     possible_block       TEXT,                   -- raw text of the possible condition
     source_file          TEXT
 );
@@ -234,7 +234,7 @@ class Writer:
 # ---------------------------------------------------------------------------
 
 KNOWN_TOP_KEYS = {
-    'archetype', 'graphical_culture', 'move_pop_sound_group',
+    'archetype', 'graphical_culture', 'move_pop_sound_effect',
     'portrait_modding', 'possible',
     'species_name', 'species_female_name', 'species_plural',
     'species_adjective', 'species_female_adjective',
@@ -246,7 +246,7 @@ KNOWN_TOP_KEYS = {
 
 # Keys handled explicitly and excluded from the generic attribute table
 EXTRACTED_KEYS = {
-    'archetype', 'graphical_culture', 'move_pop_sound_group',
+    'archetype', 'graphical_culture', 'move_pop_sound_effect',
     'portrait_modding', 'possible',
 }
 
@@ -258,13 +258,13 @@ def extract_species_classes(data: dict, source_file: str, w: Writer, verbose: bo
 
         archetype         = class_data.get('archetype')
         graphical_culture = class_data.get('graphical_culture')
-        move_pop_sound    = class_data.get('move_pop_sound_group')
-        portrait_modding  = 1 if class_data.get('portrait_modding', 'no') == 'yes' else 0
+        move_pop_sound    = class_data.get('move_pop_sound_effect')
+        portrait_modding  = 0 if class_data.get('portrait_modding', 'yes') == 'no' else 1
         possible_raw      = str(class_data.get('possible', ''))
 
         w.execute("""
             INSERT OR REPLACE INTO species_class
-                (key, archetype, graphical_culture, move_pop_sound_group,
+                (key, archetype, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (class_key, archetype, graphical_culture, move_pop_sound,
