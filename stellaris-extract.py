@@ -233,9 +233,11 @@ CREATE TABLE IF NOT EXISTS trait_modifier (
     FOREIGN KEY (trait_key) REFERENCES trait(key)
 );
 
-CREATE TABLE IF NOT EXISTS modifier_label (
-    modifier_key TEXT PRIMARY KEY,
-    label        TEXT NOT NULL
+DROP TABLE IF EXISTS modifier_label;
+CREATE TABLE modifier_label (
+    modifier_key     TEXT PRIMARY KEY,
+    label            TEXT NOT NULL,
+    positive_is_good INTEGER NOT NULL DEFAULT 1  -- 0 when a higher value is worse for the empire
 );
 
 CREATE TABLE IF NOT EXISTS species_archetype (
@@ -654,6 +656,38 @@ def extract_traits(data: dict, source_file: str, w: Writer, verbose: bool):
 # Extraction: trait modifiers (flat modifier {} block only — Phase 1)
 # ---------------------------------------------------------------------------
 
+# Modifiers where a higher (more positive) value is worse for the empire/species.
+# Extend this set whenever a new inverted modifier is discovered.
+# Modifier keys whose loc key doesn't follow the automatic MOD_<UPPER> / mod_<lower> pattern.
+# Maps modifier_key → explicit loc key. Extend when new mismatches are discovered.
+MODIFIER_LOC_OVERRIDES: dict[str, str] = {
+    'species_leader_exp_gain': 'MOD_LEADER_SPECIES_EXP_GAIN',
+}
+
+INVERTED_MODIFIERS: frozenset[str] = frozenset({
+    # Upkeep / resource costs
+    'leaders_upkeep_mult',
+    'planet_pops_consumer_goods_upkeep_mult',
+    'planet_pops_organics_alloys_upkeep_mult',
+    'planet_pops_organics_food_upkeep_mult',
+    'planet_pops_organics_minerals_upkeep_mult',
+    'planet_pops_robotics_upkeep_mult',
+    'planet_pops_upkeep_mult',
+    'pop_resettlement_cost_mult',
+    # Resource consumption
+    'pop_amenities_usage_add',
+    'pop_housing_usage_mult',
+    # Administrative burden
+    'species_empire_size_mult',
+    # Combat (taking more damage / longer cooldowns / higher costs = worse)
+    'army_damage_taken_mult',
+    'gravity_snare_cooldown_mult',
+    'gravity_snare_cost_mult',
+    # Trait slot counts (more negative trait slots allowed = worse)
+    'negative_leader_traits_species',
+})
+
+
 def extract_trait_modifiers(data: dict, source_file: str, loc: dict[str, str],
                              w: Writer, verbose: bool):
     # Collect @variable definitions (float) from this file's top level
@@ -709,8 +743,10 @@ def extract_trait_modifiers(data: dict, source_file: str, loc: dict[str, str],
                 (trait_key, mod_key, value, order),
             )
 
-            # Lookup order: MOD_<UPPER>, mod_<lower>, key as-is
+            # Lookup order: explicit override, MOD_<UPPER>, mod_<lower>, key as-is
+            override = MODIFIER_LOC_OVERRIDES.get(mod_key)
             raw_label = (
+                (loc.get(override) if override else None) or
                 loc.get('MOD_' + mod_key.upper()) or
                 loc.get('mod_' + mod_key) or
                 loc.get(mod_key)
@@ -718,9 +754,12 @@ def extract_trait_modifiers(data: dict, source_file: str, loc: dict[str, str],
             if raw_label:
                 label = _clean_loc(raw_label, loc)
                 if '$' not in label:  # skip if references still unresolved
+                    pig = 0 if mod_key in INVERTED_MODIFIERS else 1
                     w.execute(
-                        "INSERT OR REPLACE INTO modifier_label (modifier_key, label) VALUES (?, ?)",
-                        (mod_key, label),
+                        """INSERT OR REPLACE INTO modifier_label
+                               (modifier_key, label, positive_is_good)
+                           VALUES (?, ?, ?)""",
+                        (mod_key, label, pig),
                     )
 
             if verbose:
