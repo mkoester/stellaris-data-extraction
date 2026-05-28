@@ -10,22 +10,22 @@ The data extraction work here (parsing game scripts → SQLite) is the foundatio
 
 ---
 
-## Current Script: `stellaris_portraits.py`
+## Current Script: `stellaris-extract.py`
 
 ### Usage
 
 ```bash
 # Print SQL to stdout (pipe-friendly, nothing written to disk)
-python3 stellaris_portraits.py /path/to/Stellaris
+python3 stellaris-extract.py /path/to/Stellaris
 
 # Write SQL to a file (ideal for Git review)
-python3 stellaris_portraits.py /path/to/Stellaris --out portraits.sql
+python3 stellaris-extract.py /path/to/Stellaris --out sql/stellaris.sql
 
 # Write directly to SQLite
-python3 stellaris_portraits.py /path/to/Stellaris --sqlite ./sqlite/stellaris_portraits.sqlite
+python3 stellaris-extract.py /path/to/Stellaris --sqlite ./sqlite/stellaris.sqlite
 
 # Both at once
-python3 stellaris_portraits.py /path/to/Stellaris --out portraits.sql --sqlite ./sqlite/stellaris_portraits.sqlite
+python3 stellaris-extract.py /path/to/Stellaris --out sql/stellaris.sql --sqlite ./sqlite/stellaris.sqlite
 ```
 
 **Rules:**
@@ -63,6 +63,9 @@ trait_archetype         -- trait_key, archetype (BIOLOGICAL/LITHOID/ROBOT/MACHIN
 trait_species_class     -- trait_key, species_class_key (e.g. LITHOID, PSIONIC)
 trait_opposite          -- trait_key, opposite_key (mutually exclusive pairs)
 trait_tag               -- trait_key, tag (e.g. organic, positive, pop_output)
+
+named_color             -- key (e.g. trait_bg_psionic), r, g, b, a (0-255), source_file
+                        --   from common/named_colors/ — includes trait_bg_* colors used in UI
 ```
 
 DLC metadata comes from `dlc_metadata/dlc_info.txt`. The `host_has_dlc` field in trait
@@ -85,13 +88,14 @@ Some source files contain duplicate keys (Stellaris bug) — the parser merges t
 | `common/species_classes/` | `00_species_classes.txt`, `01_base_species_classes.txt` |
 | `common/species_archetypes/` | `00_species_archetypes.txt` |
 | `common/portrait_sets/` | `00_portrait_sets.txt` |
+| `common/named_colors/` | `00_basic_colors.txt`, `01_trait_colors.txt` |
 
 ---
 
 ## Project Layout
 
 ```
-stellaris_portraits.py   main script
+stellaris-extract.py     main script
 sql/                     SQL dump output (checked into Git)
 sqlite/                  SQLite DB output (gitignored)
 .gitignore               ignores *.sqlite, *.sqlite3, *.db; keeps sql/
