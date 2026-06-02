@@ -267,6 +267,27 @@ CREATE TABLE IF NOT EXISTS trait_category (
     display_order INTEGER NOT NULL DEFAULT 99,
     FOREIGN KEY (color_key) REFERENCES named_color(key)
 );
+
+DROP TABLE IF EXISTS ethic;
+CREATE TABLE ethic (
+    key             TEXT PRIMARY KEY,   -- e.g. "ethic_authoritarian"
+    label           TEXT,               -- from localisation, e.g. "Authoritarian"
+    cost            INTEGER NOT NULL DEFAULT 1,  -- 1 = regular, 2 = fanatic
+    category        TEXT,               -- "col" for normal empire ethics
+    fanatic_variant TEXT,               -- key of the fanatic variant (if this is regular)
+    regular_variant TEXT,               -- key of the regular variant (if this is fanatic)
+    gestalt         INTEGER DEFAULT 0   -- 1 for ethic_gestalt_consciousness
+);
+
+DROP TABLE IF EXISTS ethic_modifier;
+CREATE TABLE ethic_modifier (
+    ethic_key      TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (ethic_key, modifier_key),
+    FOREIGN KEY (ethic_key) REFERENCES ethic(key)
+);
 """
 
 
@@ -880,6 +901,114 @@ def extract_named_colors(data: dict, source_file: str, w: Writer, verbose: bool)
 # Main
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Extraction: ethics
+# ---------------------------------------------------------------------------
+
+# Modifier keys that are not real numeric modifiers (skip in ethic_modifier)
+_ETHIC_SKIP_KEYS = frozenset({
+    'show_only_custom_tooltip', 'custom_tooltip',
+})
+
+def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
+    # Collect @variable definitions (e.g. @ethic_attunement1 = 25)
+    variables: dict[str, float] = {}
+    for key, val in data.items():
+        if key.startswith('@'):
+            try:
+                variables[key] = float(val)
+            except (ValueError, TypeError):
+                pass
+
+    def resolve_float(raw) -> float | None:
+        if raw is None:
+            return None
+        s = str(raw).strip()
+        if s.startswith('@'):
+            return variables.get(s)
+        try:
+            return float(s)
+        except ValueError:
+            return None
+
+    for ethic_key, ethic_data in data.items():
+        if ethic_key.startswith('@') or not isinstance(ethic_data, dict):
+            continue
+
+        cost_raw = ethic_data.get('cost', 1)
+        try:
+            cost = int(cost_raw)
+        except (ValueError, TypeError):
+            cost = 1
+
+        category = ethic_data.get('category')
+        if isinstance(category, str):
+            category = category.strip('"') or None
+
+        fanatic_variant = ethic_data.get('fanatic_variant') or None
+        regular_variant = ethic_data.get('regular_variant') or None
+        gestalt = 1 if ethic_key == 'ethic_gestalt_consciousness' else 0
+
+        raw_label = loc.get(ethic_key)
+        label = _clean_loc(raw_label, loc) if raw_label else None
+
+        w.execute(
+            """INSERT OR REPLACE INTO ethic
+               (key, label, cost, category, fanatic_variant, regular_variant, gestalt)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (ethic_key, label, cost, category,
+             str(fanatic_variant) if fanatic_variant else None,
+             str(regular_variant) if regular_variant else None,
+             gestalt),
+        )
+
+        modifier = ethic_data.get('country_modifier')
+        if not isinstance(modifier, dict):
+            if verbose:
+                print(f"  {ethic_key}: no country_modifier")
+            continue
+
+        for order, (mod_key, mod_val) in enumerate(modifier.items()):
+            if mod_key in _ETHIC_SKIP_KEYS:
+                continue
+            if isinstance(mod_val, list):
+                mod_val = mod_val[-1]
+            value = resolve_float(mod_val)
+            if value is None:
+                continue
+
+            w.execute(
+                """INSERT OR REPLACE INTO ethic_modifier
+                   (ethic_key, modifier_key, modifier_value, sort_order)
+                   VALUES (?, ?, ?, ?)""",
+                (ethic_key, mod_key, value, order),
+            )
+
+            # Populate modifier_label for any new keys
+            override = MODIFIER_LOC_OVERRIDES.get(mod_key)
+            raw_mod_label = (
+                (loc.get(override) if override else None) or
+                loc.get('MOD_' + mod_key.upper()) or
+                loc.get('mod_' + mod_key) or
+                loc.get(mod_key)
+            )
+            if raw_mod_label:
+                mod_label = _clean_loc(raw_mod_label, loc)
+                if '$' not in mod_label:
+                    pig = 0 if mod_key in INVERTED_MODIFIERS else 1
+                    w.execute(
+                        """INSERT OR REPLACE INTO modifier_label
+                               (modifier_key, label, positive_is_good)
+                           VALUES (?, ?, ?)""",
+                        (mod_key, mod_label, pig),
+                    )
+
+            if verbose:
+                print(f"  {ethic_key} | {mod_key} = {value}")
+
+    w.commit()
+
+
 def main():
     ap = argparse.ArgumentParser(
         description='Stellaris Data Extractor -> SQL / SQLite',
@@ -920,6 +1049,7 @@ Examples:
     portrait_dir   = install_dir / 'common' / 'portrait_sets'
     traits_dir     = install_dir / 'common' / 'traits'
     colors_dir     = install_dir / 'common' / 'named_colors'
+    ethics_dir     = install_dir / 'common' / 'ethics'
     loc_dir        = install_dir / 'localisation' / 'english'
 
     if not species_dir.exists():
@@ -1007,7 +1137,7 @@ Examples:
     tr_files = sorted(
         f for f in traits_dir.glob('*.txt') if is_species_trait_file(f)
     ) if traits_dir.exists() else []
-    print(f"\n[4/5] traits: {len(tr_files)} file(s)", file=progress)
+    print(f"\n[4/6] traits: {len(tr_files)} file(s)", file=progress)
     for f in tr_files:
         print(f"  Reading: {f.name}", file=progress)
         try:
@@ -1019,7 +1149,7 @@ Examples:
 
     # --- named colors + trait categories ---
     co_files = sorted(colors_dir.glob('*.txt')) if colors_dir.exists() else []
-    print(f"\n[5/5] named_colors: {len(co_files)} file(s)", file=progress)
+    print(f"\n[5/6] named_colors: {len(co_files)} file(s)", file=progress)
     for f in co_files:
         print(f"  Reading: {f.name}", file=progress)
         try:
@@ -1030,6 +1160,17 @@ Examples:
     # trait_category references named_color (FK), so it runs after colors are loaded
     print(f"  Writing {len(TRAIT_CATEGORIES)} trait categories", file=progress)
     extract_trait_categories(w, args.verbose)
+
+    # --- ethics ---
+    et_files = sorted(ethics_dir.glob('*.txt')) if ethics_dir.exists() else []
+    print(f"\n[6/6] ethics: {len(et_files)} file(s)", file=progress)
+    for f in et_files:
+        print(f"  Reading: {f.name}", file=progress)
+        try:
+            data = parse_file(f)
+            extract_ethics(data, loc, w, args.verbose)
+        except Exception as e:
+            print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
 
     w.close()
 
@@ -1050,6 +1191,8 @@ Examples:
         n_colors        = tmp.execute("SELECT COUNT(*) FROM named_color").fetchone()[0]
         n_categories    = tmp.execute("SELECT COUNT(*) FROM trait_category").fetchone()[0]
         n_labeled       = tmp.execute("SELECT COUNT(*) FROM species_class WHERE label IS NOT NULL").fetchone()[0]
+        n_ethics        = tmp.execute("SELECT COUNT(*) FROM ethic").fetchone()[0]
+        n_ethic_mods    = tmp.execute("SELECT COUNT(*) FROM ethic_modifier").fetchone()[0]
         tmp.close()
         print(f"""
 +------------------------------------------+
@@ -1069,6 +1212,8 @@ Examples:
 |  Modifier labels    : {n_mod_labels:<20}|
 |  Named colors       : {n_colors:<20}|
 |  Trait categories   : {n_categories:<20}|
+|  Ethics             : {n_ethics:<20}|
+|  Ethic modifiers    : {n_ethic_mods:<20}|
 +------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size
