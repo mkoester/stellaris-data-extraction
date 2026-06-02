@@ -83,7 +83,13 @@ class Parser:
         while self.peek() not in (None, '}'):
             key = self.consume()
 
-            if self.peek() == '=':
+            if key == '{':
+                # Anonymous sub-block (e.g. in_breach_of = { { key = X } { key = Y } })
+                # Recurse to consume its content and closing '}', then discard.
+                self.parse_block()
+                if self.peek() == '}':
+                    self.consume()
+            elif self.peek() == '=':
                 self.consume()  # skip '='
                 is_list = False
                 value = self.parse_value()
@@ -268,6 +274,7 @@ CREATE TABLE IF NOT EXISTS trait_category (
     FOREIGN KEY (color_key) REFERENCES named_color(key)
 );
 
+DROP TABLE IF EXISTS ethic_policy_restriction;
 DROP TABLE IF EXISTS ethic_tag;
 DROP TABLE IF EXISTS ethic_modifier;
 DROP TABLE IF EXISTS ethic;
@@ -301,6 +308,15 @@ CREATE TABLE ethic_tag (
     tag        TEXT NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (ethic_key, tag),
+    FOREIGN KEY (ethic_key) REFERENCES ethic(key)
+);
+
+CREATE TABLE ethic_policy_restriction (
+    policy_key   TEXT NOT NULL,   -- e.g. "interference"
+    option_key   TEXT NOT NULL,   -- e.g. "interference_aggressive"
+    option_label TEXT,            -- localised label, e.g. "Aggressive Interference"
+    ethic_key    TEXT NOT NULL,   -- e.g. "ethic_xenophile"
+    PRIMARY KEY (policy_key, option_key, ethic_key),
     FOREIGN KEY (ethic_key) REFERENCES ethic(key)
 );
 """
@@ -926,6 +942,101 @@ def extract_named_colors(data: dict, source_file: str, w: Writer, verbose: bool)
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
+# Extraction: policy restrictions (ethics-based)
+# ---------------------------------------------------------------------------
+
+def _find_blocked_ethics(block) -> set:
+    """
+    Recursively walk a parsed valid{} block and return the set of ethic keys
+    that are blocked by NOR/NOT conditions.
+
+    The parser promotes duplicate keys to lists, so has_ethic inside a NOR block
+    may be a string (single) or list (multiple).
+    We recurse into OR blocks because NOR can be nested inside an OR.
+    We do NOT recurse into AND/custom_tooltip/etc. to avoid false positives.
+    """
+    blocked = set()
+
+    if isinstance(block, list):
+        for item in block:
+            blocked |= _find_blocked_ethics(item)
+        return blocked
+
+    if not isinstance(block, dict):
+        return blocked
+
+    for key, value in block.items():
+        if key in ('NOR', 'NOT'):
+            # Ethics listed directly inside NOR/NOT are blocked
+            if isinstance(value, dict):
+                raw = value.get('has_ethic', [])
+                if isinstance(raw, str):
+                    raw = [raw]
+                elif not isinstance(raw, list):
+                    raw = []
+                for e in raw:
+                    e = str(e).strip('"')
+                    if e.startswith('ethic_'):
+                        blocked.add(e)
+                # NOR/NOT may also contain nested NOR/NOT
+                blocked |= _find_blocked_ethics(value)
+            elif isinstance(value, list):
+                for item in value:
+                    blocked |= _find_blocked_ethics(item)
+        elif key == 'OR':
+            # OR can contain NOR/NOT sub-blocks — recurse without treating as blocked
+            blocked |= _find_blocked_ethics(value)
+
+    return blocked
+
+
+def extract_policy_restrictions(data: dict, source_file: str,
+                                loc: dict[str, str], w: Writer, verbose: bool):
+    for policy_key, policy_data in data.items():
+        if policy_key.startswith('@') or not isinstance(policy_data, dict):
+            continue
+
+        options = policy_data.get('option', [])
+        if isinstance(options, dict):
+            options = [options]
+        elif not isinstance(options, list):
+            continue
+
+        for option_data in options:
+            if not isinstance(option_data, dict):
+                continue
+
+            option_key = option_data.get('name', '')
+            if isinstance(option_key, str):
+                option_key = option_key.strip('"')
+            if not option_key:
+                continue
+
+            valid = option_data.get('valid')
+            if not valid:
+                continue
+
+            blocked = _find_blocked_ethics(valid)
+            if not blocked:
+                continue
+
+            raw_label = loc.get(option_key)
+            option_label = _clean_loc(raw_label, loc) if raw_label else None
+
+            for ethic_key in sorted(blocked):
+                w.execute(
+                    """INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES (?, ?, ?, ?)""",
+                    (policy_key, option_key, option_label, ethic_key),
+                )
+                if verbose:
+                    print(f"  {policy_key} > {option_key}: blocked for {ethic_key}")
+
+    w.commit()
+
+
+# ---------------------------------------------------------------------------
 # Extraction: ethics
 # ---------------------------------------------------------------------------
 
@@ -1103,6 +1214,7 @@ Examples:
     traits_dir     = install_dir / 'common' / 'traits'
     colors_dir     = install_dir / 'common' / 'named_colors'
     ethics_dir     = install_dir / 'common' / 'ethics'
+    policies_dir   = install_dir / 'common' / 'policies'
     loc_dir        = install_dir / 'localisation' / 'english'
 
     if not species_dir.exists():
@@ -1216,12 +1328,23 @@ Examples:
 
     # --- ethics ---
     et_files = sorted(ethics_dir.glob('*.txt')) if ethics_dir.exists() else []
-    print(f"\n[6/6] ethics: {len(et_files)} file(s)", file=progress)
+    print(f"\n[6/7] ethics: {len(et_files)} file(s)", file=progress)
     for f in et_files:
         print(f"  Reading: {f.name}", file=progress)
         try:
             data = parse_file(f)
             extract_ethics(data, loc, w, args.verbose)
+        except Exception as e:
+            print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+
+    # --- policy restrictions ---
+    po_files = sorted(policies_dir.glob('*.txt')) if policies_dir.exists() else []
+    print(f"\n[7/7] policies: {len(po_files)} file(s)", file=progress)
+    for f in po_files:
+        print(f"  Reading: {f.name}", file=progress)
+        try:
+            data = parse_file(f)
+            extract_policy_restrictions(data, f.name, loc, w, args.verbose)
         except Exception as e:
             print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
 
@@ -1248,6 +1371,7 @@ Examples:
         n_ethic_mods    = tmp.execute("SELECT COUNT(*) FROM ethic_modifier").fetchone()[0]
         n_ethic_tags    = tmp.execute("SELECT COUNT(*) FROM ethic_tag").fetchone()[0]
         n_tag_labels    = tmp.execute("SELECT COUNT(*) FROM ethic_tag_label").fetchone()[0]
+        n_policy_restr  = tmp.execute("SELECT COUNT(*) FROM ethic_policy_restriction").fetchone()[0]
         tmp.close()
         print(f"""
 +------------------------------------------+
@@ -1271,6 +1395,7 @@ Examples:
 |  Ethic modifiers    : {n_ethic_mods:<20}|
 |  Ethic tags         : {n_ethic_tags:<20}|
 |  Tag labels         : {n_tag_labels:<20}|
+|  Policy restrictions: {n_policy_restr:<20}|
 +------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size

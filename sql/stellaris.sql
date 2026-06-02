@@ -124,6 +124,7 @@ CREATE TABLE IF NOT EXISTS trait_category (
     FOREIGN KEY (color_key) REFERENCES named_color(key)
 );
 
+DROP TABLE IF EXISTS ethic_policy_restriction;
 DROP TABLE IF EXISTS ethic_tag;
 DROP TABLE IF EXISTS ethic_modifier;
 DROP TABLE IF EXISTS ethic;
@@ -157,6 +158,15 @@ CREATE TABLE ethic_tag (
     tag        TEXT NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (ethic_key, tag),
+    FOREIGN KEY (ethic_key) REFERENCES ethic(key)
+);
+
+CREATE TABLE ethic_policy_restriction (
+    policy_key   TEXT NOT NULL,   -- e.g. "interference"
+    option_key   TEXT NOT NULL,   -- e.g. "interference_aggressive"
+    option_label TEXT,            -- localised label, e.g. "Aggressive Interference"
+    ethic_key    TEXT NOT NULL,   -- e.g. "ethic_xenophile"
+    PRIMARY KEY (policy_key, option_key, ethic_key),
     FOREIGN KEY (ethic_key) REFERENCES ethic(key)
 );
 
@@ -10342,3 +10352,72 @@ INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_gestalt_consciousness', 'ETHIC_ALLOW_NO_RETREAT', 6);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_ALLOW_NO_RETREAT', 'Can use the No Retreat War Doctrine');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('war_philosophy', 'unrestricted_wars', 'Unrestricted Wars', 'ethic_fanatic_pacifist');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('war_philosophy', 'unrestricted_wars', 'Unrestricted Wars', 'ethic_pacifist');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('war_philosophy', 'liberation_wars', 'Liberation Wars', 'ethic_fanatic_pacifist');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('orbital_bombardment', 'orbital_bombardment_indiscriminate', 'Indiscriminate', 'ethic_fanatic_pacifist');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('orbital_bombardment', 'orbital_bombardment_indiscriminate', 'Indiscriminate', 'ethic_pacifist');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('interference', 'interference_not_allowed', 'Non-Interference', 'ethic_fanatic_xenophobe');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('interference', 'interference_subtle', 'Subtle Interference', 'ethic_fanatic_xenophobe');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('interference', 'interference_aggressive', 'Aggressive Interference', 'ethic_fanatic_pacifist');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('interference', 'interference_aggressive', 'Aggressive Interference', 'ethic_fanatic_xenophile');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('interference', 'interference_aggressive', 'Aggressive Interference', 'ethic_pacifist');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('interference', 'interference_aggressive', 'Aggressive Interference', 'ethic_xenophile');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('enlightenment', 'enlightenment_covert_only', 'Covert Only', 'ethic_fanatic_xenophobe');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('enlightenment', 'enlightenment_allowed', 'Allowed', 'ethic_fanatic_xenophobe');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('leader_enhancement', 'leader_enhancement_selected_lineages', 'Selected Lineages', 'ethic_fanatic_egalitarian');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('leader_enhancement', 'leader_enhancement_capacity_boosters', 'Capacity Boosters', 'ethic_egalitarian');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('leader_enhancement', 'leader_enhancement_capacity_boosters', 'Capacity Boosters', 'ethic_fanatic_egalitarian');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('pre_sapients', 'pre_sapients_eat', 'Hunted', 'ethic_fanatic_xenophile');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('pre_sapients', 'pre_sapients_eat', 'Hunted', 'ethic_xenophile');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('pre_sapients', 'pre_sapients_purge', 'Extermination', 'ethic_fanatic_xenophile');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('pre_sapients', 'pre_sapients_purge', 'Extermination', 'ethic_xenophile');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('refugees', 'refugees_not_allowed', 'No Refugees', 'ethic_fanatic_xenophile');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('refugees', 'refugees_not_allowed', 'No Refugees', 'ethic_xenophile');
+INSERT OR REPLACE INTO ethic_policy_restriction
+                           (policy_key, option_key, option_label, ethic_key)
+                       VALUES ('purge', 'purge_not_allowed', 'Prohibited', 'ethic_gestalt_consciousness');
