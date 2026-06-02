@@ -698,8 +698,17 @@ INVERTED_MODIFIERS: frozenset[str] = frozenset({
     # Resource consumption
     'pop_amenities_usage_add',
     'pop_housing_usage_mult',
-    # Administrative burden
+    # Administrative burden / empire size
     'species_empire_size_mult',
+    'empire_size_pops_mult',
+    # Influence costs
+    'country_claim_influence_cost_mult',
+    'country_starbase_influence_cost_mult',
+    # Edict costs
+    'edicts_upkeep_mult',
+    'edicts_cost_mult',
+    # War / exhaustion
+    'country_war_exhaustion_mult',
     # Combat (taking more damage / longer cooldowns / higher costs = worse)
     'army_damage_taken_mult',
     'gravity_snare_cooldown_mult',
