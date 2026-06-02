@@ -268,6 +268,8 @@ CREATE TABLE IF NOT EXISTS trait_category (
     FOREIGN KEY (color_key) REFERENCES named_color(key)
 );
 
+DROP TABLE IF EXISTS ethic_tag;
+DROP TABLE IF EXISTS ethic_modifier;
 DROP TABLE IF EXISTS ethic;
 CREATE TABLE ethic (
     key             TEXT PRIMARY KEY,   -- e.g. "ethic_authoritarian"
@@ -279,13 +281,26 @@ CREATE TABLE ethic (
     gestalt         INTEGER DEFAULT 0   -- 1 for ethic_gestalt_consciousness
 );
 
-DROP TABLE IF EXISTS ethic_modifier;
 CREATE TABLE ethic_modifier (
     ethic_key      TEXT NOT NULL,
     modifier_key   TEXT NOT NULL,
     modifier_value REAL NOT NULL,
     sort_order     INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (ethic_key, modifier_key),
+    FOREIGN KEY (ethic_key) REFERENCES ethic(key)
+);
+
+DROP TABLE IF EXISTS ethic_tag_label;
+CREATE TABLE ethic_tag_label (
+    tag   TEXT PRIMARY KEY,
+    label TEXT NOT NULL
+);
+
+CREATE TABLE ethic_tag (
+    ethic_key  TEXT NOT NULL,
+    tag        TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (ethic_key, tag),
     FOREIGN KEY (ethic_key) REFERENCES ethic(key)
 );
 """
@@ -1015,6 +1030,35 @@ def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
             if verbose:
                 print(f"  {ethic_key} | {mod_key} = {value}")
 
+        # Tags (gameplay implications)
+        tags_raw = ethic_data.get('tags')
+        if isinstance(tags_raw, list):
+            tag_list = [str(t) for t in tags_raw]
+        elif isinstance(tags_raw, str):
+            tag_list = [tags_raw]
+        else:
+            tag_list = []
+
+        for order, tag in enumerate(tag_list):
+            if not tag.startswith('ETHIC_'):
+                continue
+            w.execute(
+                """INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
+                   VALUES (?, ?, ?)""",
+                (ethic_key, tag, order),
+            )
+            raw_tag_label = loc.get(tag)
+            if raw_tag_label:
+                tag_label = _clean_loc(raw_tag_label, loc)
+                if '$' not in tag_label:
+                    w.execute(
+                        """INSERT OR REPLACE INTO ethic_tag_label (tag, label)
+                           VALUES (?, ?)""",
+                        (tag, tag_label),
+                    )
+            if verbose:
+                print(f"  {ethic_key} | tag: {tag}")
+
     w.commit()
 
 
@@ -1202,6 +1246,8 @@ Examples:
         n_labeled       = tmp.execute("SELECT COUNT(*) FROM species_class WHERE label IS NOT NULL").fetchone()[0]
         n_ethics        = tmp.execute("SELECT COUNT(*) FROM ethic").fetchone()[0]
         n_ethic_mods    = tmp.execute("SELECT COUNT(*) FROM ethic_modifier").fetchone()[0]
+        n_ethic_tags    = tmp.execute("SELECT COUNT(*) FROM ethic_tag").fetchone()[0]
+        n_tag_labels    = tmp.execute("SELECT COUNT(*) FROM ethic_tag_label").fetchone()[0]
         tmp.close()
         print(f"""
 +------------------------------------------+
@@ -1223,6 +1269,8 @@ Examples:
 |  Trait categories   : {n_categories:<20}|
 |  Ethics             : {n_ethics:<20}|
 |  Ethic modifiers    : {n_ethic_mods:<20}|
+|  Ethic tags         : {n_ethic_tags:<20}|
+|  Tag labels         : {n_tag_labels:<20}|
 +------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size
