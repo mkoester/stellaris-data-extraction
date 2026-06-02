@@ -9886,7 +9886,7 @@ INSERT OR REPLACE INTO ethic_modifier
                    VALUES ('ethic_fanatic_xenophobe', 'country_starbase_influence_cost_mult', '-0.4', 0);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 1);
+                           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_xenophobe', 'founder_species_growth_mult', '0.2', 1);
@@ -9907,7 +9907,7 @@ INSERT OR REPLACE INTO ethic_modifier
                    VALUES ('ethic_xenophobe', 'country_starbase_influence_cost_mult', '-0.2', 0);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 1);
+                           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_xenophobe', 'founder_species_growth_mult', '0.1', 1);
@@ -9964,7 +9964,7 @@ INSERT OR REPLACE INTO ethic_modifier
                    VALUES ('ethic_fanatic_militarist', 'country_claim_influence_cost_mult', '-0.2', 0);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 1);
+                           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_militarist', 'ship_fire_rate_mult', '0.2', 1);
@@ -9979,7 +9979,7 @@ INSERT OR REPLACE INTO ethic_modifier
                    VALUES ('ethic_militarist', 'country_claim_influence_cost_mult', '-0.1', 0);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 1);
+                           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_militarist', 'ship_fire_rate_mult', '0.1', 1);
@@ -9994,7 +9994,7 @@ INSERT OR REPLACE INTO ethic_modifier
                    VALUES ('ethic_fanatic_pacifist', 'empire_size_pops_mult', '-0.2', 0);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 1);
+                           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_pacifist', 'planet_stability_add', '10.0', 1);
@@ -10015,7 +10015,7 @@ INSERT OR REPLACE INTO ethic_modifier
                    VALUES ('ethic_pacifist', 'empire_size_pops_mult', '-0.1', 0);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 1);
+                           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_pacifist', 'planet_stability_add', '5.0', 1);
@@ -10042,13 +10042,13 @@ INSERT OR REPLACE INTO ethic_modifier
                    VALUES ('ethic_fanatic_spiritualist', 'edicts_upkeep_mult', '-0.2', 1);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('edicts_upkeep_mult', 'Edict Upkeep', 1);
+                           VALUES ('edicts_upkeep_mult', 'Edict Upkeep', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_spiritualist', 'edicts_cost_mult', '-0.2', 2);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('edicts_cost_mult', 'Edict Cost', 1);
+                           VALUES ('edicts_cost_mult', 'Edict Cost', 0);
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt)
                VALUES ('ethic_spiritualist', 'Spiritualist', 1, 'spi', 'ethic_fanatic_spiritualist', NULL, 0);
@@ -10063,13 +10063,13 @@ INSERT OR REPLACE INTO ethic_modifier
                    VALUES ('ethic_spiritualist', 'edicts_upkeep_mult', '-0.1', 1);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('edicts_upkeep_mult', 'Edict Upkeep', 1);
+                           VALUES ('edicts_upkeep_mult', 'Edict Upkeep', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_spiritualist', 'edicts_cost_mult', '-0.1', 2);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('edicts_cost_mult', 'Edict Cost', 1);
+                           VALUES ('edicts_cost_mult', 'Edict Cost', 0);
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt)
                VALUES ('ethic_fanatic_materialist', 'Fanatic Materialist', 2, 'spi', NULL, 'ethic_materialist', 0);
@@ -10102,7 +10102,7 @@ INSERT OR REPLACE INTO ethic_modifier
                    VALUES ('ethic_gestalt_consciousness', 'country_war_exhaustion_mult', '-0.2', 0);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 1);
+                           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_gestalt_consciousness', 'country_ethic_influence_produces_add', '1.0', 1);
