@@ -63,6 +63,7 @@ sqlite/                  SQLite DB output (gitignored)
 | [5/7]  | Named colors + categories   | `common/named_colors/`            |
 | [6/7]  | Ethics + tags               | `common/ethics/`                  |
 | [7/7]  | Policy restrictions         | `common/policies/`                |
+| [8/8]  | Precursors + rewards        | `common/precursor_civilizations/`, `common/relics/`, `common/static_modifiers/` |
 
 Localisation: `localisation/english/*.yml`
 
@@ -84,7 +85,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_reward_modifier`, `precursor_building`
 
 Drop order matters for FK integrity:
 ```sql
@@ -152,6 +153,48 @@ Result stored in `ethic_policy_restriction(policy_key, option_key, option_label,
 
 ---
 
+## Precursor Extraction (`extract_precursors`)
+
+The 9 precursors (5 base + Baol/Zroni from Ancient Relics + Inetian/adAkkaria from
+Cosmic Storms). Each grants up to four things: a **home system**, a **permanent
+empire modifier**, a **relic** (7 of 9 — First League & Irassian have none), and a
+**building** (Zroni & adAkkaria only).
+
+**Why a config spine (`PRECURSORS` list):** the precursor→reward mapping is *not*
+in any single game file. Rewards are granted by `add_relic` / `add_modifier` buried
+in dig-site event chains (`events/precursor_events*.txt`,
+`events/ancient_relics_arcsite_events_*.txt`). So `PRECURSORS` hand-encodes the
+verified mapping (like `TRAIT_CATEGORIES`); the *effect numbers and names* are then
+pulled live from the game files. Extend `PRECURSORS` if a future DLC adds more.
+
+**Data sources merged at runtime:** `common/precursor_civilizations/*.txt` (picture),
+`common/relics/relics.txt` (relic effects), all `common/static_modifiers/*.txt`
+(the permanent reward modifiers). Building names come from loc only.
+
+**Relic passive parsing (`_relic_passive_rows`)** handles both Clausewitz forms of
+`triggered_country_modifier`: a nested `modifier = { … }` block *and* modifiers
+written directly as keys of the block (e.g. `r_reality_perforator`). The `potential`
+qualifier is rendered into a short `condition` string (`NULL` = always applies).
+
+**Duplicate definitions:** `artifact_irassian_research_completed` is defined twice in
+`10_static_modifiers_ancient_relics.txt`; the parser promotes it to a list, and the
+extractor takes the **later** definition (game load order → `0.075`, not `0.1`).
+Same list-guard applies to relics.
+
+**Reuses `modifier_label`** via the shared `_write_modifier_label()` helper, so the
+display project gets human-readable effect strings for free.
+
+**`precursor_full` VIEW:** convenience header — one row per precursor with its
+(0..1) relic and building pre-joined. Multi-row effects stay relational (join
+`precursor_relic_modifier` on `relic_key`, `precursor_reward_modifier` on `key`).
+
+**Known minor gaps:** Yuht & Cybrex relics have no active-effect text (Yuht has no
+`custom_tooltip`; Cybrex's only one is the generic cooldown). Inetian home system
+not yet identified. `num_digsites` only set where the arc sites group cleanly
+(Baol 4, Zroni 6).
+
+---
+
 ## Modifier Label Lookup Order
 
 For any modifier key, label is looked up as:
@@ -161,6 +204,8 @@ For any modifier key, label is looked up as:
 4. `loc[mod_key]`
 
 Unresolved `$KEY$` inline references in labels are discarded (label not stored if `'$' in label`).
+
+`_clean_loc` also resolves scripted-loc concept tags `['concept_x']` / `['concept_x', display text]`, strips leftover `[Command.Chain]` tags, and converts literal `\n`/`\t`/`\r` escapes to spaces — relevant for longer text fields like relic descriptions/active effects.
 
 ---
 
@@ -189,6 +234,11 @@ Unresolved `$KEY$` inline references in labels are discarded (label not stored i
 | Ethic tags                | 53   |
 | Tag labels                | 31   |
 | Policy restrictions       | 23   |
+| Precursors                | 9    |
+| Precursor relics          | 7    |
+| Precursor relic modifiers | 11   |
+| Precursor reward modifiers | 19  |
+| Precursor buildings       | 2    |
 
 ---
 

@@ -170,6 +170,87 @@ CREATE TABLE ethic_policy_restriction (
     FOREIGN KEY (ethic_key) REFERENCES ethic(key)
 );
 
+-- Precursors: the ancient civilisations whose archaeology chains grant rewards.
+-- The precursor<->reward mapping is spread across event files (no single source
+-- file joins them), so the spine is the hand-curated PRECURSORS config; the
+-- effect numbers and display names below are pulled from the game files.
+DROP TABLE IF EXISTS precursor_building;
+DROP TABLE IF EXISTS precursor_reward_modifier;
+DROP TABLE IF EXISTS precursor_relic_modifier;
+DROP TABLE IF EXISTS precursor_relic;
+DROP TABLE IF EXISTS precursor;
+CREATE TABLE precursor (
+    key                TEXT PRIMARY KEY,   -- e.g. "precursor_1", "precursor_baol_1"
+    name               TEXT,               -- localised, e.g. "Vultaum"
+    required_dlc       TEXT,               -- NULL = base game; FK to dlc.name
+    system_initializer TEXT,               -- home system, e.g. "vultaumar_system"
+    picture            TEXT,               -- GFX_precursor_*
+    num_digsites       INTEGER,            -- archaeological_site_type count in the chain
+    sort_order         INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (required_dlc) REFERENCES dlc(name)
+);
+
+CREATE TABLE precursor_relic (
+    precursor_key TEXT PRIMARY KEY,        -- 0..1 relic per precursor (First League/Irassian have none)
+    relic_key     TEXT NOT NULL,           -- e.g. "r_reality_perforator"
+    name          TEXT,                    -- localised relic name, e.g. "Vultaum Reality Perforator"
+    portrait      TEXT,                    -- GFX_relic_*
+    score         INTEGER,                 -- relic score value
+    description   TEXT,                    -- flavour text (<relic_key>_desc)
+    active_effect TEXT,                    -- localised active-ability tooltip
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+
+-- Relic passive effects (triggered_country_modifier). condition holds the
+-- 'potential' qualifier when the passive only applies to some empire types.
+CREATE TABLE precursor_relic_modifier (
+    relic_key      TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    condition      TEXT,                   -- NULL = always; else e.g. "is_machine_empire = yes"
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (relic_key, modifier_key, condition),
+    FOREIGN KEY (relic_key) REFERENCES precursor_relic(relic_key)
+);
+
+-- The permanent empire modifier granted for completing the chain. Vultaum has
+-- several variants (player choice + empire type); 'variant' distinguishes them.
+CREATE TABLE precursor_reward_modifier (
+    precursor_key  TEXT NOT NULL,
+    static_modifier TEXT NOT NULL,         -- e.g. "artifact_cybrex_research_completed"
+    variant        TEXT NOT NULL DEFAULT 'default',
+    name           TEXT,                   -- localised modifier name (if any)
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (precursor_key, static_modifier, modifier_key),
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+
+CREATE TABLE precursor_building (
+    precursor_key TEXT NOT NULL,
+    building_key  TEXT NOT NULL,           -- e.g. "building_zroni_equilibrator"
+    name          TEXT,                    -- localised building name
+    scope         TEXT,                    -- "planet" or "starbase"
+    PRIMARY KEY (precursor_key, building_key),
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+
+-- Convenience header view: one row per precursor with its (0..1) relic and
+-- building pre-joined. The multi-row effects stay in their child tables —
+-- join precursor_relic_modifier on relic_key, precursor_reward_modifier on key.
+DROP VIEW IF EXISTS precursor_full;
+CREATE VIEW precursor_full AS
+SELECT
+    p.key, p.name, p.required_dlc, p.system_initializer, p.num_digsites, p.picture,
+    pr.relic_key, pr.name AS relic_name, pr.score AS relic_score,
+    pr.description AS relic_description, pr.active_effect AS relic_active_effect,
+    pb.building_key, pb.name AS building_name, pb.scope AS building_scope
+FROM precursor p
+LEFT JOIN precursor_relic    pr ON pr.precursor_key = p.key
+LEFT JOIN precursor_building pb ON pb.precursor_key = p.key
+ORDER BY p.sort_order;
+
 -- Data
 
 INSERT OR IGNORE INTO dlc (name, steam_id, affects_gameplay)
@@ -10159,7 +10240,7 @@ INSERT OR REPLACE INTO ethic_modifier
                    VALUES ('ethic_fanatic_pacifist', 'the_eater_of_worlds_attunement_mult', '-0.35', 3);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('the_eater_of_worlds_attunement_mult', 'Attunement with [This.GetEaterColor]', 1);
+                           VALUES ('the_eater_of_worlds_attunement_mult', 'Attunement with', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_fanatic_pacifist', 'ETHIC_DISALLOW_OFFENSIVE_WARS', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10188,7 +10269,7 @@ INSERT OR REPLACE INTO ethic_modifier
                    VALUES ('ethic_pacifist', 'the_eater_of_worlds_attunement_mult', '-0.25', 3);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('the_eater_of_worlds_attunement_mult', 'Attunement with [This.GetEaterColor]', 1);
+                           VALUES ('the_eater_of_worlds_attunement_mult', 'Attunement with', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_pacifist', 'ETHIC_DISALLOW_CONQUEST_WARS', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10421,3 +10502,224 @@ INSERT OR REPLACE INTO ethic_policy_restriction
 INSERT OR REPLACE INTO ethic_policy_restriction
                            (policy_key, option_key, option_label, ethic_key)
                        VALUES ('purge', 'purge_not_allowed', 'Prohibited', 'ethic_gestalt_consciousness');
+INSERT OR REPLACE INTO precursor
+                   (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
+               VALUES ('precursor_1', 'Vultaum', NULL, 'vultaumar_system', 'GFX_precursor_vultaum', NULL, 0);
+INSERT OR REPLACE INTO precursor_relic
+                           (precursor_key, relic_key, name, portrait, score, description, active_effect)
+                       VALUES ('precursor_1', 'r_reality_perforator', 'Vultaum Reality Perforator', 'GFX_relic_orb_insight', 5000, 'A dense and incredibly heavy orb composed of an unknown material. The Vultaum claimed this device was capable of briefly destabilizing the simulated reality they believed themselves trapped inside, offering a glimpse of the real world. Whether true or not, when activated the orb makes it possible to manipulate minor aspects of reality in a localized bubble. This effect lasts only for a short while, as the universe seems to quickly right itself again, but if timed right it would give our fleets a decisive advantage.', 'Perforate reality for powerful temporary combat advantages');
+INSERT OR IGNORE INTO precursor_relic_modifier
+                               (relic_key, modifier_key, modifier_value, condition, sort_order)
+                           VALUES ('r_reality_perforator', 'pop_amenities_usage_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_1', 'artifact_vultaum_research_completed_suppressed', 'suppressed', 'Secrets of the Vultaum', 'category_computing_research_speed_mult', '0.075', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_computing_research_speed_mult', 'Research Speed (Computing)', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_1', 'artifact_vultaum_research_completed_suppressed', 'suppressed', 'Secrets of the Vultaum', 'planet_amenities_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_mult', 'Amenities', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_1', 'artifact_vultaum_research_completed_public', 'public', 'Deeper Secrets of the Vultaum', 'all_technology_research_speed', '0.1', 0);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_1', 'artifact_vultaum_research_completed_public', 'public', 'Deeper Secrets of the Vultaum', 'category_computing_research_speed_mult', '0.075', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_computing_research_speed_mult', 'Research Speed (Computing)', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_1', 'artifact_vultaum_research_completed_public', 'public', 'Deeper Secrets of the Vultaum', 'planet_amenities_mult', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_mult', 'Amenities', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_1', 'artifact_vultaum_research_completed_public', 'public', 'Deeper Secrets of the Vultaum', 'pop_happiness', '-0.2', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_1', 'artifact_vultaum_research_completed_machine', 'machine', 'Secrets of the Vultaum', 'category_computing_research_speed_mult', '0.075', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_computing_research_speed_mult', 'Research Speed (Computing)', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_1', 'artifact_vultaum_research_completed_machine', 'machine', 'Secrets of the Vultaum', 'planet_pop_assembly_mult', '0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_1', 'artifact_vultaum_research_completed_hive', 'hive', 'Secrets of the Vultaum', 'category_computing_research_speed_mult', '0.075', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_computing_research_speed_mult', 'Research Speed (Computing)', 1);
+INSERT OR REPLACE INTO precursor
+                   (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
+               VALUES ('precursor_2', 'Yuht', NULL, 'yuhtaan_system', 'GFX_precursor_yuth', NULL, 1);
+INSERT OR REPLACE INTO precursor_relic
+                           (precursor_key, relic_key, name, portrait, score, description, active_effect)
+                       VALUES ('precursor_2', 'r_cryo_core', 'Yuht Cryo Core', 'GFX_relic_cryo_core', 5000, 'As the Yuht never discovered the existence of hyperspace, they depended on their long lifespans and cryogenic technology to travel between the stars. This prototype cryo core was created by Yuht scientists shortly before their empire fell to the Jabbardeeni. The cryo field generated by this core is well beyond our current levels of technology.', NULL);
+INSERT OR IGNORE INTO precursor_relic_modifier
+                               (relic_key, modifier_key, modifier_value, condition, sort_order)
+                           VALUES ('r_cryo_core', 'planet_colony_development_speed_mult', '2.0', 'is_wilderness_empire = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_colony_development_speed_mult', 'Colony Development Speed', 1);
+INSERT OR IGNORE INTO precursor_relic_modifier
+                               (relic_key, modifier_key, modifier_value, condition, sort_order)
+                           VALUES ('r_cryo_core', 'weapon_type_energy_weapon_fire_rate_mult', '0.2', 'is_wilderness_empire = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_type_energy_weapon_fire_rate_mult', 'Energy Weapon Fire Rate', 1);
+INSERT OR IGNORE INTO precursor_relic_modifier
+                               (relic_key, modifier_key, modifier_value, condition, sort_order)
+                           VALUES ('r_cryo_core', 'weapon_type_energy_weapon_fire_rate_mult', '0.2', 'is_wilderness_empire = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_type_energy_weapon_fire_rate_mult', 'Energy Weapon Fire Rate', 1);
+INSERT OR REPLACE INTO precursor
+                   (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
+               VALUES ('precursor_3', 'First League', NULL, 'fen_habbanis_system', 'GFX_precursor_first_league', NULL, 2);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_3', 'artifact_league_research_completed', 'default', 'Secrets of the First League', 'category_industry_research_speed_mult', '0.075', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_industry_research_speed_mult', 'Research Speed (Industry)', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_3', 'artifact_league_research_completed', 'default', 'Secrets of the First League', 'planet_building_build_speed_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Planetary Infrastructure Build Speed', 1);
+INSERT OR REPLACE INTO precursor
+                   (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
+               VALUES ('precursor_4', 'Irassian', NULL, 'irass_system', 'GFX_precursor_irassian', NULL, 3);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_4', 'artifact_irassian_research_completed', 'default', 'Secrets of the Irassians', 'category_biology_research_speed_mult', '0.075', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_biology_research_speed_mult', 'Research Speed (Biology)', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_4', 'artifact_irassian_research_completed', 'default', 'Secrets of the Irassians', 'logistic_growth_mult', '0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO precursor
+                   (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
+               VALUES ('precursor_5', 'Cybrex', NULL, 'cybrex_system', 'GFX_precursor_cybrex', NULL, 4);
+INSERT OR REPLACE INTO precursor_relic
+                           (precursor_key, relic_key, name, portrait, score, description, active_effect)
+                       VALUES ('precursor_5', 'r_war_forge', 'Cybrex War Forge', 'GFX_relic_war_forge', 5000, 'A relatively small and portable war forge, the last of its kind in the universe. It is a relic from the time when the Cybrex made war upon the galaxy, before their', NULL);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_5', 'artifact_cybrex_research_completed', 'default', 'Secrets of the Cybrex', 'megastructure_build_speed_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructure_build_speed_mult', 'Megastructure Build Speed', 1);
+INSERT OR REPLACE INTO precursor
+                   (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
+               VALUES ('precursor_baol_1', 'Baol', 'Ancient Relics Story Pack', 'last_baol_system', 'GFX_precursor_baol', 4, 5);
+INSERT OR REPLACE INTO precursor_relic
+                           (precursor_key, relic_key, name, portrait, score, description, active_effect)
+                       VALUES ('precursor_baol_1', 'r_the_last_baol', 'The Last Baol', 'GFX_relic_baol', 1000, 'Preserved in stasis, the body of the last known Baol specimen serves as a silent memorial to the fate of the species, who, afflicted with the tragedy of genocide, ultimately retreated from sentience.', 'Unlocks Decision: Nu-Baol Life-Seeding, granting the ability to turn one non-Ecumenopolis, non-Hive World, non-Machine World planet into a Gaia World.');
+INSERT OR IGNORE INTO precursor_relic_modifier
+                               (relic_key, modifier_key, modifier_value, condition, sort_order)
+                           VALUES ('r_the_last_baol', 'logistic_growth_mult', '0.1', 'is_machine_empire = no, is_wilderness_empire = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR IGNORE INTO precursor_relic_modifier
+                               (relic_key, modifier_key, modifier_value, condition, sort_order)
+                           VALUES ('r_the_last_baol', 'logistic_growth_mult', '0.1', 'OR', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR IGNORE INTO precursor_relic_modifier
+                               (relic_key, modifier_key, modifier_value, condition, sort_order)
+                           VALUES ('r_the_last_baol', 'country_society_research_produces_mult', '0.1', 'OR', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_society_research_produces_mult', 'Monthly Society Research', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_baol_1', 'artifact_baol_research_completed', 'default', 'Secrets of the Baol', 'terraforming_cost_mult', '-0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('terraforming_cost_mult', 'Terraforming Cost', 1);
+INSERT OR REPLACE INTO precursor
+                   (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
+               VALUES ('precursor_zroni_1', 'Zroni', 'Ancient Relics Story Pack', 'zroni_legacy_initializer_01', 'GFX_precursor_zroni', 6, 6);
+INSERT OR REPLACE INTO precursor_relic
+                           (precursor_key, relic_key, name, portrait, score, description, active_effect)
+                       VALUES ('precursor_zroni_1', 'r_zro_crystal', 'Psionic Archive', 'GFX_relic_zro_crystal', 1000, 'A Zro psionic crystal archive, containing the essence of Ja''Baxti. From time to time it can be consulted for guidance.', 'Contact the spirit of Ja''Baxti to seek guidance in different matters.');
+INSERT OR IGNORE INTO precursor_relic_modifier
+                               (relic_key, modifier_key, modifier_value, condition, sort_order)
+                           VALUES ('r_zro_crystal', 'shroud_delve_cooldown', '-0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shroud_delve_cooldown', 'Shroud Delve Cooldown', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_zroni_1', 'artifact_zroni_research_completed', 'default', 'Secrets of the Zroni', 'category_psionics_research_speed_mult', '0.4', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT OR REPLACE INTO precursor_building
+                       (precursor_key, building_key, name, scope)
+                   VALUES ('precursor_zroni_1', 'building_zroni_equilibrator', 'Zroni Equilibrator', 'planet');
+INSERT OR REPLACE INTO precursor
+                   (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
+               VALUES ('precursor_inetian', 'Inetian Traders', 'Cosmic Storms', NULL, 'GFX_precursor_inetian', NULL, 7);
+INSERT OR REPLACE INTO precursor_relic
+                           (precursor_key, relic_key, name, portrait, score, description, active_effect)
+                       VALUES ('precursor_inetian', 'r_weather_manipulator', 'The Disturbance Oppressor', 'GFX_relic_weather_manipulation', 1000, 'A more advanced version of the machine the Inetian Traders used to manipulate cosmic storms; by default this device will increase the effectiveness of all our storm-related technology, but when properly utilized it can even drive out all storms from our borders.', 'Creates an extra large Cosmic Storm repelling field around the empire''s capital for 36 months.');
+INSERT OR IGNORE INTO precursor_relic_modifier
+                               (relic_key, modifier_key, modifier_value, condition, sort_order)
+                           VALUES ('r_weather_manipulator', 'country_physics_research_produces_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_physics_research_produces_mult', 'Monthly Physics Research', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_inetian', 'secrets_of_the_inetian_traders', 'default', 'Secrets of the Inetian Traders', 'country_trade_fee', '-0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_fee', 'Market Fee', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_inetian', 'secrets_of_the_inetian_traders_hive_mach', 'hive_machine', 'Secrets of the Inetian Traders', 'country_trade_fee', '-0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_fee', 'Market Fee', 1);
+INSERT OR REPLACE INTO precursor
+                   (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
+               VALUES ('precursor_adakkaria', 'adAkkaria', 'Cosmic Storms', 'adSul_system', 'GFX_precursor_adakkaria', NULL, 8);
+INSERT OR REPLACE INTO precursor_relic
+                           (precursor_key, relic_key, name, portrait, score, description, active_effect)
+                       VALUES ('precursor_adakkaria', 'r_the_tempest_invocator', 'The Tempest Invocator', 'GFX_relic_the_tempest_exsoulcillator', 1000, 'The waiting potential of this device is tangible even in a powered-down state. Dare we invoke tempestuous fury inside one of our best and brightest? For the glory of our nation, sacrifices must be made.', 'Generate a Nexus Storm in a system of your choice. Once a system is selected, a Scientist will be Sacrificed.');
+INSERT OR IGNORE INTO precursor_relic_modifier
+                               (relic_key, modifier_key, modifier_value, condition, sort_order)
+                           VALUES ('r_the_tempest_invocator', 'country_unity_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT OR IGNORE INTO precursor_relic_modifier
+                               (relic_key, modifier_key, modifier_value, condition, sort_order)
+                           VALUES ('r_the_tempest_invocator', 'ships_upkeep_mult', '-0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 1);
+INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES ('precursor_adakkaria', 'patriotic_institute_true_potential_unleashed', 'default', 'The True Potential of The adAkkaria', 'country_unity_produces_mult', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT OR REPLACE INTO precursor_building
+                       (precursor_key, building_key, name, scope)
+                   VALUES ('precursor_adakkaria', 'building_adakkaria_patriotic_institute', 'Patriotic Institute of Celebration', 'planet');

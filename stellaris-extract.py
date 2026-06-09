@@ -34,14 +34,24 @@ from io import StringIO
 
 _LOC_INLINE_REF = re.compile(r'\$(\w+)\$')
 _LOC_FMT_CODE   = re.compile(r'§.|£\w+£')
+# Scripted-loc concept tag: ['concept_key'] or ['concept_key', inline display text].
+_LOC_CONCEPT    = re.compile(r"\['(\w+)'(?:,\s*([^\]]*))?\]")
+# Any remaining bracket command, e.g. [This.GetName] — not statically resolvable.
+_LOC_COMMAND    = re.compile(r'\[[^\]]*\]')
 
 def _clean_loc(s: str, loc: dict[str, str]) -> str:
-    """Expand $KEY$ inline references (up to 4 rounds) and strip §X/£icon£ codes."""
+    """Expand $KEY$ refs and ['concept', …] scripted-loc tags (up to 4 rounds),
+    then strip §X/£icon£ format codes and any leftover [command] tags."""
+    # Concept tags: keep the inline display text when given, else fall back to the
+    # concept's own name ($concept_KEY$, resolved by the loop below).
+    s = _LOC_CONCEPT.sub(lambda m: m.group(2) if m.group(2) else f'${m.group(1)}$', s)
     for _ in range(4):
         expanded = _LOC_INLINE_REF.sub(lambda m: loc.get(m.group(1), m.group(0)), s)
         if expanded == s:
             break
         s = expanded
+    s = _LOC_COMMAND.sub('', s)  # drop leftover [Command.Chain] tags
+    s = re.sub(r'\\[nrt]', ' ', s)  # literal \n \t \r escapes -> space
     return re.sub(r'\s+', ' ', _LOC_FMT_CODE.sub('', s)).strip()
 
 
@@ -319,6 +329,87 @@ CREATE TABLE ethic_policy_restriction (
     PRIMARY KEY (policy_key, option_key, ethic_key),
     FOREIGN KEY (ethic_key) REFERENCES ethic(key)
 );
+
+-- Precursors: the ancient civilisations whose archaeology chains grant rewards.
+-- The precursor<->reward mapping is spread across event files (no single source
+-- file joins them), so the spine is the hand-curated PRECURSORS config; the
+-- effect numbers and display names below are pulled from the game files.
+DROP TABLE IF EXISTS precursor_building;
+DROP TABLE IF EXISTS precursor_reward_modifier;
+DROP TABLE IF EXISTS precursor_relic_modifier;
+DROP TABLE IF EXISTS precursor_relic;
+DROP TABLE IF EXISTS precursor;
+CREATE TABLE precursor (
+    key                TEXT PRIMARY KEY,   -- e.g. "precursor_1", "precursor_baol_1"
+    name               TEXT,               -- localised, e.g. "Vultaum"
+    required_dlc       TEXT,               -- NULL = base game; FK to dlc.name
+    system_initializer TEXT,               -- home system, e.g. "vultaumar_system"
+    picture            TEXT,               -- GFX_precursor_*
+    num_digsites       INTEGER,            -- archaeological_site_type count in the chain
+    sort_order         INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (required_dlc) REFERENCES dlc(name)
+);
+
+CREATE TABLE precursor_relic (
+    precursor_key TEXT PRIMARY KEY,        -- 0..1 relic per precursor (First League/Irassian have none)
+    relic_key     TEXT NOT NULL,           -- e.g. "r_reality_perforator"
+    name          TEXT,                    -- localised relic name, e.g. "Vultaum Reality Perforator"
+    portrait      TEXT,                    -- GFX_relic_*
+    score         INTEGER,                 -- relic score value
+    description   TEXT,                    -- flavour text (<relic_key>_desc)
+    active_effect TEXT,                    -- localised active-ability tooltip
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+
+-- Relic passive effects (triggered_country_modifier). condition holds the
+-- 'potential' qualifier when the passive only applies to some empire types.
+CREATE TABLE precursor_relic_modifier (
+    relic_key      TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    condition      TEXT,                   -- NULL = always; else e.g. "is_machine_empire = yes"
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (relic_key, modifier_key, condition),
+    FOREIGN KEY (relic_key) REFERENCES precursor_relic(relic_key)
+);
+
+-- The permanent empire modifier granted for completing the chain. Vultaum has
+-- several variants (player choice + empire type); 'variant' distinguishes them.
+CREATE TABLE precursor_reward_modifier (
+    precursor_key  TEXT NOT NULL,
+    static_modifier TEXT NOT NULL,         -- e.g. "artifact_cybrex_research_completed"
+    variant        TEXT NOT NULL DEFAULT 'default',
+    name           TEXT,                   -- localised modifier name (if any)
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (precursor_key, static_modifier, modifier_key),
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+
+CREATE TABLE precursor_building (
+    precursor_key TEXT NOT NULL,
+    building_key  TEXT NOT NULL,           -- e.g. "building_zroni_equilibrator"
+    name          TEXT,                    -- localised building name
+    scope         TEXT,                    -- "planet" or "starbase"
+    PRIMARY KEY (precursor_key, building_key),
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+
+-- Convenience header view: one row per precursor with its (0..1) relic and
+-- building pre-joined. The multi-row effects stay in their child tables —
+-- join precursor_relic_modifier on relic_key, precursor_reward_modifier on key.
+DROP VIEW IF EXISTS precursor_full;
+CREATE VIEW precursor_full AS
+SELECT
+    p.key, p.name, p.required_dlc, p.system_initializer, p.num_digsites, p.picture,
+    pr.relic_key, pr.name AS relic_name, pr.score AS relic_score,
+    pr.description AS relic_description, pr.active_effect AS relic_active_effect,
+    pb.building_key, pb.name AS building_name, pb.scope AS building_scope
+FROM precursor p
+LEFT JOIN precursor_relic    pr ON pr.precursor_key = p.key
+LEFT JOIN precursor_building pb ON pb.precursor_key = p.key
+ORDER BY p.sort_order;
 """
 
 
@@ -1173,6 +1264,291 @@ def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
     w.commit()
 
 
+# ---------------------------------------------------------------------------
+# Extraction: precursors
+# ---------------------------------------------------------------------------
+#
+# The precursor<->reward mapping is NOT encoded in any single game file: it is
+# scattered across events/precursor_events*.txt and the ancient_relics arcsite
+# events, where rewards are granted by add_relic / add_modifier deep inside dig
+# event chains. This config is therefore the authoritative spine (verified
+# against those events); the effect numbers and display names attached to each
+# relic/modifier/building are pulled from the game files at extraction time.
+#
+# Per precursor:
+#   key, dlc           required DLC display name (None = base game)
+#   system             home system initializer key
+#   num_digsites       sites in the archaeology chain (None where not clearly grouped)
+#   relic              relic key, or None (First League & Irassian have no relic)
+#   rewards            (static_modifier_key, variant) — the permanent empire modifier(s)
+#   building           (building_key, scope) or None
+PRECURSORS: list[dict] = [
+    {'key': 'precursor_1', 'dlc': None, 'system': 'vultaumar_system', 'num_digsites': None,
+     'relic': 'r_reality_perforator',
+     'rewards': [('artifact_vultaum_research_completed_suppressed', 'suppressed'),
+                 ('artifact_vultaum_research_completed_public', 'public'),
+                 ('artifact_vultaum_research_completed_machine', 'machine'),
+                 ('artifact_vultaum_research_completed_hive', 'hive')],
+     'building': None},
+    {'key': 'precursor_2', 'dlc': None, 'system': 'yuhtaan_system', 'num_digsites': None,
+     'relic': 'r_cryo_core',
+     'rewards': [],  # Yuht grant no permanent empire modifier; their homeworld gets pm_yuht_cleansing
+     'building': None},
+    {'key': 'precursor_3', 'dlc': None, 'system': 'fen_habbanis_system', 'num_digsites': None,
+     'relic': None,
+     'rewards': [('artifact_league_research_completed', 'default')],
+     'building': None},
+    {'key': 'precursor_4', 'dlc': None, 'system': 'irass_system', 'num_digsites': None,
+     'relic': None,
+     'rewards': [('artifact_irassian_research_completed', 'default')],
+     'building': None},
+    {'key': 'precursor_5', 'dlc': None, 'system': 'cybrex_system', 'num_digsites': None,
+     'relic': 'r_war_forge',
+     'rewards': [('artifact_cybrex_research_completed', 'default')],
+     'building': None},
+    {'key': 'precursor_baol_1', 'dlc': 'Ancient Relics Story Pack', 'system': 'last_baol_system',
+     'num_digsites': 4,
+     'relic': 'r_the_last_baol',
+     'rewards': [('artifact_baol_research_completed', 'default')],
+     'building': None},
+    {'key': 'precursor_zroni_1', 'dlc': 'Ancient Relics Story Pack',
+     'system': 'zroni_legacy_initializer_01', 'num_digsites': 6,
+     'relic': 'r_zro_crystal',
+     'rewards': [('artifact_zroni_research_completed', 'default')],
+     'building': ('building_zroni_equilibrator', 'planet')},
+    {'key': 'precursor_inetian', 'dlc': 'Cosmic Storms', 'system': None, 'num_digsites': None,
+     'relic': 'r_weather_manipulator',
+     'rewards': [('secrets_of_the_inetian_traders', 'default'),
+                 ('secrets_of_the_inetian_traders_hive_mach', 'hive_machine')],
+     'building': None},
+    {'key': 'precursor_adakkaria', 'dlc': 'Cosmic Storms', 'system': 'adSul_system',
+     'num_digsites': None,
+     'relic': 'r_the_tempest_invocator',
+     'rewards': [('patriotic_institute_true_potential_unleashed', 'default')],
+     'building': ('building_adakkaria_patriotic_institute', 'planet')},
+]
+
+# Keys inside a relic's triggered_country_modifier / static modifier that are not
+# numeric empire modifiers.
+_NON_MODIFIER_KEYS = frozenset({
+    'potential', 'modifier', 'custom_tooltip', 'show_only_custom_tooltip',
+    'icon', 'icon_frame',
+})
+
+# Generic relic active-effect tooltips shared by all relics (the cooldown note);
+# excluded from the stored per-relic active_effect text.
+_GENERIC_RELIC_TOOLTIPS = frozenset({
+    'relic_triumph_cooldown', 'relic_triumph_cooldown_veryshort',
+})
+
+
+def _resolve_modifier_float(raw) -> float | None:
+    if raw is None:
+        return None
+    if isinstance(raw, list):
+        raw = raw[-1]
+    try:
+        return float(str(raw).strip())
+    except (ValueError, TypeError):
+        return None
+
+
+def _write_modifier_label(w: Writer, loc: dict[str, str], mod_key: str):
+    """Populate modifier_label for a modifier key (same lookup order as traits/ethics)."""
+    override = MODIFIER_LOC_OVERRIDES.get(mod_key)
+    raw_label = (
+        (loc.get(override) if override else None) or
+        loc.get('MOD_' + mod_key.upper()) or
+        loc.get('mod_' + mod_key) or
+        loc.get(mod_key)
+    )
+    if not raw_label:
+        return
+    label = _clean_loc(raw_label, loc)
+    if '$' in label:
+        return
+    pig = 0 if mod_key in INVERTED_MODIFIERS else 1
+    w.execute(
+        """INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES (?, ?, ?)""",
+        (mod_key, label, pig),
+    )
+
+
+def _relic_condition(potential) -> str | None:
+    """Render a relic passive's 'potential' block into a short condition string.
+
+    None when the passive always applies (no potential, or always = yes)."""
+    if not isinstance(potential, dict):
+        return None
+    parts = []
+    for key, val in potential.items():
+        if key == 'always':
+            continue
+        if isinstance(val, str):
+            parts.append(f"{key} = {val}")
+        else:
+            # OR { ... } and other nested blocks: keep the operator as a marker
+            parts.append(key)
+    return ", ".join(parts) if parts else None
+
+
+def _relic_passive_rows(relic: dict) -> list[tuple[str, float, str | None]]:
+    """Extract (modifier_key, value, condition) from a relic's triggered_country_modifier blocks.
+
+    Handles both forms: a nested `modifier = { ... }` and modifiers written
+    directly as keys of the triggered_country_modifier block."""
+    blocks = relic.get('triggered_country_modifier')
+    if blocks is None:
+        return []
+    if isinstance(blocks, dict):
+        blocks = [blocks]
+    rows: list[tuple[str, float, str | None]] = []
+    for block in blocks:
+        if not isinstance(block, dict):
+            continue
+        condition = _relic_condition(block.get('potential'))
+        # Form A: nested modifier = { ... }
+        nested = block.get('modifier')
+        sources = [nested] if isinstance(nested, dict) else []
+        # Form B: modifiers written directly as keys of the block
+        direct = {k: v for k, v in block.items() if k not in _NON_MODIFIER_KEYS}
+        if direct:
+            sources.append(direct)
+        for src in sources:
+            for mod_key, mod_val in src.items():
+                value = _resolve_modifier_float(mod_val)
+                if value is None:
+                    continue
+                rows.append((mod_key, value, condition))
+    return rows
+
+
+def _relic_active_text(relic: dict, loc: dict[str, str]) -> str | None:
+    """Join the non-generic custom_tooltip strings of a relic's active_effect."""
+    active = relic.get('active_effect')
+    if not isinstance(active, dict):
+        return None
+    tips = active.get('custom_tooltip')
+    if isinstance(tips, str):
+        tips = [tips]
+    elif not isinstance(tips, list):
+        tips = []
+    texts = []
+    for key in tips:
+        if key in _GENERIC_RELIC_TOOLTIPS:
+            continue
+        raw = loc.get(key)
+        if raw:
+            cleaned = _clean_loc(raw, loc)
+            if cleaned and '$' not in cleaned:
+                texts.append(cleaned)
+    return " ".join(texts) if texts else None
+
+
+def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
+                       loc: dict[str, str], w: Writer, verbose: bool):
+    for order, p in enumerate(PRECURSORS):
+        key = p['key']
+        civ = precursor_civ.get(key, {})
+        picture = civ.get('picture').strip('"') if isinstance(civ.get('picture'), str) else None
+        name = loc.get(key)
+
+        w.execute(
+            """INSERT OR REPLACE INTO precursor
+                   (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (key, name, p['dlc'], p['system'], picture, p['num_digsites'], order),
+        )
+        if verbose:
+            print(f"  Precursor: {key} | {name} | dlc: {p['dlc']} | system: {p['system']}")
+
+        # --- relic (0..1) ---
+        relic_key = p['relic']
+        if relic_key:
+            relic = relics.get(relic_key)
+            if isinstance(relic, list):
+                relic = next((b for b in reversed(relic) if isinstance(b, dict)), None)
+            if not isinstance(relic, dict):
+                print(f"  WARNING: relic {relic_key} not found for {key}", file=sys.stderr)
+            else:
+                score = None
+                try:
+                    score = int(relic.get('score')) if relic.get('score') is not None else None
+                except (ValueError, TypeError):
+                    pass
+                portrait = relic.get('portrait')
+                portrait = portrait.strip('"') if isinstance(portrait, str) else None
+                w.execute(
+                    """INSERT OR REPLACE INTO precursor_relic
+                           (precursor_key, relic_key, name, portrait, score, description, active_effect)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (key, relic_key, loc.get(relic_key), portrait, score,
+                     _clean_loc(loc[relic_key + '_desc'], loc) if (relic_key + '_desc') in loc else None,
+                     _relic_active_text(relic, loc)),
+                )
+                for r_order, (mod_key, value, condition) in enumerate(_relic_passive_rows(relic)):
+                    w.execute(
+                        """INSERT OR IGNORE INTO precursor_relic_modifier
+                               (relic_key, modifier_key, modifier_value, condition, sort_order)
+                           VALUES (?, ?, ?, ?, ?)""",
+                        (relic_key, mod_key, value, condition, r_order),
+                    )
+                    _write_modifier_label(w, loc, mod_key)
+                    if verbose:
+                        print(f"    relic {relic_key} | {mod_key} = {value}"
+                              f"{' [' + condition + ']' if condition else ''}")
+
+        # --- permanent empire reward modifier(s) ---
+        for static_key, variant in p['rewards']:
+            mod_block = static_mods.get(static_key)
+            if mod_block is None:
+                print(f"  WARNING: static modifier {static_key} not found for {key}", file=sys.stderr)
+                continue
+            # Duplicate definitions across files are promoted to a list by the
+            # parser; the later definition wins (game load order).
+            if isinstance(mod_block, list):
+                merged: dict = {}
+                for b in mod_block:
+                    if isinstance(b, dict):
+                        merged.update(b)
+                mod_block = merged
+            if not isinstance(mod_block, dict):
+                continue
+            rew_name = loc.get(static_key)
+            rew_name = _clean_loc(rew_name, loc) if rew_name else None
+            for m_order, (mod_key, mod_val) in enumerate(mod_block.items()):
+                if mod_key in _NON_MODIFIER_KEYS:
+                    continue
+                value = _resolve_modifier_float(mod_val)
+                if value is None:
+                    continue
+                w.execute(
+                    """INSERT OR REPLACE INTO precursor_reward_modifier
+                           (precursor_key, static_modifier, variant, name,
+                            modifier_key, modifier_value, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (key, static_key, variant, rew_name, mod_key, value, m_order),
+                )
+                _write_modifier_label(w, loc, mod_key)
+                if verbose:
+                    print(f"    reward {static_key} ({variant}) | {mod_key} = {value}")
+
+        # --- building (0..1) ---
+        if p['building']:
+            building_key, scope = p['building']
+            w.execute(
+                """INSERT OR REPLACE INTO precursor_building
+                       (precursor_key, building_key, name, scope)
+                   VALUES (?, ?, ?, ?)""",
+                (key, building_key, loc.get(building_key), scope),
+            )
+            if verbose:
+                print(f"    building {building_key} ({scope}) | {loc.get(building_key)}")
+
+    w.commit()
+
+
 def main():
     ap = argparse.ArgumentParser(
         description='Stellaris Data Extractor -> SQL / SQLite',
@@ -1215,6 +1591,9 @@ Examples:
     colors_dir     = install_dir / 'common' / 'named_colors'
     ethics_dir     = install_dir / 'common' / 'ethics'
     policies_dir   = install_dir / 'common' / 'policies'
+    precursor_dir  = install_dir / 'common' / 'precursor_civilizations'
+    relics_dir     = install_dir / 'common' / 'relics'
+    static_mod_dir = install_dir / 'common' / 'static_modifiers'
     loc_dir        = install_dir / 'localisation' / 'english'
 
     if not species_dir.exists():
@@ -1348,6 +1727,42 @@ Examples:
         except Exception as e:
             print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
 
+    # --- precursors ---
+    print(f"\n[8/8] precursors", file=progress)
+    # Merge the precursor_civilizations files (base + DLC) into one dict.
+    precursor_civ: dict = {}
+    if precursor_dir.exists():
+        for f in sorted(precursor_dir.glob('*.txt')):
+            try:
+                precursor_civ.update(parse_file(f))
+            except Exception as e:
+                print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+    else:
+        print(f"  WARNING: {precursor_dir} not found", file=progress)
+    # Relic definitions (relic effects live here).
+    relics: dict = {}
+    relics_file = relics_dir / 'relics.txt'
+    if relics_file.exists():
+        try:
+            relics = parse_file(relics_file)
+        except Exception as e:
+            print(f"  WARNING: failed to parse relics.txt: {e}", file=sys.stderr)
+    else:
+        print(f"  WARNING: {relics_file} not found", file=progress)
+    # Static modifiers (the permanent empire reward modifiers) across all files.
+    static_mods: dict = {}
+    if static_mod_dir.exists():
+        for f in sorted(static_mod_dir.glob('*.txt')):
+            try:
+                static_mods.update(parse_file(f))
+            except Exception as e:
+                print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+    else:
+        print(f"  WARNING: {static_mod_dir} not found", file=progress)
+    print(f"  {len(precursor_civ)} civ entries, {len(relics)} relics, "
+          f"{len(static_mods)} static modifiers loaded", file=progress)
+    extract_precursors(precursor_civ, relics, static_mods, loc, w, args.verbose)
+
     w.close()
 
     # --- Summary ---
@@ -1372,6 +1787,11 @@ Examples:
         n_ethic_tags    = tmp.execute("SELECT COUNT(*) FROM ethic_tag").fetchone()[0]
         n_tag_labels    = tmp.execute("SELECT COUNT(*) FROM ethic_tag_label").fetchone()[0]
         n_policy_restr  = tmp.execute("SELECT COUNT(*) FROM ethic_policy_restriction").fetchone()[0]
+        n_precursors    = tmp.execute("SELECT COUNT(*) FROM precursor").fetchone()[0]
+        n_prec_relics   = tmp.execute("SELECT COUNT(*) FROM precursor_relic").fetchone()[0]
+        n_prec_relic_m  = tmp.execute("SELECT COUNT(*) FROM precursor_relic_modifier").fetchone()[0]
+        n_prec_reward_m = tmp.execute("SELECT COUNT(*) FROM precursor_reward_modifier").fetchone()[0]
+        n_prec_build    = tmp.execute("SELECT COUNT(*) FROM precursor_building").fetchone()[0]
         tmp.close()
         print(f"""
 +------------------------------------------+
@@ -1396,6 +1816,11 @@ Examples:
 |  Ethic tags         : {n_ethic_tags:<20}|
 |  Tag labels         : {n_tag_labels:<20}|
 |  Policy restrictions: {n_policy_restr:<20}|
+|  Precursors         : {n_precursors:<20}|
+|  Precursor relics   : {n_prec_relics:<20}|
+|  Precursor relic mods: {n_prec_relic_m:<19}|
+|  Precursor reward mods: {n_prec_reward_m:<18}|
+|  Precursor buildings: {n_prec_build:<20}|
 +------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size
