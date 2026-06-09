@@ -410,6 +410,90 @@ FROM precursor p
 LEFT JOIN precursor_relic    pr ON pr.precursor_key = p.key
 LEFT JOIN precursor_building pb ON pb.precursor_key = p.key
 ORDER BY p.sort_order;
+
+-- Deposit dictionary: every orbital/planetary/blocker deposit, so home-system
+-- planet deposits resolve to exact resource yields, modifiers and clear costs.
+DROP TABLE IF EXISTS deposit_modifier;
+DROP TABLE IF EXISTS deposit_resource;
+DROP TABLE IF EXISTS deposit;
+CREATE TABLE deposit (
+    key         TEXT PRIMARY KEY,       -- e.g. "d_minerals_10", "d_ruined_arcology"
+    name        TEXT,                   -- localised name
+    category    TEXT,                   -- e.g. "orbital_mining_deposits", "deposit_cat_blockers"
+    is_blocker  INTEGER NOT NULL DEFAULT 0,
+    clear_time  INTEGER,                -- days to clear (blockers)
+    source_file TEXT
+);
+CREATE TABLE deposit_resource (
+    deposit_key TEXT NOT NULL,
+    kind        TEXT NOT NULL,          -- 'produces' | 'cost' | 'upkeep'
+    resource    TEXT NOT NULL,          -- e.g. "minerals", "physics_research"
+    amount      REAL NOT NULL,
+    PRIMARY KEY (deposit_key, kind, resource),
+    FOREIGN KEY (deposit_key) REFERENCES deposit(key)
+);
+CREATE TABLE deposit_modifier (
+    deposit_key    TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    PRIMARY KEY (deposit_key, modifier_key),
+    FOREIGN KEY (deposit_key) REFERENCES deposit(key)
+);
+
+-- Precursor home systems (1..n per precursor) and their planets/deposits.
+-- planet.id is the synthetic "<initializer>#<index>" so child rows resolve in
+-- both the SQL dump and SQLite without relying on autoincrement/lastrowid.
+DROP TABLE IF EXISTS precursor_megastructure;
+DROP TABLE IF EXISTS precursor_planet_modifier;
+DROP TABLE IF EXISTS precursor_planet_deposit;
+DROP TABLE IF EXISTS precursor_planet;
+DROP TABLE IF EXISTS precursor_system;
+CREATE TABLE precursor_system (
+    precursor_key TEXT NOT NULL,
+    initializer   TEXT NOT NULL,         -- e.g. "fen_habbanis_system"
+    name          TEXT,                  -- localised system name
+    star_class    TEXT,                  -- e.g. "sc_g"
+    sort_order    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (precursor_key, initializer),
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+CREATE TABLE precursor_planet (
+    id                 TEXT PRIMARY KEY,  -- "<initializer>#<index>"
+    precursor_key      TEXT NOT NULL,
+    initializer        TEXT NOT NULL,
+    name               TEXT,
+    planet_class       TEXT,              -- e.g. "pc_relic", "pc_nuked", "pc_cybrex"
+    planet_class_label TEXT,              -- localised, e.g. "Relic World", "Tomb World"
+    size               INTEGER,
+    is_moon            INTEGER NOT NULL DEFAULT 0,
+    is_homeworld       INTEGER NOT NULL DEFAULT 0,  -- carries a *_homeworld planet flag
+    flags              TEXT,              -- space-joined planet flags
+    sort_order         INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+CREATE TABLE precursor_planet_deposit (
+    planet_id   TEXT NOT NULL,
+    deposit_key TEXT NOT NULL,
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (planet_id)   REFERENCES precursor_planet(id),
+    FOREIGN KEY (deposit_key) REFERENCES deposit(key)
+);
+CREATE TABLE precursor_planet_modifier (
+    planet_id       TEXT NOT NULL,
+    static_modifier TEXT NOT NULL,        -- e.g. "first_league_homeworld"
+    modifier_key    TEXT NOT NULL,
+    modifier_value  REAL NOT NULL,
+    PRIMARY KEY (planet_id, static_modifier, modifier_key),
+    FOREIGN KEY (planet_id) REFERENCES precursor_planet(id)
+);
+CREATE TABLE precursor_megastructure (
+    precursor_key TEXT NOT NULL,
+    initializer   TEXT NOT NULL,
+    type          TEXT NOT NULL,          -- e.g. "hyper_relay_ruined"
+    type_label    TEXT,                   -- localised, e.g. "Ruined Hyper Relay"
+    PRIMARY KEY (precursor_key, initializer, type),
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
 """
 
 
@@ -1549,6 +1633,262 @@ def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
     w.commit()
 
 
+# ---------------------------------------------------------------------------
+# Extraction: deposits (dictionary for home-system planet deposits)
+# ---------------------------------------------------------------------------
+
+def extract_deposits(data: dict, source_file: str, loc: dict[str, str],
+                     w: Writer, verbose: bool):
+    for key, d in data.items():
+        if key.startswith('@') or not isinstance(d, dict) or not key.startswith('d_'):
+            continue
+
+        resources = d.get('resources')
+        if not isinstance(resources, dict):
+            resources = {}
+        # Category can be top-level (blockers) or inside the resources block.
+        category = d.get('category') or resources.get('category')
+        is_blocker = 1 if (isinstance(category, str) and 'blocker' in category) else 0
+        clear_time = None
+        try:
+            clear_time = int(d.get('time')) if d.get('time') is not None else None
+        except (ValueError, TypeError):
+            pass
+
+        w.execute(
+            """INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (key, _clean_loc(loc[key], loc) if key in loc else None,
+             category, is_blocker, clear_time, source_file),
+        )
+
+        for kind in ('produces', 'cost', 'upkeep'):
+            block = resources.get(kind)
+            if not isinstance(block, dict):
+                continue
+            for res, amt in block.items():
+                value = _resolve_modifier_float(amt)
+                if value is None:
+                    continue
+                w.execute(
+                    """INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES (?, ?, ?, ?)""",
+                    (key, kind, res, value),
+                )
+
+        # Blocker/feature planet modifiers.
+        for mod_block_key in ('planet_modifier', 'modifier'):
+            pm = d.get(mod_block_key)
+            if not isinstance(pm, dict):
+                continue
+            for mod_key, mod_val in pm.items():
+                value = _resolve_modifier_float(mod_val)
+                if value is None:
+                    continue
+                w.execute(
+                    """INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES (?, ?, ?)""",
+                    (key, mod_key, value),
+                )
+                _write_modifier_label(w, loc, mod_key)
+
+        if verbose:
+            print(f"  Deposit: {key} | blocker: {is_blocker} | {category}")
+
+    w.commit()
+
+
+# ---------------------------------------------------------------------------
+# Extraction: precursor home systems
+# ---------------------------------------------------------------------------
+
+# precursor key -> home system initializer(s). Some precursors span several
+# systems (Zroni's three legacy worlds; Cybrex's plain system + the ringworld
+# in cybrex_beta). Verified against the initializer files and the spawn_system
+# calls in the precursor events.
+PRECURSOR_SYSTEMS: dict[str, list[str]] = {
+    'precursor_1':       ['vultaumar_system'],
+    'precursor_2':       ['yuhtaan_system'],
+    'precursor_3':       ['fen_habbanis_system'],
+    'precursor_4':       ['irass_system'],
+    'precursor_5':       ['cybrex_system', 'cybrex_beta'],
+    'precursor_baol_1':  ['last_baol_system'],
+    'precursor_zroni_1': ['zroni_legacy_initializer_01', 'zroni_legacy_initializer_02',
+                          'zroni_legacy_initializer_03'],
+    'precursor_inetian': ['weathermanipulators_home_system'],
+    'precursor_adakkaria': ['adSalivul_system', 'adSul_system'],
+}
+
+
+def _as_blocks(v) -> list[dict]:
+    """Normalise a sub-block value to a list of dicts.
+
+    Unlike _to_list (which returns a dict's *keys*), this wraps a single dict
+    as [dict] — correct for blocks like init_effect / add_modifier that are
+    promoted to a list only when they appear more than once."""
+    if isinstance(v, dict):
+        return [v]
+    if isinstance(v, list):
+        return [x for x in v if isinstance(x, dict)]
+    return []
+
+
+def _loc_name(raw, loc: dict[str, str]) -> str | None:
+    """Resolve a NAME_ loc key, falling back to the literal string."""
+    if not isinstance(raw, str):
+        return None
+    raw = raw.strip('"')
+    return _clean_loc(loc.get(raw, raw), loc) or None
+
+
+def _collect_init_effects(planet: dict) -> tuple[list[str], list[str], list[str]]:
+    """Scan a planet's init_effect block(s) and the top-level `deposit` key.
+
+    Returns (deposit_keys, modifier_static_keys, megastructure_types)."""
+    deposits: list[str] = []
+    modifiers: list[str] = []
+    megastructures: list[str] = []
+
+    for dep in _to_list(planet.get('deposit')):
+        if isinstance(dep, str):
+            deposits.append(dep)
+
+    for init in _as_blocks(planet.get('init_effect')):
+        for dk in ('add_deposit', 'set_deposit'):
+            for dep in _to_list(init.get(dk)):
+                if isinstance(dep, str):
+                    deposits.append(dep)
+        for m in _as_blocks(init.get('add_modifier')):
+            if isinstance(m.get('modifier'), str):
+                modifiers.append(m['modifier'])
+        for ms in _as_blocks(init.get('spawn_megastructure')):
+            if isinstance(ms.get('type'), str):
+                megastructures.append(ms['type'].strip('"'))
+
+    return deposits, modifiers, megastructures
+
+
+def _planet_flags(planet: dict) -> list[str]:
+    flags = planet.get('flags')
+    if isinstance(flags, dict):
+        return list(flags.keys())
+    return _to_list(flags)
+
+
+def extract_precursor_systems(initializers: dict, static_mods: dict,
+                              loc: dict[str, str], w: Writer, verbose: bool):
+    for p in PRECURSORS:
+        pkey = p['key']
+        for sys_order, init_key in enumerate(PRECURSOR_SYSTEMS.get(pkey, [])):
+            sys_block = initializers.get(init_key)
+            if isinstance(sys_block, list):
+                sys_block = next((b for b in reversed(sys_block) if isinstance(b, dict)), None)
+            if not isinstance(sys_block, dict):
+                print(f"  WARNING: system {init_key} not found for {pkey}", file=sys.stderr)
+                continue
+
+            w.execute(
+                """INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (pkey, init_key, _loc_name(sys_block.get('name'), loc),
+                 sys_block.get('class'), sys_order),
+            )
+            if verbose:
+                print(f"  System: {pkey} | {init_key} | {_loc_name(sys_block.get('name'), loc)}")
+
+            # System-level megastructures (e.g. the Yuht ruined hyper relay sits
+            # in the system's own init_effect, not on any planet).
+            for init in _as_blocks(sys_block.get('init_effect')):
+                for ms in _as_blocks(init.get('spawn_megastructure')):
+                    ms_type = ms.get('type')
+                    if not isinstance(ms_type, str):
+                        continue
+                    ms_type = ms_type.strip('"')
+                    w.execute(
+                        """INSERT OR IGNORE INTO precursor_megastructure
+                               (precursor_key, initializer, type, type_label)
+                           VALUES (?, ?, ?, ?)""",
+                        (pkey, init_key, ms_type,
+                         _clean_loc(loc[ms_type], loc) if ms_type in loc else None),
+                    )
+
+            # Flatten planets and their moons into one ordered list.
+            entries: list[tuple[dict, bool]] = []
+            for planet in _as_blocks(sys_block.get('planet')):
+                entries.append((planet, False))
+                for moon in _as_blocks(planet.get('moon')):
+                    entries.append((moon, True))
+
+            for idx, (planet, is_moon) in enumerate(entries):
+                planet_id = f"{init_key}#{idx}"
+                pclass = planet.get('class')
+                pclass = pclass.strip('"') if isinstance(pclass, str) else None
+                size = None
+                try:
+                    size = int(planet.get('size')) if planet.get('size') is not None else None
+                except (ValueError, TypeError):
+                    pass
+                flags = _planet_flags(planet)
+                is_homeworld = 1 if any('homeworld' in f for f in flags) else 0
+
+                w.execute(
+                    """INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (planet_id, pkey, init_key, _loc_name(planet.get('name'), loc), pclass,
+                     _clean_loc(loc[pclass], loc) if (pclass and pclass in loc) else None,
+                     size, 1 if is_moon else 0, is_homeworld,
+                     ' '.join(flags) if flags else None, idx),
+                )
+
+                deposits, modifiers, megastructures = _collect_init_effects(planet)
+                for d_order, dep in enumerate(deposits):
+                    w.execute(
+                        """INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES (?, ?, ?)""",
+                        (planet_id, dep, d_order),
+                    )
+                for static_key in modifiers:
+                    mod_block = static_mods.get(static_key)
+                    if isinstance(mod_block, list):
+                        merged: dict = {}
+                        for b in mod_block:
+                            if isinstance(b, dict):
+                                merged.update(b)
+                        mod_block = merged
+                    if not isinstance(mod_block, dict):
+                        continue
+                    for mod_key, mod_val in mod_block.items():
+                        if mod_key in _NON_MODIFIER_KEYS:
+                            continue
+                        value = _resolve_modifier_float(mod_val)
+                        if value is None:
+                            continue
+                        w.execute(
+                            """INSERT OR REPLACE INTO precursor_planet_modifier
+                                   (planet_id, static_modifier, modifier_key, modifier_value)
+                               VALUES (?, ?, ?, ?)""",
+                            (planet_id, static_key, mod_key, value),
+                        )
+                        _write_modifier_label(w, loc, mod_key)
+
+                # Megastructures are recorded at system level (deduped by PK).
+                for ms_type in megastructures:
+                    w.execute(
+                        """INSERT OR IGNORE INTO precursor_megastructure
+                               (precursor_key, initializer, type, type_label)
+                           VALUES (?, ?, ?, ?)""",
+                        (pkey, init_key, ms_type,
+                         _clean_loc(loc[ms_type], loc) if ms_type in loc else None),
+                    )
+                    if verbose:
+                        print(f"    megastructure: {ms_type} ({loc.get(ms_type)})")
+
+    w.commit()
+
+
 def main():
     ap = argparse.ArgumentParser(
         description='Stellaris Data Extractor -> SQL / SQLite',
@@ -1594,6 +1934,8 @@ Examples:
     precursor_dir  = install_dir / 'common' / 'precursor_civilizations'
     relics_dir     = install_dir / 'common' / 'relics'
     static_mod_dir = install_dir / 'common' / 'static_modifiers'
+    deposits_dir   = install_dir / 'common' / 'deposits'
+    sysinit_dir    = install_dir / 'common' / 'solar_system_initializers'
     loc_dir        = install_dir / 'localisation' / 'english'
 
     if not species_dir.exists():
@@ -1763,6 +2105,29 @@ Examples:
           f"{len(static_mods)} static modifiers loaded", file=progress)
     extract_precursors(precursor_civ, relics, static_mods, loc, w, args.verbose)
 
+    # --- deposits (dictionary for home-system planet deposits) ---
+    dep_files = sorted(deposits_dir.glob('*.txt')) if deposits_dir.exists() else []
+    print(f"\n[9/10] deposits: {len(dep_files)} file(s)", file=progress)
+    for f in dep_files:
+        try:
+            extract_deposits(parse_file(f), f.name, loc, w, args.verbose)
+        except Exception as e:
+            print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+
+    # --- precursor home systems (planets, deposits, megastructures) ---
+    print(f"\n[10/10] precursor home systems", file=progress)
+    initializers: dict = {}
+    if sysinit_dir.exists():
+        for f in sorted(sysinit_dir.glob('*.txt')):
+            try:
+                initializers.update(parse_file(f))
+            except Exception as e:
+                print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+    else:
+        print(f"  WARNING: {sysinit_dir} not found", file=progress)
+    print(f"  {len(initializers)} system initializers loaded", file=progress)
+    extract_precursor_systems(initializers, static_mods, loc, w, args.verbose)
+
     w.close()
 
     # --- Summary ---
@@ -1792,6 +2157,11 @@ Examples:
         n_prec_relic_m  = tmp.execute("SELECT COUNT(*) FROM precursor_relic_modifier").fetchone()[0]
         n_prec_reward_m = tmp.execute("SELECT COUNT(*) FROM precursor_reward_modifier").fetchone()[0]
         n_prec_build    = tmp.execute("SELECT COUNT(*) FROM precursor_building").fetchone()[0]
+        n_deposits      = tmp.execute("SELECT COUNT(*) FROM deposit").fetchone()[0]
+        n_prec_sys      = tmp.execute("SELECT COUNT(*) FROM precursor_system").fetchone()[0]
+        n_prec_planet   = tmp.execute("SELECT COUNT(*) FROM precursor_planet").fetchone()[0]
+        n_prec_pdep     = tmp.execute("SELECT COUNT(*) FROM precursor_planet_deposit").fetchone()[0]
+        n_prec_mega     = tmp.execute("SELECT COUNT(*) FROM precursor_megastructure").fetchone()[0]
         tmp.close()
         print(f"""
 +------------------------------------------+
@@ -1821,6 +2191,11 @@ Examples:
 |  Precursor relic mods: {n_prec_relic_m:<19}|
 |  Precursor reward mods: {n_prec_reward_m:<18}|
 |  Precursor buildings: {n_prec_build:<20}|
+|  Deposits (dict)    : {n_deposits:<20}|
+|  Precursor systems  : {n_prec_sys:<20}|
+|  Precursor planets  : {n_prec_planet:<20}|
+|  Precursor planet dep: {n_prec_pdep:<19}|
+|  Precursor megastruct: {n_prec_mega:<19}|
 +------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size

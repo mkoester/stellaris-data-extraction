@@ -64,6 +64,8 @@ sqlite/                  SQLite DB output (gitignored)
 | [6/7]  | Ethics + tags               | `common/ethics/`                  |
 | [7/7]  | Policy restrictions         | `common/policies/`                |
 | [8/8]  | Precursors + rewards        | `common/precursor_civilizations/`, `common/relics/`, `common/static_modifiers/` |
+| [9/10] | Deposits (dictionary)       | `common/deposits/`                |
+| [10/10]| Precursor home systems      | `common/solar_system_initializers/` |
 
 Localisation: `localisation/english/*.yml`
 
@@ -85,7 +87,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_reward_modifier`, `precursor_building`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_reward_modifier`, `precursor_building`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
 
 Drop order matters for FK integrity:
 ```sql
@@ -189,9 +191,50 @@ display project gets human-readable effect strings for free.
 `precursor_relic_modifier` on `relic_key`, `precursor_reward_modifier` on `key`).
 
 **Known minor gaps:** Yuht & Cybrex relics have no active-effect text (Yuht has no
-`custom_tooltip`; Cybrex's only one is the generic cooldown). Inetian home system
-not yet identified. `num_digsites` only set where the arc sites group cleanly
-(Baol 4, Zroni 6).
+`custom_tooltip`; Cybrex's only one is the generic cooldown). `num_digsites` only
+set where the arc sites group cleanly (Baol 4, Zroni 6).
+
+---
+
+## Precursor Home Systems & Deposits (`extract_deposits`, `extract_precursor_systems`)
+
+The home systems each precursor leads you to (planets, deposits, megastructures).
+
+**`deposit` dictionary** — extracts *all* of `common/deposits/` into `deposit`
+(+ `deposit_resource` for produces/cost/upkeep, `deposit_modifier` for blocker
+`planet_modifier`s). `is_blocker` = category contains `blocker`; `clear_time` =
+the `time` field. So `d_minerals_10` → produces 10 minerals, `d_ruined_arcology`
+→ blocker, −1 district, 360-day clear costing 750 energy + 250 minerals.
+
+**`PRECURSOR_SYSTEMS` config** maps each precursor → its initializer key(s).
+Some span several systems: **Zroni** = 3 (`zroni_legacy_initializer_01/02/03`),
+**Cybrex** = 2 (`cybrex_system` + `cybrex_beta`, the ruined ringworld). Inetian =
+`weathermanipulators_home_system`, adAkkaria = `adSalivul_system` + `adSul_system`.
+All `common/solar_system_initializers/*.txt` are parsed and merged; the config
+selects the ones we care about.
+
+**Planet parsing:** `precursor_planet.id` is the synthetic `<initializer>#<index>`
+(deterministic → works in both SQL dump and SQLite, no autoincrement/lastrowid).
+Planet class → loc (`pc_relic` → "Relic World", `pc_nuked` → "Tomb World"). Moons
+are flattened into the planet list with `is_moon = 1`; `is_homeworld` = any
+planet flag containing `homeworld`.
+
+**`_as_blocks()` vs `_to_list()` — important:** `_to_list` returns a *dict's keys*,
+which is wrong for dict-valued sub-blocks (`init_effect`, `add_modifier`,
+`spawn_megastructure`). Use `_as_blocks` for those — it wraps a single dict as
+`[dict]` and filters lists to dicts. (Sub-blocks are promoted to a list by the
+parser only when they appear more than once.)
+
+**Megastructures live at two levels.** A planet's `init_effect` *can* hold
+`spawn_megastructure`, but the **system-level** `init_effect` does too — the Yuht
+ruined hyper relay (`hyper_relay_ruined`) is system-level, so both scopes are
+scanned. Cybrex's ruined ringworld surfaces as `ring_world_ruined` + the
+`pc_cybrex`/`pc_ringworld_*` planet sections.
+
+**Deposit sources on a planet:** the top-level `deposit` key *and*
+`add_deposit`/`set_deposit` inside `init_effect`(s). Planet `add_modifier`s are
+resolved through `static_mods` into `precursor_planet_modifier` (e.g. the First
+League homeworld's +10 society/physics/engineering research).
 
 ---
 
@@ -239,6 +282,14 @@ Unresolved `$KEY$` inline references in labels are discarded (label not stored i
 | Precursor relic modifiers | 11   |
 | Precursor reward modifiers | 19  |
 | Precursor buildings       | 2    |
+| Deposits (dictionary)     | 575  |
+| Deposit resources         | 337  |
+| Deposit modifiers         | 471  |
+| Precursor systems         | 13   |
+| Precursor planets         | 96   |
+| Precursor planet deposits | 56   |
+| Precursor planet modifiers | 3   |
+| Precursor megastructures  | 2    |
 
 ---
 

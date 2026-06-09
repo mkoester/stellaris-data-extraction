@@ -251,6 +251,90 @@ LEFT JOIN precursor_relic    pr ON pr.precursor_key = p.key
 LEFT JOIN precursor_building pb ON pb.precursor_key = p.key
 ORDER BY p.sort_order;
 
+-- Deposit dictionary: every orbital/planetary/blocker deposit, so home-system
+-- planet deposits resolve to exact resource yields, modifiers and clear costs.
+DROP TABLE IF EXISTS deposit_modifier;
+DROP TABLE IF EXISTS deposit_resource;
+DROP TABLE IF EXISTS deposit;
+CREATE TABLE deposit (
+    key         TEXT PRIMARY KEY,       -- e.g. "d_minerals_10", "d_ruined_arcology"
+    name        TEXT,                   -- localised name
+    category    TEXT,                   -- e.g. "orbital_mining_deposits", "deposit_cat_blockers"
+    is_blocker  INTEGER NOT NULL DEFAULT 0,
+    clear_time  INTEGER,                -- days to clear (blockers)
+    source_file TEXT
+);
+CREATE TABLE deposit_resource (
+    deposit_key TEXT NOT NULL,
+    kind        TEXT NOT NULL,          -- 'produces' | 'cost' | 'upkeep'
+    resource    TEXT NOT NULL,          -- e.g. "minerals", "physics_research"
+    amount      REAL NOT NULL,
+    PRIMARY KEY (deposit_key, kind, resource),
+    FOREIGN KEY (deposit_key) REFERENCES deposit(key)
+);
+CREATE TABLE deposit_modifier (
+    deposit_key    TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    PRIMARY KEY (deposit_key, modifier_key),
+    FOREIGN KEY (deposit_key) REFERENCES deposit(key)
+);
+
+-- Precursor home systems (1..n per precursor) and their planets/deposits.
+-- planet.id is the synthetic "<initializer>#<index>" so child rows resolve in
+-- both the SQL dump and SQLite without relying on autoincrement/lastrowid.
+DROP TABLE IF EXISTS precursor_megastructure;
+DROP TABLE IF EXISTS precursor_planet_modifier;
+DROP TABLE IF EXISTS precursor_planet_deposit;
+DROP TABLE IF EXISTS precursor_planet;
+DROP TABLE IF EXISTS precursor_system;
+CREATE TABLE precursor_system (
+    precursor_key TEXT NOT NULL,
+    initializer   TEXT NOT NULL,         -- e.g. "fen_habbanis_system"
+    name          TEXT,                  -- localised system name
+    star_class    TEXT,                  -- e.g. "sc_g"
+    sort_order    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (precursor_key, initializer),
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+CREATE TABLE precursor_planet (
+    id                 TEXT PRIMARY KEY,  -- "<initializer>#<index>"
+    precursor_key      TEXT NOT NULL,
+    initializer        TEXT NOT NULL,
+    name               TEXT,
+    planet_class       TEXT,              -- e.g. "pc_relic", "pc_nuked", "pc_cybrex"
+    planet_class_label TEXT,              -- localised, e.g. "Relic World", "Tomb World"
+    size               INTEGER,
+    is_moon            INTEGER NOT NULL DEFAULT 0,
+    is_homeworld       INTEGER NOT NULL DEFAULT 0,  -- carries a *_homeworld planet flag
+    flags              TEXT,              -- space-joined planet flags
+    sort_order         INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+CREATE TABLE precursor_planet_deposit (
+    planet_id   TEXT NOT NULL,
+    deposit_key TEXT NOT NULL,
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (planet_id)   REFERENCES precursor_planet(id),
+    FOREIGN KEY (deposit_key) REFERENCES deposit(key)
+);
+CREATE TABLE precursor_planet_modifier (
+    planet_id       TEXT NOT NULL,
+    static_modifier TEXT NOT NULL,        -- e.g. "first_league_homeworld"
+    modifier_key    TEXT NOT NULL,
+    modifier_value  REAL NOT NULL,
+    PRIMARY KEY (planet_id, static_modifier, modifier_key),
+    FOREIGN KEY (planet_id) REFERENCES precursor_planet(id)
+);
+CREATE TABLE precursor_megastructure (
+    precursor_key TEXT NOT NULL,
+    initializer   TEXT NOT NULL,
+    type          TEXT NOT NULL,          -- e.g. "hyper_relay_ruined"
+    type_label    TEXT,                   -- localised, e.g. "Ruined Hyper Relay"
+    PRIMARY KEY (precursor_key, initializer, type),
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+
 -- Data
 
 INSERT OR IGNORE INTO dlc (name, steam_id, affects_gameplay)
@@ -10723,3 +10807,4262 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO precursor_building
                        (precursor_key, building_key, name, scope)
                    VALUES ('precursor_adakkaria', 'building_adakkaria_patriotic_institute', 'Patriotic Institute of Celebration', 'planet');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_null_deposit', NULL, NULL, 0, NULL, '00_null_deposit.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_mountain_range', 'Impassable Mountains', 'deposit_cat_blockers_natural', 1, 270, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_mountain_range', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mountain_range', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_active_volcano', 'Active Volcano', 'deposit_cat_blockers_natural', 1, 270, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_active_volcano', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_active_volcano', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_dangerous_wildlife_blocker', 'Dangerous Wildlife', 'deposit_cat_blockers_natural', 1, 270, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_dangerous_wildlife_blocker', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_dangerous_wildlife_blocker', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_lethal_ecosphere_blocker', 'Lethal Ecosphere', 'deposit_cat_blockers_natural', 1, 720000, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_lethal_ecosphere_blocker', 'cost', 'energy', '50000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lethal_ecosphere_blocker', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_dense_jungle', 'Dense Jungle', 'deposit_cat_blockers_natural', 1, 180, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_dense_jungle', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_dense_jungle', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_toxic_kelp', 'Toxic Kelp', 'deposit_cat_blockers_natural', 1, 180, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_toxic_kelp', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_kelp', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_deep_sinkhole', 'Deep Sinkhole', 'deposit_cat_blockers_natural', 1, 180, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_deep_sinkhole', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_deep_sinkhole', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_quicksand_basin', 'Quicksand Basin', 'deposit_cat_blockers_natural', 1, 180, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_quicksand_basin', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_quicksand_basin', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_noxious_swamp', 'Noxious Swamp', 'deposit_cat_blockers_natural', 1, 180, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_noxious_swamp', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_noxious_swamp', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_massive_glacier', 'Massive Glacier', 'deposit_cat_blockers_natural', 1, 180, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_massive_glacier', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_massive_glacier', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_radioactive_wasteland', 'Radioactive Wasteland', 'deposit_cat_blockers', 1, 270, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_radioactive_wasteland', 'cost', 'energy', '800.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_radioactive_wasteland', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_city_ruins', 'City Ruins', 'deposit_cat_blockers', 1, 360, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_city_ruins', 'cost', 'energy', '1200.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_city_ruins', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_bomb_crater', 'Bomb Crater', 'deposit_cat_blockers', 1, 270, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_bomb_crater', 'cost', 'energy', '800.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_bomb_crater', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_crater', 'Impact Crater', 'deposit_cat_blockers', 1, 100, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_crater', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crater', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ruined_district', 'Ruined District', 'deposit_cat_blockers', 1, 200, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ruined_district', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ruined_district', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wandering_forests', 'Wandering Forests', 'deposit_cat_blockers', 1, NULL, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wandering_forests', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_sinkhole_subterraneans', 'Subterranean Entrance', 'deposit_cat_blockers', 1, 100, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_sinkhole_subterraneans', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sinkhole_subterraneans', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_titanic_life_blocker', 'Titanic Lifeforms', 'deposit_cat_rare', 0, NULL, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_titanic_life_blocker', 'produces', 'society_research', '8.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_titanic_life_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_failing_infrastructure', 'Industrial Wasteland', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_failing_infrastructure', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_failing_infrastructure', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_forgotten_civilization', 'Forgotten Civilization', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_forgotten_civilization', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_forgotten_civilization', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_decrepit_dwellings', 'Sprawling Slums', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_decrepit_dwellings', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_decrepit_dwellings', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_tomb_world_ruins', 'Settled Ruins', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_tomb_world_ruins', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tomb_world_ruins', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_tomb_world_wasteland', 'Radiation Zone', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_tomb_world_wasteland', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tomb_world_wasteland', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_machine_empire_ruins', 'Long-Abandoned City', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_machine_empire_ruins', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_machine_empire_ruins', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_exterminators_ruins', 'Former Organic City', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_exterminators_ruins', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_exterminators_ruins', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_former_battlefield', 'Battlefield Remnants', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_former_battlefield', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_former_battlefield', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_strip_mine', 'Abandoned Strip Mine', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_strip_mine', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_strip_mine', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_unsupervised_settlement', 'Unsupervised Settlement', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_unsupervised_settlement', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_unsupervised_settlement', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_collapsed_burrows', 'Collapsed Burrows', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_collapsed_burrows', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_collapsed_burrows', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_assimilators_ruins', 'Silent Ruins', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_assimilators_ruins', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_assimilators_ruins', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_fungoid_extermination', 'Fungoid Extermination Residue', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_fungoid_extermination', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_fungoid_extermination', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_egg_cracking', 'Rifts', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_egg_cracking', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_egg_cracking', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ruined_building_blocker', 'Ruins', 'deposit_cat_blockers', 1, 120, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ruined_building_blocker', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ruined_building_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ruined_arcology', 'Ruined Arcology', 'deposit_cat_blockers', 1, 360, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ruined_arcology', 'cost', 'energy', '750.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ruined_arcology', 'cost', 'minerals', '250.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ruined_arcology', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_archaeological_site', 'Archaeological Site', 'deposit_cat_rare_blocker', 1, NULL, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_archaeological_site', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hibernating_lithoids', 'Lithoid Monoliths', 'deposit_cat_blockers', 1, 360, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_lithoid_devastation', 'Lithoid Devastation', 'deposit_cat_blockers', 1, 360, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_lithoid_devastation', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lithoid_devastation', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lithoid_devastation', 'pop_environment_tolerance', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_terraforming_blocker', 'Terraforming Residue', 'deposit_cat_blockers', 1, 180, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_terraforming_blocker', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_terraforming_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_exploited_deposit_blocker', 'Exhausted Deposit', 'deposit_cat_blockers', 1, 180, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_exploited_deposit_blocker', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_exploited_deposit_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_tainted_snowcaps', 'Tainted Snowcaps', 'deposit_cat_blockers', 1, 360, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_tainted_snowcaps', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tainted_snowcaps', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tainted_snowcaps', 'planet_amenities_add', '-500.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_poisonous_algae', 'Poisonous Algae', 'deposit_cat_blockers', 1, 360, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_poisonous_algae', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_poisonous_algae', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_poisonous_algae', 'planet_farmers_food_produces_mult', '-0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_food_produces_mult', 'Produced from', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_venomous_insects', 'Venomous Insects', 'deposit_cat_blockers', 1, 360, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_venomous_insects', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_venomous_insects', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_venomous_insects', 'pop_happiness', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_unpleasant_atmosphere', 'Unpleasant Atmosphere', 'deposit_cat_blockers', 1, 360, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_unpleasant_atmosphere', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_unpleasant_atmosphere', 'pop_environment_tolerance', '-0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_rotten_soil', 'Rotten Soil', 'deposit_cat_blockers', 1, 360, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_rotten_soil', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_rotten_soil', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_mass_graves', 'Mass Graves', 'deposit_cat_blockers', 1, 360, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_mass_graves', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mass_graves', 'habitability_ceil_add', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mass_graves', 'planet_amenities_add', '-500.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mass_graves', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_seed_bombing_fungoid_blocker', 'Explosive Fungal Growth', 'deposit_cat_blockers_natural', 1, 180, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_seed_bombing_fungoid_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_seed_bombing_plantoid_blocker', 'Explosive Sylvan Growth', 'deposit_cat_blockers_natural', 1, 180, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_seed_bombing_plantoid_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_sprawling_landfill_blocker', 'Spreading Landfill', 'deposit_cat_blockers', 1, 180, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_sprawling_landfill_blocker', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sprawling_landfill_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sprawling_landfill_blocker', 'pop_environment_tolerance', '-0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_nanotech_devastation', 'Nanite Harvest Basin', 'deposit_cat_blockers', 1, 360, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_nanotech_devastation', 'produces', 'nanites', '0.5');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_nanotech_devastation', 'cost', 'energy', '2500.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ruined_hatchery', 'Ruined Hatchery', 'deposit_cat_blockers', 1, 360, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ruined_hatchery', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_unplugged_assimilator_hulk', 'Machine Hulk', 'deposit_cat_blockers', 1, 240, '01_blocker_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_unplugged_assimilator_hulk', 'cost', 'energy', '900.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_unplugged_assimilator_hulk', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_minerals_1', '+1', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_minerals_1', 'produces', 'minerals', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_minerals_2', '+2', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_minerals_2', 'produces', 'minerals', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_minerals_3', '+3', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_minerals_3', 'produces', 'minerals', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_minerals_4', '+4', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_minerals_4', 'produces', 'minerals', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_minerals_5', '+5', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_minerals_5', 'produces', 'minerals', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_minerals_6', '+6', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_minerals_6', 'produces', 'minerals', '6.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_minerals_7', '+7', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_minerals_7', 'produces', 'minerals', '7.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_minerals_8', '+8', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_minerals_8', 'produces', 'minerals', '8.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_minerals_9', '+9', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_minerals_9', 'produces', 'minerals', '9.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_minerals_10', '+10', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_minerals_10', 'produces', 'minerals', '10.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_energy_1', '+1', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_energy_1', 'produces', 'energy', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_energy_2', '+2', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_energy_2', 'produces', 'energy', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_energy_3', '+3', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_energy_3', 'produces', 'energy', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_energy_4', '+4', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_energy_4', 'produces', 'energy', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_energy_5', '+5', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_energy_5', 'produces', 'energy', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_energy_6', '+6', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_energy_6', 'produces', 'energy', '6.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_energy_7', '+7', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_energy_7', 'produces', 'energy', '7.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_energy_8', '+8', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_energy_8', 'produces', 'energy', '8.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_energy_9', '+9', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_energy_9', 'produces', 'energy', '9.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_energy_10', '+10', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_energy_10', 'produces', 'energy', '10.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_society_1', '+1', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_society_1', 'produces', 'society_research', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_society_2', '+2', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_society_2', 'produces', 'society_research', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_society_3', '+3', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_society_3', 'produces', 'society_research', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_society_4', '+4', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_society_4', 'produces', 'society_research', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_society_5', '+5', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_society_5', 'produces', 'society_research', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_society_6', '+6', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_society_6', 'produces', 'society_research', '6.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_society_7', '+7', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_society_7', 'produces', 'society_research', '7.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_society_8', '+8', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_society_8', 'produces', 'society_research', '8.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_society_9', '+9', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_society_9', 'produces', 'society_research', '9.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_society_10', '+10', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_society_10', 'produces', 'society_research', '10.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_society_15', '+15', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_society_15', 'produces', 'society_research', '15.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_physics_1', '+1', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_physics_1', 'produces', 'physics_research', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_physics_2', '+2', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_physics_2', 'produces', 'physics_research', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_physics_3', '+3', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_physics_3', 'produces', 'physics_research', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_physics_4', '+4', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_physics_4', 'produces', 'physics_research', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_physics_5', '+5', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_physics_5', 'produces', 'physics_research', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_physics_6', '+6', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_physics_6', 'produces', 'physics_research', '6.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_physics_7', '+7', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_physics_7', 'produces', 'physics_research', '7.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_physics_8', '+8', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_physics_8', 'produces', 'physics_research', '8.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_physics_9', '+9', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_physics_9', 'produces', 'physics_research', '9.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_physics_10', '+10', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_physics_10', 'produces', 'physics_research', '10.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_engineering_1', '+1', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_engineering_1', 'produces', 'engineering_research', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_engineering_2', '+2', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_engineering_2', 'produces', 'engineering_research', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_engineering_3', '+3', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_engineering_3', 'produces', 'engineering_research', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_engineering_4', '+4', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_engineering_4', 'produces', 'engineering_research', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_engineering_5', '+5', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_engineering_5', 'produces', 'engineering_research', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_engineering_6', '+6', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_engineering_6', 'produces', 'engineering_research', '6.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_engineering_7', '+7', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_engineering_7', 'produces', 'engineering_research', '7.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_engineering_8', '+8', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_engineering_8', 'produces', 'engineering_research', '8.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_engineering_9', '+9', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_engineering_9', 'produces', 'engineering_research', '9.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_engineering_10', '+10', 'orbital_research_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_engineering_10', 'produces', 'engineering_research', '10.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_trade_value_1', '+1', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_trade_value_1', 'produces', 'trade', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_trade_value_2', '+2', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_trade_value_2', 'produces', 'trade', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_trade_value_3', '+3', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_trade_value_3', 'produces', 'trade', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_trade_value_4', '+4', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_trade_value_4', 'produces', 'trade', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_trade_value_5', '+5', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_trade_value_5', 'produces', 'trade', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_trade_value_6', '+6', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_trade_value_6', 'produces', 'trade', '6.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_trade_value_7', '+7', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_trade_value_7', 'produces', 'trade', '7.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_trade_value_8', '+8', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_trade_value_8', 'produces', 'trade', '8.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_trade_value_9', '+9', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_trade_value_9', 'produces', 'trade', '9.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_trade_value_10', '+10', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_trade_value_10', 'produces', 'trade', '10.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_alloys_1', '+1', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_alloys_1', 'produces', 'alloys', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_alloys_2', '+2', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_alloys_2', 'produces', 'alloys', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_alloys_3', '+3', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_alloys_3', 'produces', 'alloys', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_alloys_4', '+4', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_alloys_4', 'produces', 'alloys', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_alloys_5', '+5', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_alloys_5', 'produces', 'alloys', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_alloys_10', '+10', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_alloys_10', 'produces', 'alloys', '10.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_alloys_25', '+25', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_alloys_25', 'produces', 'alloys', '25.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_food_3', '+3', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_food_3', 'produces', 'food', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_food_4', '+4', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_food_4', 'produces', 'food', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_food_5', '+5', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_food_5', 'produces', 'food', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_food_6', '+6', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_food_6', 'produces', 'food', '6.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_food_10', '+10', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_food_10', 'produces', 'food', '10.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_consumer_goods_obsessional_directive', 'Spire of Commodities', 'orbital_mining_deposits', 0, NULL, '01_orbital_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_consumer_goods_obsessional_directive', 'produces', 'consumer_goods', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_arid_highlands', 'Arid Highlands', 'deposit_cat_energy', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_arid_highlands', 'district_generator_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hot_springs', 'Hot Springs', 'deposit_cat_energy', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_hot_springs', 'district_generator_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_rushing_waterfalls', 'Rushing Waterfalls', 'deposit_cat_energy', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_rushing_waterfalls', 'district_generator_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_searing_desert', 'Searing Desert', 'deposit_cat_energy', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_searing_desert', 'district_generator_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_frozen_gas_lake', 'Frozen Gas Lake', 'deposit_cat_energy', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_frozen_gas_lake', 'district_generator_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_geothermal_vent', 'Geothermal Vents', 'deposit_cat_energy', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_geothermal_vent', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_underwater_vent', 'Underwater Vents', 'deposit_cat_energy', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_underwater_vent', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_tempestous_mountain', 'Tempestuous Mountain', 'deposit_cat_energy', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tempestous_mountain', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_veiny_cliffs', 'Ore-Veined Cliffs', 'deposit_cat_minerals', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_veiny_cliffs', 'district_mining_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_mineral_fields', 'Mineral Fields', 'deposit_cat_minerals', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mineral_fields', 'district_mining_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_prosperous_mesa', 'Prosperous Mesa', 'deposit_cat_minerals', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_prosperous_mesa', 'district_mining_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ore_rich_caverns', 'Ore-Rich Caverns', 'deposit_cat_minerals', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ore_rich_caverns', 'district_mining_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_rich_mountain', 'Rich Mountain', 'deposit_cat_minerals', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_rich_mountain', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_submerged_ore_veins', 'Submerged Ore Veins', 'deposit_cat_minerals', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_submerged_ore_veins', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_lichen_fields', 'Lichen Fields', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lichen_fields', 'district_farming_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_bountiful_plains', 'Bountiful Plains', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_bountiful_plains', 'district_farming_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_rugged_woods', 'Rugged Woods', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_rugged_woods', 'district_farming_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_green_hills', 'Green Hills', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_green_hills', 'district_farming_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_forgiving_tundra', 'Fair Tundra', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_forgiving_tundra', 'district_farming_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_boggy_fens', 'Boggy Fens', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_boggy_fens', 'district_farming_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_nutritious_mudland', 'Nutritious Mudlands', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_nutritious_mudland', 'district_farming_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_fungal_caves', 'Fungal Caves', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_fungal_caves', 'district_farming_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_lush_jungle', 'Lush Jungle', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lush_jungle', 'district_farming_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_fertile_lands', 'Fertile Lands', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_fertile_lands', 'district_farming_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_great_river', 'Great River', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_great_river', 'district_farming_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_black_soil', 'Black Soil', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_black_soil', 'district_farming_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_teeming_reef', 'Teeming Reef', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_teeming_reef', 'district_farming_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_marvelous_oasis', 'Marvelous Oasis', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_marvelous_oasis', 'district_farming_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_tropical_island', 'Tropical Island', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tropical_island', 'district_farming_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_fungal_forest', 'Fungal Forest', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_fungal_forest', 'district_farming_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_dust_caverns', 'Dust Caverns', 'deposit_cat_rare_resource', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_dust_desert', 'Dust Desert', 'deposit_cat_rare_resource', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_bubbling_swamp', 'Bubbling Swamp', 'deposit_cat_rare_resource', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_fuming_bog', 'Fuming Bog', 'deposit_cat_rare_resource', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_crystalline_caverns', 'Crystalline Caverns', 'deposit_cat_rare_resource', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_crystal_forest', 'Crystal Forest', 'deposit_cat_rare_resource', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_crystal_reef', 'Crystal Reef', 'deposit_cat_rare_resource', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_betharian_deposit', 'Betharian Fields', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_betharian_deposit', 'district_mining_max_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_alien_pets_deposit', 'Isolated Valley', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_buzzing_plains', 'Buzzing Plains', 'deposit_cat_energy', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_buzzing_plains', 'district_generator_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_mineral_striations', 'Mineral Striations', 'deposit_cat_minerals', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mineral_striations', 'district_mining_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_natural_farmland', 'Natural Farmland', 'deposit_cat_food', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_natural_farmland', 'district_farming_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_gas_1', 'Exotic Gas Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_gas_2', 'Exotic Gas Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_gas_3', 'Exotic Gas Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_gas_4', 'Exotic Gas Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_gas_5', 'Exotic Gas Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_crystal_1', 'Rare Crystal Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_crystal_2', 'Rare Crystal Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_crystal_3', 'Rare Crystal Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_crystal_4', 'Rare Crystal Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_crystal_5', 'Rare Crystal Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_mote_1', 'Volatile Mote Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_mote_2', 'Volatile Mote Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_mote_3', 'Volatile Mote Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_mote_4', 'Volatile Mote Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_mote_5', 'Volatile Mote Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_zro_1', 'Zro Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_zro_1', 'produces', 'sr_zro', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_zro_2', 'Zro Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_zro_2', 'produces', 'sr_zro', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_zro_3', 'Zro Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_zro_3', 'produces', 'sr_zro', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_zro_4', 'Zro Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_zro_4', 'produces', 'sr_zro', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_zro_5', 'Zro Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_zro_5', 'produces', 'sr_zro', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_dark_matter_1', 'Dark Matter Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_dark_matter_1', 'produces', 'sr_dark_matter', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_dark_matter_2', 'Dark Matter Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_dark_matter_2', 'produces', 'sr_dark_matter', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_dark_matter_3', 'Dark Matter Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_dark_matter_3', 'produces', 'sr_dark_matter', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_dark_matter_10', 'Dark Matter Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_dark_matter_10', 'produces', 'sr_dark_matter', '10.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_living_metal_1', 'Living Metal Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_living_metal_1', 'produces', 'sr_living_metal', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_alloy_1', 'Alloy Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_alloy_1', 'produces', 'alloys', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_alloy_2', 'Alloy Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_alloy_2', 'produces', 'alloys', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_alloy_3', 'Alloy Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_alloy_3', 'produces', 'alloys', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_alloy_4', 'Alloy Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_alloy_4', 'produces', 'alloys', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_alloy_5', 'Alloy Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_alloy_5', 'produces', 'alloys', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_alloy_10', 'Alloy Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_alloy_10', 'produces', 'alloys', '10.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_alloy_25', 'Alloy Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_alloy_25', 'produces', 'alloys', '25.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_consumer_goods_2', 'Consumer Goods Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_consumer_goods_2', 'produces', 'consumer_goods', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_nanites_3', 'Nanite Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_nanites_3', 'produces', 'nanites', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_harvester_nanites_1', 'Nanite Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_harvester_nanites_1', 'produces', 'nanites', '0.1');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_harvester_nanites_2', 'Nanite Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_harvester_nanites_2', 'produces', 'nanites', '1.6');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_harvester_nanites_3', 'Nanite Deposit', 'deposit_cat_rare', 0, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_harvester_nanites_3', 'produces', 'nanites', '25.2');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_metal_boneyard', 'Metal Boneyards', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_metal_boneyard', 'district_mining_max_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_metal_boneyard', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_migrating_forests', 'Migrating Forests', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_migrating_forests', 'district_mining_max_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_migrating_forests', 'district_farming_max_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_migrating_forests', 'district_generator_max_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_migrating_forest_reserve', 'Migrating Forest Reserve', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_migrating_forest_reserve', 'planet_jobs_society_research_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_junk_wastes', 'Junk Wastes', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_junk_wastes', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_junk_canals', 'Junk Canals', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_junk_canals', 'district_farming_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_junk_hollows', 'Junk Hollows', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_junk_hollows', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_irradiated_valley', 'Irradiated Valley', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_irradiated_valley', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_valley_of_zanaam', 'Valley of Zanaam', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_valley_of_zanaam', 'planet_jobs_society_research_produces_mult', '0.3');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_valley_of_zanaam', 'planet_jobs_engineering_research_produces_mult', '0.3');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_valley_of_zanaam', 'planet_jobs_physics_research_produces_mult', '0.3');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_abandoned_primitive_homesteads', 'Abandoned Homesteads', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_abandoned_primitive_homesteads', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_abandoned_primitive_homesteads', 'district_farming_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_the_zone', 'Zone A', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_the_zone', 'produces', 'unity', '3.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_the_zone', 'planet_jobs_physics_research_produces_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hyperfertile_valley', 'Hyperfertile Valley', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_hyperfertile_valley', 'district_farming_max_add', '5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ancient_mining_site', 'Ancient Mining Site', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ancient_mining_site', 'district_mining_max_add', '5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_toy_factory_complex', 'Toy Factory Complex', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toy_factory_complex', 'planet_engineers_society_research_produces_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_society_research_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_mutant_landfill', 'Mutant Landfill', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mutant_landfill', 'planet_jobs_society_research_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ancient_bombardment_craters', 'Ancient Bombardment Craters', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ancient_bombardment_craters', 'planet_jobs_physics_research_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ancient_battlefield', 'Ancient Battlefield', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ancient_battlefield', 'planet_jobs_engineering_research_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_irradiated_ruins', 'Irradiated Ruins', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_irradiated_ruins', 'planet_jobs_society_research_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_impact_crater', 'Impact Crater', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_impact_crater', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_odd_factory', 'Odd Factory', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ancient_particle_accelerator', 'Ancient Particle Accelerator', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ancient_particle_accelerator', 'planet_jobs_physics_research_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_underground_vault', 'Underground Vault', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_underground_vault', 'planet_jobs_society_research_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_underground_vault_2', 'Underground Vault', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_underground_vault_2', 'planet_jobs_engineering_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_underground_vault_2', 'district_mining_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_cryonic_clones', 'Cryonic Clones Monument', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_cryonic_clones', 'produces', 'society_research', '6.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_flooded_mounds', 'Flooded Mounds', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_flooded_mounds', 'planet_jobs_society_research_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_processing_pens', 'Processing Pens', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_processing_pens', 'produces', 'food', '14.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_harvester_fields', 'Harvester Fields', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_harvester_fields', 'district_farming_max_add', '6.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wetware_computer', 'Wetware Computer', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wetware_computer', 'planet_biologists_physics_research_produces_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_physics_research_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_savage_wildlands', 'Savage Wildlands', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_savage_wildlands', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_mothballed_facilities', 'Mothballed Facilities', 'deposit_cat_blockers', 1, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mothballed_facilities', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_worm_mine', 'Spiral-Hewn Mine', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_worm_mine', 'district_mining_max_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_worm_farm', 'Loop-Plowed Farm', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_worm_farm', 'district_farming_max_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_organic_landfill', 'Organic Landfills', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_organic_landfill', 'district_generator_max_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_organic_landfill', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_underground_farm', 'Subterranean Farming Caverns', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_underground_farm', 'planet_max_districts_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_underground_farm', 'district_farming_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_underground_mine', 'Subterranean Mining Sites', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_underground_mine', 'planet_max_districts_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_underground_mine', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_underground_generator', 'Subterranean Generator Areas', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_underground_generator', 'planet_max_districts_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_underground_generator', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_underground_farm_blocked', 'Teeming Farming Caverns', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_underground_mine_blocked', 'Teeming Mining Sites', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_underground_generator_blocked', 'Teeming Generator Areas', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_underground_farm_dead', 'Corpse-Filled Caverns', 'deposit_cat_rare_blocker', 1, 360, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_underground_farm_dead', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_underground_mine_dead', 'Corpse-Filled Mining Sites', 'deposit_cat_rare_blocker', 1, 360, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_underground_mine_dead', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_underground_generator_dead', 'Corpse-Filled Generator Areas', 'deposit_cat_rare_blocker', 1, 360, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_underground_generator_dead', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_underground_contact_zone', 'Subterranean Contact Zone', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_underground_contact_zone', 'planet_max_districts_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_space_time_anomaly', 'Space-Time Anomaly', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_portal_research_zone', 'Portal Research Area', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_portal_research_zone', 'planet_physicists_physics_research_produces_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_physics_research_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ancient_one', 'Ancient One', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ancient_one', 'produces', 'society_research', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_numas_breath', 'Numa''s Breath', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_numas_breath', 'planet_max_districts_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_numas_breath', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_nanosands', 'Nanosands', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_nanosands', 'district_mining_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_nanosands', 'planet_max_districts_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_sentinels', 'Sentinels', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sentinels', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sentinels', 'planet_jobs_unity_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_unity_produces_mult', 'Unity from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_sentinels_metal', 'Sentinels', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_sentinels_metal', 'produces', 'sr_living_metal', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_sentinels_monument', 'The Sentinels', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_sentinels_monument', 'produces', 'unity', '15.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_lonely_bot_deposit', 'Enigmatic Robot', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_lonely_bot_deposit', 'produces', 'alloys', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_lonely_bot_deposit_2', 'Enigmatic Robot', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_lonely_bot_deposit_2', 'produces', 'alloys', '5.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_lonely_bot_deposit_2', 'produces', 'volatile_motes', '1.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_lonely_bot_deposit_2', 'produces', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_lonely_bot_deposit_3', 'Enigmatic Robot', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_lonely_bot_deposit_3', 'produces', 'alloys', '5.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_lonely_bot_deposit_3', 'produces', 'volatile_motes', '1.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_lonely_bot_deposit_3', 'produces', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_house_turtle', 'Juvenile Nemma', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_house_turtle', 'upkeep', 'food', '2.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_house_turtle', 'planet_max_districts_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_house_turtle', 'planet_jobs_society_research_produces_mult', '0.025');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_turtle_miner', 'Nemma Mining Operation', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_turtle_corpse', 'Nemma Corpses', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_turtle_corpse', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_turtle_corpse', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_turtle_corpse', 'district_farming_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_polaris_city', 'Ancient Sunken City', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_polaris_city', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_nano_corpses', 'Nanite Swarm Remains', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_nano_corpses', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_nano_corpses', 'planet_miners_alloys_produces_add', '0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_alloys_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_fungal_study_zone', 'Fungal Study Zone', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_fungal_study_zone', 'planet_jobs_society_research_produces_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_landed_dragon', 'Feeding Dragon', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_landed_dragon', 'produces', 'unity', '5.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_landed_dragon', 'upkeep', 'food', '15.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_landed_dragon', 'planet_stability_add', '5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_living_snow_reserve', 'Living Snow Reserve', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_living_snow_reserve', 'planet_jobs_physics_research_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_living_snow_reserve', 'planet_jobs_society_research_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_living_snow_reserve', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_dayside_farm', 'Dayside Solar Farm', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_dayside_farm', 'district_generator_max_add', '6.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_dayside_farm', 'planet_jobs_energy_produces_mult', '0.3');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_radiotrophic_preserve', 'Radiotrophic Preserve', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_radiotrophic_preserve', 'planet_jobs_society_research_produces_mult', '0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_machine_care_home', 'Organic-Machine Interface Center', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_crystal_kraken_body', 'Crystalline Remains', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_crystal_kraken_body', 'produces', 'unity', '10.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crystal_kraken_body', 'planet_miners_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_produces_mult', 'Resources Produced from', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_crystal_kraken_body_bombed', 'Shattered Crystalline Remains', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_big_nature_preserve_blocker', 'Nature Preserve', 'deposit_cat_blockers_natural', 1, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_big_nature_preserve_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_shroud_rift_deposit', 'Shroud-Touched Region', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_shroud_rift_deposit', 'produces', 'sr_zro', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_shroud_flora_deposit', 'Semi-Shrouded Region', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_shroud_flora_deposit', 'produces', 'sr_zro', '1.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroud_flora_deposit', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroud_flora_deposit', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_dimensional_manipulation_device', 'Dimensional Manipulation Device', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_dimensional_manipulation_device', 'upkeep', 'sr_dark_matter', '2.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_dimensional_manipulation_device', 'planet_max_districts_mult', '0.33');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_mult', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_toxic_god_blight_upon_the_land', 'A Blight Upon the Land', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_god_blight_upon_the_land', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_toxic_god_blight_upon_the_land_upgraded', 'Blighted Remembrance', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_toxic_god_deitys_swarms', 'Swarms of the Deity', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_god_deitys_swarms', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_toxic_god_deitys_swarms_upgraded', 'Subdued Swarms', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_god_deitys_swarms_upgraded', 'planet_jobs_food_produces_mult', '0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_toxic_god_pools_most_venemous', 'Pools Most Venemous', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_god_pools_most_venemous', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_toxic_god_pools_most_venemous_upgraded', 'Toxins Most Deadly', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_toxic_god_pestilential_wasteland', 'Pestilential Wasteland', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_god_pestilential_wasteland', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_toxic_god_pestilential_wasteland_upgraded', 'Reclaimed Pestilence', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_god_pestilential_wasteland_upgraded', 'planet_max_districts_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_god_pestilential_wasteland_upgraded', 'planet_jobs_produces_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_toxic_god_envenomed_seas', 'Envenomed Seas', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_god_envenomed_seas', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_toxic_god_envenomed_seas_upgraded', 'Pelagic Bounty', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_god_envenomed_seas_upgraded', 'planet_max_districts_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_knights_calibrator', 'Order''s X-Calibrator', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_knights_calibrator', 'produces', 'energy', '10.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_knights_calibrator', 'pop_environment_tolerance', '0.4');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_knights_calibrator', 'planet_pops_upkeep_mult', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ancient_manufactorium_working', 'Operational Manufactorium', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ancient_manufactorium_scrapyard', 'Manufactorium Scrapyard', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ancient_manufactorium_scrapyard', 'planet_engineers_engineering_research_produces_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_engineering_research_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ancient_manufactorium_scrapyard', 'planet_engineers_alloys_produces_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_alloys_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ancient_manufactorium_crater', 'Destroyed Vault', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ancient_manufactorium_crater', 'produces', 'minerals', '1.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ancient_manufactorium_crater', 'produces', 'alloys', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ancient_manufactorium_vaultexploration', 'Mountainous Vault', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_metallic_puddles', 'Metallic Puddles', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_metallic_puddles', 'district_farming_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_empty_quarry', 'Empty Quarry', 'deposit_cat_blockers', 1, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_empty_quarry', 'district_mining_max_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_eater_deposit', 'Shrouded Crater', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_eater_deposit', 'produces', 'society_research', '6.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_eater_deposit', 'produces', 'physics_research', '6.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_eater_deposit', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_eater_deposit', 'planet_stability_add', '-5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_stasis_prison', 'Stasis Prison', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_prisoner_intergration', 'Structured Integration', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_meals_in_pods', 'Meals in Pods', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_meals_in_pods', 'produces', 'food', '10.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_star_mall_promenade_blocker', 'Destroyed Promenade', 'deposit_cat_rare_blocker', 1, 720, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_star_mall_promenade_blocker', 'cost', 'energy', '1500.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_star_mall_promenade_blocker', 'cost', 'minerals', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_star_mall_promenade_blocker', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_star_mall_promenade', 'Promenade', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_star_mall_blocker', 'Abandoned Wing', 'deposit_cat_rare_blocker', 1, 360, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_star_mall_blocker', 'cost', 'energy', '750.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_star_mall_blocker', 'cost', 'minerals', '250.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_star_mall_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_astrogarbage_collector', 'Astrogarbage Unit', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_myrmeku_power_farms', 'Myrmeku Power Farms', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_crystalline_glacier', 'Crystallized Ice Field', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_mineral_seabed', 'Rich Seabed', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mineral_seabed', 'planet_miners_alloys_produces_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_alloys_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mineral_seabed', 'planet_miners_minerals_produces_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_minerals_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_floodplains', 'Growing Floodplains', 'deposit_cat_blockers', 1, 360, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_floodplains', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_floodplains', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_floodplains', 'pop_environment_tolerance', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_red_desert', 'Red Desert', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_red_desert', 'produces', 'minerals', '2.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_red_desert', 'district_mining_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_desertling_infestation', 'Invasive Fauna', 'deposit_cat_food', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_desertling_infestation', 'biological_pop_happiness', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('biological_pop_happiness', 'Biological Pop Happiness', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_desertling_infestation', 'pop_environment_tolerance', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_alien_sanctuary', 'Alien Safari', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_alien_sanctuary', 'biological_pop_happiness', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('biological_pop_happiness', 'Biological Pop Happiness', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_alien_sanctuary', 'planet_resettlement_unemployed_destination_mult', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_destination_mult', 'Automatic Resettlement Destination Chance', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_planet_stripmine', 'Strip Mine Network', 'deposit_cat_minerals', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_planet_stripmine', 'pop_environment_tolerance', '-0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_planet_stripmine', 'district_mining_max_add', '10.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_geocentric_experiment', 'Celestial Orrery Supercomputer', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_exotic_gases_1', '+1', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_exotic_gases_1', 'produces', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_exotic_gases_2', '+2', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_exotic_gases_2', 'produces', 'exotic_gases', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_exotic_gases_3', '+3', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_exotic_gases_3', 'produces', 'exotic_gases', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_exotic_gases_4', '+4', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_exotic_gases_4', 'produces', 'exotic_gases', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_exotic_gases_5', '+5', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_exotic_gases_5', 'produces', 'exotic_gases', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_rare_crystals_1', '+1', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_rare_crystals_1', 'produces', 'rare_crystals', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_rare_crystals_2', '+2', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_rare_crystals_2', 'produces', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_rare_crystals_3', '+3', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_rare_crystals_3', 'produces', 'rare_crystals', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_rare_crystals_4', '+4', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_rare_crystals_4', 'produces', 'rare_crystals', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_rare_crystals_5', '+5', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_rare_crystals_5', 'produces', 'rare_crystals', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volatile_motes_1', '+1', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_volatile_motes_1', 'produces', 'volatile_motes', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volatile_motes_2', '+2', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_volatile_motes_2', 'produces', 'volatile_motes', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volatile_motes_3', '+3', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_volatile_motes_3', 'produces', 'volatile_motes', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volatile_motes_4', '+4', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_volatile_motes_4', 'produces', 'volatile_motes', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volatile_motes_5', '+5', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_volatile_motes_5', 'produces', 'volatile_motes', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_zro_deposit_1', 'Zro discovered', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_zro_deposit_1', 'produces', 'sr_zro', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_zro_deposit_2', 'Zro discovered', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_zro_deposit_2', 'produces', 'sr_zro', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_zro_deposit_3', 'Zro discovered', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_zro_deposit_3', 'produces', 'sr_zro', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_zro_deposit_4', 'Zro', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_zro_deposit_4', 'produces', 'sr_zro', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_zro_deposit_5', 'Zro', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_zro_deposit_5', 'produces', 'sr_zro', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_dark_matter_deposit_1', '+1', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_dark_matter_deposit_1', 'produces', 'sr_dark_matter', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_dark_matter_deposit_2', '+2', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_dark_matter_deposit_2', 'produces', 'sr_dark_matter', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_dark_matter_deposit_3', '+3', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_dark_matter_deposit_3', 'produces', 'sr_dark_matter', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_dark_matter_deposit_10', '+10', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_dark_matter_deposit_10', 'produces', 'sr_dark_matter', '10.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_living_metal_deposit', 'Living Metal +1', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_living_metal_deposit', 'produces', 'sr_living_metal', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_guardian_dragon_hoard', 'Dragon Hoard', 'orbital_mining_deposits', 0, NULL, '03_leviathans_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_guardian_dragon_hoard', 'produces', 'minerals', '30.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_guardian_dragon_hoard', 'produces', 'energy', '30.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_dragon_monument', 'Dragonslayer Monument', 'deposit_cat_rare', 0, NULL, '03_leviathans_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_dragon_monument', 'produces', 'unity', '15.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_stellarite_trophy', 'Stellar Devourer Trophy', 'deposit_cat_rare', 0, NULL, '03_leviathans_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_stellarite_trophy', 'produces', 'unity', '5.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_stellarite_trophy', 'pop_happiness', '0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_vast_unity_deposit', '+3', 'orbital_research_deposits', 0, NULL, '04_distant_stars_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_vast_unity_deposit', 'produces', 'unity', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_nanites_deposit', '+1', 'orbital_research_deposits', 0, NULL, '04_distant_stars_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_nanites_deposit', 'produces', 'nanites', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_scandinavian_reclamation_sector', 'Scandinavian Reclamation Sector', NULL, 0, NULL, '05_starting_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_scandinavian_reclamation_sector', 'district_farming_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_pacific_algae_tracts', 'Pacific Algae Tracts', NULL, 0, NULL, '05_starting_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_pacific_algae_tracts', 'district_farming_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_saharan_irrigation_project', 'Saharan Irrigation Project', NULL, 0, NULL, '05_starting_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_saharan_irrigation_project', 'district_farming_max_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_mesopotamian_urban_corridor', 'Mesopotamian Urban Corridor', NULL, 0, NULL, '05_starting_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mesopotamian_urban_corridor', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_delhi_sprawl', 'Delhi Sprawl', NULL, 0, NULL, '05_starting_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_delhi_sprawl', 'district_generator_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_boswash_metropolitan_axis', 'BosWash Metropolitan Axis', NULL, 0, NULL, '05_starting_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_boswash_metropolitan_axis', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_pearl_river_agglomerate', 'Pearl River Agglomerate', NULL, 0, NULL, '05_starting_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_pearl_river_agglomerate', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_mauritanian_security_zone', 'Mauritanian Security Zone', NULL, 0, NULL, '05_starting_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mauritanian_security_zone', 'district_mining_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_great_albertan_crater', 'Great Albertan Crater', NULL, 0, NULL, '05_starting_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_great_albertan_crater', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_great_pacific_garbage_patch', 'Great Pacific Garbage Patch', 'deposit_cat_blockers', 1, 120, '05_starting_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_great_pacific_garbage_patch', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_great_pacific_garbage_patch', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_failing_infrastructure_earth', 'Industrial Wasteland', 'deposit_cat_blockers', 1, 120, '05_starting_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_failing_infrastructure_earth', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_failing_infrastructure_earth', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_exotic_mountain', 'Exotic Mountains', 'planet_deposits', 0, NULL, '05_starting_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_exotic_mountain', 'produces', 'exotic_gases', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_collapsed_spire', 'Collapsed Spire', 'deposit_cat_rare_blocker', 1, 480, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_collapsed_spire', 'cost', 'energy', '2000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_collapsed_spire', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_massive_crevice', 'Massive Crevice', 'deposit_cat_rare_blocker', 1, 270, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_massive_crevice', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_massive_crevice', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_shattered_solar_array', 'Shattered Solar Array', 'deposit_cat_rare_blocker', 1, 270, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_shattered_solar_array', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shattered_solar_array', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_flooded_reactor_pits', 'Flooded Reactor Pits', 'deposit_cat_rare_blocker', 1, 270, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_flooded_reactor_pits', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_flooded_reactor_pits', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_crumbling_mining_tunnels', 'Crumbling Mining Tunnels', 'deposit_cat_rare_blocker', 1, 270, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_crumbling_mining_tunnels', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crumbling_mining_tunnels', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ancient_reactor_pits', 'Ancient Reactor Pits', NULL, 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ancient_reactor_pits', 'district_generator_max_add', '6.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_immense_solar_array', 'Immense Solar Array', NULL, 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_immense_solar_array', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_abandoned_mining_tunnels', 'Abandoned Mining Tunnels', NULL, 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_abandoned_mining_tunnels', 'district_mining_max_add', '6.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_relic_metal_boneyard', 'Metal Boneyards', NULL, 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_relic_metal_boneyard', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_central_spire', 'Central Spire', 'deposit_cat_rare', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_central_spire', 'planet_jobs_society_research_produces_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_central_spire', 'planet_jobs_engineering_research_produces_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_central_spire', 'planet_jobs_physics_research_produces_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_industrial_sector', 'Industrial Sector', 'deposit_cat_rare', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_industrial_sector', 'planet_miners_rare_crystals_produces_add', '0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_rare_crystals_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_industrial_sector', 'planet_farmers_exotic_gases_produces_add', '0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_exotic_gases_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_industrial_sector', 'planet_technician_volatile_motes_produces_add', '0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_volatile_motes_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_industrial_sector', 'district_farming_max_add', '6.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_relic_dense_ruins', 'Dense Ruins', 'deposit_cat_rare', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_relic_dense_ruins', 'planet_max_districts_mult', '-0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_mult', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_relic_dense_ruins', 'planet_jobs_society_research_produces_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_relic_dense_ruins', 'planet_jobs_engineering_research_produces_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_relic_dense_ruins', 'planet_jobs_physics_research_produces_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_former_relic_world', 'Former Relic World', 'deposit_cat_rare', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_former_relic_world', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_former_relic_world', 'planet_jobs_engineering_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_former_relic_world', 'planet_jobs_physics_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_mutation_vats', 'Mutation Vats', 'deposit_cat_rare', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_mutation_vats', 'produces', 'society_research', '12.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_mutation_vats', 'produces', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_artifacts_research_1', 'Minor Artifacts Deposit', 'orbital_research_deposits', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_artifacts_research_1', 'produces', 'minor_artifacts', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_artifacts_research_2', 'Minor Artifacts Deposit', 'orbital_research_deposits', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_artifacts_research_2', 'produces', 'minor_artifacts', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_artifacts_research_3', 'Minor Artifacts Deposit', 'orbital_research_deposits', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_artifacts_research_3', 'produces', 'minor_artifacts', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_artifacts_mining_1', 'Minor Artifacts Deposit', 'orbital_mining_deposits', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_artifacts_mining_1', 'produces', 'minor_artifacts', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_artifacts_mining_2', 'Minor Artifacts Deposit', 'orbital_mining_deposits', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_artifacts_mining_2', 'produces', 'minor_artifacts', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_artifacts_mining_3', 'Minor Artifacts Deposit', 'orbital_mining_deposits', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_artifacts_mining_3', 'produces', 'minor_artifacts', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_artifacts_planet_1', 'Minor Artifacts Deposit', 'deposit_cat_rare', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_artifacts_planet_1', 'produces', 'minor_artifacts', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_artifacts_planet_2', 'Minor Artifacts Deposit', 'deposit_cat_rare', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_artifacts_planet_2', 'produces', 'minor_artifacts', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_artifacts_planet_3', 'Minor Artifacts Deposit', 'deposit_cat_rare', 0, NULL, '06_ancient_relics_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_artifacts_planet_3', 'produces', 'minor_artifacts', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_arcane_replicator', 'Arcane Replicator', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_arcane_generator', 'Arcane Generator', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_arcane_generator', 'planet_amenities_add', '500.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_segment_rubble_1', 'Ancient Rubble', 'deposit_cat_blockers', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_segment_rubble_1', 'cost', 'energy', '250.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_segment_rubble_1', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_segment_rubble_1', 'habitability_ceil_add', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_segment_rubble_1_small', 'Ancient Rubble', 'deposit_cat_blockers', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_segment_rubble_1_small', 'cost', 'energy', '250.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_segment_rubble_1_small', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_segment_rubble_1_small', 'habitability_ceil_add', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_segment_rubble_2', 'Ancient Rubble', 'deposit_cat_blockers', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_segment_rubble_2', 'cost', 'energy', '250.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_segment_rubble_2', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_segment_rubble_2', 'habitability_ceil_add', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_segment_rubble_3', 'Ancient Rubble', 'deposit_cat_blockers', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_segment_rubble_3', 'cost', 'energy', '250.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_segment_rubble_3', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_segment_rubble_3', 'habitability_ceil_add', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_segment_rubble_4', 'Ancient Rubble', 'deposit_cat_blockers', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_segment_rubble_4', 'cost', 'energy', '250.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_segment_rubble_4', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_segment_rubble_4', 'habitability_ceil_add', '-0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_decrepit_tunnels_1', 'Decrepit Tunnels', 'deposit_cat_blockers', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_decrepit_tunnels_1', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_decrepit_tunnels_1', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_decrepit_tunnels_2', 'Decrepit Tunnels', 'deposit_cat_blockers', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_decrepit_tunnels_2', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_decrepit_tunnels_2', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_decrepit_tunnels_3', 'Decrepit Tunnels', 'deposit_cat_blockers', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_decrepit_tunnels_3', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_decrepit_tunnels_3', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_malfunctioning_reactor', 'Malfunctioning Reactor', 'deposit_cat_blockers', 1, 720, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_malfunctioning_reactor', 'cost', 'energy', '2000.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_malfunctioning_reactor', 'cost', 'alloys', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_malfunctioning_reactor', 'planet_max_districts_add', '-5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_malfunctioning_reactor', 'planet_structures_energy_upkeep_mult', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_energy_upkeep_mult', 'District and Building Energy Upkeep', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_sr_diurnal_regulator', 'Faulty Diurnal Regulator', 'deposit_cat_blockers', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_sr_diurnal_regulator', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_sr_diurnal_regulator', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sr_diurnal_regulator', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sr_diurnal_regulator', 'habitability_ceil_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_sr_vacuum_fields', 'Unstable Vacuum Fields', 'deposit_cat_blockers', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_sr_vacuum_fields', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_sr_vacuum_fields', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sr_vacuum_fields', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sr_vacuum_fields', 'habitability_ceil_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_sr_ring_gyros', 'Unaligned Ring Gyros', 'deposit_cat_blockers', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_sr_ring_gyros', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_sr_ring_gyros', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sr_ring_gyros', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sr_ring_gyros', 'habitability_ceil_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_sr_power_grid', 'Shorting Power Grid', 'deposit_cat_blockers', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_sr_power_grid', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_sr_power_grid', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sr_power_grid', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sr_power_grid', 'habitability_ceil_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_spore_vents', 'Spore Vents', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_cave_shroom_veins', 'Cave Shroom Veins', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_tree_of_life_home', 'Tree of Life', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_tree_of_life_home', 'upkeep', 'food', '4.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tree_of_life_home', 'logistic_growth_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tree_of_life_home', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tree_of_life_home', 'planet_housing_add', '1000.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_housing_add', 'Housing', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tree_of_life_home', 'district_farming_max_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_tree_of_life_colony', 'Tree of Life Sapling', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_tree_of_life_colony', 'upkeep', 'food', '2.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tree_of_life_colony', 'logistic_growth_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tree_of_life_colony', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tree_of_life_colony', 'planet_housing_add', '500.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_housing_add', 'Housing', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_tree_of_life_colony', 'district_farming_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_buried_lithoids', 'Buried Lithoids', 'deposit_cat_rare_blocker', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_buried_lithoids_overlord', 'Buried Lithoids', 'deposit_cat_rare_blocker', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_lithoid_crater', 'Massive Crater', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lithoid_crater', 'planet_max_districts_add', '6.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lithoid_crater', 'district_farming_max_add', '-6.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lithoid_crater', 'logistic_growth_mult', '0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lithoid_crater', 'district_mining_max_add', '6.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_machine_minerals', 'Consolidated Resources', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_machine_minerals', 'produces', 'minerals', '25.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_organic_slurry', 'Organic Slurry', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_organic_slurry', 'produces', 'food', '15.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_machine_prototype_pc_machine', 'Prototype Machinery', 'deposit_cat_rare_blocker', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_machine_prototype_pc_machine', 'cost', 'alloys', '2500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_machine_prototype_pc_machine', 'district_jobs_mult', '-0.67');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_jobs_mult', 'Jobs from Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_machine_prototype_pc_machine', 'planet_housing_mult', '-0.33');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_housing_mult', 'Housing', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_machine_prototype_pc_machine', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_machine_ongoing_construction', 'Unfinished Construction', 'deposit_cat_rare_blocker', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_machine_ongoing_construction', 'cost', 'minerals', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_machine_ongoing_construction', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_project_cornucopia', 'Project Cornucopia', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_project_cornucopia', 'district_mining_max_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_project_cornucopia', 'planet_jobs_minerals_produces_mult', '0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_project_cornucopia', 'pop_environment_tolerance', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_disco_planet', 'Party Fever', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_disco_planet', 'planet_amenities_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_mult', 'Amenities', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_disco_planet', 'planet_miners_exotic_gases_produces_add', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_exotic_gases_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_disco_planet', 'logistic_growth_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_disco_planet2', 'Party Fever', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_disco_planet2', 'planet_amenities_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_mult', 'Amenities', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_disco_planet2', 'logistic_growth_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_impossiblecorrie', 'Lotus Corrie', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_impossiblecorrie', 'planet_jobs_physics_research_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_bluelotus', 'Blue Lotus Prototype', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_bluelotus', 'planet_metallurgists_alloys_produces_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_alloys_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_bluelotus', 'planet_metallurgists_energy_upkeep_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_energy_upkeep_add', 'Upkeep per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_bluelotus2', 'Blue Lotus Facility', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_bluelotus2', 'planet_metallurgists_alloys_produces_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_alloys_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_bluelotus2', 'planet_metallurgists_energy_upkeep_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_energy_upkeep_add', 'Upkeep per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ruin_bluelotus', 'Blue Lotus Ruin', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ruin_bluelotus', 'produces', 'alloys', '5.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ruin_bluelotus', 'planet_jobs_physics_research_produces_mult', '0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_crater_bluelotus', 'Blue Lotus Crater', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_crater_bluelotus', 'produces', 'alloys', '2.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crater_bluelotus', 'district_mining_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crater_bluelotus', 'planet_miners_alloys_produces_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_alloys_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_federation_hegemony_monument_1', 'Federation Monument', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_federation_hegemony_monument_2', 'Federation Monument', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_resource_consolidation_1', 'Malfunctioning Replicator Bay', 'deposit_cat_blockers', 1, 360, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_resource_consolidation_1', 'cost', 'minerals', '600.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_resource_consolidation_1', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_admirals_bickering_crashed_cargo_ship', 'Crashed Cargo Ship', 'deposit_cat_rare', 0, NULL, '08_overlord_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_admirals_bickering_crashed_cargo_ship', 'produces', 'minerals', '3.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_admirals_bickering_crashed_cargo_ship', 'planet_housing_mult', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_housing_mult', 'Housing', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_technocracy_toxic_waste_blocker', 'Toxic Waste', 'deposit_cat_blockers', 1, 360, '08_overlord_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_technocracy_toxic_waste_blocker', 'cost', 'energy', '2000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_technocracy_toxic_waste_blocker', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_technocracy_toxic_waste_blocker', 'planet_max_districts_add', '-3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_technocracy_barren_lands_blocker', 'Barren Lands', 'deposit_cat_blockers', 1, 360, '08_overlord_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_technocracy_barren_lands_blocker', 'cost', 'energy', '2000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_technocracy_barren_lands_blocker', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_technocracy_barren_lands_blocker', 'logistic_growth_mult', '-0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_technocracy_toxic_ocean_blocker', 'Toxic Water', 'deposit_cat_blockers', 1, 360, '08_overlord_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_technocracy_toxic_ocean_blocker', 'cost', 'energy', '2000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_technocracy_toxic_ocean_blocker', 'planet_jobs_physics_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_technocracy_toxic_ocean_blocker', 'logistic_growth_mult', '-0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_technocracy_molten_waste_blocker', 'Molten Waste', 'deposit_cat_blockers', 1, 360, '08_overlord_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_technocracy_molten_waste_blocker', 'cost', 'energy', '2000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_technocracy_molten_waste_blocker', 'planet_jobs_physics_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_technocracy_molten_waste_blocker', 'planet_max_districts_add', '-3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_progenitor', 'Progenitor Nest', 'deposit_cat_rare', 0, NULL, '08_overlord_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_progenitor', 'fake_pop_growth_mod', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_progenitor', 'planet_stability_add', '5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_progenitor', 'planet_amenities_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_mult', 'Amenities', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_progenitor_empty', 'Empty Progenitor Nest', 'deposit_cat_rare', 0, NULL, '08_overlord_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_progenitor_empty', 'upkeep', 'unity', '5.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_progenitor_empty', 'planet_jobs_complex_drone_produces_mult', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_complex_drone_produces_mult', 'Complex Drone Output', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_progenitor_empty', 'planet_stability_add', '-10.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_progenitor_empty', 'planet_amenities_mult', '-0.4');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_mult', 'Amenities', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_prospectorium_strip_mine', 'Prospectorium Strip Mine', 'deposit_cat_minerals', 0, NULL, '08_overlord_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_prospectorium_strip_mine', 'district_mining_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_spawning_complex_blocker', 'Overlord Spawning Complex', 'deposit_cat_blockers', 1, NULL, '08_overlord_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_spawning_complex_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_nature_preserve_blocker', 'Nature Preserve', 'deposit_cat_blockers', 1, NULL, '08_overlord_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_nature_preserve_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_crashed_slaver_ship', 'Crashed Slaver Ship', 'deposit_cat_rare', 0, NULL, '09_first_contact_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crashed_slaver_ship', 'district_crashed_slaver_ship_max_add', '6.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_crashed_slaver_ship_max_add', 'Max Scavenger Sites', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crashed_slaver_ship', 'pop_environment_tolerance', '0.3');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_crashed_slaver_ship_memorial', 'Memorial to the Unshackled', 'deposit_cat_rare', 0, NULL, '09_first_contact_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crashed_slaver_ship_memorial', 'planet_civilians_unity_produces_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_unity_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ship_debris_broken_shackles_blocker', 'Ship Debris', 'deposit_cat_rare_blocker', 1, NULL, '09_first_contact_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ship_debris_broken_shackles_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ship_debris_payback_blocker', 'Ship Debris', 'deposit_cat_rare_blocker', 1, 360, '09_first_contact_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ship_debris_payback_blocker', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ship_debris_payback_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_payback_habitat_research', 'Technological Cache', 'deposit_cat_rare', 0, NULL, '09_first_contact_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_payback_habitat_research', 'planet_jobs_physics_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_payback_habitat_research', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_payback_habitat_research', 'planet_jobs_engineering_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_payback_habitat_research', 'district_hab_science_max_add', '8.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_hab_science_max_add', 'Max Research Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_msi_air_freshener', 'Atmospheric Infuser', 'deposit_cat_rare', 0, NULL, '09_first_contact_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_msi_air_freshener', 'pop_environment_tolerance', '0.4');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_freeports', 'Freeport', 'deposit_cat_rare', 0, NULL, '09_first_contact_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_landgrab_blocker', 'Foreign Holdings', 'deposit_cat_rare', 0, NULL, '09_first_contact_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_landgrab_blocker', 'planet_max_districts_add', '-4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_landgrab_foreign_holdings', 'Remote Holdings', 'deposit_cat_rare', 0, NULL, '09_first_contact_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_landgrab_foreign_holdings', 'planet_max_districts_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_arcane_device', 'Arcane Device', 'deposit_cat_rare', 0, NULL, '10_paragon_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_arcane_device', 'produces', 'alloys', '8.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_arcane_device', 'upkeep', 'energy', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_active_planet', 'Volcanic Activity', 'deposit_cat_rare', 0, NULL, '10_paragon_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_active_planet', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_active_planet', 'planet_miners_volatile_motes_produces_add', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_volatile_motes_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hostile_fauna', 'Aggressive Wildlife', 'deposit_cat_rare', 0, NULL, '10_paragon_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_hostile_fauna', 'district_farming_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hostile_flora', 'Aggressive Flora', 'deposit_cat_rare', 0, NULL, '10_paragon_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_hostile_flora', 'district_farming_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_space_ship_graveyard', 'Crashed Ships', 'deposit_cat_rare', 0, NULL, '10_paragon_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_space_ship_graveyard', 'planet_housing_add', '100.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_housing_add', 'Housing', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_space_ship_graveyard', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_space_ship_graveyard', 'planet_jobs_minerals_produces_mult', '-0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_fallen_orbital_shipyard', 'Fallen Shipyard', 'deposit_cat_rare', 0, NULL, '10_paragon_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_fallen_orbital_shipyard', 'planet_housing_add', '800.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_housing_add', 'Housing', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_fallen_orbital_shipyard', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_fallen_orbital_shipyard', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_pulsar_scarred', 'Scarred Land', 'deposit_cat_rare', 0, NULL, '10_paragon_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_pulsar_scarred', 'planet_technician_energy_produces_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_energy_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ancient_facilities', 'Ancient Facilities', 'deposit_cat_rare', 0, NULL, '10_paragon_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ancient_facilities', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_astral_threads_deposit_1', '+1', 'orbital_research_deposits', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_astral_threads_deposit_1', 'produces', 'astral_threads', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_astral_threads_deposit_2', '+2', 'orbital_research_deposits', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_astral_threads_deposit_2', 'produces', 'astral_threads', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_astral_threads_deposit_3', '+3', 'orbital_research_deposits', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_astral_threads_deposit_3', 'produces', 'astral_threads', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_crystal_rift', '+10 and +10', 'orbital_research_deposits', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_physics_25', '+25', 'orbital_research_deposits', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_physics_25', 'produces', 'physics_research', '25.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_engineering_25', '+25', 'orbital_research_deposits', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_engineering_25', 'produces', 'engineering_research', '25.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_society_25', '+25', 'orbital_research_deposits', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_society_25', 'produces', 'society_research', '25.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_astral_threads_1', 'Astral Threads Deposit', 'deposit_cat_rare', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_astral_threads_1', 'produces', 'astral_threads', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_astral_threads_2', 'Astral Threads Deposit', 'deposit_cat_rare', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_astral_threads_2', 'produces', 'astral_threads', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hab_astral_threads_3', 'Astral Threads Deposit', 'deposit_cat_rare', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hab_astral_threads_3', 'produces', 'astral_threads', '3.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_fractal_seed', 'Fractal Seed', 'deposit_cat_rare', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_fractal_seed', 'planet_max_districts_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_rockworm_hive', 'Rockworm Hive', 'deposit_cat_rare', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_rockworm_hive', 'planet_jobs_minerals_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_rockworm_hive', 'district_mining_max_add', '5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_rockworm_hive_volcanic', NULL, 'deposit_cat_rare', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_rockworm_hive_volcanic', 'planet_jobs_minerals_produces_mult', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_rockworm_hive_volcanic', 'district_mining_max_add', '5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_forceful_winds', 'Incubate Wind Creatures', 'deposit_cat_rare', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_forceful_winds', 'planet_jobs_energy_produces_mult', '0.3');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_forceful_winds', 'district_generator_max_add', '5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_microplanet_memorial', 'Microplanet Memorial', 'deposit_cat_rare', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_microplanet_memorial', 'planet_stability_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_microplanet_memorial', 'planet_crime_add', '-30.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', '', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_weapon_extraction_facility', 'Weapon Extraction Facility', 'deposit_cat_rare', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_weapon_extraction_facility', 'planet_jobs_engineering_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_weapon_extraction_facility', 'planet_engineers_engineering_research_produces_add', '6.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_engineering_research_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_weapon_extraction_facility', 'planet_engineers_alloys_produces_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_alloys_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_electrified_oceans', 'Electrified Oceans', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_electrified_oceans', 'district_generator_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_electrified_oceans', 'planet_jobs_energy_produces_mult', '0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_electrified_oceans', 'pop_environment_tolerance', '-0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ghostly_canyon', 'Ghostly Canyon', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ghostly_canyon', 'produces', 'sr_zro', '1.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ghostly_canyon', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ghostly_canyon', 'planet_stability_mult', '-0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_mult', 'Stability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ghostly_canyon', 'planet_jobs_unity_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_unity_produces_mult', 'Unity from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_sky_mountain', 'Mountains in the Sky', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sky_mountain', 'district_mining_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sky_mountain', 'planet_miners_physics_research_produces_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_physics_research_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_sky_mountain', 'planet_miners_minerals_produces_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_minerals_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_avian_reserve', 'Avian Reserve', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_avian_reserve', 'produces', 'society_research', '4.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_magnetic_storm_1_minerals', 'Magnetized Ore', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_magnetic_storm_1_minerals', 'planet_non_artificial_max_districts_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_non_artificial_max_districts_add', 'Max Districts (non-artificial planets only)', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_magnetic_storm_1_minerals', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_magnetic_storm_1_minerals', 'planet_jobs_minerals_produces_mult', '0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_magnetic_storm_2_alloys', 'Storm-Forged Foundry', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_magnetic_storm_2_alloys', 'planet_metallurgists_upkeep_mult', '-0.3');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_upkeep_mult', 'Upkeep for', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_magnetic_storm_2_alloys', 'planet_metallurgists_alloys_produces_mult', '0.3');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_alloys_produces_mult', 'Produced from', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_magnetic_storm_3_mix', 'Skybound Plateaus', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_magnetic_storm_3_mix', 'planet_non_artificial_max_districts_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_non_artificial_max_districts_add', 'Max Districts (non-artificial planets only)', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_magnetic_storm_3_mix', 'district_mining_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_magnetic_storm_3_mix', 'planet_jobs_minerals_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_magnetic_storm_3_mix', 'planet_metallurgists_alloys_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_alloys_produces_mult', 'Produced from', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_electric_storm_1_engineering', 'Lightning Struck Ruins', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_electric_storm_2_unity', 'Planetary Scar', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_electric_storm_3_physics', 'Silent Armada', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_particle_storm_1_society', 'Storm-ruined Suburbs', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_particle_storm_1_society', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_particle_storm_1_society', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_particle_storm_2_unity', 'The Big One', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_particle_storm_3_motes', 'Unstable Planes', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_solar_storm_1_energy', 'Degraded Ozone Layer', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_solar_storm_1_energy', 'planet_jobs_energy_produces_mult', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_solar_storm_1_energy', 'logistic_growth_mult', '-0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_solar_storm_2_districts', 'Radiated Highlands', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_solar_storm_2_districts', 'planet_max_districts_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_solar_storm_2_districts', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_solar_storm_3_output', 'Glowing Desert', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_celestial_storm_1_mines', 'Crystalline Quills', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_celestial_storm_2_society', 'Historic Sedimentation', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_celestial_storm_2_society', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_celestial_storm_3_crystal', 'Stardust Dunes', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_gravity_storm_1_districts', 'Compacted Plains', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_gravity_storm_1_districts', 'planet_max_districts_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_gravity_storm_2_unity', 'Pulverized Monuments', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_gravity_storm_2_unity', 'planet_jobs_unity_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_unity_produces_mult', 'Unity from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_gravity_storm_3_engineering', 'Gravitational Caves', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_shroud_storm_1_society', 'Shroud Parasites', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroud_storm_1_society', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroud_storm_1_society', 'logistic_growth_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_shroud_storm_2_zro', 'Fields of Zro', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_shroud_storm_2_zro', 'produces', 'sr_zro', '2.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroud_storm_2_zro', 'pop_happiness', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroud_storm_2_zro', 'district_farming_max_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_shroud_storm_3_happy', 'Entity of the Lake', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroud_storm_3_happy', 'pop_happiness', '0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroud_storm_3_happy', 'pop_ethic_spiritualist_attraction_mult', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_spiritualist_attraction_mult', 'Spiritualist Ethics Attraction', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wilderness_mining', 'Hollow Cave System', 'deposit_cat_blockers', 1, 120, '12_wilderness_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_wilderness_mining', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_mining', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_mining', 'district_mining_max_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wilderness_farming', 'Desiccated Forest', 'deposit_cat_blockers', 1, 120, '12_wilderness_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_wilderness_farming', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_farming', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_farming', 'district_farming_max_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wilderness_generator', 'Scorched Solar Field', 'deposit_cat_blockers', 1, 120, '12_wilderness_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_wilderness_generator', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_generator', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_generator', 'district_generator_max_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wilderness_city', 'Fetid Swamp', 'deposit_cat_blockers', 1, 120, '12_wilderness_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_wilderness_city', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_city', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wilderness_industrial', 'Metallic Mire', 'deposit_cat_blockers', 1, 120, '12_wilderness_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_wilderness_industrial', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_industrial', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wilderness_mining_2', 'Pockmarked Plateau', 'deposit_cat_blockers', 1, 120, '12_wilderness_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_wilderness_mining_2', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_mining_2', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_mining_2', 'district_mining_max_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wilderness_farming_2', 'Fossilized Forest', 'deposit_cat_blockers', 1, 120, '12_wilderness_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_wilderness_farming_2', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_farming_2', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_farming_2', 'district_farming_max_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wilderness_generator_2', 'Solar Wasteland', 'deposit_cat_blockers', 1, 120, '12_wilderness_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_wilderness_generator_2', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_generator_2', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_generator_2', 'district_generator_max_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wilderness_city_2', 'Festering Morass', 'deposit_cat_blockers', 1, 120, '12_wilderness_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_wilderness_city_2', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_city_2', 'planet_max_districts_add', '-4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wilderness_industrial_2', 'Biochemical Badlands', 'deposit_cat_blockers', 1, 120, '12_wilderness_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_wilderness_industrial_2', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_industrial_2', 'planet_max_districts_add', '-4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wilderness_root_blocker', 'Invasive Thicket', 'deposit_cat_blockers', 1, 240, '12_wilderness_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_wilderness_root_blocker', 'cost', 'energy', '500.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_wilderness_glade_blocker', 'Invasive Thicket', 'deposit_cat_blockers', 1, NULL, '12_wilderness_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_wilderness_glade_blocker', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_scorched_plains', 'Scorched Plains', 'deposit_cat_blockers', 1, 180, '12_wilderness_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_scorched_plains', 'cost', 'energy', '900.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_scorched_plains', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_abandoned_cities', 'Abandoned Cities', 'deposit_cat_blockers', 1, 360, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_abandoned_cities', 'cost', 'energy', '750.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_abandoned_cities', 'cost', 'minerals', '250.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_abandoned_cities', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_old_towns', 'Old Towns', 'deposit_cat_blockers', 1, 360, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_old_towns', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_old_towns', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_biological_enclaves', 'Biological Enclaves', 'deposit_cat_blockers', 1, 360, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_biological_enclaves', 'cost', 'alloys', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_biological_enclaves', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_genesis_preserve', 'Genesis Preserve', 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_genesis_preserve', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_genesis_monument', 'Genesis Monument', 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_nanites_medium', 'Nanite Replicator Omega', 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_nanites_small', 'Nanite Replicator Alpha', 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_nanites_tiny', 'Nanite Replicator Beta', 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_nanite_harvester_deposit', 'Nanotech Deposit 1', 'orbital_mining_deposits', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_nanite_harvester_deposit', 'produces', 'nanites', '0.1');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_nanite_harvester_deposit_regular', 'Nanotech Deposit 2', 'orbital_mining_deposits', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_nanite_harvester_deposit_regular', 'produces', 'nanites', '1.6');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_nanite_harvester_deposit_large', 'Nanotech Deposit 3', 'orbital_mining_deposits', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_nanite_harvester_deposit_large', 'produces', 'nanites', '25.6');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_living_metal_medium', NULL, 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_living_metal_small', 'Small Living Metal Vats', 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_living_metal_tiny', 'Miniature Living Metal Vats', 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_virtual_power_medium', 'Virtual Power Plant', 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_virtual_power_small', 'Compact Virtual Power Plant', 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_virtual_power_tiny', 'Prototype Virtual Power Plant', 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_arc_furnace_1', 'Arc Furnace: Equatorial Band', 'orbital_mining_deposits', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_arc_furnace_1', 'produces', 'minerals', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_arc_furnace_2', 'Arc Furnace: Borehole Pumps', 'orbital_mining_deposits', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_arc_furnace_2', 'produces', 'minerals', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_arc_furnace_3', 'Arc Furnace: Mohole Extractors', 'orbital_mining_deposits', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_arc_furnace_3', 'produces', 'minerals', '2.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_arc_furnace_3', 'produces', 'alloys', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_arc_furnace_4', 'Arc Furnace', 'orbital_mining_deposits', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_arc_furnace_4', 'produces', 'minerals', '2.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_arc_furnace_4', 'produces', 'alloys', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_radioactive_ruins', 'Radioactive Ruins', 'deposit_cat_blockers', 1, 120, '14_grand_archive_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_radioactive_ruins', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_radioactive_ruins', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_treasure_planet', 'Treasure Vault', 'deposit_cat_rare', 0, NULL, '14_grand_archive_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_black_needle_base', 'Hidden Black Needle Base', 'deposit_cat_rare', 0, NULL, '14_grand_archive_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_abandoned_black_needle_base', 'Abandoned Black Needle Base', 'deposit_cat_rare', 0, NULL, '14_grand_archive_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hive_dwelling', 'Hive Mind Dwelling', 'deposit_cat_rare', 0, NULL, '14_grand_archive_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_hive_dwelling', 'produces', 'unity', '10.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_hive_dwelling', 'planet_jobs_society_research_produces_mult', '0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ruined_hive_dwelling', 'Ruined Hive Mind Dwelling', 'deposit_cat_rare', 0, NULL, '14_grand_archive_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ruined_hive_dwelling', 'produces', 'unity', '10.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ruined_hive_dwelling', 'planet_jobs_society_research_produces_mult', '0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_bioship_remains', 'Biological Ship Remains', 'deposit_cat_blockers', 1, 360, '15_biogenesis_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_bioship_remains', 'cost', 'energy', '400.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_bioship_remains', 'pop_environment_tolerance', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_bioship_remains', 'pop_happiness', '-0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_bioship_remains', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_invasion_site', 'Invasion Site', 'deposit_cat_blockers', 1, 180, '15_biogenesis_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_invasion_site', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_invasion_site', 'cost', 'minerals', '200.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_invasion_site', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_kaiju_lair', 'Slumbering Kaijus', 'deposit_cat_blockers', 1, 180, '15_biogenesis_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_kaiju_lair', 'cost', 'energy', '300.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_kaiju_lair', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_devastated_cities', 'Devastated Settlements', 'deposit_cat_blockers', 1, 180, '15_biogenesis_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_devastated_cities', 'cost', 'energy', '4000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_devastated_cities', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_devastated_cities', 'planet_amenities_mult', '-0.3');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_mult', 'Amenities', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_devoured_continent', 'Devoured Biosphere', 'deposit_cat_blockers', 1, 180, '15_biogenesis_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_devoured_continent', 'cost', 'energy', '6000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_devoured_continent', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_devoured_continent', 'pop_environment_tolerance', '-0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_red_giant_unstable', NULL, 'orbital_mining_deposits', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_red_giant_unstable', 'produces', 'energy', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_red_giant_dm', NULL, 'orbital_mining_deposits', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_red_giant_dm', 'produces', 'sr_dark_matter', '5.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_red_giant_dm', 'produces', 'energy', '10.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_andisol_soil', NULL, 'deposit_cat_food', 0, 360, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_stasis_pods', NULL, 'deposit_cat_rare_blocker', 1, 360, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_stasis_pods', 'produces', 'society_research', '3.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_stasis_pods', 'cost', 'energy', '750.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_cd_ancient_tunnels', NULL, 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_seismic_bombing_crater', NULL, 'deposit_cat_blockers_natural', 1, 270, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_seismic_bombing_crater', 'produces', 'unity', '5.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_large_volcano', NULL, 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_large_volcano', 'produces', 'unity', '5.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_large_volcano', 'habitability_ceil_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_large_volcano', 'pop_environment_tolerance', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_large_volcano', 'habitability_floor_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ash_storms', NULL, 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ash_storms', 'habitability_ceil_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ash_storms', 'pop_environment_tolerance', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ash_storms', 'habitability_floor_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_charged_atmosphere', NULL, 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_charged_atmosphere', 'produces', 'energy', '5.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_charged_atmosphere', 'habitability_ceil_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_charged_atmosphere', 'pop_environment_tolerance', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_charged_atmosphere', 'habitability_floor_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_lava_flooding', NULL, 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_lava_flooding', 'produces', 'minerals', '5.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lava_flooding', 'habitability_ceil_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lava_flooding', 'pop_environment_tolerance', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lava_flooding', 'habitability_floor_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_toxic_atmosphere', NULL, 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_atmosphere', 'habitability_ceil_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_atmosphere', 'pop_environment_tolerance', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_atmosphere', 'habitability_floor_add', '-0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_galvanic_living_metal', NULL, 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_galvanic_living_metal', 'produces', 'sr_living_metal', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_ore_veins', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_ore_veins', 'district_mining_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_rich_mountain', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_rich_mountain', 'district_mining_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_ore_caverns', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_ore_caverns', 'district_mining_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_mineral_fields', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_mineral_fields', 'district_mining_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_mineral_hills', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_mineral_hills', 'district_mining_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_mineral_layers', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_mineral_layers', 'district_mining_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_weak_crust', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_weak_crust', 'district_mining_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_lava_river', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_lava_river', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_stable_plateaus', NULL, 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_stable_plateaus', 'district_polytechnic_max_add', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_tranquil_flatlands', NULL, 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_tranquil_flatlands', 'district_polytechnic_max_add', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_intraplate', NULL, 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_intraplate', 'district_polytechnic_max_add', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_basalt_plains', NULL, 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_basalt_plains', 'district_polytechnic_max_add', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_sulfur_lava', NULL, 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_sulfur_lava', 'district_polytechnic_max_add', '2.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_sulfur_lava', 'district_mining_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_dried_lavariver', NULL, 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_dried_lavariver', 'district_polytechnic_max_add', '1.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_tunnels', NULL, 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_tunnels', 'district_polytechnic_max_add', '2.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_tunnels', 'pop_environment_tolerance', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_fumarole', NULL, 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_volcanic_stifling_atmosphere', NULL, 'deposit_cat_rare_resource', 0, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_raging_lavafalls', NULL, 'deposit_cat_blockers_natural', 1, 270, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_raging_lavafalls', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_raging_lavafalls', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_rugged_landscape', NULL, 'deposit_cat_blockers_natural', 1, 270, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_rugged_landscape', 'cost', 'energy', '1000.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_rugged_landscape', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_shroudstone', 'Shroudstone', 'deposit_cat_blockers_natural', 1, 270, '15_shroud_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_shroudstone', 'produces', 'sr_zro', '1.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_shroudstone', 'cost', 'unity', '500.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_aura_blocker', 'Shrouded Vegetation', 'deposit_cat_blockers_natural', 1, 360, '15_shroud_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_aura_blocker', 'produces', 'sr_zro', '1.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_aura_blocker', 'cost', 'unity', '500.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_shroudfall', 'Shroudfall', 'deposit_cat_blockers_natural', 1, 360, '15_shroud_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_shroudfall', 'cost', 'unity', '1500.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_shroudfall', 'cost', 'energy', '1500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroudfall', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroudfall', 'planet_jobs_worker_produces_mult', '-0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroudfall', 'planet_pops_upkeep_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_shroudgate', 'Shroudgate', 'deposit_cat_blockers_natural', 1, 360, '15_shroud_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_shroudgate', 'cost', 'sr_zro', '100.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroudgate', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroudgate', 'planet_stability_add', '-5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shroudgate', 'planet_housing_mult', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_housing_mult', 'Housing', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ruined_sanctum_of_the_lost', 'Ruined Sanctum of the Dreamer', 'deposit_cat_blockers_natural', 1, NULL, '15_shroud_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ruined_sanctum_of_the_lost', 'produces', 'sr_zro', '1.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_ruined_sanctum_of_the_lost', 'cost', 'unity', '500.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ruined_sanctum_of_the_lost', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_coagulated_landscape', 'Coagulated Landscape', 'deposit_cat_blockers', 1, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_coagulated_landscape', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_shimmering_structure', 'Shimmering Structure', 'deposit_cat_blockers', 1, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_shimmering_structure', 'planet_max_districts_add', '-1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_geothermal_hotspot', 'Geothermal Hotspot', 'deposit_cat_energy', 0, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_geothermal_hotspot', 'district_generator_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_geothermal_hotspot', 'planet_technician_physics_research_produces_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_physics_research_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_geothermal_hotspot', 'planet_technician_energy_produces_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_energy_produces_mult', 'Produced from', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_ancient_cloaking_array', 'Ancient Cloaking Array', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ancient_cloaking_array', 'planet_orbital_bombardment_damage', '-0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_orbital_bombardment_damage', 'Orbital Bombardment Damage', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_ancient_cloaking_array', 'pop_happiness', '0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_psionic_sands', 'Psionic Sands', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_lava_tubes', 'Lava Tubes', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lava_tubes', 'planet_miners_minerals_produces_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_minerals_produces_add', 'Produced per 100', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lava_tubes', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_hydroactive_eggs', 'Hydroactive Eggs', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_hydroactive_eggs', 'planet_jobs_food_produces_mult', '0.3');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_hydroactive_eggs', 'planet_jobs_society_research_produces_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_mountains_of_steel', 'Mountains Of Steel', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mountains_of_steel', 'planet_jobs_minerals_produces_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mountains_of_steel', 'planet_jobs_alloys_produces_mult', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_mountains_of_steel', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_explosive_atmosphere', 'Explosive Atmosphere', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_explosive_atmosphere', 'logistic_growth_mult', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_explosive_atmosphere', 'planet_orbital_bombardment_damage', '0.25');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_orbital_bombardment_damage', 'Orbital Bombardment Damage', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_explosive_atmosphere', 'army_collateral_damage_mult', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_collateral_damage_mult', 'Army Collateral Damage', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_blue_lava', 'Blue Lava', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_blue_lava', 'produces', 'alloys', '5.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_blue_lava', 'produces', 'exotic_gases', '3.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_blue_lava', 'pop_environment_tolerance', '-0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_blue_lava', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_crystaline_growths', 'Crystalline Growth', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_crystaline_growths', 'produces', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_bogplants', 'Bogplants', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_bogplants', 'planet_jobs_society_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_liquid_dark_matter', 'Liquid Dark Matter', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_liquid_dark_matter', 'produces', 'sr_dark_matter', '2.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_liquid_dark_matter', 'planet_jobs_physics_research_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_liquid_dark_matter', 'planet_max_districts_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_space_junk_hazards', 'Space Junk Hazards', NULL, 0, NULL, '15_strange_worlds_deposits.txt');
+INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
+               VALUES ('d_georadiation_displacement', 'Georadiation Displacement', 'deposit_cat_blockers', 1, 360, '16_extreme_frontiers_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_georadiation_displacement', 'cost', 'energy', '1600.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_georadiation_displacement', 'planet_max_districts_add', '-2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_georadiation_displacement', 'planet_stability_add', '-5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_georadiation_displacement', 'planet_jobs_productive_produces_mult', '-0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_productive_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_georadiation_displacement', 'pop_happiness', '-0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES ('precursor_1', 'vultaumar_system', 'Vultaumar', 'sc_b', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('vultaumar_system#0', 'precursor_1', 'vultaumar_system', 'Vultaumar', 'pc_b_star', 'Class B Star', 35, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('vultaumar_system#1', 'precursor_1', 'vultaumar_system', 'Vultaumar Prime', 'pc_broken', 'Broken World', 25, 0, 1, 'vultaum_homeworld', 1);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('vultaumar_system#1', 'd_engineering_10', 0);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('vultaumar_system#1', 'd_physics_10', 1);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('vultaumar_system#1', 'd_society_10', 2);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('vultaumar_system#2', 'precursor_1', 'vultaumar_system', 'Vultaumar Ia', 'pc_barren_cold', 'Barren World', 7, 1, 0, NULL, 2);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('vultaumar_system#3', 'precursor_1', 'vultaumar_system', 'Vultaumar Ib', 'pc_barren_cold', 'Barren World', 5, 1, 0, NULL, 3);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('vultaumar_system#4', 'precursor_1', 'vultaumar_system', 'Vultaumar II', 'pc_toxic', 'Toxic World', 30, 0, 0, NULL, 4);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('vultaumar_system#5', 'precursor_1', 'vultaumar_system', 'Vultaumar IIa', 'pc_barren', 'Barren World', 6, 1, 0, NULL, 5);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('vultaumar_system#6', 'precursor_1', 'vultaumar_system', 'Vultaumar III', 'pc_toxic', 'Toxic World', 25, 0, 0, NULL, 6);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('vultaumar_system#6', 'd_alloys_5', 0);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('vultaumar_system#6', 'd_minerals_10', 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('vultaumar_system#7', 'precursor_1', 'vultaumar_system', 'Vultaumar IV', 'pc_gas_giant', 'Gas Giant', 40, 0, 0, NULL, 7);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('vultaumar_system#7', 'd_energy_10', 0);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('vultaumar_system#7', 'd_exotic_gases_5', 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('vultaumar_system#8', 'precursor_1', 'vultaumar_system', 'Vultaumar IVa', 'pc_frozen', 'Frozen World', 6, 1, 0, NULL, 8);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('vultaumar_system#9', 'precursor_1', 'vultaumar_system', 'Vultaumar V', 'pc_gas_giant', 'Gas Giant', 40, 0, 0, NULL, 9);
+INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES ('precursor_2', 'yuhtaan_system', 'Yuhtaan', 'sc_m', 0);
+INSERT OR IGNORE INTO precursor_megastructure
+                               (precursor_key, initializer, type, type_label)
+                           VALUES ('precursor_2', 'yuhtaan_system', 'hyper_relay_ruined', 'Ruined Hyper Relay');
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#0', 'precursor_2', 'yuhtaan_system', 'Yuhtaan', 'pc_m_star', 'Class M Star', 25, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#1', 'precursor_2', 'yuhtaan_system', 'Yuhtaan Majoris', 'pc_broken', 'Broken World', 25, 0, 1, 'yuht_homeworld', 1);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('yuhtaan_system#1', 'd_engineering_10', 0);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('yuhtaan_system#1', 'd_physics_10', 1);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('yuhtaan_system#1', 'd_society_10', 2);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#2', 'precursor_2', 'yuhtaan_system', 'Yuhtaan Minoris', 'pc_barren_cold', 'Barren World', 5, 1, 0, NULL, 2);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#3', 'precursor_2', 'yuhtaan_system', 'Yuhtaan II', 'pc_barren', 'Barren World', 20, 0, 0, NULL, 3);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#4', 'precursor_2', 'yuhtaan_system', 'Yuhtaan III', 'pc_barren_cold', 'Barren World', 15, 0, 0, NULL, 4);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#5', 'precursor_2', 'yuhtaan_system', NULL, 'pc_asteroid', 'Asteroid', 5, 0, 0, 'jabbardeeni_cache', 5);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#6', 'precursor_2', 'yuhtaan_system', NULL, 'pc_asteroid', 'Asteroid', 5, 0, 0, NULL, 6);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('yuhtaan_system#6', 'd_alloys_5', 0);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('yuhtaan_system#6', 'd_minerals_10', 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#7', 'precursor_2', 'yuhtaan_system', NULL, 'pc_asteroid', 'Asteroid', 5, 0, 0, NULL, 7);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#8', 'precursor_2', 'yuhtaan_system', 'Yuhtaan IV', 'pc_gas_giant', 'Gas Giant', 30, 0, 0, NULL, 8);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#9', 'precursor_2', 'yuhtaan_system', 'Yuhtaan IVa', 'pc_barren_cold', 'Barren World', 6, 1, 0, NULL, 9);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#10', 'precursor_2', 'yuhtaan_system', 'Yuhtaan IVb', 'pc_frozen', 'Frozen World', 6, 1, 0, NULL, 10);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#11', 'precursor_2', 'yuhtaan_system', 'Yuhtaan IVc', 'pc_frozen', 'Frozen World', 9, 1, 0, NULL, 11);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#12', 'precursor_2', 'yuhtaan_system', 'Yuhtaan V', 'pc_gas_giant', 'Gas Giant', 30, 0, 0, NULL, 12);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('yuhtaan_system#12', 'd_exotic_gases_5', 0);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('yuhtaan_system#12', 'd_energy_10', 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('yuhtaan_system#13', 'precursor_2', 'yuhtaan_system', 'Yuhtaan Va', 'pc_frozen', 'Frozen World', 6, 1, 0, NULL, 13);
+INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES ('precursor_3', 'fen_habbanis_system', 'Fen Habbanis', 'sc_g', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('fen_habbanis_system#0', 'precursor_3', 'fen_habbanis_system', 'Fen Habbanis', 'pc_g_star', 'Class G Star', 30, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('fen_habbanis_system#1', 'precursor_3', 'fen_habbanis_system', 'Fen Habbanis I', 'pc_molten', 'Molten World', 15, 0, 0, NULL, 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('fen_habbanis_system#2', 'precursor_3', 'fen_habbanis_system', 'Fen Habbanis II', 'pc_molten', 'Molten World', 10, 0, 0, NULL, 2);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('fen_habbanis_system#3', 'precursor_3', 'fen_habbanis_system', NULL, 'pc_asteroid', 'Asteroid', 5, 0, 0, NULL, 3);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#3', 'd_minerals_10', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('fen_habbanis_system#4', 'precursor_3', 'fen_habbanis_system', NULL, 'pc_asteroid', 'Asteroid', 5, 0, 0, NULL, 4);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('fen_habbanis_system#5', 'precursor_3', 'fen_habbanis_system', NULL, 'pc_asteroid', 'Asteroid', 5, 0, 0, NULL, 5);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('fen_habbanis_system#6', 'precursor_3', 'fen_habbanis_system', 'Fen Habbanis III', 'pc_relic', 'Relic World', 25, 0, 1, 'first_league_homeworld', 6);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_ruined_arcology', 0);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_ruined_arcology', 1);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_ruined_arcology', 2);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_ruined_arcology', 3);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_ruined_arcology', 4);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_ruined_arcology', 5);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_ruined_arcology', 6);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_relic_dense_ruins', 7);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_collapsed_spire', 8);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_massive_crevice', 9);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_shattered_solar_array', 10);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_flooded_reactor_pits', 11);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_crumbling_mining_tunnels', 12);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#6', 'd_relic_metal_boneyard', 13);
+INSERT OR REPLACE INTO precursor_planet_modifier
+                                   (planet_id, static_modifier, modifier_key, modifier_value)
+                               VALUES ('fen_habbanis_system#6', 'first_league_homeworld', 'country_first_league_homeworld_society_research_produces_add', '10.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_first_league_homeworld_society_research_produces_add', 'Monthly Society Research', 1);
+INSERT OR REPLACE INTO precursor_planet_modifier
+                                   (planet_id, static_modifier, modifier_key, modifier_value)
+                               VALUES ('fen_habbanis_system#6', 'first_league_homeworld', 'country_first_league_homeworld_physics_research_produces_add', '10.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_first_league_homeworld_physics_research_produces_add', 'Monthly Physics Research', 1);
+INSERT OR REPLACE INTO precursor_planet_modifier
+                                   (planet_id, static_modifier, modifier_key, modifier_value)
+                               VALUES ('fen_habbanis_system#6', 'first_league_homeworld', 'country_first_league_homeworld_engineering_research_produces_add', '10.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_first_league_homeworld_engineering_research_produces_add', 'Monthly Engineering Research', 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('fen_habbanis_system#7', 'precursor_3', 'fen_habbanis_system', 'Fen Habbanis IV', 'pc_toxic', 'Toxic World', 20, 0, 0, NULL, 7);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('fen_habbanis_system#8', 'precursor_3', 'fen_habbanis_system', 'Fen Habbanis V', 'pc_barren', 'Barren World', 20, 0, 0, NULL, 8);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('fen_habbanis_system#9', 'precursor_3', 'fen_habbanis_system', 'Fen Habbanis VI', 'pc_gas_giant', 'Gas Giant', 35, 0, 0, NULL, 9);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('fen_habbanis_system#9', 'd_energy_10', 0);
+INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES ('precursor_4', 'irass_system', 'Irass', 'sc_f', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#0', 'precursor_4', 'irass_system', NULL, 'star', NULL, NULL, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#1', 'precursor_4', 'irass_system', 'Irass I', 'pc_molten', 'Molten World', 15, 0, 0, NULL, 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#2', 'precursor_4', 'irass_system', 'Irass II', 'pc_molten', 'Molten World', 25, 0, 0, NULL, 2);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#3', 'precursor_4', 'irass_system', 'Irass III', 'pc_toxic', 'Toxic World', 20, 0, 0, NULL, 3);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('irass_system#3', 'd_alloys_5', 0);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('irass_system#3', 'd_minerals_10', 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#4', 'precursor_4', 'irass_system', 'Irass IV', 'pc_barren', 'Barren World', 15, 0, 0, NULL, 4);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#5', 'precursor_4', 'irass_system', NULL, 'pc_asteroid', 'Asteroid', 5, 0, 0, NULL, 5);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#6', 'precursor_4', 'irass_system', NULL, 'pc_asteroid', 'Asteroid', 5, 0, 0, NULL, 6);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#7', 'precursor_4', 'irass_system', 'Irass V', 'pc_barren', 'Barren World', 20, 0, 0, NULL, 7);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#8', 'precursor_4', 'irass_system', 'Irass VI', 'pc_gas_giant', 'Gas Giant', 35, 0, 0, NULL, 8);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#9', 'precursor_4', 'irass_system', 'Irassia', 'pc_barren_cold', 'Barren World', 20, 1, 1, 'irassian_homeworld', 9);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('irass_system#9', 'd_engineering_10', 0);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('irass_system#9', 'd_physics_10', 1);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('irass_system#9', 'd_society_10', 2);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#10', 'precursor_4', 'irass_system', 'Irass VII', 'pc_gas_giant', 'Gas Giant', 20, 0, 0, NULL, 10);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#11', 'precursor_4', 'irass_system', 'Irass VIIa', 'pc_frozen', 'Frozen World', 8, 1, 0, NULL, 11);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#12', 'precursor_4', 'irass_system', 'Irass VIIb', 'pc_frozen', 'Frozen World', 8, 1, 0, NULL, 12);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#13', 'precursor_4', 'irass_system', 'Irass VIII', 'pc_gas_giant', 'Gas Giant', 25, 0, 0, NULL, 13);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('irass_system#13', 'd_exotic_gases_5', 0);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('irass_system#13', 'd_energy_10', 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('irass_system#14', 'precursor_4', 'irass_system', 'Irass IX', 'pc_barren_cold', 'Barren World', 15, 0, 0, NULL, 14);
+INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES ('precursor_5', 'cybrex_system', 'Cybrex Alpha', 'sc_g', 0);
+INSERT OR IGNORE INTO precursor_megastructure
+                               (precursor_key, initializer, type, type_label)
+                           VALUES ('precursor_5', 'cybrex_system', 'ring_world_ruined', 'Ruined Ring Section');
+INSERT OR IGNORE INTO precursor_megastructure
+                               (precursor_key, initializer, type, type_label)
+                           VALUES ('precursor_5', 'cybrex_system', 'ring_world_ruined', 'Ruined Ring Section');
+INSERT OR IGNORE INTO precursor_megastructure
+                               (precursor_key, initializer, type, type_label)
+                           VALUES ('precursor_5', 'cybrex_system', 'ring_world_ruined', 'Ruined Ring Section');
+INSERT OR IGNORE INTO precursor_megastructure
+                               (precursor_key, initializer, type, type_label)
+                           VALUES ('precursor_5', 'cybrex_system', 'ring_world_ruined', 'Ruined Ring Section');
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_system#0', 'precursor_5', 'cybrex_system', NULL, 'star', NULL, NULL, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES ('precursor_5', 'cybrex_beta', 'Cybrex Beta', 'sc_g', 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_beta#0', 'precursor_5', 'cybrex_beta', NULL, 'star', NULL, NULL, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_beta#1', 'precursor_5', 'cybrex_beta', 'Cybrex Beta I', 'pc_cybrex', 'Ring Segment', NULL, 0, 0, NULL, 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_beta#2', 'precursor_5', 'cybrex_beta', 'Ring Section B', 'pc_ringworld_tech', 'Ring Segment', NULL, 0, 0, NULL, 2);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_beta#3', 'precursor_5', 'cybrex_beta', 'Ring Section C', 'pc_ringworld_seam', 'Ring Segment', NULL, 0, 0, NULL, 3);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_beta#4', 'precursor_5', 'cybrex_beta', 'Cybrex Beta II', 'pc_cybrex', 'Ring Segment', NULL, 0, 0, NULL, 4);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_beta#5', 'precursor_5', 'cybrex_beta', 'Ring Section E', 'pc_ringworld_tech', 'Ring Segment', NULL, 0, 0, NULL, 5);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_beta#6', 'precursor_5', 'cybrex_beta', 'Ring Section F', 'pc_ringworld_seam', 'Ring Segment', NULL, 0, 0, NULL, 6);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_beta#7', 'precursor_5', 'cybrex_beta', 'Cybrex Beta III', 'pc_cybrex', 'Ring Segment', NULL, 0, 0, NULL, 7);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_beta#8', 'precursor_5', 'cybrex_beta', 'Ring Section H', 'pc_ringworld_tech', 'Ring Segment', NULL, 0, 0, NULL, 8);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_beta#9', 'precursor_5', 'cybrex_beta', 'Ring Section I', 'pc_ringworld_seam', 'Ring Segment', NULL, 0, 0, NULL, 9);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_beta#10', 'precursor_5', 'cybrex_beta', 'Cybrex Beta IV', 'pc_cybrex', 'Ring Segment', NULL, 0, 0, NULL, 10);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_beta#11', 'precursor_5', 'cybrex_beta', 'Ring Section K', 'pc_ringworld_tech', 'Ring Segment', NULL, 0, 0, NULL, 11);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('cybrex_beta#12', 'precursor_5', 'cybrex_beta', 'Ring Section L', 'pc_ringworld_seam', 'Ring Segment', NULL, 0, 0, NULL, 12);
+INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES ('precursor_baol_1', 'last_baol_system', 'Grunur', 'sc_a', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('last_baol_system#0', 'precursor_baol_1', 'last_baol_system', NULL, 'star', NULL, NULL, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('last_baol_system#1', 'precursor_baol_1', 'last_baol_system', NULL, 'pc_barren', 'Barren World', 15, 0, 0, NULL, 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('last_baol_system#2', 'precursor_baol_1', 'last_baol_system', NULL, 'pc_molten', 'Molten World', 17, 0, 0, NULL, 2);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('last_baol_system#3', 'precursor_baol_1', 'last_baol_system', NULL, 'pc_barren_cold', 'Barren World', 12, 0, 0, NULL, 3);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('last_baol_system#4', 'precursor_baol_1', 'last_baol_system', 'Grunur Prime', 'pc_nuked', 'Tomb World', 20, 0, 0, NULL, 4);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('last_baol_system#4', 'd_metal_boneyard', 0);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('last_baol_system#4', 'd_metal_boneyard', 1);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('last_baol_system#4', 'd_irradiated_valley', 2);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('last_baol_system#4', 'd_irradiated_valley', 3);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('last_baol_system#4', 'd_impact_crater', 4);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('last_baol_system#4', 'd_ore_rich_caverns', 5);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('last_baol_system#4', 'd_ore_rich_caverns', 6);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('last_baol_system#4', 'd_underwater_vent', 7);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('last_baol_system#4', 'd_radioactive_wasteland', 8);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('last_baol_system#4', 'd_city_ruins', 9);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('last_baol_system#4', 'd_city_ruins', 10);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('last_baol_system#5', 'precursor_baol_1', 'last_baol_system', NULL, 'pc_broken', 'Broken World', 16, 0, 0, NULL, 5);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('last_baol_system#6', 'precursor_baol_1', 'last_baol_system', NULL, 'pc_broken', 'Broken World', 6, 1, 0, NULL, 6);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('last_baol_system#7', 'precursor_baol_1', 'last_baol_system', NULL, 'pc_gas_giant', 'Gas Giant', 30, 0, 0, NULL, 7);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('last_baol_system#8', 'precursor_baol_1', 'last_baol_system', NULL, 'pc_toxic', 'Toxic World', 7, 1, 0, NULL, 8);
+INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES ('precursor_zroni_1', 'zroni_legacy_initializer_01', 'Tarentei', 'sc_f', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('zroni_legacy_initializer_01#0', 'precursor_zroni_1', 'zroni_legacy_initializer_01', NULL, 'star', NULL, NULL, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('zroni_legacy_initializer_01#1', 'precursor_zroni_1', 'zroni_legacy_initializer_01', NULL, 'pc_barren', 'Barren World', 18, 0, 0, NULL, 1);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('zroni_legacy_initializer_01#1', 'd_minerals_5', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('zroni_legacy_initializer_01#2', 'precursor_zroni_1', 'zroni_legacy_initializer_01', NULL, 'pc_gas_giant', 'Gas Giant', 20, 0, 0, NULL, 2);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('zroni_legacy_initializer_01#2', 'd_energy_5', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('zroni_legacy_initializer_01#3', 'precursor_zroni_1', 'zroni_legacy_initializer_01', 'Larei', 'pc_desert', 'Desert World', 18, 0, 0, 'zroni_legacy_1_flag zroni_legacy_flag', 3);
+INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES ('precursor_zroni_1', 'zroni_legacy_initializer_02', 'Jarani', 'sc_a', 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('zroni_legacy_initializer_02#0', 'precursor_zroni_1', 'zroni_legacy_initializer_02', NULL, 'star', NULL, NULL, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('zroni_legacy_initializer_02#1', 'precursor_zroni_1', 'zroni_legacy_initializer_02', NULL, 'pc_gas_giant', 'Gas Giant', 20, 0, 0, NULL, 1);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('zroni_legacy_initializer_02#1', 'd_energy_5', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('zroni_legacy_initializer_02#2', 'precursor_zroni_1', 'zroni_legacy_initializer_02', NULL, 'pc_gas_giant', 'Gas Giant', 24, 0, 0, NULL, 2);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('zroni_legacy_initializer_02#2', 'd_energy_5', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('zroni_legacy_initializer_02#3', 'precursor_zroni_1', 'zroni_legacy_initializer_02', 'Zartrei', 'pc_continental', 'Continental World', 22, 0, 0, 'zroni_legacy_2_flag zroni_legacy_flag', 3);
+INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES ('precursor_zroni_1', 'zroni_legacy_initializer_03', 'Oren', 'sc_k', 2);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('zroni_legacy_initializer_03#0', 'precursor_zroni_1', 'zroni_legacy_initializer_03', NULL, 'star', NULL, NULL, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('zroni_legacy_initializer_03#1', 'precursor_zroni_1', 'zroni_legacy_initializer_03', NULL, 'pc_barren', 'Barren World', 18, 0, 0, NULL, 1);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('zroni_legacy_initializer_03#1', 'd_minerals_5', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('zroni_legacy_initializer_03#2', 'precursor_zroni_1', 'zroni_legacy_initializer_03', 'Narei', 'pc_tundra', 'Tundra World', 21, 0, 0, 'zroni_legacy_3_flag zroni_legacy_flag', 2);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('zroni_legacy_initializer_03#3', 'precursor_zroni_1', 'zroni_legacy_initializer_03', NULL, 'pc_barren', 'Barren World', 18, 0, 0, NULL, 3);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('zroni_legacy_initializer_03#3', 'd_minerals_3', 0);
+INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES ('precursor_inetian', 'weathermanipulators_home_system', NULL, 'rl_standard_stars', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('weathermanipulators_home_system#0', 'precursor_inetian', 'weathermanipulators_home_system', NULL, 'star', NULL, NULL, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('weathermanipulators_home_system#1', 'precursor_inetian', 'weathermanipulators_home_system', NULL, NULL, NULL, NULL, 0, 0, 'precursor_world', 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('weathermanipulators_home_system#2', 'precursor_inetian', 'weathermanipulators_home_system', NULL, 'pc_desert', 'Desert World', NULL, 0, 0, 'precursor_world', 2);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('weathermanipulators_home_system#3', 'precursor_inetian', 'weathermanipulators_home_system', NULL, 'pc_barren', 'Barren World', NULL, 0, 0, 'precursor_world', 3);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('weathermanipulators_home_system#4', 'precursor_inetian', 'weathermanipulators_home_system', NULL, NULL, NULL, NULL, 0, 0, NULL, 4);
+INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES ('precursor_adakkaria', 'adSalivul_system', 'adSalivul', 'rl_standard_stars', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('adSalivul_system#0', 'precursor_adakkaria', 'adSalivul_system', NULL, 'star', NULL, NULL, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('adSalivul_system#1', 'precursor_adakkaria', 'adSalivul_system', NULL, 'pc_broken', 'Broken World', NULL, 0, 0, 'precursor_world', 1);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('adSalivul_system#1', 'd_physics_3', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('adSalivul_system#2', 'precursor_adakkaria', 'adSalivul_system', NULL, NULL, NULL, NULL, 0, 0, NULL, 2);
+INSERT OR REPLACE INTO precursor_system
+                       (precursor_key, initializer, name, star_class, sort_order)
+                   VALUES ('precursor_adakkaria', 'adSul_system', 'adSul', 'rl_standard_stars', 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('adSul_system#0', 'precursor_adakkaria', 'adSul_system', NULL, 'star', NULL, NULL, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('adSul_system#1', 'precursor_adakkaria', 'adSul_system', NULL, 'pc_shrouded', 'Shrouded World', NULL, 0, 0, NULL, 1);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('adSul_system#2', 'precursor_adakkaria', 'adSul_system', NULL, NULL, NULL, NULL, 0, 0, NULL, 2);
+INSERT OR IGNORE INTO precursor_planet_deposit
+                               (planet_id, deposit_key, sort_order) VALUES ('adSul_system#2', 'd_zro_deposit_2', 0);
+INSERT OR REPLACE INTO precursor_planet
+                           (id, precursor_key, initializer, name, planet_class,
+                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
+                       VALUES ('adSul_system#3', 'precursor_adakkaria', 'adSul_system', NULL, NULL, NULL, NULL, 0, 0, NULL, 3);
