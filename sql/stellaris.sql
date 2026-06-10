@@ -5004,7 +5004,7 @@ INSERT OR IGNORE INTO trait_modifier
                    VALUES ('trait_survivor', 'pop_amenities_usage_mult', '-0.15', 3);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 1);
+                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_enigmatic_intelligence', 'researcher_jobs_bonus_workforce_mult', '0.1', 0);
@@ -5040,7 +5040,7 @@ INSERT OR IGNORE INTO trait_modifier
                    VALUES ('trait_bioadaptability', 'pop_amenities_usage_mult', '-0.05', 1);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 1);
+                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_bioadaptability', 'logistic_growth_mult', '0.05', 2);
@@ -5058,7 +5058,7 @@ INSERT OR IGNORE INTO trait_modifier
                    VALUES ('trait_social_pheromones', 'pop_amenities_usage_mult', '-0.05', 1);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 1);
+                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_social_pheromones', 'logistic_growth_mult', '0.05', 2);
@@ -5082,7 +5082,7 @@ INSERT OR IGNORE INTO trait_modifier
                    VALUES ('trait_limited_regeneration', 'pop_amenities_usage_mult', '-0.05', 2);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 1);
+                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_limited_regeneration', 'logistic_growth_mult', '0.05', 3);
@@ -6064,7 +6064,7 @@ INSERT OR IGNORE INTO trait_modifier
                    VALUES ('trait_robot_enigmatic_fortress', 'pop_amenities_usage_mult', '-0.5', 0);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 1);
+                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_infinity_sphere', 'researcher_jobs_bonus_workforce_mult', '0.25', 0);
@@ -6136,7 +6136,7 @@ INSERT OR IGNORE INTO trait_modifier
                    VALUES ('trait_robot_survivor', 'pop_amenities_usage_mult', '-0.15', 3);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 1);
+                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_digital_1', 'habitability_floor_add', '0.25', 0);
@@ -6777,7 +6777,7 @@ INSERT OR IGNORE INTO trait_modifier
                    VALUES ('trait_vat_grown', 'pop_amenities_usage_mult', '-0.1', 2);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 1);
+                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_felsic', 'pop_livestock_lithoid_bonus_workforce_mult', '1.0', 0);
@@ -8057,7 +8057,7 @@ INSERT OR IGNORE INTO trait_modifier
                    VALUES ('trait_cyborg_enigmatic_fortress', 'pop_amenities_usage_mult', '-0.5', 0);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 1);
+                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_infinity_sphere', 'researcher_jobs_bonus_workforce_mult', '0.25', 0);
@@ -9750,7 +9750,7 @@ INSERT OR IGNORE INTO trait_modifier
                    VALUES ('trait_tankbound', 'pop_amenities_usage_mult', '0.5', 0);
 INSERT OR REPLACE INTO modifier_label
                                (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 1);
+                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_tankbound', 'logistic_growth_mult', '-0.25', 1);
@@ -10597,7 +10597,7 @@ INSERT OR IGNORE INTO precursor_relic_modifier
                                (relic_key, modifier_key, modifier_value, condition, sort_order)
                            VALUES ('r_reality_perforator', 'pop_amenities_usage_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR REPLACE INTO precursor_reward_modifier
                            (precursor_key, static_modifier, variant, name,
                             modifier_key, modifier_value, sort_order)
@@ -10739,7 +10739,7 @@ INSERT OR REPLACE INTO precursor_reward_modifier
                             modifier_key, modifier_value, sort_order)
                        VALUES ('precursor_baol_1', 'artifact_baol_research_completed', 'default', 'Secrets of the Baol', 'terraforming_cost_mult', '-0.15', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('terraforming_cost_mult', 'Terraforming Cost', 1);
+           VALUES ('terraforming_cost_mult', 'Terraforming Cost', 0);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_zroni_1', 'Zroni', 'Ancient Relics Story Pack', 'zroni_legacy_initializer_01', 'GFX_precursor_zroni', 6, 6);
@@ -10750,7 +10750,7 @@ INSERT OR IGNORE INTO precursor_relic_modifier
                                (relic_key, modifier_key, modifier_value, condition, sort_order)
                            VALUES ('r_zro_crystal', 'shroud_delve_cooldown', '-0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('shroud_delve_cooldown', 'Shroud Delve Cooldown', 1);
+           VALUES ('shroud_delve_cooldown', 'Shroud Delve Cooldown', 0);
 INSERT OR REPLACE INTO precursor_reward_modifier
                            (precursor_key, static_modifier, variant, name,
                             modifier_key, modifier_value, sort_order)
@@ -10776,13 +10776,13 @@ INSERT OR REPLACE INTO precursor_reward_modifier
                             modifier_key, modifier_value, sort_order)
                        VALUES ('precursor_inetian', 'secrets_of_the_inetian_traders', 'default', 'Secrets of the Inetian Traders', 'country_trade_fee', '-0.05', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_trade_fee', 'Market Fee', 1);
+           VALUES ('country_trade_fee', 'Market Fee', 0);
 INSERT OR REPLACE INTO precursor_reward_modifier
                            (precursor_key, static_modifier, variant, name,
                             modifier_key, modifier_value, sort_order)
                        VALUES ('precursor_inetian', 'secrets_of_the_inetian_traders_hive_mach', 'hive_machine', 'Secrets of the Inetian Traders', 'country_trade_fee', '-0.05', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_trade_fee', 'Market Fee', 1);
+           VALUES ('country_trade_fee', 'Market Fee', 0);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_adakkaria', 'adAkkaria', 'Cosmic Storms', 'adSul_system', 'GFX_precursor_adakkaria', NULL, 8);
@@ -10798,7 +10798,7 @@ INSERT OR IGNORE INTO precursor_relic_modifier
                                (relic_key, modifier_key, modifier_value, condition, sort_order)
                            VALUES ('r_the_tempest_invocator', 'ships_upkeep_mult', '-0.15', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 1);
+           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
 INSERT OR REPLACE INTO precursor_reward_modifier
                            (precursor_key, static_modifier, variant, name,
                             modifier_key, modifier_value, sort_order)

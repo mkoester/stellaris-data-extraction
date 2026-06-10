@@ -108,12 +108,13 @@ Full schema: see `SCHEMA` string at top of `stellaris-extract.py`.
 ### `INVERTED_MODIFIERS` (frozenset)
 Modifier keys where a more positive value is WORSE (stored with `positive_is_good = 0`):
 - Upkeep/cost: `leaders_upkeep_mult`, `planet_pops_*_upkeep_mult`, `pop_resettlement_cost_mult`
-- Resource consumption: `pop_amenities_usage_add`, `pop_housing_usage_mult`
+- Resource consumption: `pop_amenities_usage_add`, `pop_amenities_usage_mult`, `pop_housing_usage_mult`
 - Administrative: `species_empire_size_mult`, `empire_size_pops_mult`
 - Influence costs: `country_claim_influence_cost_mult`, `country_starbase_influence_cost_mult`
 - Edict costs: `edicts_upkeep_mult`, `edicts_cost_mult`
+- Costs / fees: `terraforming_cost_mult`, `country_trade_fee`
 - War: `country_war_exhaustion_mult`
-- Combat: `army_damage_taken_mult`, `gravity_snare_cooldown_mult`, `gravity_snare_cost_mult`
+- Combat: `army_damage_taken_mult`, `gravity_snare_cooldown_mult`, `gravity_snare_cost_mult`, `ships_upkeep_mult`, `shroud_delve_cooldown`
 - Trait slots: `negative_leader_traits_species`
 
 ### `MODIFIER_LOC_OVERRIDES` (dict)

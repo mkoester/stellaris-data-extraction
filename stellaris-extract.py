@@ -920,6 +920,12 @@ INVERTED_MODIFIERS: frozenset[str] = frozenset({
     'army_damage_taken_mult',
     'gravity_snare_cooldown_mult',
     'gravity_snare_cost_mult',
+    'ships_upkeep_mult',
+    'shroud_delve_cooldown',
+    # Costs / fees (a reduction is good) — seen on precursor relics & rewards
+    'pop_amenities_usage_mult',
+    'terraforming_cost_mult',
+    'country_trade_fee',
     # Trait slot counts (more negative trait slots allowed = worse)
     'negative_leader_traits_species',
 })
