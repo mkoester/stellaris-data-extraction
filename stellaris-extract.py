@@ -1703,15 +1703,17 @@ def extract_deposits(data: dict, source_file: str, loc: dict[str, str],
 # ---------------------------------------------------------------------------
 
 # precursor key -> home system initializer(s). Some precursors span several
-# systems (Zroni's three legacy worlds; Cybrex's plain system + the ringworld
-# in cybrex_beta). Verified against the initializer files and the spawn_system
-# calls in the precursor events.
+# systems (Zroni's three legacy worlds). Verified against the initializer files
+# and the spawn_system calls in the precursor events.
+# NOTE: the Cybrex home is `cybrex_system` (Cybrex Alpha) — a ruined debris field.
+# The ruined ringworld `cybrex_beta` is NOT a precursor reward: it spawns during
+# the Contingency end-game crisis (events/crisis_events_3.txt), so it's excluded.
 PRECURSOR_SYSTEMS: dict[str, list[str]] = {
     'precursor_1':       ['vultaumar_system'],
     'precursor_2':       ['yuhtaan_system'],
     'precursor_3':       ['fen_habbanis_system'],
     'precursor_4':       ['irass_system'],
-    'precursor_5':       ['cybrex_system', 'cybrex_beta'],
+    'precursor_5':       ['cybrex_system'],
     'precursor_baol_1':  ['last_baol_system'],
     'precursor_zroni_1': ['zroni_legacy_initializer_01', 'zroni_legacy_initializer_02',
                           'zroni_legacy_initializer_03'],

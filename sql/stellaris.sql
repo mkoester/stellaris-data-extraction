@@ -14822,61 +14822,6 @@ INSERT OR REPLACE INTO precursor_planet
                        VALUES ('cybrex_system#0', 'precursor_5', 'cybrex_system', NULL, 'star', NULL, NULL, 0, 0, NULL, 0);
 INSERT OR REPLACE INTO precursor_system
                        (precursor_key, initializer, name, star_class, sort_order)
-                   VALUES ('precursor_5', 'cybrex_beta', 'Cybrex Beta', 'sc_g', 1);
-INSERT OR REPLACE INTO precursor_planet
-                           (id, precursor_key, initializer, name, planet_class,
-                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
-                       VALUES ('cybrex_beta#0', 'precursor_5', 'cybrex_beta', NULL, 'star', NULL, NULL, 0, 0, NULL, 0);
-INSERT OR REPLACE INTO precursor_planet
-                           (id, precursor_key, initializer, name, planet_class,
-                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
-                       VALUES ('cybrex_beta#1', 'precursor_5', 'cybrex_beta', 'Cybrex Beta I', 'pc_cybrex', 'Ring Segment', NULL, 0, 0, NULL, 1);
-INSERT OR REPLACE INTO precursor_planet
-                           (id, precursor_key, initializer, name, planet_class,
-                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
-                       VALUES ('cybrex_beta#2', 'precursor_5', 'cybrex_beta', 'Ring Section B', 'pc_ringworld_tech', 'Ring Segment', NULL, 0, 0, NULL, 2);
-INSERT OR REPLACE INTO precursor_planet
-                           (id, precursor_key, initializer, name, planet_class,
-                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
-                       VALUES ('cybrex_beta#3', 'precursor_5', 'cybrex_beta', 'Ring Section C', 'pc_ringworld_seam', 'Ring Segment', NULL, 0, 0, NULL, 3);
-INSERT OR REPLACE INTO precursor_planet
-                           (id, precursor_key, initializer, name, planet_class,
-                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
-                       VALUES ('cybrex_beta#4', 'precursor_5', 'cybrex_beta', 'Cybrex Beta II', 'pc_cybrex', 'Ring Segment', NULL, 0, 0, NULL, 4);
-INSERT OR REPLACE INTO precursor_planet
-                           (id, precursor_key, initializer, name, planet_class,
-                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
-                       VALUES ('cybrex_beta#5', 'precursor_5', 'cybrex_beta', 'Ring Section E', 'pc_ringworld_tech', 'Ring Segment', NULL, 0, 0, NULL, 5);
-INSERT OR REPLACE INTO precursor_planet
-                           (id, precursor_key, initializer, name, planet_class,
-                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
-                       VALUES ('cybrex_beta#6', 'precursor_5', 'cybrex_beta', 'Ring Section F', 'pc_ringworld_seam', 'Ring Segment', NULL, 0, 0, NULL, 6);
-INSERT OR REPLACE INTO precursor_planet
-                           (id, precursor_key, initializer, name, planet_class,
-                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
-                       VALUES ('cybrex_beta#7', 'precursor_5', 'cybrex_beta', 'Cybrex Beta III', 'pc_cybrex', 'Ring Segment', NULL, 0, 0, NULL, 7);
-INSERT OR REPLACE INTO precursor_planet
-                           (id, precursor_key, initializer, name, planet_class,
-                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
-                       VALUES ('cybrex_beta#8', 'precursor_5', 'cybrex_beta', 'Ring Section H', 'pc_ringworld_tech', 'Ring Segment', NULL, 0, 0, NULL, 8);
-INSERT OR REPLACE INTO precursor_planet
-                           (id, precursor_key, initializer, name, planet_class,
-                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
-                       VALUES ('cybrex_beta#9', 'precursor_5', 'cybrex_beta', 'Ring Section I', 'pc_ringworld_seam', 'Ring Segment', NULL, 0, 0, NULL, 9);
-INSERT OR REPLACE INTO precursor_planet
-                           (id, precursor_key, initializer, name, planet_class,
-                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
-                       VALUES ('cybrex_beta#10', 'precursor_5', 'cybrex_beta', 'Cybrex Beta IV', 'pc_cybrex', 'Ring Segment', NULL, 0, 0, NULL, 10);
-INSERT OR REPLACE INTO precursor_planet
-                           (id, precursor_key, initializer, name, planet_class,
-                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
-                       VALUES ('cybrex_beta#11', 'precursor_5', 'cybrex_beta', 'Ring Section K', 'pc_ringworld_tech', 'Ring Segment', NULL, 0, 0, NULL, 11);
-INSERT OR REPLACE INTO precursor_planet
-                           (id, precursor_key, initializer, name, planet_class,
-                            planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
-                       VALUES ('cybrex_beta#12', 'precursor_5', 'cybrex_beta', 'Ring Section L', 'pc_ringworld_seam', 'Ring Segment', NULL, 0, 0, NULL, 12);
-INSERT OR REPLACE INTO precursor_system
-                       (precursor_key, initializer, name, star_class, sort_order)
                    VALUES ('precursor_baol_1', 'last_baol_system', 'Grunur', 'sc_a', 0);
 INSERT OR REPLACE INTO precursor_planet
                            (id, precursor_key, initializer, name, planet_class,

@@ -207,11 +207,21 @@ the `time` field. So `d_minerals_10` → produces 10 minerals, `d_ruined_arcolog
 → blocker, −1 district, 360-day clear costing 750 energy + 250 minerals.
 
 **`PRECURSOR_SYSTEMS` config** maps each precursor → its initializer key(s).
-Some span several systems: **Zroni** = 3 (`zroni_legacy_initializer_01/02/03`),
-**Cybrex** = 2 (`cybrex_system` + `cybrex_beta`, the ruined ringworld). Inetian =
+**Zroni** spans 3 (`zroni_legacy_initializer_01/02/03`); **Cybrex** = just
+`cybrex_system` (Cybrex Alpha, a ruined debris field). Inetian =
 `weathermanipulators_home_system`, adAkkaria = `adSalivul_system` + `adSul_system`.
 All `common/solar_system_initializers/*.txt` are parsed and merged; the config
 selects the ones we care about.
+
+**Gotcha — two Cybrex systems; keep only the precursor one.** The Cybrex
+*precursor* home is **`cybrex_system` (Cybrex Alpha)**: it has the **ruined ring
+world** (four `spawn_megastructure = { type = ring_world_ruined }` in the
+*system-level* `init_effect`, lines ~1393+) but no habitable planets — just the
+star + debris ambients. The separate **`cybrex_beta`** (a *rebuilt* ringworld,
+flag `ring_world_built`) belongs to the **Contingency end-game crisis**
+(`events/crisis_events_3.txt`), not the dig, so it is **excluded** from
+`PRECURSOR_SYSTEMS`. (The ring world is captured as a megastructure, not planets,
+which is why the four ruined sections show as one `precursor_megastructure` row.)
 
 **Planet parsing:** `precursor_planet.id` is the synthetic `<initializer>#<index>`
 (deterministic → works in both SQL dump and SQLite, no autoincrement/lastrowid).
@@ -285,8 +295,8 @@ Unresolved `$KEY$` inline references in labels are discarded (label not stored i
 | Deposits (dictionary)     | 575  |
 | Deposit resources         | 337  |
 | Deposit modifiers         | 471  |
-| Precursor systems         | 13   |
-| Precursor planets         | 96   |
+| Precursor systems         | 12   |
+| Precursor planets         | 83   |
 | Precursor planet deposits | 56   |
 | Precursor planet modifiers | 3   |
 | Precursor megastructures  | 2    |
