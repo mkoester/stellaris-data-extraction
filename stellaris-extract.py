@@ -491,6 +491,7 @@ CREATE TABLE precursor_megastructure (
     initializer   TEXT NOT NULL,
     type          TEXT NOT NULL,          -- e.g. "hyper_relay_ruined"
     type_label    TEXT,                   -- localised, e.g. "Ruined Hyper Relay"
+    count         INTEGER NOT NULL DEFAULT 1,  -- e.g. 4 for the Cybrex ruined ring sections
     PRIMARY KEY (precursor_key, initializer, type),
     FOREIGN KEY (precursor_key) REFERENCES precursor(key)
 );
@@ -1805,21 +1806,16 @@ def extract_precursor_systems(initializers: dict, static_mods: dict,
             if verbose:
                 print(f"  System: {pkey} | {init_key} | {_loc_name(sys_block.get('name'), loc)}")
 
-            # System-level megastructures (e.g. the Yuht ruined hyper relay sits
-            # in the system's own init_effect, not on any planet).
+            # Megastructures for this system, counted by type. Most sit in the
+            # system-level init_effect (the Yuht ruined hyper relay; the Cybrex
+            # ruined ring world's four sections), occasionally on a planet.
+            mega_counts: dict[str, int] = {}
             for init in _as_blocks(sys_block.get('init_effect')):
                 for ms in _as_blocks(init.get('spawn_megastructure')):
                     ms_type = ms.get('type')
-                    if not isinstance(ms_type, str):
-                        continue
-                    ms_type = ms_type.strip('"')
-                    w.execute(
-                        """INSERT OR IGNORE INTO precursor_megastructure
-                               (precursor_key, initializer, type, type_label)
-                           VALUES (?, ?, ?, ?)""",
-                        (pkey, init_key, ms_type,
-                         _clean_loc(loc[ms_type], loc) if ms_type in loc else None),
-                    )
+                    if isinstance(ms_type, str):
+                        t = ms_type.strip('"')
+                        mega_counts[t] = mega_counts.get(t, 0) + 1
 
             # Flatten planets and their moons into one ordered list.
             entries: list[tuple[dict, bool]] = []
@@ -1882,17 +1878,21 @@ def extract_precursor_systems(initializers: dict, static_mods: dict,
                         )
                         _write_modifier_label(w, loc, mod_key)
 
-                # Megastructures are recorded at system level (deduped by PK).
+                # Planet-level megastructures (rare) — counted at system level.
                 for ms_type in megastructures:
-                    w.execute(
-                        """INSERT OR IGNORE INTO precursor_megastructure
-                               (precursor_key, initializer, type, type_label)
-                           VALUES (?, ?, ?, ?)""",
-                        (pkey, init_key, ms_type,
-                         _clean_loc(loc[ms_type], loc) if ms_type in loc else None),
-                    )
-                    if verbose:
-                        print(f"    megastructure: {ms_type} ({loc.get(ms_type)})")
+                    mega_counts[ms_type] = mega_counts.get(ms_type, 0) + 1
+
+            # Write the system's megastructures, one row per type with its count.
+            for ms_type, ms_count in mega_counts.items():
+                w.execute(
+                    """INSERT OR REPLACE INTO precursor_megastructure
+                           (precursor_key, initializer, type, type_label, count)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (pkey, init_key, ms_type,
+                     _clean_loc(loc[ms_type], loc) if ms_type in loc else None, ms_count),
+                )
+                if verbose:
+                    print(f"    megastructure: {ms_type} x{ms_count} ({loc.get(ms_type)})")
 
     w.commit()
 

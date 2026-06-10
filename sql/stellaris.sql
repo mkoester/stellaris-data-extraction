@@ -331,6 +331,7 @@ CREATE TABLE precursor_megastructure (
     initializer   TEXT NOT NULL,
     type          TEXT NOT NULL,          -- e.g. "hyper_relay_ruined"
     type_label    TEXT,                   -- localised, e.g. "Ruined Hyper Relay"
+    count         INTEGER NOT NULL DEFAULT 1,  -- e.g. 4 for the Cybrex ruined ring sections
     PRIMARY KEY (precursor_key, initializer, type),
     FOREIGN KEY (precursor_key) REFERENCES precursor(key)
 );
@@ -14561,9 +14562,6 @@ INSERT OR REPLACE INTO precursor_planet
 INSERT OR REPLACE INTO precursor_system
                        (precursor_key, initializer, name, star_class, sort_order)
                    VALUES ('precursor_2', 'yuhtaan_system', 'Yuhtaan', 'sc_m', 0);
-INSERT OR IGNORE INTO precursor_megastructure
-                               (precursor_key, initializer, type, type_label)
-                           VALUES ('precursor_2', 'yuhtaan_system', 'hyper_relay_ruined', 'Ruined Hyper Relay');
 INSERT OR REPLACE INTO precursor_planet
                            (id, precursor_key, initializer, name, planet_class,
                             planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
@@ -14634,6 +14632,9 @@ INSERT OR REPLACE INTO precursor_planet
                            (id, precursor_key, initializer, name, planet_class,
                             planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
                        VALUES ('yuhtaan_system#13', 'precursor_2', 'yuhtaan_system', 'Yuhtaan Va', 'pc_frozen', 'Frozen World', 6, 1, 0, NULL, 13);
+INSERT OR REPLACE INTO precursor_megastructure
+                           (precursor_key, initializer, type, type_label, count)
+                       VALUES ('precursor_2', 'yuhtaan_system', 'hyper_relay_ruined', 'Ruined Hyper Relay', 1);
 INSERT OR REPLACE INTO precursor_system
                        (precursor_key, initializer, name, star_class, sort_order)
                    VALUES ('precursor_3', 'fen_habbanis_system', 'Fen Habbanis', 'sc_g', 0);
@@ -14804,22 +14805,13 @@ INSERT OR REPLACE INTO precursor_planet
 INSERT OR REPLACE INTO precursor_system
                        (precursor_key, initializer, name, star_class, sort_order)
                    VALUES ('precursor_5', 'cybrex_system', 'Cybrex Alpha', 'sc_g', 0);
-INSERT OR IGNORE INTO precursor_megastructure
-                               (precursor_key, initializer, type, type_label)
-                           VALUES ('precursor_5', 'cybrex_system', 'ring_world_ruined', 'Ruined Ring Section');
-INSERT OR IGNORE INTO precursor_megastructure
-                               (precursor_key, initializer, type, type_label)
-                           VALUES ('precursor_5', 'cybrex_system', 'ring_world_ruined', 'Ruined Ring Section');
-INSERT OR IGNORE INTO precursor_megastructure
-                               (precursor_key, initializer, type, type_label)
-                           VALUES ('precursor_5', 'cybrex_system', 'ring_world_ruined', 'Ruined Ring Section');
-INSERT OR IGNORE INTO precursor_megastructure
-                               (precursor_key, initializer, type, type_label)
-                           VALUES ('precursor_5', 'cybrex_system', 'ring_world_ruined', 'Ruined Ring Section');
 INSERT OR REPLACE INTO precursor_planet
                            (id, precursor_key, initializer, name, planet_class,
                             planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
                        VALUES ('cybrex_system#0', 'precursor_5', 'cybrex_system', NULL, 'star', NULL, NULL, 0, 0, NULL, 0);
+INSERT OR REPLACE INTO precursor_megastructure
+                           (precursor_key, initializer, type, type_label, count)
+                       VALUES ('precursor_5', 'cybrex_system', 'ring_world_ruined', 'Ruined Ring Section', 4);
 INSERT OR REPLACE INTO precursor_system
                        (precursor_key, initializer, name, star_class, sort_order)
                    VALUES ('precursor_baol_1', 'last_baol_system', 'Grunur', 'sc_a', 0);

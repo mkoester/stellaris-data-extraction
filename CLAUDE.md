@@ -223,8 +223,8 @@ world** (four `spawn_megastructure = { type = ring_world_ruined }` in the
 star + debris ambients. The separate **`cybrex_beta`** (a *rebuilt* ringworld,
 flag `ring_world_built`) belongs to the **Contingency end-game crisis**
 (`events/crisis_events_3.txt`), not the dig, so it is **excluded** from
-`PRECURSOR_SYSTEMS`. (The ring world is captured as a megastructure, not planets,
-which is why the four ruined sections show as one `precursor_megastructure` row.)
+`PRECURSOR_SYSTEMS`. (The ring world is captured as a megastructure, not planets; the four ruined
+sections are one `precursor_megastructure` row with `count = 4`.)
 
 **Planet parsing:** `precursor_planet.id` is the synthetic `<initializer>#<index>`
 (deterministic → works in both SQL dump and SQLite, no autoincrement/lastrowid).
