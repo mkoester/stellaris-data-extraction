@@ -10725,12 +10725,12 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO precursor_relic_modifier
                                (relic_key, modifier_key, modifier_value, condition, sort_order)
-                           VALUES ('r_the_last_baol', 'logistic_growth_mult', '0.1', 'OR', 1);
+                           VALUES ('r_the_last_baol', 'logistic_growth_mult', '0.1', '(is_machine_empire = yes OR is_wilderness_empire = yes)', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO precursor_relic_modifier
                                (relic_key, modifier_key, modifier_value, condition, sort_order)
-                           VALUES ('r_the_last_baol', 'country_society_research_produces_mult', '0.1', 'OR', 2);
+                           VALUES ('r_the_last_baol', 'country_society_research_produces_mult', '0.1', '(is_machine_empire = yes OR is_wilderness_empire = yes)', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_society_research_produces_mult', 'Monthly Society Research', 1);
 INSERT OR REPLACE INTO precursor_reward_modifier

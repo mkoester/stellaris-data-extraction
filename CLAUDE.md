@@ -176,7 +176,10 @@ pulled live from the game files. Extend `PRECURSORS` if a future DLC adds more.
 **Relic passive parsing (`_relic_passive_rows`)** handles both Clausewitz forms of
 `triggered_country_modifier`: a nested `modifier = { … }` block *and* modifiers
 written directly as keys of the block (e.g. `r_reality_perforator`). The `potential`
-qualifier is rendered into a short `condition` string (`NULL` = always applies).
+qualifier is rendered by `_relic_condition` into a **parseable** `condition` string
+(`NULL` = always): top-level entries are ANDed (comma-separated) and an `OR`
+sub-block is parenthesised, e.g. `(is_machine_empire = yes OR is_wilderness_empire = yes)`.
+The planner parses this to highlight effects per empire type, so keep it parseable.
 
 **Duplicate definitions:** `artifact_irassian_research_completed` is defined twice in
 `10_static_modifiers_ancient_relics.txt`; the parser promotes it to a list, and the

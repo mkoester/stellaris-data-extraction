@@ -1460,9 +1460,11 @@ def _write_modifier_label(w: Writer, loc: dict[str, str], mod_key: str):
 
 
 def _relic_condition(potential) -> str | None:
-    """Render a relic passive's 'potential' block into a short condition string.
+    """Render a relic passive's 'potential' block into a parseable condition string.
 
-    None when the passive always applies (no potential, or always = yes)."""
+    Top-level entries are ANDed (comma-separated); an OR sub-block is rendered
+    parenthesised as "(a = x OR b = y)" so consumers can evaluate it (e.g. against
+    an empire type). None when the passive always applies (no potential / always = yes)."""
     if not isinstance(potential, dict):
         return None
     parts = []
@@ -1471,8 +1473,12 @@ def _relic_condition(potential) -> str | None:
             continue
         if isinstance(val, str):
             parts.append(f"{key} = {val}")
+        elif key == 'OR' and isinstance(val, dict):
+            ors = [f"{k} = {v}" for k, v in val.items() if isinstance(v, str)]
+            if ors:
+                parts.append("(" + " OR ".join(ors) + ")")
         else:
-            # OR { ... } and other nested blocks: keep the operator as a marker
+            # Other nested operators: keep the operator name as a marker.
             parts.append(key)
     return ", ".join(parts) if parts else None
 
