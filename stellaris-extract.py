@@ -365,6 +365,7 @@ CREATE TABLE precursor_relic (
     score         INTEGER,                 -- relic score value
     description   TEXT,                    -- flavour text (<relic_key>_desc)
     active_effect TEXT,                    -- localised triumph (active) ability tooltip
+    active_mode   TEXT,                    -- 'direct' | 'random' | 'choice' (how active mods are applied)
     active_detail TEXT,                    -- how the active modifiers are granted (random/duration), e.g.
                                            --   "One at random for 2–5 years, or all of them for 1 year"
     triumph_cooldown_days INTEGER,         -- cooldown after activating the triumph effect
@@ -378,8 +379,9 @@ CREATE TABLE precursor_relic_active_modifier (
     relic_key      TEXT NOT NULL,
     modifier_key   TEXT NOT NULL,          -- e.g. "ship_weapon_damage"
     modifier_value REAL NOT NULL,
+    group_label    TEXT,                   -- for 'choice' actives, the option name (e.g. "Martial Guidance")
     sort_order     INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (relic_key, modifier_key),
+    PRIMARY KEY (relic_key, modifier_key, group_label),
     FOREIGN KEY (relic_key) REFERENCES precursor_relic(relic_key)
 );
 
@@ -1731,40 +1733,67 @@ def _entry_years(m: dict, variables: dict[str, float]) -> int | None:
     return None
 
 
-def _relic_active_outcomes(relic: dict, events_index: dict, static_mods: dict,
-                           variables: dict[str, float]) -> tuple[list[tuple[str, float]], str | None]:
-    """The temporary modifiers a triumph grants, and how (duration / random).
+def _resolve_static_modifier(name: str, static_mods: dict) -> list[tuple[str, float]]:
+    """A static modifier name → its numeric (modifier_key, value) effects."""
+    block = static_mods.get(name)
+    if isinstance(block, list):
+        merged: dict = {}
+        for b in block:
+            if isinstance(b, dict):
+                merged.update(b)
+        block = merged
+    if not isinstance(block, dict):
+        return []
+    out: list[tuple[str, float]] = []
+    for mod_key, mod_val in block.items():
+        if mod_key in _NON_MODIFIER_KEYS:
+            continue
+        value = _resolve_modifier_float(mod_val)
+        if value is not None:
+            out.append((mod_key, value))
+    return out
 
-    Returns ([(modifier_key, value)], detail_text). Two sources:
-    - **direct** `add_modifier` in active_effect (e.g. the Yuht Cryo Core applies
-      `yuht_cryo_core` = −20% ship upkeep for @triumph_duration = 10 years);
-    - **event-driven**: a `country_event` (e.g. the Reality Perforator → precursor.105)
-      whose `(locked_)random_list` entries add one of reality_perforator_1..4 at
-      random for some years (or all together as a rarer "jackpot" entry)."""
+
+def _relic_active_outcomes(relic: dict, events_index: dict, static_mods: dict,
+                           variables: dict[str, float], loc: dict[str, str]
+                           ) -> tuple[list[tuple[str, float, str | None]], str | None, str | None]:
+    """The temporary modifiers a triumph grants → ([(modifier_key, value, group_label)],
+    detail_text, mode). Three sources / modes:
+    - **'direct'**: an `add_modifier` in active_effect (Yuht Cryo Core: −20% ship
+      upkeep for @triumph_duration = 10 years);
+    - **'random'**: a `country_event`'s `(locked_)random_list` (Reality Perforator →
+      precursor.105 → one of reality_perforator_1..4 at random, or all as a jackpot);
+    - **'choice'**: a `country_event`'s `option`s, each `add_modifier`ing a named
+      guidance (Zro Crystal → ancrel.7006 → Martial / Statecraft Guidance for 5 years;
+      `group_label` is the option's modifier loc name). Non-modifier options (e.g. a
+      ruler level) are appended to the detail."""
     active = relic.get('active_effect')
-    ordered_names: list[str] = []
+    active_mods: list[tuple[str, float, str | None]] = []
     single_years: list[int] = []
     grouped_years: list[int] = []
-    random_source = False
+    text_options: list[str] = []
+    mode: str | None = None
 
     # Source A: direct add_modifier children of active_effect (excluding the cooldown).
     for am in (_as_blocks(active.get('add_modifier')) if isinstance(active, dict) else []):
         name = am.get('modifier')
         if not isinstance(name, str) or name == 'relic_activation_cooldown':
             continue
-        if name not in ordered_names:
-            ordered_names.append(name)
+        mode = 'direct'
         years = _entry_years(am, variables)
         if years is not None:
             single_years.append(years)
+        for mk, val in _resolve_static_modifier(name, static_mods):
+            active_mods.append((mk, val, None))
 
-    # Source B: an event's (locked_)random_list (only when there is no direct grant).
-    if not ordered_names:
-        eid = _relic_event_id(active)
-        rlist = (_find_first(events_index.get(eid), 'locked_random_list')
-                 or _find_first(events_index.get(eid), 'random_list')) if eid else None
+    event = events_index.get(_relic_event_id(active)) if not active_mods else None
+
+    # Source B: an event's (locked_)random_list.
+    if not active_mods:
+        rlist = _find_first(event, 'locked_random_list') or _find_first(event, 'random_list')
         if isinstance(rlist, dict):
-            random_source = True
+            mode = 'random'
+            ordered: list[str] = []
             for entries in rlist.values():          # keys are weights; values are entry blocks
                 for entry in _as_blocks(entries):
                     mods = [m for m in _as_blocks(entry.get('add_modifier'))
@@ -1772,49 +1801,64 @@ def _relic_active_outcomes(relic: dict, events_index: dict, static_mods: dict,
                     if not mods:
                         continue
                     for m in mods:
-                        if m['modifier'] not in ordered_names:
-                            ordered_names.append(m['modifier'])
+                        if m['modifier'] not in ordered:
+                            ordered.append(m['modifier'])
                     years = _entry_years(mods[0], variables)
                     if years is not None:
                         (single_years if len(mods) == 1 else grouped_years).append(years)
+            for name in ordered:
+                for mk, val in _resolve_static_modifier(name, static_mods):
+                    active_mods.append((mk, val, None))
 
-    # Resolve each named modifier (e.g. yuht_cryo_core / reality_perforator_N) to numbers.
-    active_mods: list[tuple[str, float]] = []
-    for name in ordered_names:
-        block = static_mods.get(name)
-        if isinstance(block, list):
-            merged: dict = {}
-            for b in block:
-                if isinstance(b, dict):
-                    merged.update(b)
-            block = merged
-        if not isinstance(block, dict):
-            continue
-        for mod_key, mod_val in block.items():
-            if mod_key in _NON_MODIFIER_KEYS:
-                continue
-            value = _resolve_modifier_float(mod_val)
-            if value is not None:
-                active_mods.append((mod_key, value))
+    # Source C: an event's options (a choice). Each option add_modifiers a guidance.
+    if not active_mods and isinstance(event, dict):
+        for opt in _as_blocks(event.get('option')):
+            opt_mods = [m for m in _as_blocks(opt.get('add_modifier'))
+                        if isinstance(m.get('modifier'), str)]
+            if opt_mods:
+                mode = 'choice'
+                for am in opt_mods:
+                    name = am['modifier']
+                    years = _entry_years(am, variables)
+                    if years is not None:
+                        single_years.append(years)
+                    glabel = _clean_loc(loc[name], loc) if name in loc else None
+                    for mk, val in _resolve_static_modifier(name, static_mods):
+                        active_mods.append((mk, val, glabel))
+            else:
+                tip = opt.get('custom_tooltip')
+                if isinstance(tip, str) and tip not in _GENERIC_RELIC_TOOLTIPS and tip in loc:
+                    t = _clean_loc(loc[tip], loc)
+                    if t and '$' not in t and t not in text_options:
+                        text_options.append(t)
 
     if not active_mods:
-        return [], None
+        return [], None, None
 
     # Build the "how it's granted" detail.
     def years_word(n: int) -> str:
         return f"{n} year" if n == 1 else f"{n} years"
 
-    parts: list[str] = []
+    dur = None
     if single_years:
         lo, hi = min(single_years), max(single_years)
         dur = f"{lo}–{hi} years" if lo != hi else years_word(lo)
-        parts.append(f"one at random for {dur}" if random_source and len(active_mods) > 1
-                     else f"for {dur}")
-    if grouped_years:
-        parts.append(f"or all of them for {years_word(min(grouped_years))}")
+
+    parts: list[str] = []
+    if mode == 'choice':
+        parts.append(f"choose one, for {dur}" if dur else "choose one")
+        if text_options:
+            parts.append("or " + "; ".join(t.rstrip('. ') for t in text_options))
+    elif mode == 'random':
+        if dur:
+            parts.append(f"one at random for {dur}" if len(active_mods) > 1 else f"for {dur}")
+        if grouped_years:
+            parts.append(f"or all of them for {years_word(min(grouped_years))}")
+    elif dur:                                          # direct
+        parts.append(f"for {dur}")
     detail = ", ".join(parts)
     detail = detail[0].upper() + detail[1:] + "." if detail else None
-    return active_mods, detail
+    return active_mods, detail, mode
 
 
 def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
@@ -1861,16 +1905,17 @@ def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
                     pass
                 portrait = relic.get('portrait')
                 portrait = portrait.strip('"') if isinstance(portrait, str) else None
-                active_mods, active_detail = _relic_active_outcomes(
-                    relic, events_index, static_mods, relic_vars)
+                active_mods, active_detail, active_mode = _relic_active_outcomes(
+                    relic, events_index, static_mods, relic_vars, loc)
                 w.execute(
                     """INSERT OR REPLACE INTO precursor_relic
                            (precursor_key, relic_key, name, portrait, score, description,
-                            active_effect, active_detail, triumph_cooldown_days)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                            active_effect, active_mode, active_detail, triumph_cooldown_days)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (key, relic_key, loc.get(relic_key), portrait, score,
                      _clean_loc(loc[relic_key + '_desc'], loc) if (relic_key + '_desc') in loc else None,
                      _relic_active_text(relic, loc),
+                     active_mode,
                      active_detail,
                      _relic_cooldown(relic, relic_vars)),
                 )
@@ -1881,16 +1926,17 @@ def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
                            VALUES (?, ?, ?, ?)""",
                         (relic_key, text, condition, t_order),
                     )
-                for a_order, (mod_key, value) in enumerate(active_mods):
+                for a_order, (mod_key, value, group_label) in enumerate(active_mods):
                     w.execute(
                         """INSERT OR IGNORE INTO precursor_relic_active_modifier
-                               (relic_key, modifier_key, modifier_value, sort_order)
-                           VALUES (?, ?, ?, ?)""",
-                        (relic_key, mod_key, value, a_order),
+                               (relic_key, modifier_key, modifier_value, group_label, sort_order)
+                           VALUES (?, ?, ?, ?, ?)""",
+                        (relic_key, mod_key, value, group_label, a_order),
                     )
                     _write_modifier_label(w, loc, mod_key)
                     if verbose:
-                        print(f"    relic {relic_key} active | {mod_key} = {value}")
+                        print(f"    relic {relic_key} active | {mod_key} = {value}"
+                              f"{' [' + group_label + ']' if group_label else ''}")
                 for c_order, (kind, res, amount, scales) in enumerate(_relic_resources(relic, relic_vars)):
                     w.execute(
                         """INSERT OR IGNORE INTO precursor_relic_resource

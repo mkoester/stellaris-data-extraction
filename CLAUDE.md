@@ -203,19 +203,26 @@ its numeric passive — `extract_precursors` also captures:
   are excluded). `scales = 1` when a `multiplier`/`mult` (e.g. `cybrex_count`) is
   present, so the War Forge is cost 3000 unity + 2000 minerals(scales), produces
   1000 alloys(scales).
-- **`precursor_relic_active_modifier`** + `active_detail` (`_relic_active_outcomes`) —
-  the temporary modifiers a triumph grants, from **two** sources:
-  (A) a **direct** `add_modifier` in active_effect (excluding `relic_activation_cooldown`)
-  — e.g. the Yuht Cryo Core applies `yuht_cryo_core` = −20% ship upkeep for
-  `@triumph_duration` (10 years); (B) **event-driven** — the active_effect fires a
-  `country_event` (`_relic_event_id`); `main()` builds an **events index**
-  (`id → event`) from the precursor/ancrel event files, and the event's
-  `(locked_)random_list` entries `add_modifier` static modifiers that resolve to
-  numeric effects (Reality Perforator → `precursor.105` → `reality_perforator_1..4`
-  = +40% weapon damage / shield / armor / hull). `active_detail` is the constructed
-  grant/duration note: "For 10 years." (direct), or "One at random for 2–5 years,
-  or all of them for 1 year." (random — single entries vs the multi-`add_modifier`
-  "jackpot" entry). Durations resolve `@triumph_duration` etc. and convert days→years.
+- **`precursor_relic_active_modifier`** (+ `active_mode`, `active_detail`,
+  `group_label`) via `_relic_active_outcomes` — the temporary modifiers a triumph
+  grants, in three **modes**:
+  - **`direct`**: an `add_modifier` in active_effect (excluding
+    `relic_activation_cooldown`) — Yuht Cryo Core → `yuht_cryo_core` = −20% ship
+    upkeep for `@triumph_duration` (10 years). detail "For 10 years."
+  - **`random`**: a `country_event`'s `(locked_)random_list` — Reality Perforator →
+    `precursor.105` → one of `reality_perforator_1..4` (+40% weapon/shield/armor/hull)
+    at random, or all as a jackpot. detail "One at random for 2–5 years, or all of
+    them for 1 year." (single entries vs the multi-`add_modifier` jackpot entry).
+  - **`choice`**: a `country_event`'s `option`s, each `add_modifier`ing a named
+    guidance — Zro Crystal → `ancrel.7006` → `group_label` "Martial Guidance"
+    (ship_weapon_damage +20%) / "Statecraft Guidance" (stability +2, edict upkeep
+    −10%, gov ethic attraction +25%), 5 years. Non-modifier options (the ruler
+    level) are appended to detail ("…or gains 1 level").
+
+  `main()` builds the **events index** (`id → event`) from the precursor/ancrel
+  event files. Durations resolve `@triumph_duration` etc. and convert days→years.
+  Note the script values can differ from the wiki (Statecraft stability is **+2**,
+  not the wiki's +3) — trust the files.
 - **`triumph_cooldown_days`** — the days of the `relic_activation_cooldown`
   `add_modifier` *inside* `active_effect` (recursively found — this is the value
   the game applies, e.g. the War Forge's short 900-day cooldown), falling back to
