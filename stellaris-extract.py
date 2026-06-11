@@ -27,6 +27,7 @@ Examples:
 
 import re
 import sys
+import json
 import sqlite3
 import argparse
 from pathlib import Path
@@ -165,6 +166,12 @@ def parse_file(path: Path) -> dict:
 # ---------------------------------------------------------------------------
 
 SCHEMA = """\
+-- Key/value metadata about the extracted game (e.g. game_version, game_version_raw).
+CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT
+);
+
 CREATE TABLE IF NOT EXISTS dlc (
     name             TEXT PRIMARY KEY,   -- matches host_has_dlc values, e.g. "Toxoids Species Pack"
     steam_id         TEXT,
@@ -2361,6 +2368,20 @@ Examples:
         print(f"SQLite DB    : {sqlite_path}", file=progress)
 
     w = Writer(sql_path, sqlite_path, stdout=stdout_mode)
+
+    # --- game version (from launcher-settings.json) ---
+    launcher = install_dir / 'launcher-settings.json'
+    if launcher.exists():
+        try:
+            ls = json.loads(launcher.read_text(encoding='utf-8-sig', errors='replace'))
+            for mkey, jkey in (('game_version', 'version'), ('game_version_raw', 'rawVersion')):
+                val = ls.get(jkey)
+                if val:
+                    w.execute("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", (mkey, str(val)))
+            w.commit()
+            print(f"  Game version: {ls.get('version')}", file=progress)
+        except Exception as e:
+            print(f"  WARNING: failed to read launcher-settings.json: {e}", file=sys.stderr)
 
     # --- DLC metadata ---
     print(f"\n[0/5] DLC metadata", file=progress)

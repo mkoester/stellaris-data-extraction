@@ -55,6 +55,7 @@ sqlite/                  SQLite DB output (gitignored)
 
 | Step   | What                        | Source dir                        |
 |--------|-----------------------------|-----------------------------------|
+| —      | Game version (`meta`)       | `launcher-settings.json` (`version` / `rawVersion`) |
 | [0/7]  | DLC metadata                | `dlc_metadata/dlc_info.txt`       |
 | [1/7]  | Species classes + loc       | `common/species_classes/`         |
 | [2/7]  | Species archetypes          | `common/species_archetypes/`      |
