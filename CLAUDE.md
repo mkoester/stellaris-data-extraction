@@ -87,7 +87,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
 
 Drop order matters for FK integrity:
 ```sql
@@ -184,10 +184,13 @@ The planner parses this to highlight effects per empire type, so keep it parseab
 
 **Relic full picture (passive / triumph / cost / cooldown).** A relic isn't just
 its numeric passive — `extract_precursors` also captures:
-- **`passive_text`** — non-numeric passive via `custom_tooltip` inside
-  `triggered_country_modifier` (`_relic_passive_text`), e.g. the Cybrex War Forge's
-  "Permits building Cybrex Warform armies…" (it has *no* numeric passive, so it
-  showed nothing before).
+- **`precursor_relic_passive_text`** (`_relic_passive_texts`) — non-numeric passives
+  via `custom_tooltip` inside `triggered_country_modifier`, e.g. the Cybrex War
+  Forge's "Permits building Cybrex Warform armies…" (it has *no* numeric passive, so
+  it showed nothing before). Each row carries the block's `condition` (its
+  `potential`, NULL = always) just like `precursor_relic_modifier`, so a conditional
+  passive (the Cryo Core's `is_wilderness_empire = yes` district) is shown with its
+  qualifier and dims under the empire filter — rather than appearing to always apply.
 - **`active_effect`** — the triumph (active) tooltip (`_relic_active_text`):
   the non-generic `custom_tooltip`s of `active_effect`, skipping the generic
   cooldown ones. Relics whose active is a pure resource payout (War Forge) have
@@ -201,14 +204,18 @@ its numeric passive — `extract_precursors` also captures:
   present, so the War Forge is cost 3000 unity + 2000 minerals(scales), produces
   1000 alloys(scales).
 - **`precursor_relic_active_modifier`** + `active_detail` (`_relic_active_outcomes`) —
-  for **event-driven** actives. The active_effect fires a `country_event`
-  (`_relic_event_id`); `main()` builds an **events index** (`id → event`) from the
-  precursor/ancrel event files, and the event's `(locked_)random_list` entries
-  `add_modifier` static modifiers that resolve to numeric effects. The Reality
-  Perforator → `precursor.105` → `reality_perforator_1..4` = +40% weapon damage /
-  shield / armor / hull. `active_detail` is the constructed grant/duration note
-  ("One at random for 2–5 years, or all of them for 1 year" — single entries vs the
-  multi-`add_modifier` "jackpot" entry, with their `years`).
+  the temporary modifiers a triumph grants, from **two** sources:
+  (A) a **direct** `add_modifier` in active_effect (excluding `relic_activation_cooldown`)
+  — e.g. the Yuht Cryo Core applies `yuht_cryo_core` = −20% ship upkeep for
+  `@triumph_duration` (10 years); (B) **event-driven** — the active_effect fires a
+  `country_event` (`_relic_event_id`); `main()` builds an **events index**
+  (`id → event`) from the precursor/ancrel event files, and the event's
+  `(locked_)random_list` entries `add_modifier` static modifiers that resolve to
+  numeric effects (Reality Perforator → `precursor.105` → `reality_perforator_1..4`
+  = +40% weapon damage / shield / armor / hull). `active_detail` is the constructed
+  grant/duration note: "For 10 years." (direct), or "One at random for 2–5 years,
+  or all of them for 1 year." (random — single entries vs the multi-`add_modifier`
+  "jackpot" entry). Durations resolve `@triumph_duration` etc. and convert days→years.
 - **`triumph_cooldown_days`** — the days of the `relic_activation_cooldown`
   `add_modifier` *inside* `active_effect` (recursively found — this is the value
   the game applies, e.g. the War Forge's short 900-day cooldown), falling back to
@@ -331,7 +338,7 @@ Unresolved `$KEY$` inline references in labels are discarded (label not stored i
 | Precursor relics          | 7    |
 | Precursor relic modifiers | 11   |
 | Precursor relic resources | 9    |
-| Precursor relic active mods | 4  |
+| Precursor relic active mods | 5  |
 | Precursor reward modifiers | 19  |
 | Precursor buildings       | 2    |
 | Deposits (dictionary)     | 575  |

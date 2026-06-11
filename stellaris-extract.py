@@ -342,6 +342,7 @@ DROP TABLE IF EXISTS precursor_building;
 DROP TABLE IF EXISTS precursor_reward_modifier;
 DROP TABLE IF EXISTS precursor_relic_active_modifier;
 DROP TABLE IF EXISTS precursor_relic_resource;
+DROP TABLE IF EXISTS precursor_relic_passive_text;
 DROP TABLE IF EXISTS precursor_relic_modifier;
 DROP TABLE IF EXISTS precursor_relic;
 DROP TABLE IF EXISTS precursor;
@@ -363,7 +364,6 @@ CREATE TABLE precursor_relic (
     portrait      TEXT,                    -- GFX_relic_*
     score         INTEGER,                 -- relic score value
     description   TEXT,                    -- flavour text (<relic_key>_desc)
-    passive_text  TEXT,                    -- non-numeric passive (custom_tooltip), e.g. Cybrex Warforms
     active_effect TEXT,                    -- localised triumph (active) ability tooltip
     active_detail TEXT,                    -- how the active modifiers are granted (random/duration), e.g.
                                            --   "One at random for 2–5 years, or all of them for 1 year"
@@ -392,6 +392,19 @@ CREATE TABLE precursor_relic_modifier (
     condition      TEXT,                   -- NULL = always; else e.g. "is_machine_empire = yes"
     sort_order     INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (relic_key, modifier_key, condition),
+    FOREIGN KEY (relic_key) REFERENCES precursor_relic(relic_key)
+);
+
+-- Non-numeric passive effects (a relic's triggered_country_modifier custom_tooltip),
+-- e.g. the Cybrex Warform armies, or the Cryo Core's wilderness-only district. Like
+-- precursor_relic_modifier, `condition` holds the 'potential' when it only applies
+-- to some empire types (NULL = always).
+CREATE TABLE precursor_relic_passive_text (
+    relic_key  TEXT NOT NULL,
+    text       TEXT NOT NULL,
+    condition  TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (relic_key, text),
     FOREIGN KEY (relic_key) REFERENCES precursor_relic(relic_key)
 );
 
@@ -1582,18 +1595,23 @@ def _relic_active_text(relic: dict, loc: dict[str, str]) -> str | None:
     return " ".join(texts) if texts else None
 
 
-def _relic_passive_text(relic: dict, loc: dict[str, str]) -> str | None:
-    """Join the custom_tooltip strings of a relic's triggered_country_modifier
-    blocks — the non-numeric passive effects (e.g. Cybrex Warform armies)."""
+def _relic_passive_texts(relic: dict, loc: dict[str, str]) -> list[tuple[str, str | None]]:
+    """Non-numeric passive effects (a relic's triggered_country_modifier
+    custom_tooltips) as [(text, condition)]. Each block's `potential` becomes the
+    condition (NULL = always), so a conditional passive (e.g. the Cryo Core's
+    is_wilderness_empire = yes district) is shown with its qualifier, like the
+    numeric passives — not as if it always applied."""
     blocks = relic.get('triggered_country_modifier')
     if isinstance(blocks, dict):
         blocks = [blocks]
     elif not isinstance(blocks, list):
-        return None
-    texts: list[str] = []
+        return []
+    rows: list[tuple[str, str | None]] = []
+    seen: set[str] = set()
     for block in blocks:
         if not isinstance(block, dict):
             continue
+        condition = _relic_condition(block.get('potential'))
         tips = block.get('custom_tooltip')
         if isinstance(tips, str):
             tips = [tips]
@@ -1604,9 +1622,10 @@ def _relic_passive_text(relic: dict, loc: dict[str, str]) -> str | None:
             if not raw:
                 continue
             cleaned = _clean_loc(raw, loc)
-            if cleaned and '$' not in cleaned and cleaned not in texts:
-                texts.append(cleaned)
-    return " ".join(texts) if texts else None
+            if cleaned and '$' not in cleaned and cleaned not in seen:
+                seen.add(cleaned)
+                rows.append((cleaned, condition))
+    return rows
 
 
 def _relic_resources(relic: dict, variables: dict[str, float]) -> list[tuple[str, str, float, int]]:
@@ -1701,53 +1720,65 @@ def _relic_event_id(active_effect) -> str | None:
     return None
 
 
-def _entry_years(m: dict) -> int | None:
-    if 'years' in m:
-        try:
-            return int(m['years'])
-        except (ValueError, TypeError):
-            return None
-    if 'days' in m:
-        try:
-            return max(1, round(int(m['days']) / 360))
-        except (ValueError, TypeError):
-            return None
+def _entry_years(m: dict, variables: dict[str, float]) -> int | None:
+    """Duration of an add_modifier block in years (resolving @vars; days/360)."""
+    for unit_key, divisor in (('years', 1), ('days', 360)):
+        if unit_key in m:
+            raw = str(m[unit_key]).strip()
+            val = variables.get(raw) if raw.startswith('@') else _resolve_modifier_float(raw)
+            if val is not None:
+                return max(1, round(val / divisor))
     return None
 
 
-def _relic_active_outcomes(relic: dict, events_index: dict,
-                           static_mods: dict) -> tuple[list[tuple[str, float]], str | None]:
-    """Follow a triumph's event to the modifiers it grants and how (random/duration).
+def _relic_active_outcomes(relic: dict, events_index: dict, static_mods: dict,
+                           variables: dict[str, float]) -> tuple[list[tuple[str, float]], str | None]:
+    """The temporary modifiers a triumph grants, and how (duration / random).
 
-    Returns ([(modifier_key, value)], detail_text). For event-driven actives like
-    the Reality Perforator: its `country_event` (precursor.105) holds a
-    `(locked_)random_list` whose entries `add_modifier` one of reality_perforator_1..4
-    (resolved here to ship_weapon_damage/shield/armor/hull = +40%) for some years."""
-    eid = _relic_event_id(relic.get('active_effect'))
-    if not eid:
-        return [], None
-    event = events_index.get(eid)
-    rlist = _find_first(event, 'locked_random_list') or _find_first(event, 'random_list')
-    if not isinstance(rlist, dict):
-        return [], None
-
+    Returns ([(modifier_key, value)], detail_text). Two sources:
+    - **direct** `add_modifier` in active_effect (e.g. the Yuht Cryo Core applies
+      `yuht_cryo_core` = −20% ship upkeep for @triumph_duration = 10 years);
+    - **event-driven**: a `country_event` (e.g. the Reality Perforator → precursor.105)
+      whose `(locked_)random_list` entries add one of reality_perforator_1..4 at
+      random for some years (or all together as a rarer "jackpot" entry)."""
+    active = relic.get('active_effect')
     ordered_names: list[str] = []
     single_years: list[int] = []
     grouped_years: list[int] = []
-    for entries in rlist.values():                  # keys are weights; values are entry blocks
-        for entry in _as_blocks(entries):
-            mods = [m for m in _as_blocks(entry.get('add_modifier'))
-                    if isinstance(m.get('modifier'), str)]
-            if not mods:
-                continue
-            for m in mods:
-                if m['modifier'] not in ordered_names:
-                    ordered_names.append(m['modifier'])
-            years = _entry_years(mods[0])
-            if years is not None:
-                (single_years if len(mods) == 1 else grouped_years).append(years)
+    random_source = False
 
-    # Resolve each named modifier (reality_perforator_N) to its numeric effect(s).
+    # Source A: direct add_modifier children of active_effect (excluding the cooldown).
+    for am in (_as_blocks(active.get('add_modifier')) if isinstance(active, dict) else []):
+        name = am.get('modifier')
+        if not isinstance(name, str) or name == 'relic_activation_cooldown':
+            continue
+        if name not in ordered_names:
+            ordered_names.append(name)
+        years = _entry_years(am, variables)
+        if years is not None:
+            single_years.append(years)
+
+    # Source B: an event's (locked_)random_list (only when there is no direct grant).
+    if not ordered_names:
+        eid = _relic_event_id(active)
+        rlist = (_find_first(events_index.get(eid), 'locked_random_list')
+                 or _find_first(events_index.get(eid), 'random_list')) if eid else None
+        if isinstance(rlist, dict):
+            random_source = True
+            for entries in rlist.values():          # keys are weights; values are entry blocks
+                for entry in _as_blocks(entries):
+                    mods = [m for m in _as_blocks(entry.get('add_modifier'))
+                            if isinstance(m.get('modifier'), str)]
+                    if not mods:
+                        continue
+                    for m in mods:
+                        if m['modifier'] not in ordered_names:
+                            ordered_names.append(m['modifier'])
+                    years = _entry_years(mods[0], variables)
+                    if years is not None:
+                        (single_years if len(mods) == 1 else grouped_years).append(years)
+
+    # Resolve each named modifier (e.g. yuht_cryo_core / reality_perforator_N) to numbers.
     active_mods: list[tuple[str, float]] = []
     for name in ordered_names:
         block = static_mods.get(name)
@@ -1777,7 +1808,8 @@ def _relic_active_outcomes(relic: dict, events_index: dict,
     if single_years:
         lo, hi = min(single_years), max(single_years)
         dur = f"{lo}–{hi} years" if lo != hi else years_word(lo)
-        parts.append((f"one at random for {dur}") if len(active_mods) > 1 else f"for {dur}")
+        parts.append(f"one at random for {dur}" if random_source and len(active_mods) > 1
+                     else f"for {dur}")
     if grouped_years:
         parts.append(f"or all of them for {years_word(min(grouped_years))}")
     detail = ", ".join(parts)
@@ -1829,19 +1861,26 @@ def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
                     pass
                 portrait = relic.get('portrait')
                 portrait = portrait.strip('"') if isinstance(portrait, str) else None
-                active_mods, active_detail = _relic_active_outcomes(relic, events_index, static_mods)
+                active_mods, active_detail = _relic_active_outcomes(
+                    relic, events_index, static_mods, relic_vars)
                 w.execute(
                     """INSERT OR REPLACE INTO precursor_relic
                            (precursor_key, relic_key, name, portrait, score, description,
-                            passive_text, active_effect, active_detail, triumph_cooldown_days)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                            active_effect, active_detail, triumph_cooldown_days)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (key, relic_key, loc.get(relic_key), portrait, score,
                      _clean_loc(loc[relic_key + '_desc'], loc) if (relic_key + '_desc') in loc else None,
-                     _relic_passive_text(relic, loc),
                      _relic_active_text(relic, loc),
                      active_detail,
                      _relic_cooldown(relic, relic_vars)),
                 )
+                for t_order, (text, condition) in enumerate(_relic_passive_texts(relic, loc)):
+                    w.execute(
+                        """INSERT OR IGNORE INTO precursor_relic_passive_text
+                               (relic_key, text, condition, sort_order)
+                           VALUES (?, ?, ?, ?)""",
+                        (relic_key, text, condition, t_order),
+                    )
                 for a_order, (mod_key, value) in enumerate(active_mods):
                     w.execute(
                         """INSERT OR IGNORE INTO precursor_relic_active_modifier

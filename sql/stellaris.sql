@@ -178,6 +178,7 @@ DROP TABLE IF EXISTS precursor_building;
 DROP TABLE IF EXISTS precursor_reward_modifier;
 DROP TABLE IF EXISTS precursor_relic_active_modifier;
 DROP TABLE IF EXISTS precursor_relic_resource;
+DROP TABLE IF EXISTS precursor_relic_passive_text;
 DROP TABLE IF EXISTS precursor_relic_modifier;
 DROP TABLE IF EXISTS precursor_relic;
 DROP TABLE IF EXISTS precursor;
@@ -199,7 +200,6 @@ CREATE TABLE precursor_relic (
     portrait      TEXT,                    -- GFX_relic_*
     score         INTEGER,                 -- relic score value
     description   TEXT,                    -- flavour text (<relic_key>_desc)
-    passive_text  TEXT,                    -- non-numeric passive (custom_tooltip), e.g. Cybrex Warforms
     active_effect TEXT,                    -- localised triumph (active) ability tooltip
     active_detail TEXT,                    -- how the active modifiers are granted (random/duration), e.g.
                                            --   "One at random for 2–5 years, or all of them for 1 year"
@@ -228,6 +228,19 @@ CREATE TABLE precursor_relic_modifier (
     condition      TEXT,                   -- NULL = always; else e.g. "is_machine_empire = yes"
     sort_order     INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (relic_key, modifier_key, condition),
+    FOREIGN KEY (relic_key) REFERENCES precursor_relic(relic_key)
+);
+
+-- Non-numeric passive effects (a relic's triggered_country_modifier custom_tooltip),
+-- e.g. the Cybrex Warform armies, or the Cryo Core's wilderness-only district. Like
+-- precursor_relic_modifier, `condition` holds the 'potential' when it only applies
+-- to some empire types (NULL = always).
+CREATE TABLE precursor_relic_passive_text (
+    relic_key  TEXT NOT NULL,
+    text       TEXT NOT NULL,
+    condition  TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (relic_key, text),
     FOREIGN KEY (relic_key) REFERENCES precursor_relic(relic_key)
 );
 
@@ -10625,8 +10638,8 @@ INSERT OR REPLACE INTO precursor
                VALUES ('precursor_1', 'Vultaum', NULL, 'vultaumar_system', 'GFX_precursor_vultaum', NULL, 0);
 INSERT OR REPLACE INTO precursor_relic
                            (precursor_key, relic_key, name, portrait, score, description,
-                            passive_text, active_effect, active_detail, triumph_cooldown_days)
-                       VALUES ('precursor_1', 'r_reality_perforator', 'Vultaum Reality Perforator', 'GFX_relic_orb_insight', 5000, 'A dense and incredibly heavy orb composed of an unknown material. The Vultaum claimed this device was capable of briefly destabilizing the simulated reality they believed themselves trapped inside, offering a glimpse of the real world. Whether true or not, when activated the orb makes it possible to manipulate minor aspects of reality in a localized bubble. This effect lasts only for a short while, as the universe seems to quickly right itself again, but if timed right it would give our fleets a decisive advantage.', NULL, 'Perforate reality for powerful temporary combat advantages', 'One at random for 2–5 years, or all of them for 1 year.', 3600);
+                            active_effect, active_detail, triumph_cooldown_days)
+                       VALUES ('precursor_1', 'r_reality_perforator', 'Vultaum Reality Perforator', 'GFX_relic_orb_insight', 5000, 'A dense and incredibly heavy orb composed of an unknown material. The Vultaum claimed this device was capable of briefly destabilizing the simulated reality they believed themselves trapped inside, offering a glimpse of the real world. Whether true or not, when activated the orb makes it possible to manipulate minor aspects of reality in a localized bubble. This effect lasts only for a short while, as the universe seems to quickly right itself again, but if timed right it would give our fleets a decisive advantage.', 'Perforate reality for powerful temporary combat advantages', 'One at random for 2–5 years, or all of them for 1 year.', 3600);
 INSERT OR IGNORE INTO precursor_relic_active_modifier
                                (relic_key, modifier_key, modifier_value, sort_order)
                            VALUES ('r_reality_perforator', 'ship_weapon_damage', '0.4', 0);
@@ -10712,8 +10725,16 @@ INSERT OR REPLACE INTO precursor
                VALUES ('precursor_2', 'Yuht', NULL, 'yuhtaan_system', 'GFX_precursor_yuth', NULL, 1);
 INSERT OR REPLACE INTO precursor_relic
                            (precursor_key, relic_key, name, portrait, score, description,
-                            passive_text, active_effect, active_detail, triumph_cooldown_days)
-                       VALUES ('precursor_2', 'r_cryo_core', 'Yuht Cryo Core', 'GFX_relic_cryo_core', 5000, 'As the Yuht never discovered the existence of hyperspace, they depended on their long lifespans and cryogenic technology to travel between the stars. This prototype cryo core was created by Yuht scientists shortly before their empire fell to the Jabbardeeni. The cryo field generated by this core is well beyond our current levels of technology.', 'Add a random district District upon colonizing a new world.', NULL, NULL, 3600);
+                            active_effect, active_detail, triumph_cooldown_days)
+                       VALUES ('precursor_2', 'r_cryo_core', 'Yuht Cryo Core', 'GFX_relic_cryo_core', 5000, 'As the Yuht never discovered the existence of hyperspace, they depended on their long lifespans and cryogenic technology to travel between the stars. This prototype cryo core was created by Yuht scientists shortly before their empire fell to the Jabbardeeni. The cryo field generated by this core is well beyond our current levels of technology.', NULL, 'For 10 years.', 3600);
+INSERT OR IGNORE INTO precursor_relic_passive_text
+                               (relic_key, text, condition, sort_order)
+                           VALUES ('r_cryo_core', 'Add a random district District upon colonizing a new world.', 'is_wilderness_empire = yes', 0);
+INSERT OR IGNORE INTO precursor_relic_active_modifier
+                               (relic_key, modifier_key, modifier_value, sort_order)
+                           VALUES ('r_cryo_core', 'ships_upkeep_mult', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
 INSERT OR IGNORE INTO precursor_relic_resource
                                (relic_key, kind, resource, amount, scales, sort_order)
                            VALUES ('r_cryo_core', 'cost', 'unity', '3000.0', 0, 0);
@@ -10767,8 +10788,11 @@ INSERT OR REPLACE INTO precursor
                VALUES ('precursor_5', 'Cybrex', NULL, 'cybrex_system', 'GFX_precursor_cybrex', NULL, 4);
 INSERT OR REPLACE INTO precursor_relic
                            (precursor_key, relic_key, name, portrait, score, description,
-                            passive_text, active_effect, active_detail, triumph_cooldown_days)
-                       VALUES ('precursor_5', 'r_war_forge', 'Cybrex War Forge', 'GFX_relic_war_forge', 5000, 'A relatively small and portable war forge, the last of its kind in the universe. It is a relic from the time when the Cybrex made war upon the galaxy, before their', 'Permits building Cybrex Warform armies at your capital.', NULL, NULL, 900);
+                            active_effect, active_detail, triumph_cooldown_days)
+                       VALUES ('precursor_5', 'r_war_forge', 'Cybrex War Forge', 'GFX_relic_war_forge', 5000, 'A relatively small and portable war forge, the last of its kind in the universe. It is a relic from the time when the Cybrex made war upon the galaxy, before their', NULL, NULL, 900);
+INSERT OR IGNORE INTO precursor_relic_passive_text
+                               (relic_key, text, condition, sort_order)
+                           VALUES ('r_war_forge', 'Permits building Cybrex Warform armies at your capital.', NULL, 0);
 INSERT OR IGNORE INTO precursor_relic_resource
                                (relic_key, kind, resource, amount, scales, sort_order)
                            VALUES ('r_war_forge', 'cost', 'unity', '3000.0', 0, 0);
@@ -10789,8 +10813,8 @@ INSERT OR REPLACE INTO precursor
                VALUES ('precursor_baol_1', 'Baol', 'Ancient Relics Story Pack', 'last_baol_system', 'GFX_precursor_baol', 4, 5);
 INSERT OR REPLACE INTO precursor_relic
                            (precursor_key, relic_key, name, portrait, score, description,
-                            passive_text, active_effect, active_detail, triumph_cooldown_days)
-                       VALUES ('precursor_baol_1', 'r_the_last_baol', 'The Last Baol', 'GFX_relic_baol', 1000, 'Preserved in stasis, the body of the last known Baol specimen serves as a silent memorial to the fate of the species, who, afflicted with the tragedy of genocide, ultimately retreated from sentience.', NULL, 'Unlocks Decision: Nu-Baol Life-Seeding, granting the ability to turn one non-Ecumenopolis, non-Hive World, non-Machine World planet into a Gaia World.', NULL, 3600);
+                            active_effect, active_detail, triumph_cooldown_days)
+                       VALUES ('precursor_baol_1', 'r_the_last_baol', 'The Last Baol', 'GFX_relic_baol', 1000, 'Preserved in stasis, the body of the last known Baol specimen serves as a silent memorial to the fate of the species, who, afflicted with the tragedy of genocide, ultimately retreated from sentience.', 'Unlocks Decision: Nu-Baol Life-Seeding, granting the ability to turn one non-Ecumenopolis, non-Hive World, non-Machine World planet into a Gaia World.', NULL, 3600);
 INSERT OR IGNORE INTO precursor_relic_resource
                                (relic_key, kind, resource, amount, scales, sort_order)
                            VALUES ('r_the_last_baol', 'cost', 'unity', '3000.0', 0, 0);
@@ -10820,8 +10844,11 @@ INSERT OR REPLACE INTO precursor
                VALUES ('precursor_zroni_1', 'Zroni', 'Ancient Relics Story Pack', 'zroni_legacy_initializer_01', 'GFX_precursor_zroni', 6, 6);
 INSERT OR REPLACE INTO precursor_relic
                            (precursor_key, relic_key, name, portrait, score, description,
-                            passive_text, active_effect, active_detail, triumph_cooldown_days)
-                       VALUES ('precursor_zroni_1', 'r_zro_crystal', 'Psionic Archive', 'GFX_relic_zro_crystal', 1000, 'A Zro psionic crystal archive, containing the essence of Ja''Baxti. From time to time it can be consulted for guidance.', 'The cooldown to Breach into the Shroud is reduced by 50%. Grants access to the Zro Additives edict, which increases leader experience gain and longevity.', 'Contact the spirit of Ja''Baxti to seek guidance in different matters.', NULL, 3600);
+                            active_effect, active_detail, triumph_cooldown_days)
+                       VALUES ('precursor_zroni_1', 'r_zro_crystal', 'Psionic Archive', 'GFX_relic_zro_crystal', 1000, 'A Zro psionic crystal archive, containing the essence of Ja''Baxti. From time to time it can be consulted for guidance.', 'Contact the spirit of Ja''Baxti to seek guidance in different matters.', NULL, 3600);
+INSERT OR IGNORE INTO precursor_relic_passive_text
+                               (relic_key, text, condition, sort_order)
+                           VALUES ('r_zro_crystal', 'The cooldown to Breach into the Shroud is reduced by 50%. Grants access to the Zro Additives edict, which increases leader experience gain and longevity.', NULL, 0);
 INSERT OR IGNORE INTO precursor_relic_resource
                                (relic_key, kind, resource, amount, scales, sort_order)
                            VALUES ('r_zro_crystal', 'cost', 'unity', '3000.0', 0, 0);
@@ -10844,8 +10871,8 @@ INSERT OR REPLACE INTO precursor
                VALUES ('precursor_inetian', 'Inetian Traders', 'Cosmic Storms', NULL, 'GFX_precursor_inetian', NULL, 7);
 INSERT OR REPLACE INTO precursor_relic
                            (precursor_key, relic_key, name, portrait, score, description,
-                            passive_text, active_effect, active_detail, triumph_cooldown_days)
-                       VALUES ('precursor_inetian', 'r_weather_manipulator', 'The Disturbance Oppressor', 'GFX_relic_weather_manipulation', 1000, 'A more advanced version of the machine the Inetian Traders used to manipulate cosmic storms; by default this device will increase the effectiveness of all our storm-related technology, but when properly utilized it can even drive out all storms from our borders.', NULL, 'Creates an extra large Cosmic Storm repelling field around the empire''s capital for 36 months.', NULL, 3600);
+                            active_effect, active_detail, triumph_cooldown_days)
+                       VALUES ('precursor_inetian', 'r_weather_manipulator', 'The Disturbance Oppressor', 'GFX_relic_weather_manipulation', 1000, 'A more advanced version of the machine the Inetian Traders used to manipulate cosmic storms; by default this device will increase the effectiveness of all our storm-related technology, but when properly utilized it can even drive out all storms from our borders.', 'Creates an extra large Cosmic Storm repelling field around the empire''s capital for 36 months.', NULL, 3600);
 INSERT OR IGNORE INTO precursor_relic_resource
                                (relic_key, kind, resource, amount, scales, sort_order)
                            VALUES ('r_weather_manipulator', 'cost', 'unity', '3000.0', 0, 0);
@@ -10871,8 +10898,8 @@ INSERT OR REPLACE INTO precursor
                VALUES ('precursor_adakkaria', 'adAkkaria', 'Cosmic Storms', 'adSul_system', 'GFX_precursor_adakkaria', NULL, 8);
 INSERT OR REPLACE INTO precursor_relic
                            (precursor_key, relic_key, name, portrait, score, description,
-                            passive_text, active_effect, active_detail, triumph_cooldown_days)
-                       VALUES ('precursor_adakkaria', 'r_the_tempest_invocator', 'The Tempest Invocator', 'GFX_relic_the_tempest_exsoulcillator', 1000, 'The waiting potential of this device is tangible even in a powered-down state. Dare we invoke tempestuous fury inside one of our best and brightest? For the glory of our nation, sacrifices must be made.', NULL, 'Generate a Nexus Storm in a system of your choice. Once a system is selected, a scientist Scientist will be Sacrificed.', NULL, 3600);
+                            active_effect, active_detail, triumph_cooldown_days)
+                       VALUES ('precursor_adakkaria', 'r_the_tempest_invocator', 'The Tempest Invocator', 'GFX_relic_the_tempest_exsoulcillator', 1000, 'The waiting potential of this device is tangible even in a powered-down state. Dare we invoke tempestuous fury inside one of our best and brightest? For the glory of our nation, sacrifices must be made.', 'Generate a Nexus Storm in a system of your choice. Once a system is selected, a scientist Scientist will be Sacrificed.', NULL, 3600);
 INSERT OR IGNORE INTO precursor_relic_resource
                                (relic_key, kind, resource, amount, scales, sort_order)
                            VALUES ('r_the_tempest_invocator', 'cost', 'energy', '50000.0', 0, 0);
