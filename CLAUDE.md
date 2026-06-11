@@ -206,9 +206,13 @@ its numeric passive — `extract_precursors` also captures:
 - **`precursor_relic_active_modifier`** (+ `active_mode`, `active_detail`,
   `group_label`) via `_relic_active_outcomes` — the temporary modifiers a triumph
   grants, in three **modes**:
-  - **`direct`**: an `add_modifier` in active_effect (excluding
-    `relic_activation_cooldown`) — Yuht Cryo Core → `yuht_cryo_core` = −20% ship
-    upkeep for `@triumph_duration` (10 years). detail "For 10 years."
+  - **`direct`**: an `add_modifier` anywhere in active_effect (`_collect_add_modifiers`,
+    recursive — the Tempest Invocator's is nested in `start_storm_area_placing >
+    on_confirm`), excluding `relic_activation_cooldown`. Yuht Cryo Core →
+    `yuht_cryo_core` = −20% ship upkeep (10 years); Tempest Invocator →
+    `tempest_invocator_active_modifier` = `country_storm_repulsion_influence_add`
+    1.0 (= +100%, via the `MOD_COUNTRY_STORM_REPELLING_ADD` loc override). detail
+    "For 10 years." Durations also resolve `months` (the Weather Manipulator).
   - **`random`**: a `country_event`'s `(locked_)random_list` — Reality Perforator →
     `precursor.105` → one of `reality_perforator_1..4` (+40% weapon/shield/armor/hull)
     at random, or all as a jackpot. detail "One at random for 2–5 years, or all of
@@ -221,8 +225,10 @@ its numeric passive — `extract_precursors` also captures:
 
   `main()` builds the **events index** (`id → event`) from the precursor/ancrel
   event files. Durations resolve `@triumph_duration` etc. and convert days→years.
-  Note the script values can differ from the wiki (Statecraft stability is **+2**,
-  not the wiki's +3) — trust the files.
+  `_resolve_static_modifier` skips a modifier with `show_only_custom_tooltip = yes`
+  (the game hides its numbers — e.g. the Weather Manipulator's storm field, conveyed
+  by the active_effect tooltip instead). Note the script values can differ from the
+  wiki (Statecraft stability is **+2**, not the wiki's +3) — trust the files.
 - **`triumph_cooldown_days`** — the days of the `relic_activation_cooldown`
   `add_modifier` *inside* `active_effect` (recursively found — this is the value
   the game applies, e.g. the War Forge's short 900-day cooldown), falling back to

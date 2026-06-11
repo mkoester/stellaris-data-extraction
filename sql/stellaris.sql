@@ -10921,7 +10921,12 @@ INSERT OR REPLACE INTO precursor
 INSERT OR REPLACE INTO precursor_relic
                            (precursor_key, relic_key, name, portrait, score, description,
                             active_effect, active_mode, active_detail, triumph_cooldown_days)
-                       VALUES ('precursor_adakkaria', 'r_the_tempest_invocator', 'The Tempest Invocator', 'GFX_relic_the_tempest_exsoulcillator', 1000, 'The waiting potential of this device is tangible even in a powered-down state. Dare we invoke tempestuous fury inside one of our best and brightest? For the glory of our nation, sacrifices must be made.', 'Generate a Nexus Storm in a system of your choice. Once a system is selected, a scientist Scientist will be Sacrificed.', NULL, NULL, 3600);
+                       VALUES ('precursor_adakkaria', 'r_the_tempest_invocator', 'The Tempest Invocator', 'GFX_relic_the_tempest_exsoulcillator', 1000, 'The waiting potential of this device is tangible even in a powered-down state. Dare we invoke tempestuous fury inside one of our best and brightest? For the glory of our nation, sacrifices must be made.', 'Generate a Nexus Storm in a system of your choice. Once a system is selected, a scientist Scientist will be Sacrificed.', 'direct', 'For 10 years.', 3600);
+INSERT OR IGNORE INTO precursor_relic_active_modifier
+                               (relic_key, modifier_key, modifier_value, group_label, sort_order)
+                           VALUES ('r_the_tempest_invocator', 'country_storm_repulsion_influence_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_storm_repulsion_influence_add', 'Cosmic Storm Repulsion Effect', 1);
 INSERT OR IGNORE INTO precursor_relic_resource
                                (relic_key, kind, resource, amount, scales, sort_order)
                            VALUES ('r_the_tempest_invocator', 'cost', 'energy', '50000.0', 0, 0);

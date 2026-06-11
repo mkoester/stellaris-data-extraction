@@ -942,6 +942,9 @@ def extract_traits(data: dict, source_file: str, w: Writer, verbose: bool):
 # Maps modifier_key → explicit loc key. Extend when new mismatches are discovered.
 MODIFIER_LOC_OVERRIDES: dict[str, str] = {
     'species_leader_exp_gain': 'MOD_LEADER_SPECIES_EXP_GAIN',
+    # No MOD_ loc of its own; the closest is the "repelling" key ("Cosmic Storm
+    # Repulsion Effect"). Used by the Tempest Invocator's triumph modifier.
+    'country_storm_repulsion_influence_add': 'MOD_COUNTRY_STORM_REPELLING_ADD',
 }
 
 INVERTED_MODIFIERS: frozenset[str] = frozenset({
@@ -1723,8 +1726,8 @@ def _relic_event_id(active_effect) -> str | None:
 
 
 def _entry_years(m: dict, variables: dict[str, float]) -> int | None:
-    """Duration of an add_modifier block in years (resolving @vars; days/360)."""
-    for unit_key, divisor in (('years', 1), ('days', 360)):
+    """Duration of an add_modifier block in years (resolving @vars; days/360, months/12)."""
+    for unit_key, divisor in (('years', 1), ('months', 12), ('days', 360)):
         if unit_key in m:
             raw = str(m[unit_key]).strip()
             val = variables.get(raw) if raw.startswith('@') else _resolve_modifier_float(raw)
@@ -1744,6 +1747,11 @@ def _resolve_static_modifier(name: str, static_mods: dict) -> list[tuple[str, fl
         block = merged
     if not isinstance(block, dict):
         return []
+    # The game hides the numeric effects of a show_only_custom_tooltip modifier
+    # (e.g. the Weather Manipulator's storm_relic_repelling_field_modifier — its
+    # effect is conveyed by the active_effect's custom_tooltip text instead).
+    if block.get('show_only_custom_tooltip') == 'yes':
+        return []
     out: list[tuple[str, float]] = []
     for mod_key, mod_val in block.items():
         if mod_key in _NON_MODIFIER_KEYS:
@@ -1751,6 +1759,29 @@ def _resolve_static_modifier(name: str, static_mods: dict) -> list[tuple[str, fl
         value = _resolve_modifier_float(mod_val)
         if value is not None:
             out.append((mod_key, value))
+    return out
+
+
+def _collect_add_modifiers(node, variables: dict[str, float]) -> list[tuple[str, int | None]]:
+    """Every `add_modifier` (modifier + duration) anywhere in a tree, except the
+    `relic_activation_cooldown`. Recursive so it catches modifiers nested in e.g.
+    `start_storm_area_placing > on_confirm` (the Tempest Invocator)."""
+    out: list[tuple[str, int | None]] = []
+
+    def walk(n):
+        if isinstance(n, list):
+            for item in n:
+                walk(item)
+        elif isinstance(n, dict):
+            for am in _as_blocks(n.get('add_modifier')):
+                name = am.get('modifier')
+                if isinstance(name, str) and name != 'relic_activation_cooldown':
+                    out.append((name, _entry_years(am, variables)))
+            for k, v in n.items():
+                if k != 'add_modifier':
+                    walk(v)
+
+    walk(node)
     return out
 
 
@@ -1774,13 +1805,10 @@ def _relic_active_outcomes(relic: dict, events_index: dict, static_mods: dict,
     text_options: list[str] = []
     mode: str | None = None
 
-    # Source A: direct add_modifier children of active_effect (excluding the cooldown).
-    for am in (_as_blocks(active.get('add_modifier')) if isinstance(active, dict) else []):
-        name = am.get('modifier')
-        if not isinstance(name, str) or name == 'relic_activation_cooldown':
-            continue
+    # Source A: an add_modifier in active_effect (recursive — the Tempest Invocator's
+    # is nested in start_storm_area_placing > on_confirm), excluding the cooldown.
+    for name, years in _collect_add_modifiers(active, variables):
         mode = 'direct'
-        years = _entry_years(am, variables)
         if years is not None:
             single_years.append(years)
         for mk, val in _resolve_static_modifier(name, static_mods):
