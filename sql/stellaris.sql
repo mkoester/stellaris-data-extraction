@@ -181,6 +181,7 @@ CREATE TABLE ethic_policy_restriction (
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
 -- effect numbers and display names below are pulled from the game files.
 DROP TABLE IF EXISTS precursor_homeworld_reward;
+DROP TABLE IF EXISTS precursor_technology;
 DROP TABLE IF EXISTS precursor_building_modifier;
 DROP TABLE IF EXISTS precursor_building_resource;
 DROP TABLE IF EXISTS precursor_building;
@@ -284,11 +285,17 @@ CREATE TABLE precursor_reward_modifier (
     FOREIGN KEY (precursor_key) REFERENCES precursor(key)
 );
 
+-- Precursor buildings, of two kinds (see `source`): 'homeworld' = unique buildings
+-- granted on the precursor's home planet; 'technology' = empire-wide buildable
+-- buildings unlocked by the precursor's "Secrets of …" technology (tech_key) — for
+-- those, scope is 'planet' or 'starbase' (orbital).
 CREATE TABLE precursor_building (
     precursor_key   TEXT NOT NULL,
-    building_key    TEXT NOT NULL,         -- e.g. "building_zroni_equilibrator"
+    building_key    TEXT NOT NULL,         -- e.g. "building_zroni_equilibrator", "cybrex_mining_hub"
     name            TEXT,                  -- localised building name
     scope           TEXT,                  -- "planet" or "starbase"
+    source          TEXT NOT NULL DEFAULT 'homeworld',  -- 'homeworld' | 'technology'
+    tech_key        TEXT,                  -- unlocking tech (source='technology'); else NULL
     category        TEXT,                  -- e.g. "government", "resource"
     build_time_days INTEGER,               -- base_buildtime (resolving @vars)
     empire_limit    INTEGER,               -- base_cap_amount: max buildable per empire (NULL = uncapped)
@@ -309,17 +316,45 @@ CREATE TABLE precursor_building_resource (
     PRIMARY KEY (building_key, kind, resource)
 );
 
--- A precursor building's modifiers. scope 'planet' = planet_modifier,
--- 'country' = country_modifier, 'job' = jobs added via the building's jobs/*
--- inline_script (job_<x>_add, the regular-empire variant — gestalt/FE empires get
--- the calculator/archivist equivalents). Values resolve @scripted_variables.
+-- A precursor building's modifiers (one row per scope+modifier, with both the base
+-- and the Archaeo-Engineers-boosted value already resolved). scope: 'planet' =
+-- planet_modifier, 'country' = country_modifier, 'system'/'station' = the orbital
+-- starbase building's triggered_system_/station_modifier, 'job' = jobs added via
+-- the building's jobs/* inline_script (job_<x>_add, the regular-empire variant —
+-- gestalt/FE empires get the calculator/archivist equivalents).
+--   modifier_value = the value without ascension perks (the default).
+--   ae_value       = the *total* value with the Archaeo-Engineers ascension perk
+--                    (NULL when the perk makes no difference). Correctly handles
+--                    both 'replacement' buildings (a NOT-AE base block + an AE block
+--                    — e.g. Cybrex +100% → +150%) and 'additive' ones (an always-on
+--                    base + an AE bonus on top — e.g. League +50 → +100).
+--   condition      = NULL normally, or a *different* ascension perk's key (e.g.
+--                    'ap_cosmogenesis') when the modifier only applies with that perk.
 CREATE TABLE precursor_building_modifier (
     building_key   TEXT NOT NULL,
-    scope          TEXT NOT NULL,          -- 'planet' | 'country' | 'job'
+    scope          TEXT NOT NULL,          -- 'planet' | 'country' | 'system' | 'station' | 'job'
     modifier_key   TEXT NOT NULL,          -- e.g. "ship_shield_damage_mult", "job_biologist_add"
-    modifier_value REAL NOT NULL,
+    modifier_value REAL NOT NULL,          -- value without ascension perks
+    ae_value       REAL,                   -- total value with Archaeo-Engineers (NULL = no change)
+    condition      TEXT,                   -- NULL, or a different required ascension-perk key
     sort_order     INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (building_key, scope, modifier_key)
+    PRIMARY KEY (building_key, scope, modifier_key, condition)
+);
+
+-- A precursor's "Secrets of …" technology: a permanent research option granted by
+-- the discovery special project (cannot appear in normal research draws). Each
+-- unlocks one empire-wide building (unlocks_building_key → precursor_building).
+CREATE TABLE precursor_technology (
+    precursor_key       TEXT NOT NULL,
+    tech_key            TEXT NOT NULL,      -- e.g. "tech_secrets_cybrex"
+    name                TEXT,               -- localised tech name
+    cost                INTEGER,            -- research cost (resolving @vars)
+    tier                INTEGER,
+    area                TEXT,               -- e.g. "society"
+    category            TEXT,               -- e.g. "archaeostudies"
+    unlocks_building_key TEXT,              -- the building this tech unlocks
+    PRIMARY KEY (precursor_key, tech_key),
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
 );
 
 -- The one-time "Homeworld reward" granted by the event that fires when a
@@ -10796,6 +10831,41 @@ INSERT OR IGNORE INTO precursor_homeworld_reward
 INSERT OR IGNORE INTO precursor_homeworld_reward
                            (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
                        VALUES ('precursor_1', 'minor_artifacts', NULL, '750.0', '1500.0', 4);
+INSERT OR REPLACE INTO precursor_technology
+                       (precursor_key, tech_key, name, cost, tier, area, category,
+                        unlocks_building_key)
+                   VALUES ('precursor_1', 'tech_secrets_vultaum', 'Vultaum Reality Computer', 12000, 4, 'society', 'archaeostudies', 'building_vultaum_reality_computer');
+INSERT OR REPLACE INTO precursor_building
+               (precursor_key, building_key, name, scope, source, tech_key, category,
+                build_time_days, empire_limit, planet_limit, can_demolish)
+           VALUES ('precursor_1', 'building_vultaum_reality_computer', 'Vultaum Reality Computer', 'planet', 'technology', 'tech_secrets_vultaum', 'research', 480, NULL, 1, NULL);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_vultaum_reality_computer', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_vultaum_reality_computer', 'cost', 'minor_artifacts', '30.0', 1);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_vultaum_reality_computer', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_vultaum_reality_computer', 'planet', 'planet_physicists_physics_research_produces_add', '1.0', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_physics_research_produces_add', 'physics_research Produced per 100', 1);
+INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_vultaum_reality_computer', 'planet', 'planet_physicists_advanced_logic_produces_add', '0.25', NULL, 'ap_cosmogenesis', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_advanced_logic_produces_add', 'advanced_logic Produced per 100', 1);
+INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_vultaum_reality_computer', 'job', 'job_physicist_add', '200.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_physicist_add', 'Jobs', 1);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_2', 'Yuht', NULL, 'yuhtaan_system', 'GFX_precursor_yuth', NULL, 1);
@@ -10841,6 +10911,35 @@ INSERT OR IGNORE INTO precursor_homeworld_reward
 INSERT OR IGNORE INTO precursor_homeworld_reward
                            (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
                        VALUES ('precursor_2', 'minor_artifacts', NULL, '750.0', '1500.0', 3);
+INSERT OR REPLACE INTO precursor_technology
+                       (precursor_key, tech_key, name, cost, tier, area, category,
+                        unlocks_building_key)
+                   VALUES ('precursor_2', 'tech_secrets_yuht', 'Yuht Astronomical Interferometer', 12000, 4, 'society', 'archaeostudies', 'yuht_detection_array');
+INSERT OR REPLACE INTO precursor_building
+               (precursor_key, building_key, name, scope, source, tech_key, category,
+                build_time_days, empire_limit, planet_limit, can_demolish)
+           VALUES ('precursor_2', 'yuht_detection_array', 'Yuht Astronomical Interferometer', 'starbase', 'technology', 'tech_secrets_yuht', NULL, NULL, NULL, NULL, NULL);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('yuht_detection_array', 'cost', 'alloys', '100.0', 0);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('yuht_detection_array', 'cost', 'minor_artifacts', '125.0', 1);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('yuht_detection_array', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('yuht_detection_array', 'station', 'ship_sensor_range_add', '7.0', '10.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
+INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('yuht_detection_array', 'station', 'ship_hyperlane_range_add', '14.0', '20.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hyperlane_range_add', 'Ship Hyperlane Detection Range', 1);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_3', 'First League', NULL, 'fen_habbanis_system', 'GFX_precursor_first_league', NULL, 2);
@@ -10865,6 +10964,47 @@ INSERT OR IGNORE INTO precursor_homeworld_reward
 INSERT OR IGNORE INTO precursor_homeworld_reward
                            (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
                        VALUES ('precursor_3', 'influence', '24.0', '150.0', '300.0', 2);
+INSERT OR REPLACE INTO precursor_technology
+                       (precursor_key, tech_key, name, cost, tier, area, category,
+                        unlocks_building_key)
+                   VALUES ('precursor_3', 'tech_secrets_league', 'First League Filing Offices', 12000, 4, 'society', 'archaeostudies', 'building_league_offices');
+INSERT OR REPLACE INTO precursor_building
+               (precursor_key, building_key, name, scope, source, tech_key, category,
+                build_time_days, empire_limit, planet_limit, can_demolish)
+           VALUES ('precursor_3', 'building_league_offices', 'First League Filing Offices', 'planet', 'technology', 'tech_secrets_league', 'unity', 480, 1, NULL, NULL);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_league_offices', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_league_offices', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_league_offices', 'cost', 'minor_artifacts', '30.0', 2);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_league_offices', 'upkeep', 'energy', '5.0', 3);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_league_offices', 'upkeep', 'rare_crystals', '1.0', 4);
+INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_league_offices', 'planet', 'planet_bureaucrats_unity_produces_add', '0.25', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_unity_produces_add', 'unity Produced per 100', 1);
+INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_league_offices', 'country', 'country_edict_fund_add', '50.0', '100.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_league_offices', 'job', 'job_bureaucrat_add', '200.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_bureaucrat_add', 'Jobs', 1);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_4', 'Irassian', NULL, 'irass_system', 'GFX_precursor_irassian', NULL, 3);
@@ -10892,6 +11032,29 @@ INSERT OR IGNORE INTO precursor_homeworld_reward
 INSERT OR IGNORE INTO precursor_homeworld_reward
                            (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
                        VALUES ('precursor_4', 'minor_artifacts', NULL, '750.0', '1500.0', 3);
+INSERT OR REPLACE INTO precursor_technology
+                       (precursor_key, tech_key, name, cost, tier, area, category,
+                        unlocks_building_key)
+                   VALUES ('precursor_4', 'tech_secrets_irassian', 'Irassian Naval Yards', 12000, 4, 'society', 'archaeostudies', 'irassian_naval_yards');
+INSERT OR REPLACE INTO precursor_building
+               (precursor_key, building_key, name, scope, source, tech_key, category,
+                build_time_days, empire_limit, planet_limit, can_demolish)
+           VALUES ('precursor_4', 'irassian_naval_yards', 'Irassian Naval Yards', 'starbase', 'technology', 'tech_secrets_irassian', NULL, NULL, NULL, NULL, NULL);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('irassian_naval_yards', 'cost', 'alloys', '100.0', 0);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('irassian_naval_yards', 'cost', 'minor_artifacts', '125.0', 1);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('irassian_naval_yards', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('irassian_naval_yards', 'station', 'starbase_shipyard_build_speed_mult', '0.2', '0.3', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_5', 'Cybrex', NULL, 'cybrex_system', 'GFX_precursor_cybrex', NULL, 4);
@@ -10929,6 +11092,29 @@ INSERT OR IGNORE INTO precursor_homeworld_reward
 INSERT OR IGNORE INTO precursor_homeworld_reward
                            (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
                        VALUES ('precursor_5', 'minor_artifacts', NULL, '750.0', '1500.0', 3);
+INSERT OR REPLACE INTO precursor_technology
+                       (precursor_key, tech_key, name, cost, tier, area, category,
+                        unlocks_building_key)
+                   VALUES ('precursor_5', 'tech_secrets_cybrex', 'Cybrex Mining Hub', 12000, 4, 'society', 'archaeostudies', 'cybrex_mining_hub');
+INSERT OR REPLACE INTO precursor_building
+               (precursor_key, building_key, name, scope, source, tech_key, category,
+                build_time_days, empire_limit, planet_limit, can_demolish)
+           VALUES ('precursor_5', 'cybrex_mining_hub', 'Cybrex Mining Hub', 'starbase', 'technology', 'tech_secrets_cybrex', NULL, NULL, NULL, NULL, NULL);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('cybrex_mining_hub', 'cost', 'alloys', '100.0', 0);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('cybrex_mining_hub', 'cost', 'minor_artifacts', '50.0', 1);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('cybrex_mining_hub', 'upkeep', 'energy', '1.0', 2);
+INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('cybrex_mining_hub', 'system', 'station_gatherers_produces_mult', '1.0', '1.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('station_gatherers_produces_mult', 'Resources Produced from Mining Stations', 1);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_baol_1', 'Baol', 'Ancient Relics Story Pack', 'last_baol_system', 'GFX_precursor_baol', 4, 5);
@@ -10960,6 +11146,41 @@ INSERT OR REPLACE INTO precursor_reward_modifier
                        VALUES ('precursor_baol_1', 'artifact_baol_research_completed', 'default', 'Secrets of the Baol', 'terraforming_cost_mult', '-0.15', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('terraforming_cost_mult', 'Terraforming Cost', 0);
+INSERT OR REPLACE INTO precursor_technology
+                       (precursor_key, tech_key, name, cost, tier, area, category,
+                        unlocks_building_key)
+                   VALUES ('precursor_baol_1', 'tech_secrets_baol', 'Baol Organic Plant', 12000, 4, 'society', 'archaeostudies', 'building_baol_organic_plant');
+INSERT OR REPLACE INTO precursor_building
+               (precursor_key, building_key, name, scope, source, tech_key, category,
+                build_time_days, empire_limit, planet_limit, can_demolish)
+           VALUES ('precursor_baol_1', 'building_baol_organic_plant', 'Baol Organic Plant', 'planet', 'technology', 'tech_secrets_baol', 'resource', 480, NULL, 1, NULL);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_baol_organic_plant', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_baol_organic_plant', 'cost', 'minor_artifacts', '25.0', 1);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_baol_organic_plant', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_baol_organic_plant', 'planet', 'planet_farmers_consumer_goods_produces_add', '0.1', '0.225', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_consumer_goods_produces_add', 'consumer_goods Produced per 100', 1);
+INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_baol_organic_plant', 'planet', 'planet_farmers_energy_produces_add', '0.25', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_energy_produces_add', 'energy Produced per 100', 1);
+INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_baol_organic_plant', 'job', 'job_farmer_add', '200.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_farmer_add', 'Jobs', 1);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_zroni_1', 'Zroni', 'Ancient Relics Story Pack', 'zroni_legacy_initializer_01', 'GFX_precursor_zroni', 6, 6);
@@ -11008,38 +11229,65 @@ INSERT OR IGNORE INTO precursor_homeworld_reward
                            (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
                        VALUES ('precursor_zroni_1', 'minor_artifacts', NULL, '750.0', '1500.0', 0);
 INSERT OR REPLACE INTO precursor_building
-                       (precursor_key, building_key, name, scope, category,
-                        build_time_days, empire_limit, planet_limit, can_demolish)
-                   VALUES ('precursor_zroni_1', 'building_zroni_equilibrator', 'Zroni Equilibrator', 'planet', 'government', 1080, 1, NULL, 1);
+               (precursor_key, building_key, name, scope, source, tech_key, category,
+                build_time_days, empire_limit, planet_limit, can_demolish)
+           VALUES ('precursor_zroni_1', 'building_zroni_equilibrator', 'Zroni Equilibrator', 'planet', 'homeworld', NULL, 'government', 1080, 1, NULL, 1);
 INSERT OR IGNORE INTO precursor_building_resource
-                           (building_key, kind, resource, amount, sort_order)
-                       VALUES ('building_zroni_equilibrator', 'cost', 'sr_zro', '250.0', 0);
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_zroni_equilibrator', 'cost', 'sr_zro', '250.0', 0);
 INSERT OR IGNORE INTO precursor_building_resource
-                           (building_key, kind, resource, amount, sort_order)
-                       VALUES ('building_zroni_equilibrator', 'upkeep', 'energy', '10.0', 1);
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_zroni_equilibrator', 'upkeep', 'energy', '10.0', 1);
 INSERT OR IGNORE INTO precursor_building_resource
-                           (building_key, kind, resource, amount, sort_order)
-                       VALUES ('building_zroni_equilibrator', 'produces', 'sr_zro', '4.0', 2);
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_zroni_equilibrator', 'produces', 'sr_zro', '4.0', 2);
 INSERT OR IGNORE INTO precursor_building_modifier
-                           (building_key, scope, modifier_key, modifier_value, sort_order)
-                       VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_physics_research_produces_add', '0.5', 0);
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_physics_research_produces_add', '0.5', NULL, NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_biologists_physics_research_produces_add', 'physics_research Produced per 100', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
-                           (building_key, scope, modifier_key, modifier_value, sort_order)
-                       VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_society_research_produces_add', '0.5', 1);
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_society_research_produces_add', '0.5', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_biologists_society_research_produces_add', 'society_research Produced per 100', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
-                           (building_key, scope, modifier_key, modifier_value, sort_order)
-                       VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_sr_zro_upkeep_add', '0.5', 2);
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_sr_zro_upkeep_add', '0.5', NULL, NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_biologists_sr_zro_upkeep_add', 'sr_zro Upkeep per 100', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
-                           (building_key, scope, modifier_key, modifier_value, sort_order)
-                       VALUES ('building_zroni_equilibrator', 'job', 'job_biologist_add', '400.0', 3);
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_zroni_equilibrator', 'job', 'job_biologist_add', '400.0', NULL, NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_biologist_add', 'Jobs', 1);
+INSERT OR REPLACE INTO precursor_technology
+                       (precursor_key, tech_key, name, cost, tier, area, category,
+                        unlocks_building_key)
+                   VALUES ('precursor_zroni_1', 'tech_secrets_zroni', 'Zroni Storm Caster', 12000, 4, 'society', 'archaeostudies', 'zroni_storm_caster');
+INSERT OR REPLACE INTO precursor_building
+               (precursor_key, building_key, name, scope, source, tech_key, category,
+                build_time_days, empire_limit, planet_limit, can_demolish)
+           VALUES ('precursor_zroni_1', 'zroni_storm_caster', 'Zroni Storm Caster', 'starbase', 'technology', 'tech_secrets_zroni', NULL, NULL, NULL, NULL, NULL);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('zroni_storm_caster', 'cost', 'alloys', '100.0', 0);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('zroni_storm_caster', 'cost', 'minor_artifacts', '125.0', 1);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('zroni_storm_caster', 'cost', 'sr_zro', '100.0', 2);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('zroni_storm_caster', 'upkeep', 'energy', '20.0', 3);
+INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('zroni_storm_caster', 'upkeep', 'sr_zro', '1.0', 4);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_inetian', 'Inetian Traders', 'Cosmic Storms', NULL, 'GFX_precursor_inetian', NULL, 7);
@@ -11105,36 +11353,40 @@ INSERT OR REPLACE INTO precursor_reward_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
 INSERT OR REPLACE INTO precursor_building
-                       (precursor_key, building_key, name, scope, category,
-                        build_time_days, empire_limit, planet_limit, can_demolish)
-                   VALUES ('precursor_adakkaria', 'building_adakkaria_patriotic_institute', 'Patriotic Institute of Celebration', 'planet', 'resource', 600, NULL, 1, 0);
+               (precursor_key, building_key, name, scope, source, tech_key, category,
+                build_time_days, empire_limit, planet_limit, can_demolish)
+           VALUES ('precursor_adakkaria', 'building_adakkaria_patriotic_institute', 'Patriotic Institute of Celebration', 'planet', 'homeworld', NULL, 'resource', 600, NULL, 1, 0);
 INSERT OR IGNORE INTO precursor_building_resource
-                           (building_key, kind, resource, amount, sort_order)
-                       VALUES ('building_adakkaria_patriotic_institute', 'cost', 'minerals', '600.0', 0);
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_adakkaria_patriotic_institute', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO precursor_building_resource
-                           (building_key, kind, resource, amount, sort_order)
-                       VALUES ('building_adakkaria_patriotic_institute', 'cost', 'sr_zro', '20.0', 1);
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_adakkaria_patriotic_institute', 'cost', 'sr_zro', '20.0', 1);
 INSERT OR IGNORE INTO precursor_building_resource
-                           (building_key, kind, resource, amount, sort_order)
-                       VALUES ('building_adakkaria_patriotic_institute', 'upkeep', 'energy', '5.0', 2);
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES ('building_adakkaria_patriotic_institute', 'upkeep', 'energy', '5.0', 2);
 INSERT OR IGNORE INTO precursor_building_modifier
-                           (building_key, scope, modifier_key, modifier_value, sort_order)
-                       VALUES ('building_adakkaria_patriotic_institute', 'country', 'ship_shield_damage_mult', '0.1', 0);
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_adakkaria_patriotic_institute', 'country', 'ship_shield_damage_mult', '0.1', NULL, NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_shield_damage_mult', 'Shield Damage', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
-                           (building_key, scope, modifier_key, modifier_value, sort_order)
-                       VALUES ('building_adakkaria_patriotic_institute', 'job', 'job_physicist_add', '1200.0', 1);
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_adakkaria_patriotic_institute', 'job', 'job_physicist_add', '1200.0', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_physicist_add', 'Jobs', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
-                           (building_key, scope, modifier_key, modifier_value, sort_order)
-                       VALUES ('building_adakkaria_patriotic_institute', 'job', 'job_biologist_add', '1200.0', 2);
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_adakkaria_patriotic_institute', 'job', 'job_biologist_add', '1200.0', NULL, NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_biologist_add', 'Jobs', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
-                           (building_key, scope, modifier_key, modifier_value, sort_order)
-                       VALUES ('building_adakkaria_patriotic_institute', 'job', 'job_engineer_add', '1200.0', 3);
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES ('building_adakkaria_patriotic_institute', 'job', 'job_engineer_add', '1200.0', NULL, NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_engineer_add', 'Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)

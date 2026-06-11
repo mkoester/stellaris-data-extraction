@@ -346,6 +346,7 @@ CREATE TABLE ethic_policy_restriction (
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
 -- effect numbers and display names below are pulled from the game files.
 DROP TABLE IF EXISTS precursor_homeworld_reward;
+DROP TABLE IF EXISTS precursor_technology;
 DROP TABLE IF EXISTS precursor_building_modifier;
 DROP TABLE IF EXISTS precursor_building_resource;
 DROP TABLE IF EXISTS precursor_building;
@@ -449,11 +450,17 @@ CREATE TABLE precursor_reward_modifier (
     FOREIGN KEY (precursor_key) REFERENCES precursor(key)
 );
 
+-- Precursor buildings, of two kinds (see `source`): 'homeworld' = unique buildings
+-- granted on the precursor's home planet; 'technology' = empire-wide buildable
+-- buildings unlocked by the precursor's "Secrets of …" technology (tech_key) — for
+-- those, scope is 'planet' or 'starbase' (orbital).
 CREATE TABLE precursor_building (
     precursor_key   TEXT NOT NULL,
-    building_key    TEXT NOT NULL,         -- e.g. "building_zroni_equilibrator"
+    building_key    TEXT NOT NULL,         -- e.g. "building_zroni_equilibrator", "cybrex_mining_hub"
     name            TEXT,                  -- localised building name
     scope           TEXT,                  -- "planet" or "starbase"
+    source          TEXT NOT NULL DEFAULT 'homeworld',  -- 'homeworld' | 'technology'
+    tech_key        TEXT,                  -- unlocking tech (source='technology'); else NULL
     category        TEXT,                  -- e.g. "government", "resource"
     build_time_days INTEGER,               -- base_buildtime (resolving @vars)
     empire_limit    INTEGER,               -- base_cap_amount: max buildable per empire (NULL = uncapped)
@@ -474,17 +481,45 @@ CREATE TABLE precursor_building_resource (
     PRIMARY KEY (building_key, kind, resource)
 );
 
--- A precursor building's modifiers. scope 'planet' = planet_modifier,
--- 'country' = country_modifier, 'job' = jobs added via the building's jobs/*
--- inline_script (job_<x>_add, the regular-empire variant — gestalt/FE empires get
--- the calculator/archivist equivalents). Values resolve @scripted_variables.
+-- A precursor building's modifiers (one row per scope+modifier, with both the base
+-- and the Archaeo-Engineers-boosted value already resolved). scope: 'planet' =
+-- planet_modifier, 'country' = country_modifier, 'system'/'station' = the orbital
+-- starbase building's triggered_system_/station_modifier, 'job' = jobs added via
+-- the building's jobs/* inline_script (job_<x>_add, the regular-empire variant —
+-- gestalt/FE empires get the calculator/archivist equivalents).
+--   modifier_value = the value without ascension perks (the default).
+--   ae_value       = the *total* value with the Archaeo-Engineers ascension perk
+--                    (NULL when the perk makes no difference). Correctly handles
+--                    both 'replacement' buildings (a NOT-AE base block + an AE block
+--                    — e.g. Cybrex +100% → +150%) and 'additive' ones (an always-on
+--                    base + an AE bonus on top — e.g. League +50 → +100).
+--   condition      = NULL normally, or a *different* ascension perk's key (e.g.
+--                    'ap_cosmogenesis') when the modifier only applies with that perk.
 CREATE TABLE precursor_building_modifier (
     building_key   TEXT NOT NULL,
-    scope          TEXT NOT NULL,          -- 'planet' | 'country' | 'job'
+    scope          TEXT NOT NULL,          -- 'planet' | 'country' | 'system' | 'station' | 'job'
     modifier_key   TEXT NOT NULL,          -- e.g. "ship_shield_damage_mult", "job_biologist_add"
-    modifier_value REAL NOT NULL,
+    modifier_value REAL NOT NULL,          -- value without ascension perks
+    ae_value       REAL,                   -- total value with Archaeo-Engineers (NULL = no change)
+    condition      TEXT,                   -- NULL, or a different required ascension-perk key
     sort_order     INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (building_key, scope, modifier_key)
+    PRIMARY KEY (building_key, scope, modifier_key, condition)
+);
+
+-- A precursor's "Secrets of …" technology: a permanent research option granted by
+-- the discovery special project (cannot appear in normal research draws). Each
+-- unlocks one empire-wide building (unlocks_building_key → precursor_building).
+CREATE TABLE precursor_technology (
+    precursor_key       TEXT NOT NULL,
+    tech_key            TEXT NOT NULL,      -- e.g. "tech_secrets_cybrex"
+    name                TEXT,               -- localised tech name
+    cost                INTEGER,            -- research cost (resolving @vars)
+    tier                INTEGER,
+    area                TEXT,               -- e.g. "society"
+    category            TEXT,               -- e.g. "archaeostudies"
+    unlocks_building_key TEXT,              -- the building this tech unlocks
+    PRIMARY KEY (precursor_key, tech_key),
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
 );
 
 -- The one-time "Homeworld reward" granted by the event that fires when a
@@ -1490,6 +1525,10 @@ def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
 #                      (resource bursts + minor artifacts) on discovering the home
 #                      world — parsed into precursor_homeworld_reward. None where the
 #                      capstone grants only the relic (Baol, adAkkaria).
+#   technology         (tech_key, building_key, scope) — the "Secrets of …" tech
+#                      (granted by the discovery special project) and the empire-wide
+#                      building it unlocks. None for the Cosmic Storms precursors,
+#                      which have no such tech.
 PRECURSORS: list[dict] = [
     {'key': 'precursor_1', 'dlc': None, 'system': 'vultaumar_system', 'num_digsites': None,
      'relic': 'r_reality_perforator',
@@ -1497,44 +1536,52 @@ PRECURSORS: list[dict] = [
                  ('artifact_vultaum_research_completed_public', 'public'),
                  ('artifact_vultaum_research_completed_machine', 'machine'),
                  ('artifact_vultaum_research_completed_hive', 'hive')],
-     'building': None, 'homeworld_event': 'precursor.101'},
+     'building': None, 'homeworld_event': 'precursor.101',
+     'technology': ('tech_secrets_vultaum', 'building_vultaum_reality_computer', 'planet')},
     {'key': 'precursor_2', 'dlc': None, 'system': 'yuhtaan_system', 'num_digsites': None,
      'relic': 'r_cryo_core',
      'rewards': [],  # Yuht grant no permanent empire modifier; their homeworld gets pm_yuht_cleansing
-     'building': None, 'homeworld_event': 'precursor.601'},
+     'building': None, 'homeworld_event': 'precursor.601',
+     'technology': ('tech_secrets_yuht', 'yuht_detection_array', 'starbase')},
     {'key': 'precursor_3', 'dlc': None, 'system': 'fen_habbanis_system', 'num_digsites': None,
      'relic': None,
      'rewards': [('artifact_league_research_completed', 'default')],
-     'building': None, 'homeworld_event': 'precursor.1101'},
+     'building': None, 'homeworld_event': 'precursor.1101',
+     'technology': ('tech_secrets_league', 'building_league_offices', 'planet')},
     {'key': 'precursor_4', 'dlc': None, 'system': 'irass_system', 'num_digsites': None,
      'relic': None,
      'rewards': [('artifact_irassian_research_completed', 'default')],
-     'building': None, 'homeworld_event': 'precursor.1601'},
+     'building': None, 'homeworld_event': 'precursor.1601',
+     'technology': ('tech_secrets_irassian', 'irassian_naval_yards', 'starbase')},
     {'key': 'precursor_5', 'dlc': None, 'system': 'cybrex_system', 'num_digsites': None,
      'relic': 'r_war_forge',
      'rewards': [('artifact_cybrex_research_completed', 'default')],
-     'building': None, 'homeworld_event': 'precursor.2101'},
+     'building': None, 'homeworld_event': 'precursor.2101',
+     'technology': ('tech_secrets_cybrex', 'cybrex_mining_hub', 'starbase')},
     {'key': 'precursor_baol_1', 'dlc': 'Ancient Relics Story Pack', 'system': 'last_baol_system',
      'num_digsites': 4,
      'relic': 'r_the_last_baol',
      'rewards': [('artifact_baol_research_completed', 'default')],
-     'building': None, 'homeworld_event': None},  # capstone (ancrel.2022/2023) grants only the relic
+     'building': None, 'homeworld_event': None,  # capstone (ancrel.2022/2023) grants only the relic
+     'technology': ('tech_secrets_baol', 'building_baol_organic_plant', 'planet')},
     {'key': 'precursor_zroni_1', 'dlc': 'Ancient Relics Story Pack',
      'system': 'zroni_legacy_initializer_01', 'num_digsites': 6,
      'relic': 'r_zro_crystal',
      'rewards': [('artifact_zroni_research_completed', 'default')],
-     'building': ('building_zroni_equilibrator', 'planet'), 'homeworld_event': 'ancrel.19'},
+     'building': ('building_zroni_equilibrator', 'planet'), 'homeworld_event': 'ancrel.19',
+     'technology': ('tech_secrets_zroni', 'zroni_storm_caster', 'starbase')},
     {'key': 'precursor_inetian', 'dlc': 'Cosmic Storms', 'system': None, 'num_digsites': None,
      'relic': 'r_weather_manipulator',
      'rewards': [('secrets_of_the_inetian_traders', 'default'),
                  ('secrets_of_the_inetian_traders_hive_mach', 'hive_machine')],
-     'building': None, 'homeworld_event': 'cstorms.193'},
+     'building': None, 'homeworld_event': 'cstorms.193', 'technology': None},
     {'key': 'precursor_adakkaria', 'dlc': 'Cosmic Storms', 'system': 'adSul_system',
      'num_digsites': None,
      'relic': 'r_the_tempest_invocator',
      'rewards': [('patriotic_institute_true_potential_unleashed', 'default')],
      'building': ('building_adakkaria_patriotic_institute', 'planet'),
-     'homeworld_event': None},  # capstone (cstorms.2355) grants only the relic
+     'homeworld_event': None,  # capstone (cstorms.2355) grants only the relic
+     'technology': None},
 ]
 
 # Keys inside a relic's triggered_country_modifier / static modifier that are not
@@ -2015,10 +2062,24 @@ def _resolve_var(raw, variables: dict[str, float]) -> float | None:
     return variables.get(s) if s.startswith('@') else _resolve_modifier_float(raw)
 
 
+def _building_cap(raw, variables: dict[str, float]) -> int | None:
+    """A building build-cap → int, or None when uncapped. Accepts a flat value
+    (`base_cap_amount = 1`) or a block whose `base` is the baseline cap
+    (`empire_limit = { base = 1 … }`)."""
+    if isinstance(raw, list):
+        raw = next((b for b in reversed(raw) if isinstance(b, dict)), raw[-1] if raw else None)
+    if isinstance(raw, dict):
+        raw = raw.get('base')
+    v = _resolve_var(raw, variables)
+    return int(v) if v is not None else None
+
+
 def _building_resources(bdef: dict, variables: dict[str, float]
                         ) -> list[tuple[str, str, float]]:
     """A building's resources block → [(kind, resource, amount)] for
-    kind in cost/upkeep/produces, resolving @vars."""
+    kind in cost/upkeep/produces, resolving @vars. Where a kind has several blocks
+    (e.g. a conditional `is_wilderness_empire` cost), the unconditional one (no
+    `trigger`) is the primary; the gated variants are skipped."""
     rows: list[tuple[str, str, float]] = []
     res = bdef.get('resources')
     if isinstance(res, list):
@@ -2026,13 +2087,12 @@ def _building_resources(bdef: dict, variables: dict[str, float]
     if not isinstance(res, dict):
         return rows
     for kind in ('cost', 'upkeep', 'produces'):
-        block = res.get(kind)
-        if isinstance(block, list):
-            block = next((b for b in reversed(block) if isinstance(b, dict)), None)
+        blocks = _as_blocks(res.get(kind))
+        block = next((b for b in blocks if 'trigger' not in b), blocks[0] if blocks else None)
         if not isinstance(block, dict):
             continue
         for resource, raw in block.items():
-            if resource == 'category':
+            if resource in ('category', 'trigger'):
                 continue
             amt = _resolve_var(raw, variables)
             if amt is not None:
@@ -2040,16 +2100,91 @@ def _building_resources(bdef: dict, variables: dict[str, float]
     return rows
 
 
+# Building modifier sources: (scope tag, field, is_triggered). The `triggered_`
+# variants carry a `potential` gate — we keep their value but tag the condition.
+_BUILDING_MOD_FIELDS = (
+    ('planet', 'planet_modifier', False),
+    ('country', 'country_modifier', False),
+    ('planet', 'triggered_planet_modifier', True),
+    ('country', 'triggered_country_modifier', True),
+    ('system', 'triggered_system_modifier', True),
+    ('station', 'triggered_station_modifier', True),
+)
+_BUILDING_MOD_SKIP = frozenset({'potential', 'trigger', 'multiplier', 'mult', 'category',
+                                'modifier', 'desc', 'replace'})
+
+
+def _flatten_text(node) -> str:
+    """Render a parsed (nested) block back to a flat, searchable 'k = v' string."""
+    if isinstance(node, dict):
+        return ' '.join(f"{k} = {_flatten_text(v)}" for k, v in node.items())
+    if isinstance(node, list):
+        return ' '.join(_flatten_text(x) for x in node)
+    return str(node)
+
+
+_AE_PERK = 'ap_archaeoengineers'
+
+
+def _perk_gate(block: dict) -> tuple[str, bool] | None:
+    """A triggered modifier's ascension-perk gate as (perk_key, negated), or None
+    when it has no such gate. `negated` is True for a NOT-wrapped requirement (the
+    'base, only without the perk' variant)."""
+    txt = _flatten_text(block.get('potential'))
+    m = re.search(r'has_ascension_perk\s*=\s*(ap_\w+)', txt)
+    if not m:
+        return None
+    pre = txt[:m.start()].rstrip()
+    negated = bool(re.search(r'NO[RT]\s*=$', pre)) or bool(re.search(r'\bNO[RT]\b[^=]{0,16}$', pre))
+    return (m.group(1), negated)
+
+
 def _building_modifiers(bdef: dict, variables: dict[str, float]
-                        ) -> list[tuple[str, str, float]]:
-    """A building's planet_modifier / country_modifier blocks → [(scope, key, value)]."""
-    rows: list[tuple[str, str, float]] = []
-    for scope, field in (('planet', 'planet_modifier'), ('country', 'country_modifier')):
+                        ) -> list[tuple[str, str, float, float | None, str | None]]:
+    """A building's modifiers, aggregated per (scope, key) into
+    [(scope, key, base_value, ae_value, condition)].
+
+    base_value is the value with no ascension perks; ae_value is the *total* with
+    Archaeo-Engineers (None when unchanged). A block gated `NOT archaeoengineers`
+    contributes to base only (it's replaced under the perk); an un-perk-gated block
+    contributes to both (the AE bonus stacks on it); an `archaeoengineers` block
+    contributes to the AE total only. Blocks gated by a *different* perk become their
+    own rows tagged with that perk key in `condition`."""
+    # acc[(scope, key)] = {'base': float, 'ae': float, 'ae_seen': bool, 'other': {perk: float}}
+    acc: dict[tuple[str, str], dict] = {}
+
+    def slot(scope, key):
+        return acc.setdefault((scope, key),
+                              {'base': 0.0, 'ae': 0.0, 'ae_seen': False, 'other': {}})
+
+    for scope, field, triggered in _BUILDING_MOD_FIELDS:
         for block in _as_blocks(bdef.get(field)):
+            gate = _perk_gate(block) if triggered else None
             for key, raw in block.items():
+                if key in _BUILDING_MOD_SKIP:
+                    continue
                 val = _resolve_var(raw, variables)
-                if val is not None:
-                    rows.append((scope, key, val))
+                if val is None:
+                    continue
+                s = slot(scope, key)
+                if gate is None:                       # always applies (base and AE)
+                    s['base'] += val
+                    s['ae'] += val
+                elif gate[0] == _AE_PERK and gate[1]:  # base only (NOT archaeoengineers)
+                    s['base'] += val
+                elif gate[0] == _AE_PERK:              # the Archaeo-Engineers value
+                    s['ae'] += val
+                    s['ae_seen'] = True
+                else:                                  # gated by a different perk
+                    s['other'][gate[0]] = s['other'].get(gate[0], 0.0) + val
+
+    rows: list[tuple[str, str, float, float | None, str | None]] = []
+    for (scope, key), s in acc.items():
+        if s['ae_seen'] or s['base']:
+            ae = s['ae'] if s['ae_seen'] and abs(s['ae'] - s['base']) > 1e-9 else None
+            rows.append((scope, key, s['base'], ae, None))
+        for perk, v in s['other'].items():
+            rows.append((scope, key, v, None, perk))
     return rows
 
 
@@ -2086,9 +2221,9 @@ def _building_inline_jobs(bdef: dict, variables: dict[str, float], inline_script
 
 
 def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
-                       events_index: dict, buildings: dict, inline_scripts_dir,
-                       scripted_vars: dict[str, float], loc: dict[str, str],
-                       w: Writer, verbose: bool):
+                       events_index: dict, buildings: dict, technologies: dict,
+                       inline_scripts_dir, scripted_vars: dict[str, float],
+                       loc: dict[str, str], w: Writer, verbose: bool):
     # @variables for resolving relic costs/cooldowns: this file's own top-level
     # @defs plus the global scripted_variables (where @activation_cost etc. live).
     relic_vars: dict[str, float] = dict(scripted_vars)
@@ -2233,61 +2368,108 @@ def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
                     amt = f"x{mult:g}" if mult is not None else "flat"
                     print(f"    homeworld reward | {res} {amt} ({lo:g}~{hi:g})")
 
-        # --- building (0..1): definition, restrictions, resources, modifiers, jobs ---
+        # --- homeworld building (0..1): granted on the precursor's home planet ---
         if p['building']:
             building_key, scope = p['building']
-            bdef = buildings.get(building_key)
-            if isinstance(bdef, list):
-                bdef = next((b for b in reversed(bdef) if isinstance(b, dict)), None)
-            bdef = bdef if isinstance(bdef, dict) else {}
+            _write_precursor_building(w, key, building_key, scope, 'homeworld', None,
+                                      buildings, scripted_vars, inline_scripts_dir, loc, verbose)
 
-            can_dem = bdef.get('can_demolish')
-            can_dem = (1 if str(can_dem).strip() == 'yes' else 0) if can_dem is not None else None
-            build_time = _resolve_var(bdef.get('base_buildtime'), scripted_vars)
-            empire_limit = _resolve_var(bdef.get('base_cap_amount'), scripted_vars)
-            planet_limit = _resolve_var(bdef.get('planet_limit'), scripted_vars)
+        # --- "Secrets of …" technology + the empire-wide building it unlocks ---
+        if p.get('technology'):
+            tech_key, tb_key, tb_scope = p['technology']
+            tdef = technologies.get(tech_key)
+            if isinstance(tdef, list):
+                tdef = next((b for b in reversed(tdef) if isinstance(b, dict)), None)
+            tdef = tdef if isinstance(tdef, dict) else {}
+            cat = tdef.get('category')
+            cat = cat[0] if isinstance(cat, list) else cat
+            cost = _resolve_var(tdef.get('cost'), scripted_vars)
+            tier = _resolve_var(tdef.get('tier'), scripted_vars)
             w.execute(
-                """INSERT OR REPLACE INTO precursor_building
-                       (precursor_key, building_key, name, scope, category,
-                        build_time_days, empire_limit, planet_limit, can_demolish)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (key, building_key, loc.get(building_key), scope, bdef.get('category'),
-                 int(build_time) if build_time is not None else None,
-                 int(empire_limit) if empire_limit is not None else None,
-                 int(planet_limit) if planet_limit is not None else None,
-                 can_dem),
+                """INSERT OR REPLACE INTO precursor_technology
+                       (precursor_key, tech_key, name, cost, tier, area, category,
+                        unlocks_building_key)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (key, tech_key, loc.get(tech_key),
+                 int(cost) if cost is not None else None,
+                 int(tier) if tier is not None else None,
+                 tdef.get('area'), cat, tb_key),
             )
             if verbose:
-                print(f"    building {building_key} ({scope}) | {loc.get(building_key)}")
-
-            for r_order, (rkind, rres, ramt) in enumerate(
-                    _building_resources(bdef, scripted_vars)):
-                w.execute(
-                    """INSERT OR IGNORE INTO precursor_building_resource
-                           (building_key, kind, resource, amount, sort_order)
-                       VALUES (?, ?, ?, ?, ?)""",
-                    (building_key, rkind, rres, ramt, r_order),
-                )
-                if verbose:
-                    print(f"      {rkind} | {ramt:g} {rres}")
-
-            building_mods = (
-                _building_modifiers(bdef, scripted_vars)
-                + [('job', jk, jv)
-                   for jk, jv in _building_inline_jobs(bdef, scripted_vars, inline_scripts_dir)]
-            )
-            for m_order, (mscope, mkey, mval) in enumerate(building_mods):
-                w.execute(
-                    """INSERT OR IGNORE INTO precursor_building_modifier
-                           (building_key, scope, modifier_key, modifier_value, sort_order)
-                       VALUES (?, ?, ?, ?, ?)""",
-                    (building_key, mscope, mkey, mval, m_order),
-                )
-                _write_modifier_label(w, loc, mkey)
-                if verbose:
-                    print(f"      {mscope} modifier | {mkey} = {mval:g}")
+                print(f"    technology {tech_key} | {loc.get(tech_key)} → {tb_key}")
+            _write_precursor_building(w, key, tb_key, tb_scope, 'technology', tech_key,
+                                      buildings, scripted_vars, inline_scripts_dir, loc, verbose)
 
     w.commit()
+
+
+def _write_precursor_building(w: Writer, precursor_key: str, building_key: str, scope: str,
+                              source: str, tech_key: str | None, buildings: dict,
+                              scripted_vars: dict[str, float], inline_scripts_dir,
+                              loc: dict[str, str], verbose: bool):
+    """Write a precursor building (+ its resources/modifiers/jobs). `source` is
+    'homeworld' (home-planet unique) or 'technology' (unlocked by `tech_key`)."""
+    bdef = buildings.get(building_key)
+    if isinstance(bdef, list):
+        bdef = next((b for b in reversed(bdef) if isinstance(b, dict)), None)
+    bdef = bdef if isinstance(bdef, dict) else {}
+
+    can_dem = bdef.get('can_demolish')
+    can_dem = (1 if str(can_dem).strip() == 'yes' else 0) if can_dem is not None else None
+    build_time = _resolve_var(bdef.get('base_buildtime'), scripted_vars)
+    # A per-empire cap is `base_cap_amount = N` or `empire_limit = { base = N … }`;
+    # a per-planet cap is `planet_limit = N`. `_building_cap` handles both forms.
+    empire_limit = _building_cap(bdef.get('base_cap_amount'), scripted_vars)
+    if empire_limit is None:
+        empire_limit = _building_cap(bdef.get('empire_limit'), scripted_vars)
+    planet_limit = _building_cap(bdef.get('planet_limit'), scripted_vars)
+    # The building name often loc-references its tech (e.g. "$tech_secrets_baol$").
+    # Orbital starbase buildings carry their name under the `sm_` (starbase module)
+    # loc key rather than the bare building key.
+    raw_name = loc.get(building_key) or loc.get('sm_' + building_key)
+    name = _clean_loc(raw_name, loc) if raw_name else None
+    w.execute(
+        """INSERT OR REPLACE INTO precursor_building
+               (precursor_key, building_key, name, scope, source, tech_key, category,
+                build_time_days, empire_limit, planet_limit, can_demolish)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (precursor_key, building_key, name, scope, source, tech_key, bdef.get('category'),
+         int(build_time) if build_time is not None else None,
+         int(empire_limit) if empire_limit is not None else None,
+         int(planet_limit) if planet_limit is not None else None,
+         can_dem),
+    )
+    if verbose:
+        print(f"    building {building_key} ({scope}, {source}) | {name}")
+
+    for r_order, (rkind, rres, ramt) in enumerate(_building_resources(bdef, scripted_vars)):
+        w.execute(
+            """INSERT OR IGNORE INTO precursor_building_resource
+                   (building_key, kind, resource, amount, sort_order)
+               VALUES (?, ?, ?, ?, ?)""",
+            (building_key, rkind, rres, ramt, r_order),
+        )
+        if verbose:
+            print(f"      {rkind} | {ramt:g} {rres}")
+
+    building_mods = (
+        _building_modifiers(bdef, scripted_vars)
+        + [('job', jk, jv, None, None)
+           for jk, jv in _building_inline_jobs(bdef, scripted_vars, inline_scripts_dir)]
+    )
+    for m_order, (mscope, mkey, mval, mae, mcond) in enumerate(building_mods):
+        w.execute(
+            """INSERT OR IGNORE INTO precursor_building_modifier
+                   (building_key, scope, modifier_key, modifier_value, ae_value,
+                    condition, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (building_key, mscope, mkey, mval, mae, mcond, m_order),
+        )
+        _write_modifier_label(w, loc, mkey)
+        if verbose:
+            extra = (f" → {mae:g} w/AE" if mae is not None else "") + \
+                    (f" [{mcond}]" if mcond else "")
+            print(f"      {mscope} modifier | {mkey} = {mval:g}{extra}")
 
 
 # ---------------------------------------------------------------------------
@@ -2595,6 +2777,8 @@ Examples:
     deposits_dir   = install_dir / 'common' / 'deposits'
     sysinit_dir    = install_dir / 'common' / 'solar_system_initializers'
     buildings_dir  = install_dir / 'common' / 'buildings'
+    starbase_buildings_dir = install_dir / 'common' / 'starbase_buildings'
+    technology_dir = install_dir / 'common' / 'technology'
     inline_scripts_dir = install_dir / 'common' / 'inline_scripts'
     loc_dir        = install_dir / 'localisation' / 'english'
 
@@ -2775,16 +2959,28 @@ Examples:
                 print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
     else:
         print(f"  WARNING: {static_mod_dir} not found", file=progress)
-    # Building definitions (precursor buildings' effects/restrictions live here).
+    # Building definitions — planet (common/buildings) and orbital starbase
+    # (common/starbase_buildings) — precursor buildings' effects/restrictions.
     buildings: dict = {}
-    if buildings_dir.exists():
-        for f in sorted(buildings_dir.glob('*.txt')):
+    for bdir in (buildings_dir, starbase_buildings_dir):
+        if bdir.exists():
+            for f in sorted(bdir.glob('*.txt')):
+                try:
+                    buildings.update(parse_file(f))
+                except Exception as e:
+                    print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+        else:
+            print(f"  WARNING: {bdir} not found", file=progress)
+    # Technology definitions (the precursor "Secrets of …" techs live here).
+    technologies: dict = {}
+    if technology_dir.exists():
+        for f in sorted(technology_dir.glob('*.txt')):
             try:
-                buildings.update(parse_file(f))
+                technologies.update(parse_file(f))
             except Exception as e:
                 print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
     else:
-        print(f"  WARNING: {buildings_dir} not found", file=progress)
+        print(f"  WARNING: {technology_dir} not found", file=progress)
     # Global scripted variables (e.g. @activation_cost, @triumph_duration) used to
     # resolve relic triumph costs/cooldowns.
     scripted_vars: dict[str, float] = {}
@@ -2823,7 +3019,7 @@ Examples:
           f"{len(static_mods)} static modifiers, {len(scripted_vars)} scripted vars, "
           f"{len(events_index)} events loaded", file=progress)
     extract_precursors(precursor_civ, relics, static_mods, events_index, buildings,
-                       inline_scripts_dir, scripted_vars, loc, w, args.verbose)
+                       technologies, inline_scripts_dir, scripted_vars, loc, w, args.verbose)
 
     # --- deposits (dictionary for home-system planet deposits) ---
     dep_files = sorted(deposits_dir.glob('*.txt')) if deposits_dir.exists() else []

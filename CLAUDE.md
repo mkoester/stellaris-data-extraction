@@ -88,7 +88,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
 
 Drop order matters for FK integrity:
 ```sql
@@ -250,21 +250,41 @@ Same list-guard applies to relics.
 **Reuses `modifier_label`** via the shared `_write_modifier_label()` helper, so the
 display project gets human-readable effect strings for free.
 
-**Precursor buildings (`precursor_building` + `_resource` + `_modifier`).** The
-two precursor buildings (Zroni Equilibrator, adAkkaria Patriotic Institute) are
-parsed from `common/buildings/*.txt` (loaded into `buildings` in `main()`):
-restrictions (`base_cap_amount` → `empire_limit`, `planet_limit`, `base_buildtime`
-→ `build_time_days`, `category`, `can_demolish`), `resources` → `cost`/`upkeep`/
-`produces` rows (`_building_resources`), and `planet_modifier`/`country_modifier`
-→ `precursor_building_modifier` rows tagged `scope='planet'|'country'`
-(`_building_modifiers`). **Jobs** are added via the building's `jobs/*`
-`inline_script` (`_building_inline_jobs`): the script is loaded from
-`common/inline_scripts/`, the **first** `triggered_planet_modifier` (the
-regular-empire variant; gestalt/FE get calculator/archivist equivalents) gives the
-`job_<x>_add` keys, and the building's `AMOUNT` (resolving `@vars`) is the count —
-stored as `scope='job'` modifier rows. All values resolve `@scripted_variables`.
-Non-`jobs/` inline_scripts (e.g. adAkkaria's `cosmic_storms/StormBuildingModifiers`,
-an origin-gated unity bonus) are skipped.
+**Precursor buildings (`precursor_building` + `_resource` + `_modifier`).** Two
+kinds, distinguished by `precursor_building.source`: **'homeworld'** = the unique
+buildings granted on the home planet (Zroni Equilibrator, adAkkaria Patriotic
+Institute); **'technology'** = empire-wide buildings unlocked by the precursor's
+"Secrets of …" tech (`tech_key` set; scope 'planet' or 'starbase'). Both go through
+`_write_precursor_building`, parsing the def from `buildings` (loaded in `main()`
+from **both** `common/buildings/` and `common/starbase_buildings/`): restrictions
+(`empire_limit` from `base_cap_amount = N` or `empire_limit = { base = N }` via
+`_building_cap`, `planet_limit`, `base_buildtime` → `build_time_days`, `category`,
+`can_demolish`), `resources` → `cost`/`upkeep`/
+`produces` rows (`_building_resources` — prefers the unconditional cost block over
+`is_wilderness_empire` variants), and modifiers (`_building_modifiers`) from
+`planet_modifier`/`country_modifier` **and** the `triggered_*_modifier` blocks
+(scope `planet`/`country`/`system`/`station`), **aggregated per (scope, key)** into
+`modifier_value` (base, no perks) + `ae_value` (total with the Archaeo-Engineers AP).
+`_building_modifiers` reads each block's ascension-perk gate (`_perk_gate`) and sums
+correctly for **both** shapes: 'replacement' (a `NOT archaeoengineers` base block +
+an `archaeoengineers` block → e.g. Cybrex +100% base / +150% AE) and 'additive' (an
+un-perk-gated base + an `archaeoengineers` bonus that stacks → e.g. League +50 base
+/ +100 AE, Baol +0.1 / +0.225). A block gated by a **different** perk (e.g. Vultaum's
+advanced-logic under `ap_cosmogenesis`) becomes its own row with that perk key in
+`condition` (so it isn't mistaken for an always-on effect). **Jobs** come from the building's `jobs/*`
+`inline_script` (`_building_inline_jobs`): the **first** `triggered_planet_modifier`
+(regular-empire; gestalt/FE get calculator/archivist equivalents) gives the
+`job_<x>_add` keys, count = the building's `AMOUNT` → `scope='job'` rows. Starbase
+building names use the `sm_<key>` loc key. Buildings whose effect is a dynamic
+`custom_tooltip` (`[Root.Get…Effect]`, e.g. Zroni Storm Caster's storm spawn) have
+no modifier rows — only cost/upkeep. Non-`jobs/` inline_scripts are skipped.
+
+**Precursor technologies (`precursor_technology`).** The 7 Ancient-Relics precursors
+(not the Cosmic Storms ones) each have a `tech_secrets_*` tech (from
+`common/technology/`, loaded into `technologies`) granted by the discovery special
+project — cost (`@tier4cost3` = 12000), tier 4, area society, category
+archaeostudies — unlocking one building (`unlocks_building_key`). Mapped via each
+PRECURSORS entry's `technology` = (tech_key, building_key, scope).
 
 **`precursor_homeworld_reward`** (`_homeworld_reward_rows`) — the one-time
 "Homeworld reward" granted when a precursor's home world is finally found, parsed
