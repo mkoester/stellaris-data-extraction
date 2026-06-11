@@ -87,7 +87,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_resource`, `precursor_reward_modifier`, `precursor_building`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
 
 Drop order matters for FK integrity:
 ```sql
@@ -200,6 +200,15 @@ its numeric passive — `extract_precursors` also captures:
   are excluded). `scales = 1` when a `multiplier`/`mult` (e.g. `cybrex_count`) is
   present, so the War Forge is cost 3000 unity + 2000 minerals(scales), produces
   1000 alloys(scales).
+- **`precursor_relic_active_modifier`** + `active_detail` (`_relic_active_outcomes`) —
+  for **event-driven** actives. The active_effect fires a `country_event`
+  (`_relic_event_id`); `main()` builds an **events index** (`id → event`) from the
+  precursor/ancrel event files, and the event's `(locked_)random_list` entries
+  `add_modifier` static modifiers that resolve to numeric effects. The Reality
+  Perforator → `precursor.105` → `reality_perforator_1..4` = +40% weapon damage /
+  shield / armor / hull. `active_detail` is the constructed grant/duration note
+  ("One at random for 2–5 years, or all of them for 1 year" — single entries vs the
+  multi-`add_modifier` "jackpot" entry, with their `years`).
 - **`triumph_cooldown_days`** — the days of the `relic_activation_cooldown`
   `add_modifier` *inside* `active_effect` (recursively found — this is the value
   the game applies, e.g. the War Forge's short 900-day cooldown), falling back to
@@ -322,6 +331,7 @@ Unresolved `$KEY$` inline references in labels are discarded (label not stored i
 | Precursor relics          | 7    |
 | Precursor relic modifiers | 11   |
 | Precursor relic resources | 9    |
+| Precursor relic active mods | 4  |
 | Precursor reward modifiers | 19  |
 | Precursor buildings       | 2    |
 | Deposits (dictionary)     | 575  |

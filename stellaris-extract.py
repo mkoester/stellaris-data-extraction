@@ -340,6 +340,7 @@ CREATE TABLE ethic_policy_restriction (
 -- effect numbers and display names below are pulled from the game files.
 DROP TABLE IF EXISTS precursor_building;
 DROP TABLE IF EXISTS precursor_reward_modifier;
+DROP TABLE IF EXISTS precursor_relic_active_modifier;
 DROP TABLE IF EXISTS precursor_relic_resource;
 DROP TABLE IF EXISTS precursor_relic_modifier;
 DROP TABLE IF EXISTS precursor_relic;
@@ -364,8 +365,22 @@ CREATE TABLE precursor_relic (
     description   TEXT,                    -- flavour text (<relic_key>_desc)
     passive_text  TEXT,                    -- non-numeric passive (custom_tooltip), e.g. Cybrex Warforms
     active_effect TEXT,                    -- localised triumph (active) ability tooltip
+    active_detail TEXT,                    -- how the active modifiers are granted (random/duration), e.g.
+                                           --   "One at random for 2–5 years, or all of them for 1 year"
     triumph_cooldown_days INTEGER,         -- cooldown after activating the triumph effect
     FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+
+-- Temporary modifiers a triumph can grant via its event (e.g. the Vultaum Reality
+-- Perforator's random combat buffs). Resolved by following active_effect's
+-- country_event → the event's (locked_)random_list → add_modifier → static modifier.
+CREATE TABLE precursor_relic_active_modifier (
+    relic_key      TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,          -- e.g. "ship_weapon_damage"
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (relic_key, modifier_key),
+    FOREIGN KEY (relic_key) REFERENCES precursor_relic(relic_key)
 );
 
 -- Relic passive effects (triggered_country_modifier). condition holds the
@@ -1661,7 +1676,117 @@ def _relic_cooldown(relic: dict, variables: dict[str, float]) -> int | None:
     return int(val) if val is not None else None
 
 
+def _find_first(node, key: str):
+    """Depth-first search for the first value at `key` anywhere in node."""
+    if isinstance(node, list):
+        for item in node:
+            r = _find_first(item, key)
+            if r is not None:
+                return r
+    elif isinstance(node, dict):
+        if key in node:
+            return node[key]
+        for v in node.values():
+            r = _find_first(v, key)
+            if r is not None:
+                return r
+    return None
+
+
+def _relic_event_id(active_effect) -> str | None:
+    """The country_event id a triumph's active_effect fires (e.g. precursor.105)."""
+    for ce in _as_blocks(_find_first(active_effect, 'country_event')):
+        if isinstance(ce.get('id'), str):
+            return ce['id']
+    return None
+
+
+def _entry_years(m: dict) -> int | None:
+    if 'years' in m:
+        try:
+            return int(m['years'])
+        except (ValueError, TypeError):
+            return None
+    if 'days' in m:
+        try:
+            return max(1, round(int(m['days']) / 360))
+        except (ValueError, TypeError):
+            return None
+    return None
+
+
+def _relic_active_outcomes(relic: dict, events_index: dict,
+                           static_mods: dict) -> tuple[list[tuple[str, float]], str | None]:
+    """Follow a triumph's event to the modifiers it grants and how (random/duration).
+
+    Returns ([(modifier_key, value)], detail_text). For event-driven actives like
+    the Reality Perforator: its `country_event` (precursor.105) holds a
+    `(locked_)random_list` whose entries `add_modifier` one of reality_perforator_1..4
+    (resolved here to ship_weapon_damage/shield/armor/hull = +40%) for some years."""
+    eid = _relic_event_id(relic.get('active_effect'))
+    if not eid:
+        return [], None
+    event = events_index.get(eid)
+    rlist = _find_first(event, 'locked_random_list') or _find_first(event, 'random_list')
+    if not isinstance(rlist, dict):
+        return [], None
+
+    ordered_names: list[str] = []
+    single_years: list[int] = []
+    grouped_years: list[int] = []
+    for entries in rlist.values():                  # keys are weights; values are entry blocks
+        for entry in _as_blocks(entries):
+            mods = [m for m in _as_blocks(entry.get('add_modifier'))
+                    if isinstance(m.get('modifier'), str)]
+            if not mods:
+                continue
+            for m in mods:
+                if m['modifier'] not in ordered_names:
+                    ordered_names.append(m['modifier'])
+            years = _entry_years(mods[0])
+            if years is not None:
+                (single_years if len(mods) == 1 else grouped_years).append(years)
+
+    # Resolve each named modifier (reality_perforator_N) to its numeric effect(s).
+    active_mods: list[tuple[str, float]] = []
+    for name in ordered_names:
+        block = static_mods.get(name)
+        if isinstance(block, list):
+            merged: dict = {}
+            for b in block:
+                if isinstance(b, dict):
+                    merged.update(b)
+            block = merged
+        if not isinstance(block, dict):
+            continue
+        for mod_key, mod_val in block.items():
+            if mod_key in _NON_MODIFIER_KEYS:
+                continue
+            value = _resolve_modifier_float(mod_val)
+            if value is not None:
+                active_mods.append((mod_key, value))
+
+    if not active_mods:
+        return [], None
+
+    # Build the "how it's granted" detail.
+    def years_word(n: int) -> str:
+        return f"{n} year" if n == 1 else f"{n} years"
+
+    parts: list[str] = []
+    if single_years:
+        lo, hi = min(single_years), max(single_years)
+        dur = f"{lo}–{hi} years" if lo != hi else years_word(lo)
+        parts.append((f"one at random for {dur}") if len(active_mods) > 1 else f"for {dur}")
+    if grouped_years:
+        parts.append(f"or all of them for {years_word(min(grouped_years))}")
+    detail = ", ".join(parts)
+    detail = detail[0].upper() + detail[1:] + "." if detail else None
+    return active_mods, detail
+
+
 def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
+                       events_index: dict,
                        scripted_vars: dict[str, float], loc: dict[str, str],
                        w: Writer, verbose: bool):
     # @variables for resolving relic costs/cooldowns: this file's own top-level
@@ -1704,17 +1829,29 @@ def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
                     pass
                 portrait = relic.get('portrait')
                 portrait = portrait.strip('"') if isinstance(portrait, str) else None
+                active_mods, active_detail = _relic_active_outcomes(relic, events_index, static_mods)
                 w.execute(
                     """INSERT OR REPLACE INTO precursor_relic
                            (precursor_key, relic_key, name, portrait, score, description,
-                            passive_text, active_effect, triumph_cooldown_days)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                            passive_text, active_effect, active_detail, triumph_cooldown_days)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (key, relic_key, loc.get(relic_key), portrait, score,
                      _clean_loc(loc[relic_key + '_desc'], loc) if (relic_key + '_desc') in loc else None,
                      _relic_passive_text(relic, loc),
                      _relic_active_text(relic, loc),
+                     active_detail,
                      _relic_cooldown(relic, relic_vars)),
                 )
+                for a_order, (mod_key, value) in enumerate(active_mods):
+                    w.execute(
+                        """INSERT OR IGNORE INTO precursor_relic_active_modifier
+                               (relic_key, modifier_key, modifier_value, sort_order)
+                           VALUES (?, ?, ?, ?)""",
+                        (relic_key, mod_key, value, a_order),
+                    )
+                    _write_modifier_label(w, loc, mod_key)
+                    if verbose:
+                        print(f"    relic {relic_key} active | {mod_key} = {value}")
                 for c_order, (kind, res, amount, scales) in enumerate(_relic_resources(relic, relic_vars)):
                     w.execute(
                         """INSERT OR IGNORE INTO precursor_relic_resource
@@ -2270,10 +2407,28 @@ Examples:
                             scripted_vars[vk] = fv
             except Exception as e:
                 print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+    # Event index (id → event) for following relic actives that fire a country_event
+    # (e.g. the Reality Perforator → precursor.105 → its random combat buffs).
+    events_index: dict = {}
+    events_dir = install_dir / 'events'
+    relic_event_files = ('precursor_events.txt', 'precursor_events_cosmic_storms.txt',
+                         'ancient_relics_arcsite_events_1.txt', 'ancient_relics_arcsite_events_2.txt')
+    for fn in relic_event_files:
+        f = events_dir / fn
+        if not f.exists():
+            continue
+        try:
+            data = parse_file(f)
+            for ev in _as_blocks(data.get('country_event')):
+                if isinstance(ev.get('id'), str):
+                    events_index.setdefault(ev['id'], ev)
+        except Exception as e:
+            print(f"  WARNING: failed to parse {fn}: {e}", file=sys.stderr)
     print(f"  {len(precursor_civ)} civ entries, {len(relics)} relics, "
-          f"{len(static_mods)} static modifiers, {len(scripted_vars)} scripted vars loaded",
-          file=progress)
-    extract_precursors(precursor_civ, relics, static_mods, scripted_vars, loc, w, args.verbose)
+          f"{len(static_mods)} static modifiers, {len(scripted_vars)} scripted vars, "
+          f"{len(events_index)} events loaded", file=progress)
+    extract_precursors(precursor_civ, relics, static_mods, events_index, scripted_vars,
+                       loc, w, args.verbose)
 
     # --- deposits (dictionary for home-system planet deposits) ---
     dep_files = sorted(deposits_dir.glob('*.txt')) if deposits_dir.exists() else []
@@ -2326,6 +2481,7 @@ Examples:
         n_prec_relics   = tmp.execute("SELECT COUNT(*) FROM precursor_relic").fetchone()[0]
         n_prec_relic_m  = tmp.execute("SELECT COUNT(*) FROM precursor_relic_modifier").fetchone()[0]
         n_prec_relic_c  = tmp.execute("SELECT COUNT(*) FROM precursor_relic_resource").fetchone()[0]
+        n_prec_relic_a  = tmp.execute("SELECT COUNT(*) FROM precursor_relic_active_modifier").fetchone()[0]
         n_prec_reward_m = tmp.execute("SELECT COUNT(*) FROM precursor_reward_modifier").fetchone()[0]
         n_prec_build    = tmp.execute("SELECT COUNT(*) FROM precursor_building").fetchone()[0]
         n_deposits      = tmp.execute("SELECT COUNT(*) FROM deposit").fetchone()[0]
@@ -2361,6 +2517,7 @@ Examples:
 |  Precursor relics   : {n_prec_relics:<20}|
 |  Precursor relic mods: {n_prec_relic_m:<19}|
 |  Precursor relic res : {n_prec_relic_c:<19}|
+|  Precursor relic active: {n_prec_relic_a:<17}|
 |  Precursor reward mods: {n_prec_reward_m:<18}|
 |  Precursor buildings: {n_prec_build:<20}|
 |  Deposits (dict)    : {n_deposits:<20}|
