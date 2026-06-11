@@ -180,6 +180,7 @@ CREATE TABLE ethic_policy_restriction (
 -- The precursor<->reward mapping is spread across event files (no single source
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
 -- effect numbers and display names below are pulled from the game files.
+DROP TABLE IF EXISTS precursor_homeworld_reward;
 DROP TABLE IF EXISTS precursor_building;
 DROP TABLE IF EXISTS precursor_reward_modifier;
 DROP TABLE IF EXISTS precursor_relic_active_modifier;
@@ -287,6 +288,25 @@ CREATE TABLE precursor_building (
     name          TEXT,                    -- localised building name
     scope         TEXT,                    -- "planet" or "starbase"
     PRIMARY KEY (precursor_key, building_key),
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+
+-- The one-time "Homeworld reward" granted by the event that fires when a
+-- precursor's home world is finally discovered (separate from the permanent
+-- empire modifier in precursor_reward_modifier and the relic). Two reward shapes
+-- share this table: a scaled resource burst (add_monthly_resource_mult — a
+-- multiplier on the empire's current monthly output of that resource, clamped to
+-- [min, max]); and the flat random minor_artifacts payout (resource =
+-- 'minor_artifacts', multiplier = NULL, min/max = the payout bounds, e.g.
+-- 750..1500 for a large reward). Not every precursor grants every shape.
+CREATE TABLE precursor_homeworld_reward (
+    precursor_key TEXT NOT NULL,
+    resource      TEXT NOT NULL,           -- e.g. "unity", "engineering_research", "minor_artifacts"
+    multiplier    REAL,                    -- add_monthly_resource_mult value (×output); NULL = flat amount
+    min_amount    REAL NOT NULL,
+    max_amount    REAL NOT NULL,
+    sort_order    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (precursor_key, resource),
     FOREIGN KEY (precursor_key) REFERENCES precursor(key)
 );
 
@@ -10730,6 +10750,21 @@ INSERT OR REPLACE INTO precursor_reward_modifier
                        VALUES ('precursor_1', 'artifact_vultaum_research_completed_hive', 'hive', 'Secrets of the Vultaum', 'category_computing_research_speed_mult', '0.075', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('category_computing_research_speed_mult', 'Research Speed (Computing)', 1);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_1', 'unity', '120.0', '240.0', '9999.0', 0);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_1', 'physics_research', '24.0', '500.0', '1000000.0', 1);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_1', 'society_research', '24.0', '500.0', '1000000.0', 2);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_1', 'engineering_research', '24.0', '500.0', '1000000.0', 3);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_1', 'minor_artifacts', NULL, '750.0', '1500.0', 4);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_2', 'Yuht', NULL, 'yuhtaan_system', 'GFX_precursor_yuth', NULL, 1);
@@ -10763,6 +10798,18 @@ INSERT OR IGNORE INTO precursor_relic_modifier
                            VALUES ('r_cryo_core', 'weapon_type_energy_weapon_fire_rate_mult', '0.2', 'is_wilderness_empire = yes', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('weapon_type_energy_weapon_fire_rate_mult', 'Energy Weapon Fire Rate', 1);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_2', 'unity', '120.0', '240.0', '9999.0', 0);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_2', 'energy', '24.0', '350.0', '10000.0', 1);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_2', 'minerals', '24.0', '350.0', '10000.0', 2);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_2', 'minor_artifacts', NULL, '750.0', '1500.0', 3);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_3', 'First League', NULL, 'fen_habbanis_system', 'GFX_precursor_first_league', NULL, 2);
@@ -10778,6 +10825,15 @@ INSERT OR REPLACE INTO precursor_reward_modifier
                        VALUES ('precursor_3', 'artifact_league_research_completed', 'default', 'Secrets of the First League', 'planet_building_build_speed_mult', '0.1', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Planetary Infrastructure Build Speed', 1);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_3', 'unity', '120.0', '240.0', '9999.0', 0);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_3', 'society_research', '48.0', '1000.0', '1000000.0', 1);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_3', 'influence', '24.0', '150.0', '300.0', 2);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_4', 'Irassian', NULL, 'irass_system', 'GFX_precursor_irassian', NULL, 3);
@@ -10793,6 +10849,18 @@ INSERT OR REPLACE INTO precursor_reward_modifier
                        VALUES ('precursor_4', 'artifact_irassian_research_completed', 'default', 'Secrets of the Irassians', 'logistic_growth_mult', '0.05', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_4', 'unity', '120.0', '240.0', '9999.0', 0);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_4', 'physics_research', '48.0', '1000.0', '1000000.0', 1);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_4', 'minerals', '24.0', '350.0', '10000.0', 2);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_4', 'minor_artifacts', NULL, '750.0', '1500.0', 3);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_5', 'Cybrex', NULL, 'cybrex_system', 'GFX_precursor_cybrex', NULL, 4);
@@ -10818,6 +10886,18 @@ INSERT OR REPLACE INTO precursor_reward_modifier
                        VALUES ('precursor_5', 'artifact_cybrex_research_completed', 'default', 'Secrets of the Cybrex', 'megastructure_build_speed_mult', '0.1', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('megastructure_build_speed_mult', 'Megastructure Build Speed', 1);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_5', 'unity', '120.0', '240.0', '9999.0', 0);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_5', 'engineering_research', '48.0', '1000.0', '1000000.0', 1);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_5', 'energy', '24.0', '350.0', '10000.0', 2);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_5', 'minor_artifacts', NULL, '750.0', '1500.0', 3);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_baol_1', 'Baol', 'Ancient Relics Story Pack', 'last_baol_system', 'GFX_precursor_baol', 4, 5);
@@ -10893,6 +10973,9 @@ INSERT OR REPLACE INTO precursor_reward_modifier
                        VALUES ('precursor_zroni_1', 'artifact_zroni_research_completed', 'default', 'Secrets of the Zroni', 'category_psionics_research_speed_mult', '0.4', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_zroni_1', 'minor_artifacts', NULL, '750.0', '1500.0', 0);
 INSERT OR REPLACE INTO precursor_building
                        (precursor_key, building_key, name, scope)
                    VALUES ('precursor_zroni_1', 'building_zroni_equilibrator', 'Zroni Equilibrator', 'planet');
@@ -10923,6 +11006,12 @@ INSERT OR REPLACE INTO precursor_reward_modifier
                        VALUES ('precursor_inetian', 'secrets_of_the_inetian_traders_hive_mach', 'hive_machine', 'Secrets of the Inetian Traders', 'country_trade_fee', '-0.05', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_trade_fee', 'Market Fee', 0);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_inetian', 'society_research', '24.0', '500.0', '1000000.0', 0);
+INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES ('precursor_inetian', 'minor_artifacts', NULL, '750.0', '1500.0', 1);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_adakkaria', 'adAkkaria', 'Cosmic Storms', 'adSul_system', 'GFX_precursor_adakkaria', NULL, 8);

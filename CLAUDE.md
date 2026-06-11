@@ -88,7 +88,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
 
 Drop order matters for FK integrity:
 ```sql
@@ -225,7 +225,10 @@ its numeric passive — `extract_precursors` also captures:
     level) are appended to detail ("…or gains 1 level").
 
   `main()` builds the **events index** (`id → event`) from the precursor/ancrel
-  event files. Durations resolve `@triumph_duration` etc. and convert days→years.
+  event files, indexing **all** event types (`country_event`, `ship_event`,
+  `planet_event`, `fleet_event`) — relic actives fire `country_event`s, but the
+  home-world discovery rewards live in `ship_event`/`planet_event` blocks.
+  Durations resolve `@triumph_duration` etc. and convert days→years.
   `_resolve_static_modifier` skips a modifier with `show_only_custom_tooltip = yes`
   (the game hides its numbers — e.g. the Weather Manipulator's storm field, conveyed
   by the active_effect tooltip instead). Note the script values can differ from the
@@ -246,6 +249,19 @@ Same list-guard applies to relics.
 
 **Reuses `modifier_label`** via the shared `_write_modifier_label()` helper, so the
 display project gets human-readable effect strings for free.
+
+**`precursor_homeworld_reward`** (`_homeworld_reward_rows`) — the one-time
+"Homeworld reward" granted when a precursor's home world is finally found, parsed
+from each entry's `homeworld_event` (a `ship_event`/`planet_event` whose option
+grants it; `None` for Baol/adAkkaria, whose capstone grants only the relic). Two
+shapes share the table: a **scaled resource burst** (`add_monthly_resource_mult` —
+`multiplier` = the ×monthly-output factor, clamped to `[min_amount, max_amount]`,
+resolving `@tier*` scripted vars) and the **flat minor-artifacts payout**
+(`resource = 'minor_artifacts'`, `multiplier = NULL`, bounds from the
+`(small|medium|large)_artifact_reward` scripted effects, e.g. large = 750..1500).
+Rewards repeat identically across the event's options (one per end state), so rows
+dedupe by resource. Separate from `precursor_reward_modifier` (the *permanent*
+empire modifier) and the relic.
 
 **`precursor_full` VIEW:** convenience header — one row per precursor with its
 (0..1) relic and building pre-joined. Multi-row effects stay relational (join

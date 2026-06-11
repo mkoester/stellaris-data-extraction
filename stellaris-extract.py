@@ -345,6 +345,7 @@ CREATE TABLE ethic_policy_restriction (
 -- The precursor<->reward mapping is spread across event files (no single source
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
 -- effect numbers and display names below are pulled from the game files.
+DROP TABLE IF EXISTS precursor_homeworld_reward;
 DROP TABLE IF EXISTS precursor_building;
 DROP TABLE IF EXISTS precursor_reward_modifier;
 DROP TABLE IF EXISTS precursor_relic_active_modifier;
@@ -452,6 +453,25 @@ CREATE TABLE precursor_building (
     name          TEXT,                    -- localised building name
     scope         TEXT,                    -- "planet" or "starbase"
     PRIMARY KEY (precursor_key, building_key),
+    FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+
+-- The one-time "Homeworld reward" granted by the event that fires when a
+-- precursor's home world is finally discovered (separate from the permanent
+-- empire modifier in precursor_reward_modifier and the relic). Two reward shapes
+-- share this table: a scaled resource burst (add_monthly_resource_mult — a
+-- multiplier on the empire's current monthly output of that resource, clamped to
+-- [min, max]); and the flat random minor_artifacts payout (resource =
+-- 'minor_artifacts', multiplier = NULL, min/max = the payout bounds, e.g.
+-- 750..1500 for a large reward). Not every precursor grants every shape.
+CREATE TABLE precursor_homeworld_reward (
+    precursor_key TEXT NOT NULL,
+    resource      TEXT NOT NULL,           -- e.g. "unity", "engineering_research", "minor_artifacts"
+    multiplier    REAL,                    -- add_monthly_resource_mult value (×output); NULL = flat amount
+    min_amount    REAL NOT NULL,
+    max_amount    REAL NOT NULL,
+    sort_order    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (precursor_key, resource),
     FOREIGN KEY (precursor_key) REFERENCES precursor(key)
 );
 
@@ -1435,6 +1455,10 @@ def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
 #   relic              relic key, or None (First League & Irassian have no relic)
 #   rewards            (static_modifier_key, variant) — the permanent empire modifier(s)
 #   building           (building_key, scope) or None
+#   homeworld_event    event id whose option grants the one-time "Homeworld reward"
+#                      (resource bursts + minor artifacts) on discovering the home
+#                      world — parsed into precursor_homeworld_reward. None where the
+#                      capstone grants only the relic (Baol, adAkkaria).
 PRECURSORS: list[dict] = [
     {'key': 'precursor_1', 'dlc': None, 'system': 'vultaumar_system', 'num_digsites': None,
      'relic': 'r_reality_perforator',
@@ -1442,43 +1466,44 @@ PRECURSORS: list[dict] = [
                  ('artifact_vultaum_research_completed_public', 'public'),
                  ('artifact_vultaum_research_completed_machine', 'machine'),
                  ('artifact_vultaum_research_completed_hive', 'hive')],
-     'building': None},
+     'building': None, 'homeworld_event': 'precursor.101'},
     {'key': 'precursor_2', 'dlc': None, 'system': 'yuhtaan_system', 'num_digsites': None,
      'relic': 'r_cryo_core',
      'rewards': [],  # Yuht grant no permanent empire modifier; their homeworld gets pm_yuht_cleansing
-     'building': None},
+     'building': None, 'homeworld_event': 'precursor.601'},
     {'key': 'precursor_3', 'dlc': None, 'system': 'fen_habbanis_system', 'num_digsites': None,
      'relic': None,
      'rewards': [('artifact_league_research_completed', 'default')],
-     'building': None},
+     'building': None, 'homeworld_event': 'precursor.1101'},
     {'key': 'precursor_4', 'dlc': None, 'system': 'irass_system', 'num_digsites': None,
      'relic': None,
      'rewards': [('artifact_irassian_research_completed', 'default')],
-     'building': None},
+     'building': None, 'homeworld_event': 'precursor.1601'},
     {'key': 'precursor_5', 'dlc': None, 'system': 'cybrex_system', 'num_digsites': None,
      'relic': 'r_war_forge',
      'rewards': [('artifact_cybrex_research_completed', 'default')],
-     'building': None},
+     'building': None, 'homeworld_event': 'precursor.2101'},
     {'key': 'precursor_baol_1', 'dlc': 'Ancient Relics Story Pack', 'system': 'last_baol_system',
      'num_digsites': 4,
      'relic': 'r_the_last_baol',
      'rewards': [('artifact_baol_research_completed', 'default')],
-     'building': None},
+     'building': None, 'homeworld_event': None},  # capstone (ancrel.2022/2023) grants only the relic
     {'key': 'precursor_zroni_1', 'dlc': 'Ancient Relics Story Pack',
      'system': 'zroni_legacy_initializer_01', 'num_digsites': 6,
      'relic': 'r_zro_crystal',
      'rewards': [('artifact_zroni_research_completed', 'default')],
-     'building': ('building_zroni_equilibrator', 'planet')},
+     'building': ('building_zroni_equilibrator', 'planet'), 'homeworld_event': 'ancrel.19'},
     {'key': 'precursor_inetian', 'dlc': 'Cosmic Storms', 'system': None, 'num_digsites': None,
      'relic': 'r_weather_manipulator',
      'rewards': [('secrets_of_the_inetian_traders', 'default'),
                  ('secrets_of_the_inetian_traders_hive_mach', 'hive_machine')],
-     'building': None},
+     'building': None, 'homeworld_event': 'cstorms.193'},
     {'key': 'precursor_adakkaria', 'dlc': 'Cosmic Storms', 'system': 'adSul_system',
      'num_digsites': None,
      'relic': 'r_the_tempest_invocator',
      'rewards': [('patriotic_institute_true_potential_unleashed', 'default')],
-     'building': ('building_adakkaria_patriotic_institute', 'planet')},
+     'building': ('building_adakkaria_patriotic_institute', 'planet'),
+     'homeworld_event': None},  # capstone (cstorms.2355) grants only the relic
 ]
 
 # Keys inside a relic's triggered_country_modifier / static modifier that are not
@@ -1896,6 +1921,61 @@ def _relic_active_outcomes(relic: dict, events_index: dict, static_mods: dict,
     return active_mods, detail, mode
 
 
+# Flat minor_artifacts payout bounds (min..max) for the artifact-reward scripted
+# effects (common/scripted_effects/archaeology_event_effects.txt). Each is a 1/3
+# random over three amounts; we keep the bounds for display.
+_ARTIFACT_REWARD_BOUNDS = {
+    'small_artifact_reward':  (50.0, 250.0),
+    'medium_artifact_reward': (300.0, 500.0),
+    'large_artifact_reward':  (750.0, 1500.0),
+}
+
+
+def _homeworld_reward_rows(event: dict, variables: dict[str, float]
+                           ) -> list[tuple[str, float | None, float, float]]:
+    """Parse a precursor's home-world discovery event into reward rows
+    [(resource, multiplier, min_amount, max_amount)].
+
+    Two shapes: `add_monthly_resource_mult` blocks (a `value` multiplier on the
+    empire's current monthly output of `resource`, clamped to [min, max]) and the
+    flat `*_artifact_reward = yes` minor-artifacts payout (resource =
+    'minor_artifacts', multiplier = None). The reward repeats identically across
+    the event's options (one per end state), so we dedupe by resource — first
+    occurrence wins — and resolve @tier* scripted variables via `variables`."""
+    rows: list[tuple[str, float | None, float, float]] = []
+    seen: set[str] = set()
+
+    def num(raw):
+        s = str(raw).strip()
+        return variables.get(s) if s.startswith('@') else _resolve_modifier_float(raw)
+
+    def walk(node):
+        if isinstance(node, list):
+            for item in node:
+                walk(item)
+            return
+        if not isinstance(node, dict):
+            return
+        for block in _as_blocks(node.get('add_monthly_resource_mult')):
+            res = block.get('resource')
+            if not isinstance(res, str) or res in seen:
+                continue
+            lo, hi = num(block.get('min')), num(block.get('max'))
+            if lo is None or hi is None:
+                continue
+            seen.add(res)
+            rows.append((res, num(block.get('value')), lo, hi))
+        for art_key, (lo, hi) in _ARTIFACT_REWARD_BOUNDS.items():
+            if str(node.get(art_key)).strip() == 'yes' and 'minor_artifacts' not in seen:
+                seen.add('minor_artifacts')
+                rows.append(('minor_artifacts', None, lo, hi))
+        for v in node.values():
+            walk(v)
+
+    walk(event)
+    return rows
+
+
 def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
                        events_index: dict,
                        scripted_vars: dict[str, float], loc: dict[str, str],
@@ -2028,6 +2108,21 @@ def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
                 _write_modifier_label(w, loc, mod_key)
                 if verbose:
                     print(f"    reward {static_key} ({variant}) | {mod_key} = {value}")
+
+        # --- one-time home-world discovery reward (resource bursts + artifacts) ---
+        hw_event = events_index.get(p['homeworld_event']) if p.get('homeworld_event') else None
+        if hw_event:
+            for hw_order, (res, mult, lo, hi) in enumerate(
+                    _homeworld_reward_rows(hw_event, relic_vars)):
+                w.execute(
+                    """INSERT OR IGNORE INTO precursor_homeworld_reward
+                           (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?)""",
+                    (key, res, mult, lo, hi, hw_order),
+                )
+                if verbose:
+                    amt = f"x{mult:g}" if mult is not None else "flat"
+                    print(f"    homeworld reward | {res} {amt} ({lo:g}~{hi:g})")
 
         # --- building (0..1) ---
         if p['building']:
@@ -2553,9 +2648,12 @@ Examples:
             continue
         try:
             data = parse_file(f)
-            for ev in _as_blocks(data.get('country_event')):
-                if isinstance(ev.get('id'), str):
-                    events_index.setdefault(ev['id'], ev)
+            # Index every event type: relic actives fire country_events, but the
+            # home-world discovery rewards live in ship_event/planet_event blocks.
+            for ev_type in ('country_event', 'ship_event', 'planet_event', 'fleet_event'):
+                for ev in _as_blocks(data.get(ev_type)):
+                    if isinstance(ev.get('id'), str):
+                        events_index.setdefault(ev['id'], ev)
         except Exception as e:
             print(f"  WARNING: failed to parse {fn}: {e}", file=sys.stderr)
     print(f"  {len(precursor_civ)} civ entries, {len(relics)} relics, "
