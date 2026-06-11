@@ -87,7 +87,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_reward_modifier`, `precursor_building`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_resource`, `precursor_reward_modifier`, `precursor_building`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
 
 Drop order matters for FK integrity:
 ```sql
@@ -182,6 +182,33 @@ qualifier is rendered by `_relic_condition` into a **parseable** `condition` str
 sub-block is parenthesised, e.g. `(is_machine_empire = yes OR is_wilderness_empire = yes)`.
 The planner parses this to highlight effects per empire type, so keep it parseable.
 
+**Relic full picture (passive / triumph / cost / cooldown).** A relic isn't just
+its numeric passive — `extract_precursors` also captures:
+- **`passive_text`** — non-numeric passive via `custom_tooltip` inside
+  `triggered_country_modifier` (`_relic_passive_text`), e.g. the Cybrex War Forge's
+  "Permits building Cybrex Warform armies…" (it has *no* numeric passive, so it
+  showed nothing before).
+- **`active_effect`** — the triumph (active) tooltip (`_relic_active_text`):
+  the non-generic `custom_tooltip`s of `active_effect`, skipping the generic
+  cooldown ones. Relics whose active is a pure resource payout (War Forge) have
+  no descriptive tooltip and rely on the structured `produces` rows instead — do
+  **not** trust the loc here (`relic_cybrex_active` says "5000 Alloys" but the
+  script produces 1000, +1000/use).
+- **`precursor_relic_resource`** (`_relic_resources`) — both `kind='cost'`
+  (`resources.cost`) and `kind='produces'` (the **direct** `add_resource` children
+  of `active_effect` — nested ones like the tempest invocator's `on_cancel` refund
+  are excluded). `scales = 1` when a `multiplier`/`mult` (e.g. `cybrex_count`) is
+  present, so the War Forge is cost 3000 unity + 2000 minerals(scales), produces
+  1000 alloys(scales).
+- **`triumph_cooldown_days`** — the days of the `relic_activation_cooldown`
+  `add_modifier` *inside* `active_effect` (recursively found — this is the value
+  the game applies, e.g. the War Forge's short 900-day cooldown), falling back to
+  `activation_duration`.
+
+`@activation_cost` / `@triumph_duration` etc. live in **global**
+`common/scripted_variables/`, not relics.txt — `main()` parses those into
+`scripted_vars` and passes them in for cost/cooldown resolution.
+
 **Duplicate definitions:** `artifact_irassian_research_completed` is defined twice in
 `10_static_modifiers_ancient_relics.txt`; the parser promotes it to a list, and the
 extractor takes the **later** definition (game load order → `0.075`, not `0.1`).
@@ -262,7 +289,7 @@ For any modifier key, label is looked up as:
 
 Unresolved `$KEY$` inline references in labels are discarded (label not stored if `'$' in label`).
 
-`_clean_loc` also resolves scripted-loc concept tags `['concept_x']` / `['concept_x', display text]`, strips leftover `[Command.Chain]` tags, and converts literal `\n`/`\t`/`\r` escapes to spaces — relevant for longer text fields like relic descriptions/active effects.
+`_clean_loc` also resolves scripted-loc concept tags `['concept_x']` / `['concept_x', display text]`, strips leftover `[Command.Chain]` tags, and converts literal `\n`/`\t`/`\r` escapes to spaces — relevant for longer text fields like relic descriptions/active effects. **`£icon£` refs are rendered as their word** (`£alloys£` → "alloys"), not stripped — otherwise text like "Produces £alloys£5000" would lose the resource and read "Produces 5000". (`§X` colour codes are still stripped.)
 
 ---
 
@@ -294,6 +321,7 @@ Unresolved `$KEY$` inline references in labels are discarded (label not stored i
 | Precursors                | 9    |
 | Precursor relics          | 7    |
 | Precursor relic modifiers | 11   |
+| Precursor relic resources | 9    |
 | Precursor reward modifiers | 19  |
 | Precursor buildings       | 2    |
 | Deposits (dictionary)     | 575  |

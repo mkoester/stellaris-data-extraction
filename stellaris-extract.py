@@ -33,7 +33,8 @@ from pathlib import Path
 from io import StringIO
 
 _LOC_INLINE_REF = re.compile(r'\$(\w+)\$')
-_LOC_FMT_CODE   = re.compile(r'§.|£\w+£')
+_LOC_FMT_CODE   = re.compile(r'§.')          # §X / §! colour codes
+_LOC_ICON       = re.compile(r'£(\w+?)(?:\|\w+)?£')  # £icon£ (or £icon|frame£)
 # Scripted-loc concept tag: ['concept_key'] or ['concept_key', inline display text].
 _LOC_CONCEPT    = re.compile(r"\['(\w+)'(?:,\s*([^\]]*))?\]")
 # Any remaining bracket command, e.g. [This.GetName] — not statically resolvable.
@@ -41,7 +42,8 @@ _LOC_COMMAND    = re.compile(r'\[[^\]]*\]')
 
 def _clean_loc(s: str, loc: dict[str, str]) -> str:
     """Expand $KEY$ refs and ['concept', …] scripted-loc tags (up to 4 rounds),
-    then strip §X/£icon£ format codes and any leftover [command] tags."""
+    strip §X colour codes and [command] tags, and render £icon£ refs as their word
+    (e.g. £alloys£ → "alloys", so "Produces £alloys£5000" reads "Produces alloys 5000")."""
     # Concept tags: keep the inline display text when given, else fall back to the
     # concept's own name ($concept_KEY$, resolved by the loop below).
     s = _LOC_CONCEPT.sub(lambda m: m.group(2) if m.group(2) else f'${m.group(1)}$', s)
@@ -50,9 +52,11 @@ def _clean_loc(s: str, loc: dict[str, str]) -> str:
         if expanded == s:
             break
         s = expanded
-    s = _LOC_COMMAND.sub('', s)  # drop leftover [Command.Chain] tags
-    s = re.sub(r'\\[nrt]', ' ', s)  # literal \n \t \r escapes -> space
-    return re.sub(r'\s+', ' ', _LOC_FMT_CODE.sub('', s)).strip()
+    s = _LOC_COMMAND.sub('', s)        # drop leftover [Command.Chain] tags
+    s = re.sub(r'\\[nrt]', ' ', s)     # literal \n \t \r escapes -> space
+    s = _LOC_FMT_CODE.sub('', s)       # strip §X colour codes
+    s = _LOC_ICON.sub(r' \1 ', s)      # £icon£ -> spaced word (preserves the resource)
+    return re.sub(r'\s+', ' ', s).strip()
 
 
 # ---------------------------------------------------------------------------
@@ -336,6 +340,7 @@ CREATE TABLE ethic_policy_restriction (
 -- effect numbers and display names below are pulled from the game files.
 DROP TABLE IF EXISTS precursor_building;
 DROP TABLE IF EXISTS precursor_reward_modifier;
+DROP TABLE IF EXISTS precursor_relic_resource;
 DROP TABLE IF EXISTS precursor_relic_modifier;
 DROP TABLE IF EXISTS precursor_relic;
 DROP TABLE IF EXISTS precursor;
@@ -357,7 +362,9 @@ CREATE TABLE precursor_relic (
     portrait      TEXT,                    -- GFX_relic_*
     score         INTEGER,                 -- relic score value
     description   TEXT,                    -- flavour text (<relic_key>_desc)
-    active_effect TEXT,                    -- localised active-ability tooltip
+    passive_text  TEXT,                    -- non-numeric passive (custom_tooltip), e.g. Cybrex Warforms
+    active_effect TEXT,                    -- localised triumph (active) ability tooltip
+    triumph_cooldown_days INTEGER,         -- cooldown after activating the triumph effect
     FOREIGN KEY (precursor_key) REFERENCES precursor(key)
 );
 
@@ -370,6 +377,21 @@ CREATE TABLE precursor_relic_modifier (
     condition      TEXT,                   -- NULL = always; else e.g. "is_machine_empire = yes"
     sort_order     INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (relic_key, modifier_key, condition),
+    FOREIGN KEY (relic_key) REFERENCES precursor_relic(relic_key)
+);
+
+-- Resources involved in the triumph (active) ability: 'cost' = spent to activate
+-- (resources.cost), 'produces' = gained (active_effect add_resource). scales = 1
+-- when the amount grows with use (a multiplier, e.g. Cybrex cybrex_count: the War
+-- Forge produces 1000 alloys at first use, +1000 each subsequent use).
+CREATE TABLE precursor_relic_resource (
+    relic_key  TEXT NOT NULL,
+    kind       TEXT NOT NULL,              -- 'cost' | 'produces'
+    resource   TEXT NOT NULL,              -- e.g. "unity", "minerals", "alloys"
+    amount     REAL NOT NULL,
+    scales     INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (relic_key, kind, resource),
     FOREIGN KEY (relic_key) REFERENCES precursor_relic(relic_key)
 );
 
@@ -1522,11 +1544,13 @@ def _relic_passive_rows(relic: dict) -> list[tuple[str, float, str | None]]:
 
 
 def _relic_active_text(relic: dict, loc: dict[str, str]) -> str | None:
-    """Join the non-generic custom_tooltip strings of a relic's active_effect."""
+    """Join the non-generic custom_tooltip strings of a relic's active_effect.
+
+    Relics whose active is a pure resource transaction (e.g. the Cybrex War Forge)
+    carry no descriptive tooltip — their effect is captured structurally by
+    _relic_resources('produces') instead."""
     active = relic.get('active_effect')
-    if not isinstance(active, dict):
-        return None
-    tips = active.get('custom_tooltip')
+    tips = active.get('custom_tooltip') if isinstance(active, dict) else None
     if isinstance(tips, str):
         tips = [tips]
     elif not isinstance(tips, list):
@@ -1543,8 +1567,112 @@ def _relic_active_text(relic: dict, loc: dict[str, str]) -> str | None:
     return " ".join(texts) if texts else None
 
 
+def _relic_passive_text(relic: dict, loc: dict[str, str]) -> str | None:
+    """Join the custom_tooltip strings of a relic's triggered_country_modifier
+    blocks — the non-numeric passive effects (e.g. Cybrex Warform armies)."""
+    blocks = relic.get('triggered_country_modifier')
+    if isinstance(blocks, dict):
+        blocks = [blocks]
+    elif not isinstance(blocks, list):
+        return None
+    texts: list[str] = []
+    for block in blocks:
+        if not isinstance(block, dict):
+            continue
+        tips = block.get('custom_tooltip')
+        if isinstance(tips, str):
+            tips = [tips]
+        elif not isinstance(tips, list):
+            tips = []
+        for key in tips:
+            raw = loc.get(key)
+            if not raw:
+                continue
+            cleaned = _clean_loc(raw, loc)
+            if cleaned and '$' not in cleaned and cleaned not in texts:
+                texts.append(cleaned)
+    return " ".join(texts) if texts else None
+
+
+def _relic_resources(relic: dict, variables: dict[str, float]) -> list[tuple[str, str, float, int]]:
+    """Resources of the triumph effect → [(kind, resource, amount, scales)].
+
+    'cost' from `resources.cost` (resources spent to activate), 'produces' from the
+    direct `add_resource` children of `active_effect` (resources gained). A block
+    with a `multiplier`/`mult` scales with use (e.g. Cybrex `cybrex_count`: 1000
+    alloys at first use, +1000 each use). Note the produced amount is read from the
+    script (1000), not the loc tooltip — which can be stale/wrong."""
+    rows: list[tuple[str, str, float, int]] = []
+
+    def add_blocks(blocks, kind: str):
+        if isinstance(blocks, dict):
+            blocks = [blocks]
+        elif not isinstance(blocks, list):
+            return
+        for block in blocks:
+            if not isinstance(block, dict):
+                continue
+            scales = 1 if ('multiplier' in block or 'mult' in block) else 0
+            for res, raw in block.items():
+                if res in ('multiplier', 'mult', 'category'):
+                    continue
+                s = str(raw).strip()
+                amount = variables.get(s) if s.startswith('@') else _resolve_modifier_float(raw)
+                if amount is not None:
+                    rows.append((kind, res, amount, scales))
+
+    resources = relic.get('resources')
+    if isinstance(resources, dict):
+        add_blocks(resources.get('cost'), 'cost')
+    active = relic.get('active_effect')
+    if isinstance(active, dict):
+        # Only direct add_resource children are "produces" — nested ones (e.g. the
+        # tempest invocator's on_cancel refund) are not part of the triumph payout.
+        add_blocks(active.get('add_resource'), 'produces')
+    return rows
+
+
+def _relic_cooldown(relic: dict, variables: dict[str, float]) -> int | None:
+    """The triumph cooldown in days. Read from the `relic_activation_cooldown`
+    add_modifier inside active_effect (the value the game actually applies — e.g.
+    the War Forge's short cooldown), falling back to `activation_duration`."""
+    def find_days(node) -> int | None:
+        if isinstance(node, list):
+            for item in node:
+                d = find_days(item)
+                if d is not None:
+                    return d
+        elif isinstance(node, dict):
+            if node.get('modifier') == 'relic_activation_cooldown' and 'days' in node:
+                raw = str(node['days']).strip()
+                val = variables.get(raw) if raw.startswith('@') else _resolve_modifier_float(raw)
+                return int(val) if val is not None else None
+            for v in node.values():
+                d = find_days(v)
+                if d is not None:
+                    return d
+        return None
+
+    days = find_days(relic.get('active_effect'))
+    if days is not None:
+        return days
+    raw = str(relic.get('activation_duration', '')).strip()
+    val = variables.get(raw) if raw.startswith('@') else _resolve_modifier_float(raw)
+    return int(val) if val is not None else None
+
+
 def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
-                       loc: dict[str, str], w: Writer, verbose: bool):
+                       scripted_vars: dict[str, float], loc: dict[str, str],
+                       w: Writer, verbose: bool):
+    # @variables for resolving relic costs/cooldowns: this file's own top-level
+    # @defs plus the global scripted_variables (where @activation_cost etc. live).
+    relic_vars: dict[str, float] = dict(scripted_vars)
+    for vk, vv in relics.items():
+        if vk.startswith('@'):
+            f = _resolve_modifier_float(vv)
+            if f is not None:
+                relic_vars[vk] = f
+
     for order, p in enumerate(PRECURSORS):
         key = p['key']
         civ = precursor_civ.get(key, {})
@@ -1578,12 +1706,25 @@ def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
                 portrait = portrait.strip('"') if isinstance(portrait, str) else None
                 w.execute(
                     """INSERT OR REPLACE INTO precursor_relic
-                           (precursor_key, relic_key, name, portrait, score, description, active_effect)
-                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                           (precursor_key, relic_key, name, portrait, score, description,
+                            passive_text, active_effect, triumph_cooldown_days)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (key, relic_key, loc.get(relic_key), portrait, score,
                      _clean_loc(loc[relic_key + '_desc'], loc) if (relic_key + '_desc') in loc else None,
-                     _relic_active_text(relic, loc)),
+                     _relic_passive_text(relic, loc),
+                     _relic_active_text(relic, loc),
+                     _relic_cooldown(relic, relic_vars)),
                 )
+                for c_order, (kind, res, amount, scales) in enumerate(_relic_resources(relic, relic_vars)):
+                    w.execute(
+                        """INSERT OR IGNORE INTO precursor_relic_resource
+                               (relic_key, kind, resource, amount, scales, sort_order)
+                           VALUES (?, ?, ?, ?, ?, ?)""",
+                        (relic_key, kind, res, amount, scales, c_order),
+                    )
+                    if verbose:
+                        print(f"    relic {relic_key} {kind} | {res} = {amount}"
+                              f"{' (scales)' if scales else ''}")
                 for r_order, (mod_key, value, condition) in enumerate(_relic_passive_rows(relic)):
                     w.execute(
                         """INSERT OR IGNORE INTO precursor_relic_modifier
@@ -2115,9 +2256,24 @@ Examples:
                 print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
     else:
         print(f"  WARNING: {static_mod_dir} not found", file=progress)
+    # Global scripted variables (e.g. @activation_cost, @triumph_duration) used to
+    # resolve relic triumph costs/cooldowns.
+    scripted_vars: dict[str, float] = {}
+    scripted_var_dir = install_dir / 'common' / 'scripted_variables'
+    if scripted_var_dir.exists():
+        for f in sorted(scripted_var_dir.glob('*.txt')):
+            try:
+                for vk, vv in parse_file(f).items():
+                    if vk.startswith('@'):
+                        fv = _resolve_modifier_float(vv)
+                        if fv is not None:
+                            scripted_vars[vk] = fv
+            except Exception as e:
+                print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
     print(f"  {len(precursor_civ)} civ entries, {len(relics)} relics, "
-          f"{len(static_mods)} static modifiers loaded", file=progress)
-    extract_precursors(precursor_civ, relics, static_mods, loc, w, args.verbose)
+          f"{len(static_mods)} static modifiers, {len(scripted_vars)} scripted vars loaded",
+          file=progress)
+    extract_precursors(precursor_civ, relics, static_mods, scripted_vars, loc, w, args.verbose)
 
     # --- deposits (dictionary for home-system planet deposits) ---
     dep_files = sorted(deposits_dir.glob('*.txt')) if deposits_dir.exists() else []
@@ -2169,6 +2325,7 @@ Examples:
         n_precursors    = tmp.execute("SELECT COUNT(*) FROM precursor").fetchone()[0]
         n_prec_relics   = tmp.execute("SELECT COUNT(*) FROM precursor_relic").fetchone()[0]
         n_prec_relic_m  = tmp.execute("SELECT COUNT(*) FROM precursor_relic_modifier").fetchone()[0]
+        n_prec_relic_c  = tmp.execute("SELECT COUNT(*) FROM precursor_relic_resource").fetchone()[0]
         n_prec_reward_m = tmp.execute("SELECT COUNT(*) FROM precursor_reward_modifier").fetchone()[0]
         n_prec_build    = tmp.execute("SELECT COUNT(*) FROM precursor_building").fetchone()[0]
         n_deposits      = tmp.execute("SELECT COUNT(*) FROM deposit").fetchone()[0]
@@ -2203,6 +2360,7 @@ Examples:
 |  Precursors         : {n_precursors:<20}|
 |  Precursor relics   : {n_prec_relics:<20}|
 |  Precursor relic mods: {n_prec_relic_m:<19}|
+|  Precursor relic res : {n_prec_relic_c:<19}|
 |  Precursor reward mods: {n_prec_reward_m:<18}|
 |  Precursor buildings: {n_prec_build:<20}|
 |  Deposits (dict)    : {n_deposits:<20}|
