@@ -346,6 +346,8 @@ CREATE TABLE ethic_policy_restriction (
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
 -- effect numbers and display names below are pulled from the game files.
 DROP TABLE IF EXISTS precursor_homeworld_reward;
+DROP TABLE IF EXISTS precursor_building_modifier;
+DROP TABLE IF EXISTS precursor_building_resource;
 DROP TABLE IF EXISTS precursor_building;
 DROP TABLE IF EXISTS precursor_reward_modifier;
 DROP TABLE IF EXISTS precursor_relic_active_modifier;
@@ -448,12 +450,41 @@ CREATE TABLE precursor_reward_modifier (
 );
 
 CREATE TABLE precursor_building (
-    precursor_key TEXT NOT NULL,
-    building_key  TEXT NOT NULL,           -- e.g. "building_zroni_equilibrator"
-    name          TEXT,                    -- localised building name
-    scope         TEXT,                    -- "planet" or "starbase"
+    precursor_key   TEXT NOT NULL,
+    building_key    TEXT NOT NULL,         -- e.g. "building_zroni_equilibrator"
+    name            TEXT,                  -- localised building name
+    scope           TEXT,                  -- "planet" or "starbase"
+    category        TEXT,                  -- e.g. "government", "resource"
+    build_time_days INTEGER,               -- base_buildtime (resolving @vars)
+    empire_limit    INTEGER,               -- base_cap_amount: max buildable per empire (NULL = uncapped)
+    planet_limit    INTEGER,               -- planet_limit: max buildable per planet (NULL = uncapped)
+    can_demolish    INTEGER,               -- 1 = demolishable, 0 = not
     PRIMARY KEY (precursor_key, building_key),
     FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+
+-- A precursor building's resources block: 'cost' (one-off to build), 'upkeep'
+-- (monthly), 'produces' (monthly output). Amounts resolve @scripted_variables.
+CREATE TABLE precursor_building_resource (
+    building_key TEXT NOT NULL,
+    kind         TEXT NOT NULL,            -- 'cost' | 'upkeep' | 'produces'
+    resource     TEXT NOT NULL,            -- e.g. "minerals", "energy", "sr_zro"
+    amount       REAL NOT NULL,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (building_key, kind, resource)
+);
+
+-- A precursor building's modifiers. scope 'planet' = planet_modifier,
+-- 'country' = country_modifier, 'job' = jobs added via the building's jobs/*
+-- inline_script (job_<x>_add, the regular-empire variant — gestalt/FE empires get
+-- the calculator/archivist equivalents). Values resolve @scripted_variables.
+CREATE TABLE precursor_building_modifier (
+    building_key   TEXT NOT NULL,
+    scope          TEXT NOT NULL,          -- 'planet' | 'country' | 'job'
+    modifier_key   TEXT NOT NULL,          -- e.g. "ship_shield_damage_mult", "job_biologist_add"
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (building_key, scope, modifier_key)
 );
 
 -- The one-time "Homeworld reward" granted by the event that fires when a
@@ -1976,8 +2007,86 @@ def _homeworld_reward_rows(event: dict, variables: dict[str, float]
     return rows
 
 
+def _resolve_var(raw, variables: dict[str, float]) -> float | None:
+    """Resolve a scalar that may be an @scripted_variable reference or a literal."""
+    if raw is None:
+        return None
+    s = str(raw).strip()
+    return variables.get(s) if s.startswith('@') else _resolve_modifier_float(raw)
+
+
+def _building_resources(bdef: dict, variables: dict[str, float]
+                        ) -> list[tuple[str, str, float]]:
+    """A building's resources block → [(kind, resource, amount)] for
+    kind in cost/upkeep/produces, resolving @vars."""
+    rows: list[tuple[str, str, float]] = []
+    res = bdef.get('resources')
+    if isinstance(res, list):
+        res = next((b for b in reversed(res) if isinstance(b, dict)), None)
+    if not isinstance(res, dict):
+        return rows
+    for kind in ('cost', 'upkeep', 'produces'):
+        block = res.get(kind)
+        if isinstance(block, list):
+            block = next((b for b in reversed(block) if isinstance(b, dict)), None)
+        if not isinstance(block, dict):
+            continue
+        for resource, raw in block.items():
+            if resource == 'category':
+                continue
+            amt = _resolve_var(raw, variables)
+            if amt is not None:
+                rows.append((kind, resource, amt))
+    return rows
+
+
+def _building_modifiers(bdef: dict, variables: dict[str, float]
+                        ) -> list[tuple[str, str, float]]:
+    """A building's planet_modifier / country_modifier blocks → [(scope, key, value)]."""
+    rows: list[tuple[str, str, float]] = []
+    for scope, field in (('planet', 'planet_modifier'), ('country', 'country_modifier')):
+        for block in _as_blocks(bdef.get(field)):
+            for key, raw in block.items():
+                val = _resolve_var(raw, variables)
+                if val is not None:
+                    rows.append((scope, key, val))
+    return rows
+
+
+def _building_inline_jobs(bdef: dict, variables: dict[str, float], inline_scripts_dir
+                          ) -> list[tuple[str, float]]:
+    """Jobs a building adds via its `jobs/*` inline_scripts → [(job_<x>_add, amount)].
+
+    Each jobs script branches by empire type; the first triggered_planet_modifier
+    is the regular-empire variant (gestalt/FE empires get calculator/archivist
+    equivalents of the same count). The building supplies the count as `AMOUNT`."""
+    rows: list[tuple[str, float]] = []
+    for ref in _as_blocks(bdef.get('inline_script')):
+        script = ref.get('script')
+        if not isinstance(script, str) or not script.startswith('jobs/'):
+            continue
+        amount = _resolve_var(ref.get('AMOUNT'), variables)
+        if amount is None:
+            continue
+        path = inline_scripts_dir / (script + '.txt')
+        if not path.exists():
+            continue
+        try:
+            blocks = _as_blocks(parse_file(path).get('triggered_planet_modifier'))
+        except Exception:
+            continue
+        if not blocks:
+            continue
+        first = blocks[0]
+        modblock = first.get('modifier') if isinstance(first.get('modifier'), dict) else first
+        for k in modblock:
+            if k.startswith('job_') and k.endswith('_add'):
+                rows.append((k, amount))
+    return rows
+
+
 def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
-                       events_index: dict,
+                       events_index: dict, buildings: dict, inline_scripts_dir,
                        scripted_vars: dict[str, float], loc: dict[str, str],
                        w: Writer, verbose: bool):
     # @variables for resolving relic costs/cooldowns: this file's own top-level
@@ -2124,17 +2233,59 @@ def extract_precursors(precursor_civ: dict, relics: dict, static_mods: dict,
                     amt = f"x{mult:g}" if mult is not None else "flat"
                     print(f"    homeworld reward | {res} {amt} ({lo:g}~{hi:g})")
 
-        # --- building (0..1) ---
+        # --- building (0..1): definition, restrictions, resources, modifiers, jobs ---
         if p['building']:
             building_key, scope = p['building']
+            bdef = buildings.get(building_key)
+            if isinstance(bdef, list):
+                bdef = next((b for b in reversed(bdef) if isinstance(b, dict)), None)
+            bdef = bdef if isinstance(bdef, dict) else {}
+
+            can_dem = bdef.get('can_demolish')
+            can_dem = (1 if str(can_dem).strip() == 'yes' else 0) if can_dem is not None else None
+            build_time = _resolve_var(bdef.get('base_buildtime'), scripted_vars)
+            empire_limit = _resolve_var(bdef.get('base_cap_amount'), scripted_vars)
+            planet_limit = _resolve_var(bdef.get('planet_limit'), scripted_vars)
             w.execute(
                 """INSERT OR REPLACE INTO precursor_building
-                       (precursor_key, building_key, name, scope)
-                   VALUES (?, ?, ?, ?)""",
-                (key, building_key, loc.get(building_key), scope),
+                       (precursor_key, building_key, name, scope, category,
+                        build_time_days, empire_limit, planet_limit, can_demolish)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (key, building_key, loc.get(building_key), scope, bdef.get('category'),
+                 int(build_time) if build_time is not None else None,
+                 int(empire_limit) if empire_limit is not None else None,
+                 int(planet_limit) if planet_limit is not None else None,
+                 can_dem),
             )
             if verbose:
                 print(f"    building {building_key} ({scope}) | {loc.get(building_key)}")
+
+            for r_order, (rkind, rres, ramt) in enumerate(
+                    _building_resources(bdef, scripted_vars)):
+                w.execute(
+                    """INSERT OR IGNORE INTO precursor_building_resource
+                           (building_key, kind, resource, amount, sort_order)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (building_key, rkind, rres, ramt, r_order),
+                )
+                if verbose:
+                    print(f"      {rkind} | {ramt:g} {rres}")
+
+            building_mods = (
+                _building_modifiers(bdef, scripted_vars)
+                + [('job', jk, jv)
+                   for jk, jv in _building_inline_jobs(bdef, scripted_vars, inline_scripts_dir)]
+            )
+            for m_order, (mscope, mkey, mval) in enumerate(building_mods):
+                w.execute(
+                    """INSERT OR IGNORE INTO precursor_building_modifier
+                           (building_key, scope, modifier_key, modifier_value, sort_order)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (building_key, mscope, mkey, mval, m_order),
+                )
+                _write_modifier_label(w, loc, mkey)
+                if verbose:
+                    print(f"      {mscope} modifier | {mkey} = {mval:g}")
 
     w.commit()
 
@@ -2443,6 +2594,8 @@ Examples:
     static_mod_dir = install_dir / 'common' / 'static_modifiers'
     deposits_dir   = install_dir / 'common' / 'deposits'
     sysinit_dir    = install_dir / 'common' / 'solar_system_initializers'
+    buildings_dir  = install_dir / 'common' / 'buildings'
+    inline_scripts_dir = install_dir / 'common' / 'inline_scripts'
     loc_dir        = install_dir / 'localisation' / 'english'
 
     if not species_dir.exists():
@@ -2622,6 +2775,16 @@ Examples:
                 print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
     else:
         print(f"  WARNING: {static_mod_dir} not found", file=progress)
+    # Building definitions (precursor buildings' effects/restrictions live here).
+    buildings: dict = {}
+    if buildings_dir.exists():
+        for f in sorted(buildings_dir.glob('*.txt')):
+            try:
+                buildings.update(parse_file(f))
+            except Exception as e:
+                print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+    else:
+        print(f"  WARNING: {buildings_dir} not found", file=progress)
     # Global scripted variables (e.g. @activation_cost, @triumph_duration) used to
     # resolve relic triumph costs/cooldowns.
     scripted_vars: dict[str, float] = {}
@@ -2659,8 +2822,8 @@ Examples:
     print(f"  {len(precursor_civ)} civ entries, {len(relics)} relics, "
           f"{len(static_mods)} static modifiers, {len(scripted_vars)} scripted vars, "
           f"{len(events_index)} events loaded", file=progress)
-    extract_precursors(precursor_civ, relics, static_mods, events_index, scripted_vars,
-                       loc, w, args.verbose)
+    extract_precursors(precursor_civ, relics, static_mods, events_index, buildings,
+                       inline_scripts_dir, scripted_vars, loc, w, args.verbose)
 
     # --- deposits (dictionary for home-system planet deposits) ---
     dep_files = sorted(deposits_dir.glob('*.txt')) if deposits_dir.exists() else []

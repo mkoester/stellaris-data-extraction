@@ -181,6 +181,8 @@ CREATE TABLE ethic_policy_restriction (
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
 -- effect numbers and display names below are pulled from the game files.
 DROP TABLE IF EXISTS precursor_homeworld_reward;
+DROP TABLE IF EXISTS precursor_building_modifier;
+DROP TABLE IF EXISTS precursor_building_resource;
 DROP TABLE IF EXISTS precursor_building;
 DROP TABLE IF EXISTS precursor_reward_modifier;
 DROP TABLE IF EXISTS precursor_relic_active_modifier;
@@ -283,12 +285,41 @@ CREATE TABLE precursor_reward_modifier (
 );
 
 CREATE TABLE precursor_building (
-    precursor_key TEXT NOT NULL,
-    building_key  TEXT NOT NULL,           -- e.g. "building_zroni_equilibrator"
-    name          TEXT,                    -- localised building name
-    scope         TEXT,                    -- "planet" or "starbase"
+    precursor_key   TEXT NOT NULL,
+    building_key    TEXT NOT NULL,         -- e.g. "building_zroni_equilibrator"
+    name            TEXT,                  -- localised building name
+    scope           TEXT,                  -- "planet" or "starbase"
+    category        TEXT,                  -- e.g. "government", "resource"
+    build_time_days INTEGER,               -- base_buildtime (resolving @vars)
+    empire_limit    INTEGER,               -- base_cap_amount: max buildable per empire (NULL = uncapped)
+    planet_limit    INTEGER,               -- planet_limit: max buildable per planet (NULL = uncapped)
+    can_demolish    INTEGER,               -- 1 = demolishable, 0 = not
     PRIMARY KEY (precursor_key, building_key),
     FOREIGN KEY (precursor_key) REFERENCES precursor(key)
+);
+
+-- A precursor building's resources block: 'cost' (one-off to build), 'upkeep'
+-- (monthly), 'produces' (monthly output). Amounts resolve @scripted_variables.
+CREATE TABLE precursor_building_resource (
+    building_key TEXT NOT NULL,
+    kind         TEXT NOT NULL,            -- 'cost' | 'upkeep' | 'produces'
+    resource     TEXT NOT NULL,            -- e.g. "minerals", "energy", "sr_zro"
+    amount       REAL NOT NULL,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (building_key, kind, resource)
+);
+
+-- A precursor building's modifiers. scope 'planet' = planet_modifier,
+-- 'country' = country_modifier, 'job' = jobs added via the building's jobs/*
+-- inline_script (job_<x>_add, the regular-empire variant — gestalt/FE empires get
+-- the calculator/archivist equivalents). Values resolve @scripted_variables.
+CREATE TABLE precursor_building_modifier (
+    building_key   TEXT NOT NULL,
+    scope          TEXT NOT NULL,          -- 'planet' | 'country' | 'job'
+    modifier_key   TEXT NOT NULL,          -- e.g. "ship_shield_damage_mult", "job_biologist_add"
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (building_key, scope, modifier_key)
 );
 
 -- The one-time "Homeworld reward" granted by the event that fires when a
@@ -10977,8 +11008,38 @@ INSERT OR IGNORE INTO precursor_homeworld_reward
                            (precursor_key, resource, multiplier, min_amount, max_amount, sort_order)
                        VALUES ('precursor_zroni_1', 'minor_artifacts', NULL, '750.0', '1500.0', 0);
 INSERT OR REPLACE INTO precursor_building
-                       (precursor_key, building_key, name, scope)
-                   VALUES ('precursor_zroni_1', 'building_zroni_equilibrator', 'Zroni Equilibrator', 'planet');
+                       (precursor_key, building_key, name, scope, category,
+                        build_time_days, empire_limit, planet_limit, can_demolish)
+                   VALUES ('precursor_zroni_1', 'building_zroni_equilibrator', 'Zroni Equilibrator', 'planet', 'government', 1080, 1, NULL, 1);
+INSERT OR IGNORE INTO precursor_building_resource
+                           (building_key, kind, resource, amount, sort_order)
+                       VALUES ('building_zroni_equilibrator', 'cost', 'sr_zro', '250.0', 0);
+INSERT OR IGNORE INTO precursor_building_resource
+                           (building_key, kind, resource, amount, sort_order)
+                       VALUES ('building_zroni_equilibrator', 'upkeep', 'energy', '10.0', 1);
+INSERT OR IGNORE INTO precursor_building_resource
+                           (building_key, kind, resource, amount, sort_order)
+                       VALUES ('building_zroni_equilibrator', 'produces', 'sr_zro', '4.0', 2);
+INSERT OR IGNORE INTO precursor_building_modifier
+                           (building_key, scope, modifier_key, modifier_value, sort_order)
+                       VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_physics_research_produces_add', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_physics_research_produces_add', 'physics_research Produced per 100', 1);
+INSERT OR IGNORE INTO precursor_building_modifier
+                           (building_key, scope, modifier_key, modifier_value, sort_order)
+                       VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_society_research_produces_add', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_society_research_produces_add', 'society_research Produced per 100', 1);
+INSERT OR IGNORE INTO precursor_building_modifier
+                           (building_key, scope, modifier_key, modifier_value, sort_order)
+                       VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_sr_zro_upkeep_add', '0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_sr_zro_upkeep_add', 'sr_zro Upkeep per 100', 1);
+INSERT OR IGNORE INTO precursor_building_modifier
+                           (building_key, scope, modifier_key, modifier_value, sort_order)
+                       VALUES ('building_zroni_equilibrator', 'job', 'job_biologist_add', '400.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_biologist_add', 'Jobs', 1);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_inetian', 'Inetian Traders', 'Cosmic Storms', NULL, 'GFX_precursor_inetian', NULL, 7);
@@ -11044,8 +11105,38 @@ INSERT OR REPLACE INTO precursor_reward_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
 INSERT OR REPLACE INTO precursor_building
-                       (precursor_key, building_key, name, scope)
-                   VALUES ('precursor_adakkaria', 'building_adakkaria_patriotic_institute', 'Patriotic Institute of Celebration', 'planet');
+                       (precursor_key, building_key, name, scope, category,
+                        build_time_days, empire_limit, planet_limit, can_demolish)
+                   VALUES ('precursor_adakkaria', 'building_adakkaria_patriotic_institute', 'Patriotic Institute of Celebration', 'planet', 'resource', 600, NULL, 1, 0);
+INSERT OR IGNORE INTO precursor_building_resource
+                           (building_key, kind, resource, amount, sort_order)
+                       VALUES ('building_adakkaria_patriotic_institute', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO precursor_building_resource
+                           (building_key, kind, resource, amount, sort_order)
+                       VALUES ('building_adakkaria_patriotic_institute', 'cost', 'sr_zro', '20.0', 1);
+INSERT OR IGNORE INTO precursor_building_resource
+                           (building_key, kind, resource, amount, sort_order)
+                       VALUES ('building_adakkaria_patriotic_institute', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO precursor_building_modifier
+                           (building_key, scope, modifier_key, modifier_value, sort_order)
+                       VALUES ('building_adakkaria_patriotic_institute', 'country', 'ship_shield_damage_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_shield_damage_mult', 'Shield Damage', 1);
+INSERT OR IGNORE INTO precursor_building_modifier
+                           (building_key, scope, modifier_key, modifier_value, sort_order)
+                       VALUES ('building_adakkaria_patriotic_institute', 'job', 'job_physicist_add', '1200.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_physicist_add', 'Jobs', 1);
+INSERT OR IGNORE INTO precursor_building_modifier
+                           (building_key, scope, modifier_key, modifier_value, sort_order)
+                       VALUES ('building_adakkaria_patriotic_institute', 'job', 'job_biologist_add', '1200.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_biologist_add', 'Jobs', 1);
+INSERT OR IGNORE INTO precursor_building_modifier
+                           (building_key, scope, modifier_key, modifier_value, sort_order)
+                       VALUES ('building_adakkaria_patriotic_institute', 'job', 'job_engineer_add', '1200.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_engineer_add', 'Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_null_deposit', NULL, NULL, 0, NULL, '00_null_deposit.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)

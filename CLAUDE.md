@@ -88,7 +88,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
 
 Drop order matters for FK integrity:
 ```sql
@@ -249,6 +249,22 @@ Same list-guard applies to relics.
 
 **Reuses `modifier_label`** via the shared `_write_modifier_label()` helper, so the
 display project gets human-readable effect strings for free.
+
+**Precursor buildings (`precursor_building` + `_resource` + `_modifier`).** The
+two precursor buildings (Zroni Equilibrator, adAkkaria Patriotic Institute) are
+parsed from `common/buildings/*.txt` (loaded into `buildings` in `main()`):
+restrictions (`base_cap_amount` → `empire_limit`, `planet_limit`, `base_buildtime`
+→ `build_time_days`, `category`, `can_demolish`), `resources` → `cost`/`upkeep`/
+`produces` rows (`_building_resources`), and `planet_modifier`/`country_modifier`
+→ `precursor_building_modifier` rows tagged `scope='planet'|'country'`
+(`_building_modifiers`). **Jobs** are added via the building's `jobs/*`
+`inline_script` (`_building_inline_jobs`): the script is loaded from
+`common/inline_scripts/`, the **first** `triggered_planet_modifier` (the
+regular-empire variant; gestalt/FE get calculator/archivist equivalents) gives the
+`job_<x>_add` keys, and the building's `AMOUNT` (resolving `@vars`) is the count —
+stored as `scope='job'` modifier rows. All values resolve `@scripted_variables`.
+Non-`jobs/` inline_scripts (e.g. adAkkaria's `cosmic_storms/StormBuildingModifiers`,
+an origin-gated unity bonus) are skipped.
 
 **`precursor_homeworld_reward`** (`_homeworld_reward_rows`) — the one-time
 "Homeworld reward" granted when a precursor's home world is finally found, parsed
