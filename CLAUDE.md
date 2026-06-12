@@ -88,7 +88,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `origin`, `origin_modifier`, `origin_requirement`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
 
 Drop order matters for FK integrity:
 ```sql
@@ -184,8 +184,25 @@ icon)`:
 Counts (last run): ~265 civics (81 normal / 80 gestalt / 52 corporate / 52 special,
 of which most special are non-selectable), 721 modifiers, 1159 requirement rows.
 
-**Next:** origins (`extract_origins`) — same file dir; mostly descriptive (name, DLC,
-restrictions, some `modifier` blocks), effects largely narrative/event-driven.
+---
+
+## Origins Extraction (`extract_origins`)
+
+Reads `common/governments/civics/00_origins.txt` (playable) + `01_origins_non_playable.txt`
+(forced `selectable = 0`), filtering to `is_origin = yes`. Same shape as civics →
+`origin(key, name, description, required_dlc, selectable, icon)` + `origin_modifier`
+(numeric `modifier{}`, mostly sparse — origin effects are largely
+narrative/initializer/event-driven) + `origin_requirement` (**reuses
+`_civic_requirements`** — mostly civic conflicts in `possible.civics`).
+**selectable = 0** also for swap-variant forms whose `potential` is gated on already
+having an `origin` (the Legendary Leader death/imperial/dictatorial forms) or a
+`country_type`. ~70 origins, 54 selectable, 88 modifiers, 378 requirement rows.
+
+**Loc fix shipped here:** `_LOC_ENTRY` changed `^\s+`→`^\s*` so **unindented** loc
+entries are read — the Infernals Species Pack file puts entries at column 0, so e.g.
+`origin_red_giant`/`origin_cosmic_dawn` names (and other Infernals loc) were being
+dropped. The `l_english:` header still never matches (no `"value"`); `#` comments
+aren't word-initial.
 
 ---
 

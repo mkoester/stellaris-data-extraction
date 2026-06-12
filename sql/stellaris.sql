@@ -219,6 +219,47 @@ CREATE TABLE civic_requirement (
     FOREIGN KEY (civic_key) REFERENCES civic(key)
 );
 
+-- Origins: the empire's starting scenario (one per empire). Like civics, the numeric
+-- effects (where present — most origins are narrative/event-driven) live in
+-- origin_modifier and the eligibility rules in origin_requirement. `selectable` is 0
+-- for the non-playable file and for swap-variant forms (gated on already having an
+-- origin) — the planner only loads selectable = 1.
+DROP TABLE IF EXISTS origin_requirement;
+DROP TABLE IF EXISTS origin_modifier;
+DROP TABLE IF EXISTS origin;
+CREATE TABLE origin (
+    key          TEXT PRIMARY KEY,    -- e.g. "origin_shattered_ring"
+    name         TEXT,                -- localised name
+    description  TEXT,                -- cleaned effects tooltip
+    required_dlc TEXT,                -- from playable host_has_dlc; NULL = base game
+    selectable   INTEGER NOT NULL DEFAULT 1,
+    icon         TEXT,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (required_dlc) REFERENCES dlc(name)
+);
+
+CREATE TABLE origin_modifier (
+    origin_key     TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (origin_key, modifier_key),
+    FOREIGN KEY (origin_key) REFERENCES origin(key)
+);
+
+-- Eligibility rules parsed from an origin's potential/possible blocks (same shape as
+-- civic_requirement): kind authority/ethic/civic/origin × operator
+-- require/forbid/require_any. For origins these are mostly civic conflicts.
+CREATE TABLE origin_requirement (
+    origin_key TEXT NOT NULL,
+    kind       TEXT NOT NULL,
+    operator   TEXT NOT NULL,
+    value      TEXT NOT NULL,
+    group_id   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (origin_key, kind, operator, value),
+    FOREIGN KEY (origin_key) REFERENCES origin(key)
+);
+
 -- Precursors: the ancient civilisations whose archaeology chains grant rewards.
 -- The precursor<->reward mapping is spread across event files (no single source
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
@@ -2584,6 +2625,9 @@ INSERT OR REPLACE INTO modifier_label
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_volcanic_preference', 'pc_volcanic_habitability', '0.6', 0);
+INSERT OR REPLACE INTO modifier_label
+                               (modifier_key, label, positive_is_good)
+                           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_volcanic_preference', 'pc_desert_habitability', '0.6', 1);
@@ -2851,9 +2895,15 @@ INSERT OR REPLACE INTO modifier_label
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_dry_planet_preference', 'pc_volcanic_habitability', '0.25', 9);
+INSERT OR REPLACE INTO modifier_label
+                               (modifier_key, label, positive_is_good)
+                           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_volcanic_planet_preference', 'pc_volcanic_habitability', '0.75', 0);
+INSERT OR REPLACE INTO modifier_label
+                               (modifier_key, label, positive_is_good)
+                           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_volcanic_planet_preference', 'pc_desert_habitability', '0.5', 1);
@@ -2947,6 +2997,9 @@ INSERT OR REPLACE INTO modifier_label
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wet_planet_preference', 'pc_volcanic_habitability', '0.25', 9);
+INSERT OR REPLACE INTO modifier_label
+                               (modifier_key, label, positive_is_good)
+                           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cold_planet_preference', 'pc_arctic_habitability', '0.75', 0);
@@ -3004,6 +3057,9 @@ INSERT OR REPLACE INTO modifier_label
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cold_planet_preference', 'pc_volcanic_habitability', '0.25', 9);
+INSERT OR REPLACE INTO modifier_label
+                               (modifier_key, label, positive_is_good)
+                           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_habitat_planet_preference', 'pc_habitat_habitability', '0.8', 0);
@@ -9872,6 +9928,9 @@ INSERT OR REPLACE INTO modifier_label
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_infernal', 'pc_volcanic_habitability', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label
+                               (modifier_key, label, positive_is_good)
+                           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('trait_tankbound', NULL, NULL, 0, 0, 0, 'Shadows of the Shroud', '17_shroud_species_traits.txt');
@@ -14193,7 +14252,7 @@ INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_rockworm_hive_volcanic', NULL, 'deposit_cat_rare', 0, NULL, '11_astral_planes_deposits.txt');
+               VALUES ('d_rockworm_hive_volcanic', 'Rockworm Hive', 'deposit_cat_rare', 0, NULL, '11_astral_planes_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_rockworm_hive_volcanic', 'planet_jobs_minerals_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14599,7 +14658,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_nanite_harvester_deposit_large', 'produces', 'nanites', '25.6');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_living_metal_medium', NULL, 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
+               VALUES ('d_living_metal_medium', 'Living Metal Vats', 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_living_metal_small', 'Small Living Metal Vats', 'deposit_cat_rare', 0, NULL, '13_machine_age_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
@@ -14719,31 +14778,31 @@ INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_red_giant_unstable', NULL, 'orbital_mining_deposits', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_red_giant_unstable', 'energy +5', 'orbital_mining_deposits', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_red_giant_unstable', 'produces', 'energy', '5.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_red_giant_dm', NULL, 'orbital_mining_deposits', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_red_giant_dm', 'sr_dark_matter +8', 'orbital_mining_deposits', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_red_giant_dm', 'produces', 'sr_dark_matter', '5.0');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_red_giant_dm', 'produces', 'energy', '10.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_andisol_soil', NULL, 'deposit_cat_food', 0, 360, '15_infernals_deposits.txt');
+               VALUES ('d_andisol_soil', 'Andisol Valley', 'deposit_cat_food', 0, 360, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_stasis_pods', NULL, 'deposit_cat_rare_blocker', 1, 360, '15_infernals_deposits.txt');
+               VALUES ('d_stasis_pods', 'blocker Ancient Stasis Pods', 'deposit_cat_rare_blocker', 1, 360, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_stasis_pods', 'produces', 'society_research', '3.0');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_stasis_pods', 'cost', 'energy', '750.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_cd_ancient_tunnels', NULL, 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_cd_ancient_tunnels', 'Ancient Tunnels', 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_seismic_bombing_crater', NULL, 'deposit_cat_blockers_natural', 1, 270, '15_infernals_deposits.txt');
+               VALUES ('d_seismic_bombing_crater', 'blocker Volcanic Crater', 'deposit_cat_blockers_natural', 1, 270, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_seismic_bombing_crater', 'produces', 'unity', '5.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_large_volcano', NULL, 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
+               VALUES ('d_large_volcano', 'blocker Large Volcano', 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_large_volcano', 'produces', 'unity', '5.0');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -14759,7 +14818,7 @@ INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_ash_storms', NULL, 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
+               VALUES ('d_ash_storms', 'blocker Ash Storms', 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_ash_storms', 'habitability_ceil_add', '-0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14773,7 +14832,7 @@ INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_charged_atmosphere', NULL, 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
+               VALUES ('d_charged_atmosphere', 'blocker Charged Atmosphere', 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_charged_atmosphere', 'produces', 'energy', '5.0');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -14789,7 +14848,7 @@ INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_lava_flooding', NULL, 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
+               VALUES ('d_lava_flooding', 'blocker Seasonal Lava Flooding', 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_lava_flooding', 'produces', 'minerals', '5.0');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -14805,7 +14864,7 @@ INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_toxic_atmosphere', NULL, 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
+               VALUES ('d_toxic_atmosphere', 'blocker Toxic Atmosphere', 'deposit_cat_blockers', 1, 270, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_toxic_atmosphere', 'habitability_ceil_add', '-0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14819,99 +14878,113 @@ INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_galvanic_living_metal', NULL, 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_galvanic_living_metal', 'Living Metal Sediment', 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_galvanic_living_metal', 'produces', 'sr_living_metal', '1.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_ore_veins', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_ore_veins', 'Volcanic Ore Veins', 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_ore_veins', 'district_mining_max_add', '1.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_rich_mountain', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_rich_mountain', 'Volcanic Rich Mountain', 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_rich_mountain', 'district_mining_max_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_ore_caverns', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_ore_caverns', 'Volcanic Ore-Rich Caverns', 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_ore_caverns', 'district_mining_max_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_mineral_fields', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_mineral_fields', 'Volcanic Mineral Fields', 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_mineral_fields', 'district_mining_max_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_mineral_hills', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_mineral_hills', 'Ore-rich Hills', 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_mineral_hills', 'district_mining_max_add', '1.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_mineral_layers', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_mineral_layers', 'Volcanic Mineral Layers', 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_mineral_layers', 'district_mining_max_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_weak_crust', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_weak_crust', 'Weak Crust', 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_weak_crust', 'district_mining_max_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_lava_river', NULL, 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_lava_river', 'Lava Rivers', 'deposit_cat_minerals', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_lava_river', 'district_mining_max_add', '3.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_stable_plateaus', NULL, 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_stable_plateaus', 'Stable Plateaus', 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_stable_plateaus', 'district_polytechnic_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_polytechnic_max_add', 'Max Thermotechnic Forums', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_tranquil_flatlands', NULL, 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_tranquil_flatlands', 'Tranquil Flatlands', 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_tranquil_flatlands', 'district_polytechnic_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_polytechnic_max_add', 'Max Thermotechnic Forums', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_intraplate', NULL, 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_intraplate', 'Sturdy Intraplate', 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_intraplate', 'district_polytechnic_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_polytechnic_max_add', 'Max Thermotechnic Forums', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_basalt_plains', NULL, 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_basalt_plains', 'Basalt Plains', 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_basalt_plains', 'district_polytechnic_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_polytechnic_max_add', 'Max Thermotechnic Forums', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_sulfur_lava', NULL, 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_sulfur_lava', 'Sulfuric Lava', 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_sulfur_lava', 'district_polytechnic_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_polytechnic_max_add', 'Max Thermotechnic Forums', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_sulfur_lava', 'district_mining_max_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_dried_lavariver', NULL, 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_dried_lavariver', 'Dried-up Lava River', 'deposit_cat_misc', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_dried_lavariver', 'district_polytechnic_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_polytechnic_max_add', 'Max Thermotechnic Forums', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_tunnels', NULL, 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_tunnels', 'Isolated Tunnels', 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_tunnels', 'district_polytechnic_max_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_polytechnic_max_add', 'Max Thermotechnic Forums', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_tunnels', 'pop_environment_tolerance', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_fumarole', NULL, 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_fumarole', 'Fumaroles', 'deposit_cat_rare', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_volcanic_stifling_atmosphere', NULL, 'deposit_cat_rare_resource', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_volcanic_stifling_atmosphere', 'Stifling Atmosphere', 'deposit_cat_rare_resource', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_raging_lavafalls', NULL, 'deposit_cat_blockers_natural', 1, 270, '15_infernals_deposits.txt');
+               VALUES ('d_raging_lavafalls', 'blocker Raging Lavafalls', 'deposit_cat_blockers_natural', 1, 270, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_raging_lavafalls', 'cost', 'energy', '1000.0');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -14919,7 +14992,7 @@ INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_max_districts_add', 'Max Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_rugged_landscape', NULL, 'deposit_cat_blockers_natural', 1, 270, '15_infernals_deposits.txt');
+               VALUES ('d_rugged_landscape', 'blocker Rugged Landscape', 'deposit_cat_blockers_natural', 1, 270, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_rugged_landscape', 'cost', 'energy', '1000.0');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -18520,7 +18593,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_tankbound', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_scorched_earth', NULL, NULL, 'normal', NULL, 1, NULL, 77);
+               VALUES ('civic_scorched_earth', 'Scorched World Heralds', '- Cannot engage in Diplomacy except with Thermophiles. - Cannot access the Galactic Market. - Grants the ''Cleansing Blaze'' casus belli on other species. - Gains unity Unity when bombarding with the Firestorm bombardment stance. - Creates special blockers with the Seismic Carpet Bombing bombardment stance on the planet below. - Non- Species are restricted to Slavery or worse.', 'normal', NULL, 1, NULL, 77);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_scorched_earth', 'ship_weapon_range_mult', '0.15', 0);
@@ -18655,13 +18728,17 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_scion', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_world_forgers', NULL, NULL, 'normal', NULL, 1, NULL, 78);
+               VALUES ('civic_world_forgers', 'Planet Forgers', '- Unlocks starting planet: Volcanic World. - Guaranteed Research Options: society_research Volcanic Forge. - Can construct building Volcanic Forge building which adds job_polytechnic_mentor Thermotechnic Mentors. - Planets with a building Volcanic Forge will gradually turn into a Volcanic World. - Guaranteed Habitable Worlds will be Dry worlds.', 'normal', NULL, 1, NULL, 78);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_world_forgers', 'pc_volcanic_max_districts_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_max_districts_add', 'Max Districts (Volcanic World)', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_world_forgers', 'pc_volcanic_habitability', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_world_forgers', 'authority', 'forbid', 'auth_corporate', 0);
@@ -18688,7 +18765,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_world_forgers', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_pyrolatry', NULL, NULL, 'normal', NULL, 1, NULL, 79);
+               VALUES ('civic_pyrolatry', 'Fire Cult', '- unity Unity Job output increases proportionally with lower Habitability (Up to 500%). - The Scourge of the Volcano faction forms shortly after game start. - Replaces job_priest Priests with job_fire_dancer Fire Dancers. - Replaces job_politician Politicians with job_fire_oracle Fire Oracles on planets with Habitability lower than 50%. - Allows the recruitment of Ember Legion armies on planets with Habitability lower than 20%. - Grants access to the Blazing Scourge planetary decisions which creates blocker Blazing Scourge Blockers. - Synergizes with Civics: Superstitious Beliefs, Exalted Priesthood, Death Cult, Aristocratic Elite, and Merchant Guilds.', 'normal', NULL, 1, NULL, 79);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_pyrolatry', 'authority', 'forbid', 'auth_corporate', 0);
@@ -18709,7 +18786,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_pyrolatry', 'origin', 'forbid', 'origin_ocean_paradise', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_galvanic_symbiosis', NULL, NULL, 'normal', NULL, 1, NULL, 80);
+               VALUES ('civic_galvanic_symbiosis', 'Galvanic Synthesis', '- Starts with engineering_research already researched. - Homeworld has a . - Gain access to special Edicts: - - - Gives access to sr_living_metal Living Metal components: - - - Has access to Planetary Decision: Distribute Living Metal. - Can recruit the Mimetic Strike Force armies. - Can build a building in systems with a Molten World for jobs.', 'normal', NULL, 1, NULL, 80);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
@@ -20421,7 +20498,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_hive_chosen', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_scorched_earth', 'Pyromanic Instinct', NULL, 'gestalt', NULL, 1, NULL, 169);
+               VALUES ('civic_hive_scorched_earth', 'Pyromanic Instinct', '- Cannot engage in Diplomacy except with Thermophiles. - Cannot access the Galactic Market. - Grants the ''Cleansing Blaze'' casus belli on other species. - Gains unity Unity when bombarding with the Firestorm bombardment stance. - Creates special blockers with the Seismic Carpet Bombing bombardment stance on the planet below. - Non- Species are restricted to Slavery or worse.', 'gestalt', NULL, 1, NULL, 169);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_scorched_earth', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -20534,13 +20611,17 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_hive_scorched_earth', 'origin', 'forbid', 'origin_fear_of_the_dark', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_world_forgers', NULL, NULL, 'gestalt', NULL, 1, NULL, 170);
+               VALUES ('civic_hive_world_forgers', 'Volcanic Nesting', '- Unlocks starting planet: Volcanic World. - Guaranteed Research Options: society_research Volcanic Forge. - Can construct building Volcanic Forge building which adds job_polytechnic_drone Pyroclastic Drones. - Planets with a building Volcanic Forge will gradually turn into a Volcanic World. - Guaranteed Habitable Worlds will be Dry worlds.', 'gestalt', NULL, 1, NULL, 170);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_world_forgers', 'pc_volcanic_max_districts_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_max_districts_add', 'Max Districts (Volcanic World)', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_world_forgers', 'pc_volcanic_habitability', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_world_forgers', 'councilor_gestalt_growth_exp_gain', '0.25', 2);
@@ -20554,7 +20635,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_hive_world_forgers', 'civic', 'forbid', 'civic_hive_idyllic_bloom', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_galvanic_symbiosis', NULL, NULL, 'gestalt', NULL, 1, NULL, 171);
+               VALUES ('civic_hive_galvanic_symbiosis', 'Galvanic Symbiosis', '- Starts with engineering_research already researched. - Homeworld has a . - Gain access to special Edicts: - - - Gives access to sr_living_metal Living Metal components: - - - Has access to Planetary Decision: Distribute Living Metal. - Can recruit the Mimetic Strike Force armies. - Can build a building in systems with a Molten World for jobs.', 'gestalt', NULL, 1, NULL, 171);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
@@ -21757,13 +21838,17 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_machine_chosen', 'origin', 'forbid', 'origin_shroud_forged', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_world_forgers', NULL, NULL, 'gestalt', NULL, 1, NULL, 211);
+               VALUES ('civic_machine_world_forgers', 'Thermal Optimizers', '- Unlocks starting planet: Volcanic World. - Guaranteed Research Options: society_research Volcanic Forge. - Can construct building Volcanic Forge building which adds job_polytechnic_drone Pyroclastic Drones. - Planets with a building Volcanic Forge will gradually turn into a Volcanic World. - Guaranteed Habitable Worlds will be Dry worlds.', 'gestalt', NULL, 1, NULL, 211);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_world_forgers', 'pc_volcanic_max_districts_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_max_districts_add', 'Max Districts (Volcanic World)', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_world_forgers', 'pc_volcanic_habitability', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_world_forgers', 'councilor_gestalt_growth_exp_gain', '0.25', 2);
@@ -21777,7 +21862,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_machine_world_forgers', 'origin', 'forbid', 'origin_ocean_machines', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_galvanic_symbiosis', NULL, NULL, 'gestalt', NULL, 1, NULL, 212);
+               VALUES ('civic_machine_galvanic_symbiosis', 'Galvanic Retrofitting', '- Starts with engineering_research already researched. - Homeworld has a . - Gain access to special Edicts: - - - Gives access to sr_living_metal Living Metal components: - - - Has access to Planetary Decision: Distribute Living Metal. - Can recruit the Mimetic Strike Force armies. - Can build a building in systems with a Molten World for jobs.', 'gestalt', NULL, 1, NULL, 212);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
@@ -23390,13 +23475,17 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_tankbound_corporate', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_corporate_world_forgers', NULL, NULL, 'corporate', NULL, 1, NULL, 263);
+               VALUES ('civic_corporate_world_forgers', 'Planetary Architects', '- Unlocks starting planet: Volcanic World. - Guaranteed Research Options: society_research Volcanic Forge. - Can construct building Volcanic Forge building which adds job_polytechnic_mentor Thermotechnic Mentors. - Planets with a building Volcanic Forge will gradually turn into a Volcanic World. - Guaranteed Habitable Worlds will be Dry worlds.', 'corporate', NULL, 1, NULL, 263);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_world_forgers', 'pc_volcanic_max_districts_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_max_districts_add', 'Max Districts (Volcanic World)', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_world_forgers', 'pc_volcanic_habitability', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_world_forgers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -23411,7 +23500,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_corporate_world_forgers', 'origin', 'forbid', 'origin_ocean_paradise', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_corporate_galvanic_symbiosis', NULL, NULL, 'corporate', NULL, 1, NULL, 264);
+               VALUES ('civic_corporate_galvanic_symbiosis', 'Biometallic Cartel', '- Starts with engineering_research already researched. - Homeworld has a . - Gain access to special Edicts: - - - Gives access to sr_living_metal Living Metal components: - - - Has access to Planetary Decision: Distribute Living Metal. - Can recruit the Mimetic Strike Force armies. - Can build a building in systems with a Molten World for jobs. - Can build the building Living Metal Enhancement Clinic Corporate Building.', 'corporate', NULL, 1, NULL, 264);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
@@ -23426,3 +23515,1777 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_galvanic_symbiosis', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_default', 'Prosperous Unification', '- Initial pop Pops: +400 - Homeworld: - : +1 - district Agriculture Districts: +1 - Planetary Modifiers: - Guaranteed Research Options:', NULL, 1, 'gfx/interface/icons/origins/origins_default.dds', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_red_giant', 'Red Giant', '- Homeworld: Volcanic World (Size: planetsize 20)', 'Infernals Species Pack', 1, 'gfx/interface/icons/origins/origin_red_giant.dds', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_red_giant', 'pc_volcanic_habitability', '0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'civic', 'forbid', 'civic_idyllic_bloom', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'civic', 'forbid', 'civic_hive_idyllic_bloom', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'civic', 'forbid', 'civic_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'civic', 'forbid', 'civic_corporate_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'civic', 'forbid', 'civic_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'civic', 'forbid', 'civic_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'civic', 'forbid', 'civic_corporate_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'civic', 'forbid', 'civic_hive_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'civic', 'forbid', 'civic_machine_catalytic_processing', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_cosmic_dawn', 'Cosmic Dawn', '- Homeworld: - Volcanic World (Size: planetsize 14) - blocker Ancient Stasis Pods: +5 - Start with Situation: Deep Excavation', 'Infernals Species Pack', 1, 'gfx/interface/icons/origins/origin_cosmic_dawn.dds', 2);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'authority', 'forbid', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_idyllic_bloom', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_hive_idyllic_bloom', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_corporate_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_corporate_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_hive_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_machine_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_beastmasters', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_hive_beastmasters', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_machine_beastmasters', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_corporate_beastmasters', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_shroud_forged', 'Shroud-Forged', '- Homeworld: - Shroud-Touched Region: +4 - Start with 1000 pops Shroud-Forged Pops - Start with Situation: Forged by the Shroud - Additional Starting Technologies: society - Unique building Building: - Available decision Planetary Decision: Pierce the Shroud', NULL, 1, 'gfx/interface/icons/origins/origins_shroud_forged.dds', 3);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_shroud_forged', 'ROBOT_species_trait_picks_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ROBOT_species_trait_picks_add', 'Mechanical Species Trait Picks', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_shroud_forged', 'ROBOT_species_trait_points_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ROBOT_species_trait_points_add', 'Mechanical Modification Points', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shroud_forged', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shroud_forged', 'civic', 'forbid', 'civic_machine_servitor', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shroud_forged', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shroud_forged', 'civic', 'forbid', 'civic_machine_assimilator', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shroud_forged', 'civic', 'forbid', 'civic_machine_chosen', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_mindwardens', 'Mindwardens', '- Additional Starting Technologies: engineering - Home System: Start with a Starhold. - Homeworld: building - Gain access to the Psionic Containment Casus Belli against psionically ascended Empires. - Guaranteed Habitable Worlds do not appear. - Mindwarden Enclaves are not generated at the start of game.', NULL, 1, 'gfx/interface/icons/origins/origins_mindwardens.dds', 4);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_mindwardens', 'intel_encryption_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_mindwardens', 'damage_vs_psionic_empires_mult', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_psionic_empires_mult', 'Damage to Psionic Empires', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_mindwardens', 'evasion_vs_psionic_empires_mult', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('evasion_vs_psionic_empires_mult', 'Evasion vs Psionic Empires', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mindwardens', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mindwardens', 'ethic', 'forbid', 'ethic_pacifist', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mindwardens', 'ethic', 'forbid', 'ethic_fanatic_pacifist', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mindwardens', 'civic', 'forbid', 'civic_entropy_drinkers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mindwardens', 'civic', 'forbid', 'civic_entropy_drinkers_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mindwardens', 'civic', 'forbid', 'civic_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mindwardens', 'civic', 'forbid', 'civic_corporate_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mindwardens', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mindwardens', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mindwardens', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_endbringers', 'Endbringers', NULL, NULL, 1, 'gfx/interface/icons/origins/origins_endbringers.dds', 5);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_endbringers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_endbringers', 'ethic', 'forbid', 'ethic_pacifist', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_endbringers', 'ethic', 'forbid', 'ethic_fanatic_pacifist', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_endbringers', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_endbringers', 'civic', 'forbid', 'civic_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_endbringers', 'civic', 'forbid', 'civic_corporate_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_endbringers', 'civic', 'forbid', 'civic_augmentation_bazaars', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_evolutionary_predators', 'Evolutionary Predators', '- Species Traits: Malleable Genes - Situation: Adaptive Evolution - Homeworld: Genetic Soup', NULL, 1, 'gfx/interface/icons/origins/origin_evolutionary_predators.dds', 6);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_evolutionary_predators', 'BIOLOGICAL_species_trait_picks_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_augmentation_bazaars', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_permanent_employment', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_idyllic_bloom', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_hive_idyllic_bloom', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_hive_bodysnatcher', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_hive_natural_design', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_hive_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_machine_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_corporate_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_entropy_drinkers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_entropy_drinkers_hive_mind', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_entropy_drinkers_machine', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_entropy_drinkers_corporate', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_starlit_citadel', 'Starlit Citadel', '- Home System: - Deep Space Citadel I at the edge of the gravity well - Strange Portal leading to an unknown system - Homeworld: - building - blocker Biological Ship Remains - blocker Invasion Site: +2 - Additional Starting Technologies: engineering_research Deep Space Citadel', NULL, 1, 'gfx/interface/icons/origins/origin_starlit_citadel.dds', 7);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_starlit_citadel', 'country_megastructure_build_cap_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_megastructure_build_cap_add', 'Megastructure Build Capacity', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_starlit_citadel', 'deep_space_citadel_limit_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('deep_space_citadel_limit_add', 'Deep Space Citadel System Capacity', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_wilderness', 'Wilderness', '- Species Trait: - Replaces all standard building Buildings, district Districts, and zone District Specialization with bespoke ones - Replaces Colony Ship Colonization with Terraforming - Unlocks new Resource: biomass Biomass - Homeworld: - Size: planetsize 18 - blocker Scorched Plains', NULL, 1, 'gfx/interface/icons/origins/origins_wilderness.dds', 8);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_wilderness', 'planet_building_capacity_add', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_capacity_add', 'Planetary Build Queue Capacity', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'authority', 'require_any', 'auth_hive_mind', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_hive_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_hive_toxic_baths', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_hive_memorialist', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_astrometeorology_hive', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_environmental_architects_hive', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_entropy_drinkers_hive_mind', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_hive_superstitious_beliefs', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_twisted_experimenters_hive_mind', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_hive_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_hive_world_forgers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_hive_galvanic_symbiosis', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_treasure_hunters', 'Treasure Hunters', '- Starts with an inactive Celestial Chart - Every recruited leader has a bonus Adventurous Spirit trait - Ruler Traits: - - -', NULL, 1, 'gfx/interface/icons/origins/origin_treasure_hunters.dds', 9);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_treasure_hunters', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_treasure_hunters', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_treasure_hunters', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_treasure_hunters', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_treasure_hunters', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_primal_calling', 'Primal Calling', '- Homeworld: - Planetary Modifiers: Untamed Wilds - Home System: Space Fauna in a neighboring system - Available Buildings: building Wildlife Ranch - Can choose a special Stance regarding Space Fauna upon First Contact - Additional Starting Technologies: - Guaranteed Research Options: - Gain insight on after First Contact with Space Fauna - Gain insight on after capturing Space Fauna - Gain insight on after cloning Space Fauna', NULL, 1, 'gfx/interface/icons/origins/origins_primal_calling.dds', 10);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_primal_calling', 'ship_damage_against_space_fauna_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_damage_against_space_fauna_mult', 'Damage to Space Fauna', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_primal_calling', 'space_fauna_ship_armor_mult', '0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_armor_mult', 'Space Fauna Ship Armor', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_primal_calling', 'space_fauna_ship_speed_mult', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_speed_mult', 'Space Fauna Ship Sublight Speed', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_primal_calling', 'country_capture_chance_add', '0.15', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_capture_chance_add', 'Fauna Capture Chance', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_primal_calling', 'gravity_snare_cooldown_mult', '-0.25', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('gravity_snare_cooldown_mult', 'Gravity Snare Cooldown', 0);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_primal_calling', 'country_vivarium_max_capacity_mult', '0.25', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_vivarium_max_capacity_mult', 'Vivarium Max Capacity', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_primal_calling', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_primal_calling', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_storm_chasers', 'Storm Chasers', '- Leader Traits: Storm Rider - Planet unity Unity from job Jobs per Storm Building: +$@storm_chasers_storm_building_unity_produces_mult|%0$ - Capital Buildings automatically provide the modifiers of Storm Shelters once the required technologies are researched. - Cosmic Storm Appearance Chance Within Borders: +100% - Cosmic Storm Technology Research Option Chance: +175% - Access to the Weather Forecasting Mode - Additional Starting Technologies: - physics', NULL, 1, 'gfx/interface/icons/origins/origin_storm_chasers.dds', 11);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_storm_chasers', 'planet_storm_devastation_mult', '-0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_storm_devastation_mult', 'Planetary Cosmic Storm Devastation Reduction', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_storm_chasers', 'storm_ship_hull_breaker_mult', '-0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('storm_ship_hull_breaker_mult', 'Negative Effects from Cosmic Storms on Ship Defenses:', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_storm_chasers', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_storm_chasers', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_storm_chasers', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_storm_chasers', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_storm_chasers', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_cybernetic_creed', 'Cybernetic Creed', '- Homeworld: Initial buildings replaced by Creed Infrastructure - Cybernetic Creed factions formed shortly after game start - Species Traits: - Guaranteed Research Options: engineering Integrated Cybernetics - Cybernetic Creed Priesthood Jobs', NULL, 1, 'gfx/interface/icons/origins/origins_cybernetic_creed.dds', 12);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cybernetic_creed', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cybernetic_creed', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cybernetic_creed', 'civic', 'forbid', 'civic_permanent_employment', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cybernetic_creed', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cybernetic_creed', 'civic', 'forbid', 'civic_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cybernetic_creed', 'civic', 'forbid', 'civic_corporate_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cybernetic_creed', 'civic', 'forbid', 'civic_entropy_drinkers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cybernetic_creed', 'civic', 'forbid', 'civic_entropy_drinkers_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cybernetic_creed', 'civic', 'forbid', 'civic_superstitious_beliefs', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cybernetic_creed', 'civic', 'forbid', 'civic_corporate_superstitious_beliefs', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cybernetic_creed', 'civic', 'forbid', 'civic_secret_societies', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cybernetic_creed', 'civic', 'forbid', 'civic_secret_societies_corporate', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_synthetic_fertility', 'Synthetic Fertility', '- Initial pop Pops: +900 - Species Traits: Pathogenic Genes - Homeworld: - Size: planetsize 20 - blocker Abandoned Cities: +2 - building Identity Repository - building Abandoned Gene Clinic - Situation: Rapid Identity Preservation - Additional Starting Technologies: AI Technologies - Guaranteed Research Options: engineering_research Artificial Workforce', NULL, 1, 'gfx/interface/icons/origins/origin_synthetic_fertility.dds', 13);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_synthetic_fertility', 'category_computing_research_speed_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_computing_research_speed_mult', 'Research Speed (Computing)', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'ethic', 'forbid', 'ethic_spiritualist', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'ethic', 'forbid', 'ethic_fanatic_spiritualist', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_permanent_employment', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_reanimated_armies', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_augmentation_bazaars', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_toxic_baths', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_toxic_baths_individual_machine', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_corporate_toxic_baths', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_corporate_toxic_baths_individual_machine', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_hive_toxic_baths', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_machine_toxic_baths', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_privatized_exploration', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_corporate_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_entropy_drinkers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_entropy_drinkers_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_galvanic_symbiosis', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_hive_galvanic_symbiosis', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_corporate_galvanic_symbiosis', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_machine_galvanic_symbiosis', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_arc_welders', 'Arc Welders', '- Homeworld: Initial district Mining Districts replaced with district Generator Districts - Home System: Arc Furnace: Equatorial Band constructed around a Molten World - Additional Starting Technologies: engineering_research Arc Furnace - Guaranteed Research Options: engineering_research Mega-Engineering upon constructing a second Arc Furnace', NULL, 1, 'gfx/interface/icons/origins/origin_arc_welders.dds', 14);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_arc_welders', 'country_megastructure_build_cap_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_megastructure_build_cap_add', 'Megastructure Build Capacity', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_arc_welders', 'arc_furnace_limit_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arc_furnace_limit_add', 'Arc Furnace Capacity', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_riftworld', 'Riftworld', '- Homeworld: Ancient Crater Archaeology Site - Colonized Planets in systems with : - Chance for Astral Rifts to appear in systems you control: +100%', NULL, 1, 'gfx/interface/icons/origins/origins_riftworld.dds', 15);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_riftworld', 'country_astral_rift_speed_mult', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_astral_rift_speed_mult', 'Astral Rift Exploration Speed', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_riftworld', 'country_astral_rift_fail_mult', '-0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_astral_rift_fail_mult', 'Astral Rift Fail Probability', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_legendary_leader', 'Under One Rule', '- Species Traits: Perfected Genes - Ruler Traits: Luminary', 'Galactic Paragons', 1, 'gfx/interface/icons/origins/origins_under_one_rule.dds', 16);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_legendary_leader', 'authority', 'require', 'auth_dictatorial', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_legendary_leader_death', 'Broken Rule', '- Species Traits: Perfected Genes - Ruler Traits: Luminary', NULL, 0, 'gfx/interface/icons/origins/origins_under_one_rule.dds', 17);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_legendary_leader_death', 'origin', 'require_any', 'origin_legendary_leader_death', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_legendary_leader_death', 'origin', 'require_any', 'origin_legendary_leader_dictatorial', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_legendary_leader_death', 'origin', 'require_any', 'origin_legendary_leader_imperial', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_legendary_leader_imperial', 'Under One Rule', '- Species Traits: Perfected Genes - Ruler Traits: Luminary', NULL, 0, 'gfx/interface/icons/origins/origins_under_one_rule.dds', 18);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_legendary_leader_imperial', 'origin', 'require_any', 'origin_legendary_leader_death', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_legendary_leader_imperial', 'origin', 'require_any', 'origin_legendary_leader_dictatorial', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_legendary_leader_imperial', 'origin', 'require_any', 'origin_legendary_leader_imperial', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_legendary_leader_dictatorial', 'Under One Rule', '- Species Traits: Perfected Genes - Ruler Traits: Luminary', NULL, 0, 'gfx/interface/icons/origins/origins_under_one_rule.dds', 19);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_legendary_leader_dictatorial', 'origin', 'require_any', 'origin_legendary_leader_death', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_legendary_leader_dictatorial', 'origin', 'require_any', 'origin_legendary_leader_dictatorial', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_legendary_leader_dictatorial', 'origin', 'require_any', 'origin_legendary_leader_imperial', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_payback', 'Payback', '- Homeworld: - Advanced Infrastructure - Planetary Modifiers: Unified Purpose - Home System: The Aftermath of Battle Archaeology Site - One Advanced AI Empire and several Pre-FTL Civilizations regardless of the Galaxy Settings - One Pre-FTL Civilization: Uplifted with the Broken Shackles origin', NULL, 1, 'gfx/interface/icons/origins/origins_payback.dds', 20);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_payback', 'damage_vs_superior_empires_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_superior_empires_mult', 'Damage to Militarily Superior Empires', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'civic', 'forbid', 'civic_dystopian_society', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'civic', 'forbid', 'civic_pompous_purists', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'civic', 'forbid', 'civic_slaver_guilds', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'civic', 'forbid', 'civic_indentured_assets', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'civic', 'forbid', 'civic_private_healthcare_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'civic', 'forbid', 'civic_privatized_exploration', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_broken_shackles', 'Broken Shackles', '- Initial pop Pops: Species from Pre-FTL Civilizations across the galaxy - Starting Planet: - $concept_free_at_last_broken_shackles$ Planetary Modifier - Crashed Slaver Ship Planetary Feature - Spaceship Wreckage - Starting System: Crashed Slaver Ship Archaeology Site - One Advanced AI Empire and several Pre-FTL Civilization regardless of the Galaxy Settings - One Pre-FTL Civilization: Will be this empire''s species and homeworld - One Pre-FTL Civilization: Uplifted with the Payback origin', NULL, 1, 'gfx/interface/icons/origins/origins_broken_shackles.dds', 21);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_broken_shackles', 'envoys_add', '1.0', 0);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_broken_shackles', 'first_contact_speed_mult', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('first_contact_speed_mult', 'First Contact Speed', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_broken_shackles', 'spy_network_daily_value_mult', '0.2', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('spy_network_daily_value_mult', 'Infiltration Speed', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_broken_shackles', 'refugee_attraction', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'ethic', 'forbid', 'ethic_authoritarian', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'ethic', 'forbid', 'ethic_fanatic_authoritarian', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'ethic', 'forbid', 'ethic_xenophobe', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'ethic', 'forbid', 'ethic_fanatic_xenophobe', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_dystopian_society', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_selective_kinship', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_private_healthcare_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_privatized_exploration', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_secret_societies', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_secret_societies_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_fear_of_the_dark', 'Fear of the Dark', '- Home System: Pre-FTL Civilization created by a Separatist Faction, formerly part of your Empire, granting events and benefits', NULL, 1, 'gfx/interface/icons/origins/origins_fear_of_the_dark.dds', 22);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_fear_of_the_dark', 'ship_anomaly_generation_chance_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_anomaly_generation_chance_mult', 'Anomaly Discovery Chance', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_fear_of_the_dark', 'ship_anomaly_research_speed_mult', '0.2', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_fear_of_the_dark', 'num_tech_alternatives_add', '-1.0', 2);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_fear_of_the_dark', 'country_leader_pool_size', '-1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_leader_pool_size', 'Recruitable Leaders per Class', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_fear_of_the_dark', 'refugee_attraction', '-0.1', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fear_of_the_dark', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fear_of_the_dark', 'civic', 'forbid', 'civic_inwards_perfection', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fear_of_the_dark', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fear_of_the_dark', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fear_of_the_dark', 'civic', 'forbid', 'civic_privatized_exploration', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fear_of_the_dark', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fear_of_the_dark', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fear_of_the_dark', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fear_of_the_dark', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_overtuned', 'Overtuned', '- Species Traits: Access to Overtuned Traits - Overtuned Traits: - Can be boosted by the Damn the Consequences Edict - Can be added and removed through Genetic Modification - Additional Starting Technologies: society Gene Tailoring', NULL, 1, 'gfx/interface/icons/origins/origins_overtuned.dds', 23);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_overtuned', 'BIOLOGICAL_species_trait_points_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_points_add', 'Organic Species Modification Points', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_overtuned', 'BIOLOGICAL_species_trait_picks_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_overtuned', 'authority', 'forbid', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_overtuned', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_overtuned', 'civic', 'forbid', 'civic_hive_natural_design', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_overtuned', 'civic', 'forbid', 'civic_entropy_drinkers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_overtuned', 'civic', 'forbid', 'civic_entropy_drinkers_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_overtuned', 'civic', 'forbid', 'civic_entropy_drinkers_hive_mind', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_toxic_knights', 'Knights of the Toxic God', '- Homeworld: - Toxic Planetary Features - Unique Orbital Habitat: - building Order''s Keep - district Order''s Demesne - job_politician Politician Jobs replaced by Knightly Order Jobs - Situation: Quest for the Toxic God - Policies: Knightly Duties - Available Holdings: building Order''s Commanderies on Subject colonies', NULL, 1, 'gfx/interface/icons/origins/origins_toxic_knights.dds', 24);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_toxic_knights', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_toxic_knights', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_toxic_knights', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_toxic_knights', 'civic', 'forbid', 'civic_dystopian_society', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_toxic_knights', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_toxic_knights', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_progenitor_hive', 'Progenitor Hive', '- building Spawning Pools replaced with building Offspring Nest - Available Holdings: building Offspring Nest - If Devouring Swarm Civic is NOT selected: Sectors can be released as Subjects - Assigned Leaders: Gain additional passive experience - Available Starbase Buildings: Offspring Outlook - Can construct Offspring Ships', NULL, 1, 'gfx/interface/icons/origins/origins_progenitor_hive.dds', 25);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_progenitor_hive', 'ship_military_speed_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_military_speed_mult', 'Military Ship Sublight Speed', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_progenitor_hive', 'owned_ship_evasion_mult', '-0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('owned_ship_evasion_mult', 'Evasion Chance', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_progenitor_hive', 'owned_ship_fire_rate_mult', '-0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('owned_ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_progenitor_hive', 'owned_ship_accuracy_mult', '-0.5', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('owned_ship_accuracy_mult', 'Accuracy', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_progenitor_hive', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_progenitor_hive', 'civic', 'forbid', 'civic_hive_beastmasters', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_subterranean', 'Subterranean', '- Species Traits: Cave Dweller - : Uncapped - Available District Specializations: zone Subterranean Urbanization for Mining Districts - Homeworld starts with a zone Subterranean Urbanization already built.', NULL, 1, 'gfx/interface/icons/origins/origins_subterranean.dds', 26);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean', 'mining_district_housing_add', '200.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('mining_district_housing_add', 'Housing from Mining Districts', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean', 'planet_orbital_bombardment_damage', '-0.75', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_orbital_bombardment_damage', 'Orbital Bombardment Damage', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean', 'planet_structures_cost_mult', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_cost_mult', 'Planetary Infrastructure Cost', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean', 'planet_structures_upkeep_mult', '0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_upkeep_mult', 'Planetary Infrastructure Upkeep', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean', 'planet_building_build_speed_mult', '-0.1', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Planetary Infrastructure Build Speed', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean', 'planet_storm_devastation_mult', '-0.25', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_storm_devastation_mult', 'Planetary Cosmic Storm Devastation Reduction', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean', 'planet_non_artificial_max_districts_add', '2.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_non_artificial_max_districts_add', 'Max Districts (non-artificial planets only)', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_subterranean_machines', 'Subterranean Machines', '- Species Traits: Molebots - : Uncapped - Available District Specializations: zone Subterranean Urbanization for Mining Districts - Homeworld starts with a zone Subterranean Urbanization already built.', NULL, 1, 'gfx/interface/icons/origins/origins_subterranean.dds', 27);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean_machines', 'mining_district_housing_add', '200.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('mining_district_housing_add', 'Housing from Mining Districts', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean_machines', 'planet_orbital_bombardment_damage', '-0.75', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_orbital_bombardment_damage', 'Orbital Bombardment Damage', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean_machines', 'planet_structures_cost_mult', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_cost_mult', 'Planetary Infrastructure Cost', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean_machines', 'planet_structures_upkeep_mult', '0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_upkeep_mult', 'Planetary Infrastructure Upkeep', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean_machines', 'planet_building_build_speed_mult', '-0.1', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Planetary Infrastructure Build Speed', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean_machines', 'planet_storm_devastation_mult', '-0.25', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_storm_devastation_mult', 'Planetary Cosmic Storm Devastation Reduction', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_subterranean_machines', 'planet_non_artificial_max_districts_add', '2.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_non_artificial_max_districts_add', 'Max Districts (non-artificial planets only)', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_star_slingshot', 'Slingshot to the Stars', '- Home System: Nearby ruined $concept_quantum_catapult_restored_slingshot$ with the Logs from the Quantum Architect Archaeology Site - Quantic Ambush Effects: Increased to +50% Ship Fire Rate', NULL, 1, 'gfx/interface/icons/origins/origins_star_slingshot.dds', 28);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_star_slingshot', 'country_starbase_influence_cost_distance_mult', '-0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_influence_cost_distance_mult', 'Starbase Influence Distance Cost', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_star_slingshot', 'starbase_outpost_cost_mult', '-0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_outpost_cost_mult', 'Outpost Build Cost', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_star_slingshot', 'catapult_spread_mult', '0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('catapult_spread_mult', 'Quantum Catapult Accuracy', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_shroudwalker_apprentice', 'Teachers of the Shroud', '- Species Traits: Latent Psionic - Available Starbase Buildings: Shroud Beacon - Communications with the Shroudwalker Enclave - Guaranteed Research Options: society Psionic Theory.', NULL, 1, 'gfx/interface/icons/origins/origins_shroudwalker_apprentice.dds', 29);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shroudwalker_apprentice', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shroudwalker_apprentice', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shroudwalker_apprentice', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shroudwalker_apprentice', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shroudwalker_apprentice', 'civic', 'forbid', 'civic_augmentation_bazaars', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_imperial_vassal', 'Imperial Fiefdom', '- Subject of an Advanced AI Empire - Can select a Specialist Subject type at the start of the game', NULL, 1, 'gfx/interface/icons/origins/origins_imperial_vassal.dds', 30);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_imperial_vassal', 'civic', 'forbid', 'civic_inwards_perfection', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_imperial_vassal', 'civic', 'forbid', 'civic_machine_assimilator', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_imperial_vassal', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_imperial_vassal', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_imperial_vassal', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_imperial_vassal', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_imperial_vassal', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_here_be_dragons', 'Here Be Dragons', '- Home System: Inhabited by a protective Sky Dragon, that will become wrathful if displeased', NULL, 1, 'gfx/interface/icons/origins/origin_here_be_dragons.dds', 31);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_here_be_dragons', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_here_be_dragons', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_here_be_dragons', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_here_be_dragons', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_here_be_dragons', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_ocean_paradise', 'Ocean Paradise', '- Homeworld: - Ocean World (size: planetsize 30) - Planetary Modifiers: Ocean Paradise - Planetary Features: Crystal Reef - Guaranteed Habitable Worlds: Replaced with Frozen Worlds', NULL, 1, 'gfx/interface/icons/origins/origins_ocean_paradise.dds', 32);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_ocean_paradise', 'civic', 'forbid', 'civic_pyrolatry', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_ocean_paradise', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_ocean_paradise', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_ocean_paradise', 'civic', 'forbid', 'civic_world_forgers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_ocean_paradise', 'civic', 'forbid', 'civic_hive_world_forgers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_ocean_paradise', 'civic', 'forbid', 'civic_machine_world_forgers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_ocean_paradise', 'civic', 'forbid', 'civic_corporate_world_forgers', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_ocean_machines', 'Subaquatic Machines', '- Homeworld: - Ocean World (size: planetsize 30) - Planetary Modifiers: Ocean Paradise - Planetary Features: Crystal Reef - Guaranteed Habitable Worlds: Replaced with Frozen Worlds', NULL, 1, 'gfx/interface/icons/origins/origins_ocean_paradise.dds', 33);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_ocean_machines', 'civic', 'forbid', 'civic_pyrolatry', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_ocean_machines', 'civic', 'forbid', 'civic_machine_world_forgers', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_necrophage', 'Necrophage', '- Homeworld: Chamber of Elevation - Species Traits: Necrophage - Prepatent pop Pops: 1.2K - Guaranteed Habitable Worlds: Replaced with Pre-FTL Civilizations', 'Necroids Species Pack', 1, 'gfx/interface/icons/origins/origins_necrophage.dds', 34);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_necrophage', 'refugee_attraction', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_necrophage', 'authority', 'forbid', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_necrophage', 'ethic', 'forbid', 'ethic_xenophile', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_necrophage', 'ethic', 'forbid', 'ethic_fanatic_xenophile', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_necrophage', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_necrophage', 'civic', 'forbid', 'civic_death_cult', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_necrophage', 'civic', 'forbid', 'civic_death_cult_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_necrophage', 'civic', 'forbid', 'civic_hive_empath', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_necrophage', 'civic', 'forbid', 'civic_permanent_employment', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_necrophage', 'civic', 'forbid', 'civic_hive_bodysnatcher', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_necrophage', 'civic', 'forbid', 'civic_superstitious_beliefs', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_necrophage', 'civic', 'forbid', 'civic_corporate_superstitious_beliefs', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_remnants', 'Remnants', '- Homeworld: - Relic World (Size: planetsize 22) - blocker Ruined Arcology: +6', NULL, 1, 'gfx/interface/icons/origins/origins_remnant.dds', 35);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_remnants', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_shattered_ring', 'Shattered Ring', '- Homeworld: Shattered Ring Segment - Guaranteed Habitable Worlds: Replaced with Colonizable Ring World Segments that have blocker Blockers decreasing mod_pop_environment_tolerance Habitability - Species Traits: Ring World Preference', 'Federations', 1, 'gfx/interface/icons/origins/origins_shattered_ring.dds', 36);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shattered_ring', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shattered_ring', 'civic', 'forbid', 'civic_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shattered_ring', 'civic', 'forbid', 'civic_corporate_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shattered_ring', 'civic', 'forbid', 'civic_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shattered_ring', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_void_dwellers', 'Void Dwellers', '- Homeworld: Orbital Habitat - Species Traits: - Void Dweller - Habitat Preference - Additional Starting Technologies: engineering_research Orbital Habitats - Guaranteed Research Options: engineering_research Habitat Expansion - Guaranteed Habitable Worlds: Resource-rich systems instead of Colonizable Planets - Can construct advanced housing buildings on Habitats - Waives Technology requirements for zone Basic District Specialization on Habitats', 'Federations', 1, 'gfx/interface/icons/origins/origin_void_dwellers.dds', 37);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_void_dwellers', 'habitat_max_districts_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_max_districts_add', 'Habitat Max Districts', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_void_dwellers', 'megastructures_habitat_cost_mult', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_habitat_cost_mult', 'Habitat Build Cost', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_void_dwellers', 'planet_districts_hab_cost_mult', '-0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_districts_hab_cost_mult', 'Habitat Districts Cost', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_void_dwellers', 'habitat_districts_minor_add', '0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_districts_minor_add', 'Habitat Max Districts from Minor Celestial Bodies', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_void_dwellers', 'habitat_district_jobs_mult', '0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_district_jobs_mult', 'Jobs from Habitat Districts', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_dwellers', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_dwellers', 'civic', 'forbid', 'civic_idyllic_bloom', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_dwellers', 'civic', 'forbid', 'civic_hive_idyllic_bloom', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_dwellers', 'civic', 'forbid', 'civic_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_dwellers', 'civic', 'forbid', 'civic_corporate_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_dwellers', 'civic', 'forbid', 'civic_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_dwellers', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_void_machines', 'Voidforged', '- Homeworld: Orbital Habitat - Species Traits: - Zero-G Optimized - Habitat Preference - Additional Starting Technologies: engineering_research Orbital Habitats - Guaranteed Research Options: engineering_research Habitat Expansion - Guaranteed Habitable Worlds: Resource-rich systems instead of Colonizable Planets - Can construct advanced housing buildings on Habitats - Waives Technology requirements for zone Basic District Specialization on Habitats', 'Federations', 1, 'gfx/interface/icons/origins/origin_void_dwellers.dds', 38);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_void_machines', 'habitat_max_districts_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_max_districts_add', 'Habitat Max Districts', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_void_machines', 'megastructures_habitat_cost_mult', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_habitat_cost_mult', 'Habitat Build Cost', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_void_machines', 'planet_districts_hab_cost_mult', '-0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_districts_hab_cost_mult', 'Habitat Districts Cost', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_void_machines', 'habitat_districts_minor_add', '0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_districts_minor_add', 'Habitat Max Districts from Minor Celestial Bodies', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_void_machines', 'habitat_district_jobs_mult', '0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_district_jobs_mult', 'Jobs from Habitat Districts', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_machines', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_machines', 'civic', 'forbid', 'civic_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_machines', 'civic', 'forbid', 'civic_corporate_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_machines', 'civic', 'forbid', 'civic_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_machines', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_scion', 'Scion', '- scion Scion of a Fallen Empire Overlord - Home System: Connected to Overlord''s capital via a Wormhole - Fallen Empire present in the galaxy regardless of Galaxy settings - Chance of receiving powerful gifts from Overlord', 'Federations', 1, 'gfx/interface/icons/origins/origins_scion_1.dds', 39);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_scion', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_scion', 'ethic', 'forbid', 'ethic_fanatic_xenophobe', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_scion', 'civic', 'forbid', 'civic_pompous_purists', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_scion', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_shoulders_of_giants', 'On the Shoulders of Giants', '- Home System: Ex Gravitas Archaeology Site related to a mysterious benefactor', 'Federations', 1, 'gfx/interface/icons/origins/origins_one_the_shoulders_of_giant.dds', 40);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shoulders_of_giants', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_common_ground', 'Common Ground', '- Leader of a non-Hegemony Federation - : Replaced with Federation members - Additional Starting Technologies:', 'Federations', 1, 'gfx/interface/icons/origins/origins_common_ground.dds', 41);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_common_ground', 'ethic', 'forbid', 'ethic_xenophobe', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_common_ground', 'ethic', 'forbid', 'ethic_fanatic_xenophobe', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_common_ground', 'civic', 'forbid', 'civic_barbaric_despoilers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_common_ground', 'civic', 'forbid', 'civic_inwards_perfection', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_common_ground', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_common_ground', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_common_ground', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_common_ground', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_common_ground', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_hegemon', 'Hegemon', '- Leader of a Hegemony Federation - : Replaced with Federation members - Additional Starting Technologies:', 'Federations', 1, 'gfx/interface/icons/origins/origins_hegemon.dds', 42);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon', 'ethic', 'forbid', 'ethic_xenophobe', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon', 'ethic', 'forbid', 'ethic_fanatic_xenophobe', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon', 'ethic', 'forbid', 'ethic_egalitarian', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon', 'civic', 'forbid', 'civic_inwards_perfection', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_doomsday', 'Doomsday', NULL, 'Federations', 1, 'gfx/interface/icons/origins/origins_doomsday.dds', 43);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_lithoid', 'Calamitous Birth', '- Homeworld: - Massive Crater - blocker Buried Lithoids: +4 - Available Colony Ships: Lithoid Meteorites - Planets Colonized with Lithoid Meteorites: - blocker Buried Lithoids: +2 - Planetary Modifiers: Lithoid Crater - Available Holdings: building Experimental Crater on (Subject) colonies', 'Lithoids Species Pack', 1, 'gfx/interface/icons/origins/origins_lithoid.dds', 44);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_lithoid', 'civic', 'forbid', 'civic_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_lithoid', 'civic', 'forbid', 'civic_corporate_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_lithoid', 'civic', 'forbid', 'civic_hive_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_lithoid', 'civic', 'forbid', 'civic_machine_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_lithoid', 'civic', 'forbid', 'civic_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_lithoid', 'civic', 'forbid', 'civic_corporate_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_lithoid', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_lithoid', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_life_seeded', 'Life-Seeded', '- Homeworld: Gaia World (Size: planetsize 30) with Rare Planetary Features - Species Traits: Gaia World Preference', 'Apocalypse', 1, 'gfx/interface/icons/origins/origins_life_seeded.dds', 45);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_toxic_baths', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_toxic_baths_individual_machine', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_corporate_toxic_baths', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_corporate_toxic_baths_individual_machine', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_hive_toxic_baths', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_machine_toxic_baths', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_relentless_industrialists', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_corporate_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_world_forgers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_hive_world_forgers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_machine_world_forgers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_corporate_world_forgers', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_post_apocalyptic', 'Post-Apocalyptic', '- Homeworld: Tomb World - Species Traits: Survivor', 'Apocalypse', 1, 'gfx/interface/icons/origins/origins_post_apocalyptic.dds', 46);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic', 'civic', 'forbid', 'civic_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic', 'civic', 'forbid', 'civic_corporate_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic', 'civic', 'forbid', 'civic_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_post_apocalyptic_machines', 'Radioactive Rovers', '- Homeworld: Tomb World - Species Traits: Radiation Shields', 'Apocalypse', 1, 'gfx/interface/icons/origins/origins_post_apocalyptic.dds', 47);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic_machines', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic_machines', 'civic', 'forbid', 'civic_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic_machines', 'civic', 'forbid', 'civic_corporate_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic_machines', 'civic', 'forbid', 'civic_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic_machines', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_clone_army', 'Clone Army', '- Homeworld: Ancient Clone Vat: +2 - Species Traits: $concept_clone_soldier_infertile$ - Additional Starting Technologies: - society_research Cloning - society_research Gene Banks', NULL, 1, 'gfx/interface/icons/origins/origins_clones.dds', 48);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_clone_army', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_clone_army', 'civic', 'forbid', 'civic_permanent_employment', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_clone_army', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_clone_army', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_clone_army', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_machine', 'Resource Consolidation', '- Homeworld: - Prototype Machine World - Planetary Features: Consolidated Resources - If combined with the Driven Assimilator Civic: - Planetary Features: Organic Slurry - Waives Technology requirements for the Machine Worlds Ascension Perk', NULL, 1, 'gfx/interface/icons/origins/origins_resource_consolidation.dds', 49);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_machine', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_machine', 'civic', 'forbid', 'civic_machine_servitor', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_machine', 'civic', 'forbid', 'civic_machine_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_machine', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_machine', 'civic', 'forbid', 'civic_machine_astromining_drones', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_unplugged', 'Hard Reset', '- Homeworld: - Planetary Modifiers: Battlefield Recoveries - Home System: Contains a Tomb World with an Archaeology Site related to a decimated Pre-FTL Civilization - Species Traits: - Limited access to Cybernetic Traits - Cyber Commandos - Unplugged', NULL, 1, 'gfx/interface/icons/origins/origins_unplugged.dds', 50);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'ethic', 'forbid', 'ethic_fanatic_spiritualist', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'ethic', 'forbid', 'ethic_fanatic_xenophile', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'ethic', 'require_any', 'ethic_militarist', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_privatized_exploration', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_hyperspace_specialty', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_corporate_hyperspace_specialty', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_corporate_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_aristocratic_elite', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_heroic_tales', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_pleasure_seekers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_corporate_hedonism', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_storm_callers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_storm_callers_megacorp', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_environmental_architects', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_environmental_architects_megacorp', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_criminal_heritage', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_media_conglomerate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_parliamentary_system', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_trading_posts', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_dark_consortium', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_corporate_dark_consortium', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_idyllic_bloom', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_entropy_drinkers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_entropy_drinkers_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_secret_societies', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_secret_societies_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_corporate_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_mechanists', 'Mechanist', '- mod_planet_jobs_robotic_produces_mult Robot pop Pops: 800 - Mechanical Trait: Adaptive Frames - Homeworld: building Robot Assembly Plant - Additional Starting Technologies: - engineering_research Powered Exoskeletons - engineering_research Artificial Workforce - Guaranteed Research Options: engineering_research Machine Template System', NULL, 1, 'gfx/interface/icons/origins/origins_mechanist.dds', 51);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_mechanists', 'planet_pop_assembly_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_mechanists', 'ROBOT_species_trait_picks_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ROBOT_species_trait_picks_add', 'Mechanical Species Trait Picks', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_mechanists', 'ROBOT_species_trait_points_add', '2.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ROBOT_species_trait_points_add', 'Mechanical Modification Points', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mechanists', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mechanists', 'ethic', 'require_any', 'ethic_materialist', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mechanists', 'ethic', 'require_any', 'ethic_fanatic_materialist', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mechanists', 'civic', 'forbid', 'civic_permanent_employment', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_syncretic_evolution', 'Syncretic Evolution', '- pop Organic Pops with Serviles Trait: 2.4K', NULL, 1, 'gfx/interface/icons/origins/origins_syncretic_evolution.dds', 52);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_syncretic_evolution', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_syncretic_evolution', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_syncretic_evolution', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_syncretic_evolution', 'civic', 'forbid', 'civic_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_syncretic_evolution', 'civic', 'forbid', 'civic_corporate_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_syncretic_evolution', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_syncretic_evolution', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_syncretic_evolution', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_syncretic_evolution', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_tree_of_life', 'Tree of Life', '- Homeworld: Tree of Life - Colonized Planets: Tree of Life Sapling Planetary Feature - Colonies without the Tree of Life Sapling: Transplant Tree of Life Planetary Decision - Available Holdings: building Tree of Life Sprout on Subject colonies', NULL, 1, 'gfx/interface/icons/origins/origins_tree_of_life.dds', 53);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_tree_of_life', 'ship_colonizer_food_cost_add', '500.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_colonizer_food_cost_add', 'Colony Ship food Food Build Cost', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_tree_of_life', 'ship_colonizer_alloys_cost_mult', '-0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_colonizer_alloys_cost_mult', 'Colony Ship alloys Alloys Build Cost', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_tree_of_life', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_tree_of_life', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_fruitful', 'Fruitful Partnership', '- Space Fauna: Disperse Seed Pods throughout the galaxy - Available Starbase Buildings: Starseed Gardens - Available Bombardment Stances: - Home System: in a neighboring system', NULL, 1, 'gfx/interface/icons/origins/origins_gardeners.dds', 54);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fruitful', 'authority', 'forbid', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fruitful', 'ethic', 'require_any', 'ethic_xenophile', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fruitful', 'ethic', 'require_any', 'ethic_fanatic_xenophile', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fruitful', 'ethic', 'require_any', 'ethic_pacifist', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fruitful', 'ethic', 'require_any', 'ethic_fanatic_pacifist', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fruitful', 'ethic', 'require_any', 'ethic_gestalt_consciousness', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fruitful', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_galactic_doorstep', 'Galactic Doorstep', '- Home System: Dormant Gateway', NULL, 1, 'gfx/interface/icons/origins/origins_gateway.dds', 55);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_galactic_doorstep', 'megastructures_gateways_cost_mult', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_gateways_cost_mult', 'Gateway Build Cost', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_galactic_doorstep', 'megastructure_build_speed_mult', '0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructure_build_speed_mult', 'Megastructure Build Speed', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_lost_colony', 'Lost Colony', '- Starting Planet: Colonial Spirit Planetary Modifier - An Advanced AI Empire of the same species is present in the galaxy', NULL, 1, 'gfx/interface/icons/origins/origins_lost_colony.dds', 56);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_fallen_empire', 'Elder Race', '- No effect', NULL, 0, 'gfx/interface/icons/origins/origins_elder_race.dds', 57);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_fallen_empire', 'country_naval_cap_add', '1000.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_fallen_empire_hive', 'Elder Race', '- No effect', NULL, 0, 'gfx/interface/icons/origins/origins_elder_race.dds', 58);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_fallen_empire_hive', 'country_naval_cap_add', '1000.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_enlightened', 'Enlightened', NULL, NULL, 0, 'gfx/interface/icons/origins/origins_enlightened.dds', 59);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_enlightened', 'all_technology_research_speed', '0.1', 0);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_enlightened', 'monthly_loyalty', '0.5', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_default_pre_ftl', 'Developing Civilization', '- No effect', NULL, 0, 'gfx/interface/icons/origins/origin_default_pre_ftl.dds', 60);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_separatists', 'Separatists', NULL, NULL, 0, 'gfx/interface/icons/origins/origins_separatists.dds', 61);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_separatists', 'planet_stability_add', '10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_separatists', 'pop_government_ethic_attraction', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_separatists', 'starbase_shipyard_build_speed_mult', '0.2', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_liberated', 'Liberated', NULL, NULL, 0, 'gfx/interface/icons/origins/origins_separatists.dds', 62);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_liberated', 'planet_stability_add', '10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_liberated', 'pop_government_ethic_attraction', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_liberated', 'starbase_shipyard_build_speed_mult', '0.2', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_demonic_incursion', 'Daemonic Incursion', NULL, NULL, 0, 'gfx/interface/icons/origins/origins_separatists.dds', 63);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_demonic_incursion', 'country_naval_cap_mult', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_demonic_incursion', 'ships_upkeep_mult', '-0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_khan_successor', 'Khanate Successor', 'Unlocks the Raiding bombardment stance, which in turn allows us to abduct pops from besieged planets and resettle them to our own worlds.', NULL, 0, 'gfx/interface/icons/origins/origins_khan_successor.dds', 64);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_khan_successor', 'commander_initial_skill', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commander_initial_skill', 'commander Commander Starting Skill Level', 1);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_life_seeded_ai_only', 'Life-Seeded', '- Homeworld: Gaia World (Size: planetsize 30) with Rare Planetary Features - Species Traits: Gaia World Preference', NULL, 0, 'gfx/interface/icons/origins/origins_life_seeded.dds', 65);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_common_ground_npc', 'Common Ground', '- Start as a member of a non-Hegemony federation with two additional members', NULL, 0, 'gfx/interface/icons/origins/origins_common_ground.dds', 66);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_common_ground_npc', 'civic', 'forbid', 'civic_barbaric_despoilers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_common_ground_npc', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_common_ground_npc', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_common_ground_npc', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_hegemon_npc', 'Hegemon Subordinate', '- Start as a member of a Hegemony federation with two additional members.', NULL, 0, 'gfx/interface/icons/origins/origins_hegemon.dds', 67);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon_npc', 'civic', 'forbid', 'civic_inwards_perfection', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon_npc', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon_npc', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_hegemon_npc', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_imperial_vassal_overlord', 'Imperial Liege', '- Starts as an Advanced Empire - Starts with several vassals', NULL, 0, 'gfx/interface/icons/origins/origins_imperial_vassal.dds', 68);
+INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('origin_slavers', 'Your Ladder To The Sky', '- Starts as an Advanced Empire - Start with a number of enslaved pop Pops abducted from Pre-FTL Civilizations across the galaxy. - Allows the Raiding bombardment stance, which abducts pop Pops from planets and resettles them to your colonies.', NULL, 0, 'gfx/interface/icons/origins/origins_slavers.dds', 69);
+INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('origin_slavers', 'country_naval_cap_add', '50.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);

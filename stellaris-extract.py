@@ -384,6 +384,47 @@ CREATE TABLE civic_requirement (
     FOREIGN KEY (civic_key) REFERENCES civic(key)
 );
 
+-- Origins: the empire's starting scenario (one per empire). Like civics, the numeric
+-- effects (where present — most origins are narrative/event-driven) live in
+-- origin_modifier and the eligibility rules in origin_requirement. `selectable` is 0
+-- for the non-playable file and for swap-variant forms (gated on already having an
+-- origin) — the planner only loads selectable = 1.
+DROP TABLE IF EXISTS origin_requirement;
+DROP TABLE IF EXISTS origin_modifier;
+DROP TABLE IF EXISTS origin;
+CREATE TABLE origin (
+    key          TEXT PRIMARY KEY,    -- e.g. "origin_shattered_ring"
+    name         TEXT,                -- localised name
+    description  TEXT,                -- cleaned effects tooltip
+    required_dlc TEXT,                -- from playable host_has_dlc; NULL = base game
+    selectable   INTEGER NOT NULL DEFAULT 1,
+    icon         TEXT,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (required_dlc) REFERENCES dlc(name)
+);
+
+CREATE TABLE origin_modifier (
+    origin_key     TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (origin_key, modifier_key),
+    FOREIGN KEY (origin_key) REFERENCES origin(key)
+);
+
+-- Eligibility rules parsed from an origin's potential/possible blocks (same shape as
+-- civic_requirement): kind authority/ethic/civic/origin × operator
+-- require/forbid/require_any. For origins these are mostly civic conflicts.
+CREATE TABLE origin_requirement (
+    origin_key TEXT NOT NULL,
+    kind       TEXT NOT NULL,
+    operator   TEXT NOT NULL,
+    value      TEXT NOT NULL,
+    group_id   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (origin_key, kind, operator, value),
+    FOREIGN KEY (origin_key) REFERENCES origin(key)
+);
+
 -- Precursors: the ancient civilisations whose archaeology chains grant rewards.
 -- The precursor<->reward mapping is spread across event files (no single source
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
@@ -822,7 +863,10 @@ def extract_trait_categories(w: Writer, verbose: bool):
 # Localisation parsing (for species class display names)
 # ---------------------------------------------------------------------------
 
-_LOC_ENTRY = re.compile(r'^\s+(\w[\w_]*):(\d*)\s+"([^"]*)"', re.MULTILINE)
+# Leading whitespace is optional: most files indent entries, but some DLC files
+# (e.g. the Infernals Species Pack) put them at column 0. The `l_english:` header
+# never matches (it has no "value"); `#` comments aren't word-initial.
+_LOC_ENTRY = re.compile(r'^\s*(\w[\w_]*):(\d*)\s+"([^"]*)"', re.MULTILINE)
 
 
 _LOC_REF = re.compile(r'^\$(\w+)\$$')
@@ -1677,6 +1721,92 @@ def extract_civics(data: dict, civic_type: str, loc: dict[str, str],
             w.execute(
                 """INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (key, kind, op, val, gid),
+            )
+
+    w.commit()
+    return order
+
+
+# ---------------------------------------------------------------------------
+# Extraction: origins
+# ---------------------------------------------------------------------------
+
+def extract_origins(data: dict, force_nonselectable: bool, loc: dict[str, str],
+                    scripted_vars: dict[str, float], w: Writer, order_start: int,
+                    verbose: bool) -> int:
+    """Extract one origins file. `force_nonselectable` marks every origin in it
+    non-selectable (the non-playable file). Returns the next sort_order."""
+    variables: dict[str, float] = dict(scripted_vars)
+    for k, v in data.items():
+        if k.startswith('@'):
+            f = _resolve_modifier_float(v)
+            if f is not None:
+                variables[k] = f
+
+    order = order_start
+    for key, odef in data.items():
+        if key.startswith('@') or not isinstance(odef, dict):
+            continue
+        if str(odef.get('is_origin')).strip() != 'yes':
+            continue
+
+        playable = odef.get('playable')
+        dlc = None
+        if isinstance(playable, dict):
+            d = playable.get('host_has_dlc')
+            if isinstance(d, list):
+                d = d[0] if d else None
+            dlc = str(d).strip('"') if d else None
+
+        # Not player-pickable: the non-playable file; swap-variant forms (potential
+        # gated on already having an origin); country-type-gated; or playable = no.
+        selectable = 0 if force_nonselectable else 1
+        pot = odef.get('potential')
+        if isinstance(pot, dict) and ('origin' in pot or 'country_type' in pot):
+            selectable = 0
+        if isinstance(playable, dict) and str(playable.get('always')).strip() == 'no':
+            selectable = 0
+
+        raw_name = loc.get(key)
+        name = _clean_loc(raw_name, loc) if raw_name else None
+        desc_key = odef.get('description')
+        desc_key = desc_key.strip('"') if isinstance(desc_key, str) else None
+        raw_desc = loc.get(desc_key) if desc_key else None
+        description = _clean_loc(raw_desc, loc) if raw_desc else None
+        icon = odef.get('icon')
+        icon = icon.strip('"') if isinstance(icon, str) else None
+
+        w.execute(
+            """INSERT OR REPLACE INTO origin
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (key, name, description, dlc, selectable, icon, order),
+        )
+        if verbose:
+            print(f"  origin {key} | {name}{'' if selectable else ' (not selectable)'}")
+        order += 1
+
+        modifier = odef.get('modifier')
+        if isinstance(modifier, dict):
+            for m_order, (mk, mv) in enumerate(modifier.items()):
+                s = str(mv).strip()
+                value = variables.get(s) if s.startswith('@') else _resolve_modifier_float(mv)
+                if value is None:
+                    continue
+                w.execute(
+                    """INSERT OR IGNORE INTO origin_modifier
+                           (origin_key, modifier_key, modifier_value, sort_order)
+                       VALUES (?, ?, ?, ?)""",
+                    (key, mk, value, m_order),
+                )
+                _write_modifier_label(w, loc, mk)
+
+        for kind, op, val, gid in _civic_requirements(odef):
+            w.execute(
+                """INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES (?, ?, ?, ?, ?)""",
                 (key, kind, op, val, gid),
             )
@@ -3239,6 +3369,20 @@ Examples:
         try:
             civic_order = extract_civics(parse_file(f), ctype, loc, scripted_vars, w,
                                          civic_order, args.verbose)
+        except Exception as e:
+            print(f"  WARNING: failed to parse {fn}: {e}", file=sys.stderr)
+
+    # --- origins (same dir; 00 = playable, 01 = non-playable) ---
+    origin_files = (('00_origins.txt', False), ('01_origins_non_playable.txt', True))
+    print(f"\n[origins] {civics_dir}", file=progress)
+    origin_order = 0
+    for fn, nonsel in origin_files:
+        f = civics_dir / fn
+        if not f.exists():
+            continue
+        try:
+            origin_order = extract_origins(parse_file(f), nonsel, loc, scripted_vars, w,
+                                           origin_order, args.verbose)
         except Exception as e:
             print(f"  WARNING: failed to parse {fn}: {e}", file=sys.stderr)
 
