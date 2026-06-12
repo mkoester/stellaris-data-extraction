@@ -444,6 +444,7 @@ CREATE TABLE civic (
     civic_type   TEXT NOT NULL,       -- 'normal' | 'gestalt' | 'corporate' | 'special'
     required_dlc TEXT,                -- from playable host_has_dlc; NULL = base game
     selectable   INTEGER NOT NULL DEFAULT 1,  -- 0 = not player-pickable (fallen empire, …)
+    locked       INTEGER NOT NULL DEFAULT 0,  -- 1 = `modification = no`: can't be added/removed after game start
     icon         TEXT,
     sort_order   INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
@@ -1794,12 +1795,15 @@ def extract_civics(data: dict, civic_type: str, loc: dict[str, str],
         description = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
         icon = cdef.get('icon')
         icon = icon.strip('"') if isinstance(icon, str) else None
+        # `modification = no` → the civic can't be added/removed via a government
+        # reform after the game starts (origin-bound, devouring swarm, etc.).
+        locked = 1 if str(cdef.get('modification')).strip().strip('"') == 'no' else 0
 
         w.execute(
             """INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (key, name, description, civic_type, dlc, selectable, icon, order),
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, name, description, civic_type, dlc, selectable, locked, icon, order),
         )
         if verbose:
             print(f"  civic [{civic_type}] {key} | {name}"

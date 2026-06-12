@@ -191,6 +191,7 @@ CREATE TABLE civic (
     civic_type   TEXT NOT NULL,       -- 'normal' | 'gestalt' | 'corporate' | 'special'
     required_dlc TEXT,                -- from playable host_has_dlc; NULL = base game
     selectable   INTEGER NOT NULL DEFAULT 1,  -- 0 = not player-pickable (fallen empire, …)
+    locked       INTEGER NOT NULL DEFAULT 0,  -- 1 = `modification = no`: can't be added/removed after game start
     icon         TEXT,
     sort_order   INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
@@ -15043,8 +15044,8 @@ INSERT OR REPLACE INTO precursor_planet
                             planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
                        VALUES ('adSul_system#3', 'precursor_adakkaria', 'adSul_system', NULL, NULL, NULL, NULL, 0, 0, NULL, 3);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_corvee_system', 'Corvée System', 'Waives all Unity costs for Pop Resettlement.', 'normal', NULL, 1, NULL, 0);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_corvee_system', 'Corvée System', 'Waives all Unity costs for Pop Resettlement.', 'normal', NULL, 1, 0, NULL, 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corvee_system', 'planet_resettlement_unemployed_mult', '0.15', 0);
@@ -15081,8 +15082,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corvee_system', 'civic', 'forbid', 'civic_free_haven', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_imperial_cult', 'Imperial Cult', 'Ruler''s Home Planet has additional Jobs', 'normal', NULL, 1, NULL, 1);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_imperial_cult', 'Imperial Cult', 'Ruler''s Home Planet has additional Jobs', 'normal', NULL, 1, 0, NULL, 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_imperial_cult', 'country_edict_fund_add', '100.0', 0);
@@ -15110,8 +15111,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_imperial_cult', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 2);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_beacon_of_liberty', 'Beacon of Liberty', NULL, 'normal', NULL, 1, NULL, 2);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_beacon_of_liberty', 'Beacon of Liberty', NULL, 'normal', NULL, 1, 0, NULL, 2);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_beacon_of_liberty', 'country_unity_produces_mult', '0.1', 0);
@@ -15157,9 +15158,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_beacon_of_liberty', 'civic', 'forbid', 'civic_crusader_spirit', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_exalted_priesthood', 'Exalted Priesthood', 'Politician Jobs are converted to High Priests
-The Citadel of Faith grants additional High Priests jobs.', 'normal', NULL, 1, NULL, 3);
+The Citadel of Faith grants additional High Priests jobs.', 'normal', NULL, 1, 0, NULL, 3);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_exalted_priesthood', 'planet_bureaucrats_unity_produces_add', '1.0', 0);
@@ -15184,8 +15185,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_exalted_priesthood', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 2);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_philosopher_king', 'Philosopher King', NULL, 'normal', NULL, 1, NULL, 4);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_philosopher_king', 'Philosopher King', NULL, 'normal', NULL, 1, 0, NULL, 4);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_philosopher_king', 'ruler_skill_add', '5.0', 0);
@@ -15204,8 +15205,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_philosopher_king', 'authority', 'require_any', 'auth_imperial', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_meritocracy', 'Meritocracy', NULL, 'normal', NULL, 1, NULL, 5);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_meritocracy', 'Meritocracy', NULL, 'normal', NULL, 1, 0, NULL, 5);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_meritocracy', 'planet_jobs_specialist_produces_mult', '0.1', 0);
@@ -15229,8 +15230,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_meritocracy', 'authority', 'require_any', 'auth_oligarchic', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_citizen_service', 'Citizen Service', 'Grants access to the Recruitment Office Holding', 'normal', NULL, 1, NULL, 6);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_citizen_service', 'Citizen Service', 'Grants access to the Recruitment Office Holding', 'normal', NULL, 1, 0, NULL, 6);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_citizen_service', 'country_naval_cap_mult', '0.15', 0);
@@ -15274,12 +15275,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_citizen_service', 'civic', 'forbid', 'civic_tankbound', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_technocracy', 'Technocracy', 'Politician Jobs are converted to Science Directors
 The Research Institute grants additional Science Directors Jobs
 Scientists start with random Expertise trait
 Expertise traits have additional effects
-Start with an additional Scientist as the Governor of your Homeworld', 'normal', NULL, 1, NULL, 7);
+Start with an additional Scientist as the Governor of your Homeworld', 'normal', NULL, 1, 0, NULL, 7);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_technocracy', 'num_tech_alternatives_add', '1.0', 0);
@@ -15309,9 +15310,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_technocracy', 'civic', 'forbid', 'civic_shared_burden', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_feudal_realm', 'Feudal Society', 'Ignore Diplomatic Requirements when proposing Subjugation
-Your Subjects cannot have the following Agreement Terms: Expansion Prohibited, Do not join subject wars, Limited Diplomacy', 'normal', NULL, 1, NULL, 8);
+Your Subjects cannot have the following Agreement Terms: Expansion Prohibited, Do not join subject wars, Limited Diplomacy', 'normal', NULL, 1, 0, NULL, 8);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_feudal_realm', 'country_naval_capacity_contribution_from_subjects_mult', '0.05', 0);
@@ -15342,8 +15343,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_feudal_realm', 'authority', 'require', 'auth_imperial', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_police_state', 'Police State', NULL, 'normal', NULL, 1, NULL, 9);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_police_state', 'Police State', NULL, 'normal', NULL, 1, 0, NULL, 9);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_police_state', 'planet_stability_add', '3.0', 0);
@@ -15377,8 +15378,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_police_state', 'civic', 'forbid', 'civic_civil_education', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_idealistic_foundation', 'Idealistic Foundation', NULL, 'normal', NULL, 1, NULL, 10);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_idealistic_foundation', 'Idealistic Foundation', NULL, 'normal', NULL, 1, 0, NULL, 10);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_idealistic_foundation', 'pop_citizen_happiness', '0.1', 0);
@@ -15407,10 +15408,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_idealistic_foundation', 'ethic', 'require_any', 'ethic_fanatic_egalitarian', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_environmentalist', 'Environmentalist', 'Available Buildings: Ranger Lodge
 Additional Starting Buildings: Ranger Lodge
-Available Holdings: Ranger Lodge', 'normal', NULL, 1, NULL, 11);
+Available Holdings: Ranger Lodge', 'normal', NULL, 1, 0, NULL, 11);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmentalist', 'planet_pops_consumer_goods_upkeep_mult', '-0.2', 0);
@@ -15437,8 +15438,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmentalist', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_slaver_guilds', 'Slaver Guilds', NULL, 'normal', NULL, 1, NULL, 12);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_slaver_guilds', 'Slaver Guilds', NULL, 'normal', NULL, 1, 0, NULL, 12);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_slaver_guilds', 'pop_slave_bonus_workforce_mult', '0.15', 0);
@@ -15473,7 +15474,7 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_slaver_guilds', 'civic', 'forbid', 'civic_tankbound', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_inwards_perfection', 'Inward Perfection', 'Cannot have Rivals
 Cannot form Defensive Pacts
 Cannot form Migration Treaties
@@ -15483,7 +15484,7 @@ Cannot Guarantee Independence
 Cannot join Federations
 Cannot Infiltrate pre-FTLs
 Cannot have forced Subjects
-Cannot use Unrestricted Wars policy', 'normal', NULL, 1, NULL, 13);
+Cannot use Unrestricted Wars policy', 'normal', NULL, 1, 1, NULL, 13);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_inwards_perfection', 'country_unity_produces_mult', '0.2', 0);
@@ -15577,10 +15578,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_inwards_perfection', 'origin', 'forbid', 'origin_fear_of_the_dark', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_warrior_culture', 'Warrior Culture', 'Replaces Entertainer Jobs with Duelist Jobs.
 Duelists turn Alloys into Unity, Amenities, and Naval Capacity.
-Replaces Conserved Fauna Jobs with Gladiatorial Beast Jobs.', 'normal', NULL, 1, NULL, 14);
+Replaces Conserved Fauna Jobs with Gladiatorial Beast Jobs.', 'normal', NULL, 1, 0, NULL, 14);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_warrior_culture', 'army_damage_mult', '0.2', 0);
@@ -15615,8 +15616,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_warrior_culture', 'civic', 'forbid', 'civic_pleasure_seekers', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_distinguished_admiralty', 'Distinguished Admiralty', NULL, 'normal', NULL, 1, NULL, 15);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_distinguished_admiralty', 'Distinguished Admiralty', NULL, 'normal', NULL, 1, 0, NULL, 15);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_distinguished_admiralty', 'ship_fire_rate_mult', '0.1', 0);
@@ -15655,8 +15656,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_distinguished_admiralty', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_free_haven', 'Free Haven', NULL, 'normal', NULL, 1, NULL, 16);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_free_haven', 'Free Haven', NULL, 'normal', NULL, 1, 0, NULL, 16);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_free_haven', 'planet_resettlement_unemployed_destination_mult', '0.25', 0);
@@ -15696,8 +15697,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_free_haven', 'civic', 'forbid', 'civic_dystopian_society', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_cutthroat_politics', 'Cutthroat Politics', NULL, 'normal', NULL, 1, NULL, 17);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_cutthroat_politics', 'Cutthroat Politics', NULL, 'normal', NULL, 1, 0, NULL, 17);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_cutthroat_politics', 'edicts_upkeep_mult', '-0.2', 0);
@@ -15720,9 +15721,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_cutthroat_politics', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_dominion', 'Corporate Dominion', 'Starts with the Offworld Trade Companies technology already unlocked
-Unlocks Ship Type: Private Colony Ship', 'normal', NULL, 1, NULL, 18);
+Unlocks Ship Type: Private Colony Ship', 'normal', NULL, 1, 0, NULL, 18);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_dominion', 'external_leader_pool_add', '1.0', 0);
@@ -15747,10 +15748,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_dominion', 'ethic', 'forbid', 'ethic_fanatic_xenophobe', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_agrarian_idyll', 'Agrarian Idyll', 'Agriculture Districts provide 400 more Housing.
 Generator Districts and Mining Districts provide 300 more Housing.
-City Districts provide 200 less Housing., Farmers also produce 2 Amenities.', 'normal', NULL, 1, NULL, 19);
+City Districts provide 200 less Housing., Farmers also produce 2 Amenities.', 'normal', NULL, 1, 0, NULL, 19);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_agrarian_idyll', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -15799,8 +15800,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_agrarian_idyll', 'origin', 'forbid', 'origin_remnants', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_shadow_council', 'Shadow Council', NULL, 'normal', NULL, 1, NULL, 20);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_shadow_council', 'Shadow Council', NULL, 'normal', NULL, 1, 0, NULL, 20);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_shadow_council', 'election_term_variance_add', '5.0', 0);
@@ -15845,8 +15846,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_shadow_council', 'authority', 'require_any', 'auth_dictatorial', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_mining_guilds', 'Mining Guilds', NULL, 'normal', NULL, 1, NULL, 21);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_mining_guilds', 'Mining Guilds', NULL, 'normal', NULL, 1, 0, NULL, 21);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_mining_guilds', 'planet_miners_minerals_produces_add', '1.0', 0);
@@ -15867,8 +15868,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_mining_guilds', 'civic', 'forbid', 'civic_tankbound', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_parliamentary_system', 'Parliamentary System', 'Factions will form in your empire shortly after the game starts, but Faction Output is reduced for the first ten years.', 'normal', NULL, 1, NULL, 22);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_parliamentary_system', 'Parliamentary System', 'Factions will form in your empire shortly after the game starts, but Faction Output is reduced for the first ten years.', 'normal', NULL, 1, 0, NULL, 22);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_parliamentary_system', 'pop_factions_produces_mult', '0.2', 0);
@@ -15912,8 +15913,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_parliamentary_system', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_efficient_bureaucracy', 'Efficient Bureaucracy', 'Bureaucrats and provide Edict Fund scaling with their Unity production.', 'normal', NULL, 1, NULL, 23);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_efficient_bureaucracy', 'Efficient Bureaucracy', 'Bureaucrats and provide Edict Fund scaling with their Unity production.', 'normal', NULL, 1, 0, NULL, 23);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_efficient_bureaucracy', 'planet_bureaucrats_upkeep_mult', '-0.2', 0);
@@ -15931,8 +15932,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_efficient_bureaucracy', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_nationalistic_zeal', 'Nationalistic Zeal', NULL, 'normal', NULL, 1, NULL, 24);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_nationalistic_zeal', 'Nationalistic Zeal', NULL, 'normal', NULL, 1, 0, NULL, 24);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_nationalistic_zeal', 'country_war_exhaustion_mult', '-0.2', 0);
@@ -15966,8 +15967,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_nationalistic_zeal', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_functional_architecture', 'Functional Architecture', 'Waives Technology requirements for Zone Basic District Specializations', 'normal', NULL, 1, NULL, 25);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_functional_architecture', 'Functional Architecture', 'Waives Technology requirements for Zone Basic District Specializations', 'normal', NULL, 1, 0, NULL, 25);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_functional_architecture', 'planet_structures_cost_mult', '-0.15', 0);
@@ -15990,11 +15991,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_functional_architecture', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_aristocratic_elite', 'Aristocratic Elite', 'Politician Jobs are converted into Noble Jobs
 Can construct Noble Estates buildings that add additional Noble Jobs
 Grants access to the Noble Chateaus Holding
-Leaders have a 20% chance to start with an additional positive and negative trait.', 'normal', NULL, 1, NULL, 26);
+Leaders have a 20% chance to start with an additional positive and negative trait.', 'normal', NULL, 1, 0, NULL, 26);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_aristocratic_elite', 'pop_cat_ruler_bonus_workforce_mult', '0.1', 0);
@@ -16032,10 +16033,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_aristocratic_elite', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_shared_burden', 'Shared Burdens', 'Allows Shared Burdens Living Standard, under which all Pops have moderate Consumer Goods Upkeep regardless of Strata
 Disables the use of most other Living Standards
-Grants access to the Communal Housing Outreach Holding', 'normal', 'Megacorp', 1, NULL, 27);
+Grants access to the Communal Housing Outreach Holding', 'normal', 'Megacorp', 1, 0, NULL, 27);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_shared_burden', 'planet_stability_add', '5.0', 0);
@@ -16068,13 +16069,13 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_shared_burden', 'civic', 'forbid', 'civic_pleasure_seekers', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_fanatic_purifiers', 'Fanatic Purifiers', 'Cannot engage in Diplomacy with other species!
 Cannot access the Galactic Market
 Has the ''Purification'' casus belli on other species
 Xeno Pops will always be purged
 Gains Unity from purging Pop Xeno Pops
-May use Armageddon bombardment stance', 'normal', NULL, 1, NULL, 28);
+May use Armageddon bombardment stance', 'normal', NULL, 1, 1, NULL, 28);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_fanatic_purifiers', 'ship_fire_rate_mult', '0.33', 0);
@@ -16178,12 +16179,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_fanatic_purifiers', 'origin', 'forbid', 'origin_broken_shackles', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_barbaric_despoilers', 'Barbaric Despoilers', 'Cannot form Migration Treaties
 Cannot form (but can join) Federations other than Martial Alliances or Hegemonies
 Has the ''Despoliation'' casus belli on all other empires
 Unlocks the Raiding bombardment stance, which in turn allows us to abduct pops from besieged planets and resettle them to our own worlds.
-Decreased Opinion for most other empires', 'normal', 'Apocalypse', 1, NULL, 29);
+Decreased Opinion for most other empires', 'normal', 'Apocalypse', 1, 1, NULL, 29);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_barbaric_despoilers', 'add_attunement_the_eater_of_worlds', '60.0', 0);
@@ -16232,8 +16233,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_barbaric_despoilers', 'origin', 'forbid', 'origin_common_ground', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_byzantine_bureaucracy', 'Byzantine Bureaucracy', NULL, 'normal', 'Megacorp', 1, NULL, 30);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_byzantine_bureaucracy', 'Byzantine Bureaucracy', NULL, 'normal', 'Megacorp', 1, 0, NULL, 30);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_byzantine_bureaucracy', 'planet_bureaucrats_unity_produces_add', '1.0', 0);
@@ -16251,9 +16252,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_byzantine_bureaucracy', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_merchant_guilds', 'Merchant Guilds', 'Politician Jobs are converted to Merchant Jobs
-The Galactic Stock Exchange grants additional Merchants Jobs.', 'normal', 'Megacorp', 1, NULL, 31);
+The Galactic Stock Exchange grants additional Merchants Jobs.', 'normal', 'Megacorp', 1, 0, NULL, 31);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_merchant_guilds', 'add_attunement_the_instrument_of_desire', '60.0', 0);
@@ -16266,13 +16267,13 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_merchant_guilds', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_reanimated_armies', 'Reanimators', 'Soldiers are replaced with Necromancers
 Available Buildings: Dread Encampment
 Available Holdings: Dread Outpost
 Defeated Organic Armies are sometimes resurrected as Undead Armies
 Defeated organic Leviathans can sometimes be resurrected
-Controlled cloned organic Space Fauna can be reanimated', 'normal', 'Necroids Species Pack', 1, NULL, 32);
+Controlled cloned organic Space Fauna can be reanimated', 'normal', 'Necroids Species Pack', 1, 0, NULL, 32);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_reanimated_armies', 'add_attunement_the_eater_of_worlds', '60.0', 0);
@@ -16314,8 +16315,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_reanimated_armies', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_diplomatic_corps', 'Diplomatic Corps', NULL, 'normal', 'Federations', 1, NULL, 33);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_diplomatic_corps', 'Diplomatic Corps', NULL, 'normal', 'Federations', 1, 0, NULL, 33);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_diplomatic_corps', 'envoys_add', '2.0', 0);
@@ -16355,12 +16356,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_diplomatic_corps', 'civic', 'forbid', 'civic_scorched_earth', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_death_cult', 'Death Cult', 'Available Buildings: Sacrificial Temple
 Additional Starting Buildings: Sacrificial Temple
 Available Holdings: Sacrificial Shrine
 Access to Sacrifice Edicts
-Priests are converted into Death Priests', 'normal', 'Necroids Species Pack', 1, NULL, 34);
+Priests are converted into Death Priests', 'normal', 'Necroids Species Pack', 1, 0, NULL, 34);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_death_cult', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16392,10 +16393,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_death_cult', 'origin', 'forbid', 'origin_necrophage', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_memorialist', 'Memorialists', 'Can build Sanctuary of Repose
 Sanctuaries of Repose improve Governing Ethics Attraction on Tomb Worlds and Relic Worlds
-Death Chroniclers turn Consumer Goods into Unity and Stability, and inherit the Ethics-based modifiers of', 'normal', 'Necroids Species Pack', 1, NULL, 35);
+Death Chroniclers turn Consumer Goods into Unity and Stability, and inherit the Ethics-based modifiers of', 'normal', 'Necroids Species Pack', 1, 0, NULL, 35);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memorialist', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -16423,9 +16424,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_memorialist', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_catalytic_processing', 'Catalytic Processing', 'are replaced with Catalytic Technicians
-Industrial Jobs have their Minerals Upkeep replaced with Food Upkeep.', 'normal', 'Plantoids Species Pack', 1, NULL, 36);
+Industrial Jobs have their Minerals Upkeep replaced with Food Upkeep.', 'normal', 'Plantoids Species Pack', 1, 0, NULL, 36);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_catalytic_processing', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16439,9 +16440,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_catalytic_processing', 'origin', 'forbid', 'origin_lithoid', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_crafters', 'Masterful Crafters', 'Artisans are replaced with Artificers
-Artificers turn Minerals into Consumer Goods and Trade', 'normal', NULL, 1, NULL, 37);
+Artificers turn Minerals into Consumer Goods and Trade', 'normal', NULL, 1, 0, NULL, 37);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_crafters', 'add_attunement_the_instrument_of_desire', '60.0', 0);
@@ -16454,11 +16455,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_crafters', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_pleasure_seekers', 'Pleasure Seekers', 'Pop Cat Civilians are converted into Hedonists, which do not produce Amenities
 Allows Decadent Lifestyle Living Standard, under which all Pops have increased Happiness, Consumer Goods Upkeep and Amenities Usage
 Hedonists with Decadent Lifestyle provide Unity and Pop Growth (or Assembly) Speed, but require Amenities
-Additional Starting Buildings: Holo-Theatres', 'normal', NULL, 1, NULL, 38);
+Additional Starting Buildings: Holo-Theatres', 'normal', NULL, 1, 0, NULL, 38);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_pleasure_seekers', 'add_attunement_the_instrument_of_desire', '60.0', 0);
@@ -16489,10 +16490,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_pleasure_seekers', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_idyllic_bloom', 'Idyllic Bloom', 'Can build Gaia Seeders on your and your vassal''s worlds ideal to your starting species.
 Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.
-As you unlock improved Society Terraforming technologies, Gaia Seeders can be constructed on additional planet types.', 'normal', 'Plantoids Species Pack', 1, NULL, 39);
+As you unlock improved Society Terraforming technologies, Gaia Seeders can be constructed on additional planet types.', 'normal', 'Plantoids Species Pack', 1, 1, NULL, 39);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_idyllic_bloom', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -16532,9 +16533,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_idyllic_bloom', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_anglers', 'Anglers', 'On Ocean Worlds, Agriculture Districts are uncapped.
-On Wet worlds: Agriculture Districts have the Zone Aquaculture Specialization, Farmers are converted into Anglers, Artisans are converted into Pearl Divers', 'normal', NULL, 1, NULL, 40);
+On Wet worlds: Agriculture Districts have the Zone Aquaculture Specialization, Farmers are converted into Anglers, Artisans are converted into Pearl Divers', 'normal', NULL, 1, 0, NULL, 40);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_anglers', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -16559,9 +16560,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_anglers', 'origin', 'forbid', 'origin_void_dwellers', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_anglers', 'Marine Machines', 'On Ocean Worlds, Agriculture Districts are uncapped.
-On Wet worlds: Agriculture Districts have the Zone Aquaculture Specialization, Farmers are converted into Anglers, Artisans are converted into Pearl Divers', 'normal', NULL, 1, NULL, 41);
+On Wet worlds: Agriculture Districts have the Zone Aquaculture Specialization, Farmers are converted into Anglers, Artisans are converted into Pearl Divers', 'normal', NULL, 1, 1, NULL, 41);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_anglers', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -16583,8 +16584,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_anglers', 'origin', 'forbid', 'origin_void_machines', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_pompous_purists', 'Pompous Purists', 'Can only engage in Diplomacy with other empires if they are the proposer.', 'normal', NULL, 1, NULL, 42);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_pompous_purists', 'Pompous Purists', 'Can only engage in Diplomacy with other empires if they are the proposer.', 'normal', NULL, 1, 0, NULL, 42);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_pompous_purists', 'envoy_improve_relations_mult', '0.25', 0);
@@ -16636,9 +16637,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_pompous_purists', 'origin', 'forbid', 'origin_scion', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_toxic_baths', 'Mutagenic Spas', 'Available Buildings: Mutagenic Spas
-Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a Colony with Mutagenic Spas.', 'normal', NULL, 1, NULL, 43);
+Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a Colony with Mutagenic Spas.', 'normal', NULL, 1, 0, NULL, 43);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_toxic_baths', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -16660,8 +16661,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_toxic_baths', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_relentless_industrialists', 'Relentless Industrialists', 'Can build Coordinated Fulfillment Center, significantly increasing Alloy and Consumer Goods output at the cost of reduced Pop Growth and gradually turning planets into Tomb Worlds.', 'normal', NULL, 1, NULL, 44);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_relentless_industrialists', 'Relentless Industrialists', 'Can build Coordinated Fulfillment Center, significantly increasing Alloy and Consumer Goods output at the cost of reduced Pop Growth and gradually turning planets into Tomb Worlds.', 'normal', NULL, 1, 0, NULL, 44);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_relentless_industrialists', 'add_attunement_the_instrument_of_desire', '60.0', 0);
@@ -16710,9 +16711,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_relentless_industrialists', 'origin', 'forbid', 'origin_life_seeded', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_scavengers', 'Scavengers', 'Researching Debris grants both Physics Society Engineering Research and a portion of other Resource Costs of the destroyed fleet
-Ships can be salvaged from some Debris', 'normal', NULL, 1, NULL, 45);
+Ships can be salvaged from some Debris', 'normal', NULL, 1, 0, NULL, 45);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_scavengers', 'ships_alloys_upkeep_mult', '-0.05', 0);
@@ -16738,8 +16739,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_scavengers', 'civic', 'forbid', 'civic_corporate_scavengers', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_ascensionists', 'Ascensionists', 'Colonies have +1 Ascension Tier on game start.', 'normal', NULL, 1, NULL, 46);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_ascensionists', 'Ascensionists', 'Colonies have +1 Ascension Tier on game start.', 'normal', NULL, 1, 0, NULL, 46);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ascensionists', 'planetary_ascension_effect_mult', '0.25', 0);
@@ -16776,8 +16777,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_ascensionists', 'civic', 'forbid', 'civic_corporate_ascensionists', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_memory_vault', 'Vaults of Knowledge', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Destiny Traits acquired.', 'normal', 'Galactic Paragons', 1, NULL, 47);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_memory_vault', 'Vaults of Knowledge', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Destiny Traits acquired.', 'normal', 'Galactic Paragons', 1, 0, NULL, 47);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault', 'councilor_skill_add', '1.0', 0);
@@ -16803,9 +16804,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_memory_vault', 'civic', 'forbid', 'civic_memory_vault_corporate', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_crusader_spirit', 'Crusader Spirit', 'Commanders start with the Crusader Trait
-Can only use Liberation Wars policy', 'normal', 'Galactic Paragons', 1, NULL, 48);
+Can only use Liberation Wars policy', 'normal', 'Galactic Paragons', 1, 0, NULL, 48);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_crusader_spirit', 'ship_weapon_damage', '0.05', 0);
@@ -16861,9 +16862,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_crusader_spirit', 'civic', 'forbid', 'civic_beacon_of_liberty', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_eager_explorers', 'Eager Explorers', 'Start with 2 Exploration Vessels and an Engineering Vessel equipped with Subspace Drives, making them incapable of Hyperlane travel but granting limited Jump Drive abilities.
-Gain an increased chance to discover FTL Travel Technologies', 'normal', NULL, 1, NULL, 49);
+Gain an increased chance to discover FTL Travel Technologies', 'normal', NULL, 1, 0, NULL, 49);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_eager_explorers', 'ship_speed_mult', '0.15', 0);
@@ -16889,9 +16890,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_eager_explorers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hyperspace_specialty', 'Hyperspace Specialty', 'Physics Hyperlane Breach Points is Guaranteed Research Option.
-Has Low Intel on all systems within 3 Hyperlanes of your starting system.', 'normal', NULL, 1, NULL, 50);
+Has Low Intel on all systems within 3 Hyperlanes of your starting system.', 'normal', NULL, 1, 0, NULL, 50);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hyperspace_specialty', 'planet_sensor_range_add', '2.0', 0);
@@ -16937,8 +16938,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hyperspace_specialty', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_dimensional_worship', 'Dimensional Worship', 'Available Starbase Buildings: Dimensional Shrine', 'normal', NULL, 1, NULL, 51);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_dimensional_worship', 'Dimensional Worship', 'Available Starbase Buildings: Dimensional Shrine', 'normal', NULL, 1, 0, NULL, 51);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_dimensional_worship', 'planet_bureaucrats_physics_research_produces_add', '1.0', 0);
@@ -16963,8 +16964,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_dimensional_worship', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_heroic_tales', 'Heroic Past', NULL, 'normal', 'Galactic Paragons', 1, NULL, 52);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_heroic_tales', 'Heroic Past', NULL, 'normal', 'Galactic Paragons', 1, 0, NULL, 52);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_heroic_tales', 'country_official_cap_add', '1.0', 0);
@@ -16990,12 +16991,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_heroic_tales', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_dystopian_society', 'Oppressive Autocracy', 'Enforcers are Pop Cat Ruler Elites instead of Pop Cat Specialists
 Only Pop Cat Ruler Elites can produce Amenities and have Amenities Upkeep
 Forces Dystopian Society Living Standard, under which non-Elite Pops have decreased Consumer Goods Upkeep
 Non-Elite Pops generate additional Crime
-Cannot build Holo-Theatres', 'normal', 'Galactic Paragons', 1, NULL, 53);
+Cannot build Holo-Theatres', 'normal', 'Galactic Paragons', 1, 1, NULL, 53);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_dystopian_society', 'country_commander_cap_add', '1.0', 0);
@@ -17044,12 +17045,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_dystopian_society', 'civic', 'forbid', 'civic_environmentalist', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_selective_kinship', 'Selective Kinship', 'Opinion of Empires with shared Species Class: +100
 Opinion of other Empires: -50
 Refugee Attraction with our Species Class: +30%
 Refugee Attraction with other Species Classes: -20%, Pops of our Species Class have Full Citizenship
-Other Pops are barred from Full Citizenship', 'normal', NULL, 1, NULL, 54);
+Other Pops are barred from Full Citizenship', 'normal', NULL, 1, 0, NULL, 54);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_selective_kinship', 'citizen_pop_same_species_class_happiness', '0.075', 0);
@@ -17085,10 +17086,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_selective_kinship', 'origin', 'forbid', 'origin_broken_shackles', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_dark_consortium', 'Dark Consortium', 'Additional Starting Technologies: Physics Dark Matter Drawing
 Access to Dark Matter Edicts
-Has access to the Dark Matter Breakthrough Council Agenda.', 'normal', NULL, 1, NULL, 55);
+Has access to the Dark Matter Breakthrough Council Agenda.', 'normal', NULL, 1, 0, NULL, 55);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_dark_consortium', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17099,8 +17100,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_dark_consortium', 'civic', 'forbid', 'civic_corporate_dark_consortium', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_natural_design', 'Natural Design', 'Available Buildings: Genomic Services Center', 'normal', NULL, 1, NULL, 56);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_natural_design', 'Natural Design', 'Available Buildings: Genomic Services Center', 'normal', NULL, 1, 1, NULL, 56);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_natural_design', 'BIOLOGICAL_species_trait_picks_add', '2.0', 0);
@@ -17162,10 +17163,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_natural_design', 'origin', 'forbid', 'origin_endbringers', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_sovereign_guardianship', 'Sovereign Guardianship', 'Unlocks Fanatic Guardians as defense armies.
 Allows building a Reloading Bay in starbases.
-Enables Inner Focus Edict, converting Influence into Unity.', 'normal', NULL, 1, NULL, 57);
+Enables Inner Focus Edict, converting Influence into Unity.', 'normal', NULL, 1, 0, NULL, 57);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_sovereign_guardianship', 'empire_size_colonies_mult', '0.75', 0);
@@ -17255,10 +17256,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_sovereign_guardianship', 'origin', 'forbid', 'origin_broken_shackles', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_guided_sapience', 'Genesis Guides', 'Available Colony Ships: Genesis Ark
 Planets Colonized with Genesis Arks: Pre-Sapient Pops: +300, Planetary Features: Genesis Preserve
-Gains Unity from uplifting Pre-Sapient Species', 'normal', NULL, 1, NULL, 58);
+Gains Unity from uplifting Pre-Sapient Species', 'normal', NULL, 1, 0, NULL, 58);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_guided_sapience', 'terraforming_cost_mult', '-0.25', 0);
@@ -17312,9 +17313,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_guided_sapience', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_toxic_baths_individual_machine', 'Lubrication Tanks', 'Available Buildings: Hyper Lubrication Basin
-Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a Colony with Hyper Lubrication Basin.', 'normal', NULL, 1, NULL, 59);
+Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a Colony with Hyper Lubrication Basin.', 'normal', NULL, 1, 0, NULL, 59);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_toxic_baths_individual_machine', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -17333,8 +17334,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_toxic_baths_individual_machine', 'origin', 'forbid', 'origin_life_seeded', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_individual_machine_replication', 'Rapid Replicator', NULL, 'normal', NULL, 1, NULL, 60);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_individual_machine_replication', 'Rapid Replicator', NULL, 'normal', NULL, 1, 0, NULL, 60);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_individual_machine_replication', 'planet_pop_assembly_mult', '0.2', 0);
@@ -17347,8 +17348,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_individual_machine_replication', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_individual_machine_predictive_analysis', 'Static Research Analysis', NULL, 'normal', NULL, 1, NULL, 61);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_individual_machine_predictive_analysis', 'Static Research Analysis', NULL, 'normal', NULL, 1, 0, NULL, 61);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_individual_machine_predictive_analysis', 'num_tech_alternatives_add', '1.0', 0);
@@ -17369,8 +17370,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_individual_machine_predictive_analysis', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_individual_machine_warbots', 'Warbots', NULL, 'normal', NULL, 1, NULL, 62);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_individual_machine_warbots', 'Warbots', NULL, 'normal', NULL, 1, 0, NULL, 62);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_individual_machine_warbots', 'army_damage_mult', '0.2', 0);
@@ -17406,9 +17407,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_individual_machine_warbots', 'civic', 'forbid', 'civic_machine_obsessional_directive', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_astrometeorology', 'Astrometeorology', 'Available Buildings: Astrometeorology Observatory
-Additional Starting Buildings: Astrometeorology Observatory', 'normal', NULL, 1, NULL, 63);
+Additional Starting Buildings: Astrometeorology Observatory', 'normal', NULL, 1, 0, NULL, 63);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_astrometeorology', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17416,10 +17417,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_astrometeorology', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_storm_callers', 'Storm Devotion', 'Available Buildings: Storm Summoning Theater
 Replaces Jobs with Storm Dancer Jobs
-Species Traits: Storm Touched', 'normal', NULL, 1, NULL, 64);
+Species Traits: Storm Touched', 'normal', NULL, 1, 0, NULL, 64);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_storm_callers', 'capital_storm_diplo_weight_mult', '0.2', 0);
@@ -17440,11 +17441,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_storm_callers', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_environmental_architects', 'Planetscapers', 'Additional Starting Technologies: Society Technologies to remove Blocker on the Homeworld
 Society Technologies to remove Blocker Natural Blockers are granted as Permanent Research Options upon Colonization
 Mastery of Nature replaced with Cultivated Worldscaping Planetary
-For each Blocker Natural Blocker on Colonized Planet : Resources from Jobs: -10%, Pop Growth Speed: -10%, Pop Upkeep: +15%', 'normal', NULL, 1, NULL, 65);
+For each Blocker Natural Blocker on Colonized Planet : Resources from Jobs: -10%, Pop Growth Speed: -10%, Pop Upkeep: +15%', 'normal', NULL, 1, 0, NULL, 65);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects', 'planet_jobs_produces_mult', '0.1', 0);
@@ -17534,13 +17535,13 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmental_architects', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_galactic_curators', 'Galactic Curators', 'Guaranteed Research Options:
 Initial : One Common of each Collection Category
 Gain Unity each time you find a Specimen or complete an Archaeological Site
 Purchases from the Curator Enclave: $@galactic_curators_curator_enclave_purchase_cost|%0$
 Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output
-Replaces Entertainer Jobs with Museum Curator Jobs', 'normal', NULL, 1, NULL, 66);
+Replaces Entertainer Jobs with Museum Curator Jobs', 'normal', NULL, 1, 0, NULL, 66);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_galactic_curators', 'planet_jobs_unity_produces_mult', '-0.1', 0);
@@ -17576,12 +17577,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_galactic_curators', 'civic', 'forbid', 'civic_corporate_galactic_curators', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_beastmasters', 'Beastmasters', 'Additional Starting Technologies:  
 Available Starbase Buildings:
 Home System: Start with a
 Starting Military Ships are replaced with Space Amoebas
-Starting Genetic Material : Common Space Amoeba', 'normal', NULL, 1, NULL, 67);
+Starting Genetic Material : Common Space Amoeba', 'normal', NULL, 1, 0, NULL, 67);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_beastmasters', 'starbase_shipyard_artificial_build_cost_mult', '2.0', 0);
@@ -17626,8 +17627,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_beastmasters', 'origin', 'forbid', 'origin_cosmic_dawn', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_genetic_identification', 'Genetic Identification', NULL, 'normal', NULL, 1, NULL, 68);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_genetic_identification', 'Genetic Identification', NULL, 'normal', NULL, 1, 0, NULL, 68);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_genetic_identification', 'planet_bureaucrats_society_research_produces_add', '1.5', 0);
@@ -17658,9 +17659,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_genetic_identification', 'civic', 'forbid', 'civic_corporate_genetic_identification', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_crowdsourcing', 'Crowdsourcing', 'Factions produce Physics Society Engineering Research instead of Unity
-Factions will form in your empire shortly after the game starts, but Faction Output is reduced for the first ten years', 'normal', NULL, 1, NULL, 69);
+Factions will form in your empire shortly after the game starts, but Faction Output is reduced for the first ten years', 'normal', NULL, 1, 0, NULL, 69);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_crowdsourcing', 'add_attunement_the_cradle_of_souls', '60.0', 0);
@@ -17712,9 +17713,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_crowdsourcing', 'civic', 'forbid', 'civic_secret_societies_corporate', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_civil_education', 'Civil Education', 'Replaces all Enforcers with Educators
-Replaces Precinct Houses with State Academy', 'normal', NULL, 1, NULL, 70);
+Replaces Precinct Houses with State Academy', 'normal', NULL, 1, 0, NULL, 70);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_civil_education', 'add_attunement_the_cradle_of_souls', '60.0', 0);
@@ -17733,10 +17734,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_civil_education', 'civic', 'forbid', 'civic_dystopian_society', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_entropy_drinkers', 'Entropy Drinkers', 'Enables the following Edicts: Energy Drain, Sanguine Council, Convergence of Will
 Can construct: Leeching Tower.
-Leaders start with the Psychic trait.', 'normal', NULL, 1, NULL, 71);
+Leaders start with the Psychic trait.', 'normal', NULL, 1, 0, NULL, 71);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers', 'planet_jobs_produces_mult', '-0.1', 0);
@@ -17802,11 +17803,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_entropy_drinkers', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_superstitious_beliefs', 'Superstitious Beliefs', 'Replaces: Priests with Spirit Mediums, High Priests with High Astrologists
 Enables
 Every 13 years, the changes.
-Fortune Events will periodically benefit or impair your empire.', 'normal', NULL, 1, NULL, 72);
+Fortune Events will periodically benefit or impair your empire.', 'normal', NULL, 1, 0, NULL, 72);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_superstitious_beliefs', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17826,11 +17827,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_superstitious_beliefs', 'origin', 'forbid', 'origin_cybernetic_creed', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_twisted_experimenters', 'Experimental Sentencing', 'Starts with Experimental Testing situation, which grants technology insight upon completion.
 Can construct and starts with: Experimentation Chambers.
 All non-Machine slaves get access to the Orderlies Slave Job.
-Access to Slave Army: Abominations', 'normal', NULL, 1, NULL, 73);
+Access to Slave Army: Abominations', 'normal', NULL, 1, 0, NULL, 73);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_twisted_experimenters', 'refugee_attraction', '-0.15', 0);
@@ -17858,11 +17859,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_twisted_experimenters', 'ethic', 'require_any', 'ethic_fanatic_xenophobe', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_secret_societies', 'Secret Societies', 'Clandestine Factions will emerge after contacting other empires.
 Starts with the ability to conduct Proxy Wars., will produce Unity per active and successful Proxy War.
 Starts in First Contact with two neighboring empires.
-Infiltration Level gained on empires after First Contact: +$@secret_society_infiltration_gain|0$', 'normal', NULL, 1, NULL, 74);
+Infiltration Level gained on empires after First Contact: +$@secret_society_infiltration_gain|0$', 'normal', NULL, 1, 0, NULL, 74);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_secret_societies', 'proxy_war_cost_mult', '-0.25', 0);
@@ -17921,9 +17922,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_secret_societies', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_chosen', 'Chosen', 'Starts the game in contact with a Shroud Patron.
-Additional Starting Technologies: Society Psionic Aura', 'normal', NULL, 1, NULL, 75);
+Additional Starting Technologies: Society Psionic Aura', 'normal', NULL, 1, 0, NULL, 75);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_chosen', 'psionic_aura_intensity_add', '10.0', 0);
@@ -17972,9 +17973,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_chosen', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_tankbound', 'Tankbound', 'Adds the Tankbound trait., , , and are fully Automated.
-Colonist Jobs are Pop Cat Specialists., District Urban Districts have additional Production Overseers jobs.', 'normal', NULL, 1, NULL, 76);
+Colonist Jobs are Pop Cat Specialists., District Urban Districts have additional Production Overseers jobs.', 'normal', NULL, 1, 0, NULL, 76);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_tankbound', 'planet_automated_jobs_upkeep_mult', '-0.25', 0);
@@ -18041,13 +18042,13 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_tankbound', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_scorched_earth', 'Scorched World Heralds', 'Cannot engage in Diplomacy except with Thermophiles.
 Cannot access the Galactic Market.
 Grants the ''Cleansing Blaze'' casus belli on other species.
 Gains Unity when bombarding with the Firestorm bombardment stance.
 Creates special blockers with the Seismic Carpet Bombing bombardment stance on the planet below.
-Non-Thermophile Species are restricted to Slavery or worse.', 'normal', NULL, 1, NULL, 77);
+Non-Thermophile Species are restricted to Slavery or worse.', 'normal', NULL, 1, 1, NULL, 77);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_scorched_earth', 'ship_weapon_range_mult', '0.15', 0);
@@ -18181,12 +18182,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_scion', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_world_forgers', 'Planet Forgers', 'Unlocks starting planet: Volcanic World.
 Guaranteed Research Options: Society Research Volcanic Forge.
 Can construct Volcanic Forge building which adds Thermotechnic Mentors.
 Planets with a Volcanic Forge will gradually turn into a Volcanic World.
-Guaranteed Habitable Worlds will be Dry worlds.', 'normal', NULL, 1, NULL, 78);
+Guaranteed Habitable Worlds will be Dry worlds.', 'normal', NULL, 1, 0, NULL, 78);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_world_forgers', 'pc_volcanic_max_districts_add', '3.0', 0);
@@ -18225,14 +18226,14 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_world_forgers', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_pyrolatry', 'Fire Cult', 'Unity Job output increases proportionally with lower Habitability (Up to 500%).
 The Scourge of the Volcano faction forms shortly after game start.
 Replaces Priests with Fire Dancers.
 Replaces Politicians with Fire Oracles on planets with Habitability lower than 50%.
 Allows the recruitment of Ember Legion armies on planets with Habitability lower than 20%.
 Grants access to the Blazing Scourge planetary decisions which creates Blocker Blazing Scourge Blockers.
-Synergizes with Civics: Superstitious Beliefs, Exalted Priesthood, Death Cult, Aristocratic Elite, and Merchant Guilds.', 'normal', NULL, 1, NULL, 79);
+Synergizes with Civics: Superstitious Beliefs, Exalted Priesthood, Death Cult, Aristocratic Elite, and Merchant Guilds.', 'normal', NULL, 1, 1, NULL, 79);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_pyrolatry', 'authority', 'forbid', 'auth_corporate', 0);
@@ -18252,14 +18253,14 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_pyrolatry', 'origin', 'forbid', 'origin_ocean_paradise', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_galvanic_symbiosis', 'Galvanic Synthesis', 'Starts with Engineering Research already researched.
 Homeworld has a .
 Gain access to special Edicts:  
 Gives access to Sr Living Metal components:  
 Has access to Planetary Decision: Distribute Living Metal.
 Can recruit the Mimetic Strike Force armies.
-Can build a in systems with a Molten World for jobs.', 'normal', NULL, 1, NULL, 80);
+Can build a in systems with a Molten World for jobs.', 'normal', NULL, 1, 0, NULL, 80);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
@@ -18278,8 +18279,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_galvanic_symbiosis', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_remnants', 'Fallen Machine Intelligence', 'Unable to construct new ships.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_machine_remnants.dds', 81);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_remnants', 'Fallen Machine Intelligence', 'Unable to construct new ships.', 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_machine_remnants.dds', 81);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_remnants', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -18287,8 +18288,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_remnants', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_custodian_directives', 'Custodian Matrix', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_custodian_directives.dds', 82);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_custodian_directives', 'Custodian Matrix', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_custodian_directives.dds', 82);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_custodian_directives', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -18296,8 +18297,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_custodian_directives', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_awakened_machine', 'Reactivated Custodian Matrix', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_awakened_machine.dds', 83);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_awakened_machine', 'Reactivated Custodian Matrix', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_awakened_machine.dds', 83);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_awakened_machine', 'bonus_automated_workforce_mult', '5.0', 0);
@@ -18310,8 +18311,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_awakened_machine', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_malfunctioning_custodian', 'Corrupted Defense Directives', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_malfunctioning_custodian.dds', 84);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_malfunctioning_custodian', 'Corrupted Defense Directives', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_malfunctioning_custodian.dds', 84);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_malfunctioning_custodian', 'ship_fire_rate_mult', '0.1', 0);
@@ -18329,8 +18330,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_malfunctioning_custodian', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_final_defense_protocols', 'Final Defense Directives', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_final_defense_protocols.dds', 85);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_final_defense_protocols', 'Final Defense Directives', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_final_defense_protocols.dds', 85);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_final_defense_protocols', 'ship_fire_rate_mult', '0.1', 0);
@@ -18348,8 +18349,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_final_defense_protocols', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_lethargic_leadership', 'Lethargic Leadership', 'Unable to construct new ships.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_lethargic_leadership.dds', 86);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_lethargic_leadership', 'Lethargic Leadership', 'Unable to construct new ships.', 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_lethargic_leadership.dds', 86);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_lethargic_leadership', 'country_civics_influence_upkeep_add', '1.0', 0);
@@ -18359,14 +18360,14 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_lethargic_leadership', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_empire_in_decline', 'Empire in Decline', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_empire_in_decline.dds', 87);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_empire_in_decline', 'Empire in Decline', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_empire_in_decline.dds', 87);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_empire_in_decline', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_antediluvian_mind', 'Elder Mind', 'Unable to construct new ships.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_antediluvian_mind.dds', 88);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_antediluvian_mind', 'Elder Mind', 'Unable to construct new ships.', 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_antediluvian_mind.dds', 88);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_antediluvian_mind', 'country_unity_produces_mult', '-0.5', 0);
@@ -18379,8 +18380,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_antediluvian_mind', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_sluggish_drones', 'Undirected Drones', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_sluggish_drones.dds', 89);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_sluggish_drones', 'Undirected Drones', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_sluggish_drones.dds', 89);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_sluggish_drones', 'planet_jobs_produces_mult', '-0.5', 0);
@@ -18393,8 +18394,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_sluggish_drones', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_fragmented_command', 'Fragmented Command', 'Unable to construct new ships.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_fragmented_command.dds', 90);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_fragmented_command', 'Fragmented Command', 'Unable to construct new ships.', 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_fragmented_command.dds', 90);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_fragmented_command', 'empire_size_mult', '2.0', 0);
@@ -18407,8 +18408,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_fragmented_command', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hyper_aggressive_drones', 'Hyper-Aggressive Drones', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hyper_aggressive_drones.dds', 91);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hyper_aggressive_drones', 'Hyper-Aggressive Drones', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_hyper_aggressive_drones.dds', 91);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hyper_aggressive_drones', 'planet_jobs_produces_mult', '-0.5', 0);
@@ -18421,8 +18422,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hyper_aggressive_drones', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_unstable_drones', 'Unstable Drones', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_unstable_drones.dds', 92);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_unstable_drones', 'Unstable Drones', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_unstable_drones.dds', 92);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_unstable_drones', 'planet_jobs_produces_mult', '-0.5', 0);
@@ -18435,8 +18436,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_unstable_drones', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_stunted_drones', 'Stunted Drones', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_stunted_drones.dds', 93);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_stunted_drones', 'Stunted Drones', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_stunted_drones.dds', 93);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_stunted_drones', 'planet_jobs_produces_mult', '-0.5', 0);
@@ -18449,8 +18450,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_stunted_drones', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_restored_mind', 'Restored Mind', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_restored_mind.dds', 94);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_restored_mind', 'Restored Mind', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_restored_mind.dds', 94);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_restored_mind', 'empire_size_penalty_mult', '-0.5', 0);
@@ -18465,8 +18466,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_restored_mind', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_ancient_memories_of_war', 'Ancient Memories of War', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_ancient_memories_of_war.dds', 95);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_ancient_memories_of_war', 'Ancient Memories of War', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_ancient_memories_of_war.dds', 95);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ancient_memories_of_war', 'ship_hull_add', '500.0', 0);
@@ -18491,8 +18492,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_ancient_memories_of_war', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_ancient_memories_of_growth', 'Ancient Memories of Growth', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_ancient_memories_of_growth.dds', 96);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_ancient_memories_of_growth', 'Ancient Memories of Growth', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_ancient_memories_of_growth.dds', 96);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ancient_memories_of_growth', 'logistic_growth_mult', '1.0', 0);
@@ -18512,8 +18513,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_ancient_memories_of_growth', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_ancient_memories_of_control', 'Ancient Memories of Control', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_ancient_memories_of_control.dds', 97);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_ancient_memories_of_control', 'Ancient Memories of Control', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_ancient_memories_of_control.dds', 97);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ancient_memories_of_control', 'planet_jobs_produces_mult', '1.0', 0);
@@ -18536,8 +18537,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_ancient_memories_of_control', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_revanchist_fervor', 'Revanchist Fervor', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_revanchist_fervor.dds', 98);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_revanchist_fervor', 'Revanchist Fervor', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_revanchist_fervor.dds', 98);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_revanchist_fervor', 'country_civics_influence_produces_add', '1.0', 0);
@@ -18547,8 +18548,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_revanchist_fervor', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_ancient_caches_of_technology', 'Ancient Caches of Technology', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_ancient_caches_of_technology.dds', 99);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_ancient_caches_of_technology', 'Ancient Caches of Technology', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_ancient_caches_of_technology.dds', 99);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ancient_caches_of_technology', 'planet_jobs_produces_mult', '0.5', 0);
@@ -18563,103 +18564,103 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_ancient_caches_of_technology', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_secret_of_fire', 'Secret of Fire', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_revanchist_fervor.dds', 100);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_secret_of_fire', 'Secret of Fire', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_revanchist_fervor.dds', 100);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_secret_of_fire', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_the_wheel', 'The Wheel', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_agrarian_idyll.dds', 101);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_the_wheel', 'The Wheel', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_agrarian_idyll.dds', 101);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_the_wheel', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_landed_nobility', 'Landed Nobility', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_aristocratic_elite.dds', 102);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_landed_nobility', 'Landed Nobility', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_aristocratic_elite.dds', 102);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_landed_nobility', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_flat_world_theory', 'Flat World Theory', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_agrarian_idyll.dds', 103);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_flat_world_theory', 'Flat World Theory', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_agrarian_idyll.dds', 103);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_flat_world_theory', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_increasing_urbanization', 'Increasing Urbanization', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_byzantine_bureaucracy.dds', 104);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_increasing_urbanization', 'Increasing Urbanization', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_byzantine_bureaucracy.dds', 104);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_increasing_urbanization', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_atmospheric_pollution', 'Atmospheric Pollution', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_relentless_industrialists.dds', 105);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_atmospheric_pollution', 'Atmospheric Pollution', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_relentless_industrialists.dds', 105);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_atmospheric_pollution', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_life_seeded', 'Life-Seeded', 'Can build Gaia Seeders on your and your vassal''s worlds ideal to your starting species.
 Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.
-As you unlock improved Society Terraforming technologies, Gaia Seeders can be constructed on additional planet types.', 'special', NULL, 0, NULL, 106);
+As you unlock improved Society Terraforming technologies, Gaia Seeders can be constructed on additional planet types.', 'special', NULL, 0, 1, NULL, 106);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_secret_of_fire', 'Secret of Fire', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hive_revanchist_fervor.dds', 107);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_secret_of_fire', 'Secret of Fire', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_hive_revanchist_fervor.dds', 107);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_secret_of_fire', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_the_wheel', 'The Wheel', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hive_life_seeded.dds', 108);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_the_wheel', 'The Wheel', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_hive_life_seeded.dds', 108);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_the_wheel', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_burgeoning_nodes', 'Burgeoning Nodes', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hive_one_mind.dds', 109);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_burgeoning_nodes', 'Burgeoning Nodes', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_hive_one_mind.dds', 109);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_burgeoning_nodes', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_flat_world_theory', 'Flat World Theory', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hive_subspace_ephapse.dds', 110);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_flat_world_theory', 'Flat World Theory', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_hive_subspace_ephapse.dds', 110);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_flat_world_theory', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_centralized_consciousness', 'Centralized Consciousness', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hive_empath.dds', 111);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_centralized_consciousness', 'Centralized Consciousness', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_hive_empath.dds', 111);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_centralized_consciousness', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_atmospheric_pollution', 'Atmospheric Pollution', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hive_relentless_industrialists.dds', 112);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_atmospheric_pollution', 'Atmospheric Pollution', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_hive_relentless_industrialists.dds', 112);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_atmospheric_pollution', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_ancient_preservers', 'Ancient Preservers', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_ancient_caches_of_technology.dds', 113);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_ancient_preservers', 'Ancient Preservers', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_ancient_caches_of_technology.dds', 113);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_ancient_preservers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_trading_conglomerate', 'Trading Conglomerate', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_corporate_dominion.dds', 114);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_trading_conglomerate', 'Trading Conglomerate', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_corporate_dominion.dds', 114);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_trading_conglomerate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_artist_collective', 'Artist Collective', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_inwards_perfection.dds', 115);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_artist_collective', 'Artist Collective', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_inwards_perfection.dds', 115);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_artist_collective', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_mercenary_enclave', 'Mercenary Enclave', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_mercenaries.dds', 116);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_mercenary_enclave', 'Mercenary Enclave', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_mercenaries.dds', 116);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_mercenary_enclave', 'ship_hull_regen_add_perc', '0.05', 0);
@@ -18689,38 +18690,38 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_mercenary_enclave', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_salvager_enclave', 'Salvager Enclave', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_salvagers.dds', 117);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_salvager_enclave', 'Salvager Enclave', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_salvagers.dds', 117);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_salvager_enclave', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_shroudwalker_enclave', 'Shroudwalker Enclave', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_shroudwalkers.dds', 118);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_shroudwalker_enclave', 'Shroudwalker Enclave', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_shroudwalkers.dds', 118);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_shroudwalker_enclave', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_mindwarden_enclave', 'Mindwarden Enclave', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_mindwarden_enclave.dds', 119);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_mindwarden_enclave', 'Mindwarden Enclave', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_mindwarden_enclave.dds', 119);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_mindwarden_enclave', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_military_order', 'Military Order', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 120);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_military_order', 'Military Order', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 120);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_military_order', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_ancient_machine_intelligence', 'Ancient Machine Intelligence', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_awakened_machine.dds', 121);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_ancient_machine_intelligence', 'Ancient Machine Intelligence', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_awakened_machine.dds', 121);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_anarcho_tribalism', 'Anarcho-Tribalism', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 122);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_anarcho_tribalism', 'Anarcho-Tribalism', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 122);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_great_khans_vision', 'Great Khan''s Vision', 'No effect', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 123);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_great_khans_vision', 'Great Khan''s Vision', 'No effect', 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 123);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_great_khans_vision', 'country_commander_cap_add', '10.0', 0);
@@ -18732,8 +18733,8 @@ INSERT OR IGNORE INTO civic_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_diadochi', 'Diadochus', 'No effect', 'special', NULL, 1, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 124);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_diadochi', 'Diadochus', 'No effect', 'special', NULL, 1, 1, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 124);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_diadochi', 'country_naval_cap_mult', '0.15', 0);
@@ -18743,8 +18744,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_diadochi', 'origin', 'require', 'origin_khan_successor', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_great_khans_legacy', 'Great Khan''s Legacy', NULL, 'special', NULL, 1, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 125);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_great_khans_legacy', 'Great Khan''s Legacy', NULL, 'special', NULL, 1, 1, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 125);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_great_khans_legacy', 'ship_fire_rate_mult', '0.1', 0);
@@ -18754,8 +18755,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_great_khans_legacy', 'origin', 'require', 'origin_khan_successor', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_galactic_sovereign', 'Galactic Sovereign', NULL, 'special', NULL, 1, 'gfx/interface/icons/governments/civics/civic_galactic_sovereign.dds', 126);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_galactic_sovereign', 'Galactic Sovereign', NULL, 'special', NULL, 1, 1, 'gfx/interface/icons/governments/civics/civic_galactic_sovereign.dds', 126);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_galactic_sovereign', 'country_civics_influence_produces_add', '6.0', 0);
@@ -18778,8 +18779,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_galactic_sovereign', 'civic', 'require', 'civic_galactic_sovereign', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_galactic_sovereign_megacorp', 'Corporate Sovereign', NULL, 'special', NULL, 1, 'gfx/interface/icons/governments/civics/civic_galactic_sovereign.dds', 127);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_galactic_sovereign_megacorp', 'Corporate Sovereign', NULL, 'special', NULL, 1, 1, 'gfx/interface/icons/governments/civics/civic_galactic_sovereign.dds', 127);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_galactic_sovereign_megacorp', 'country_civics_influence_produces_add', '6.0', 0);
@@ -18802,8 +18803,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_galactic_sovereign_megacorp', 'civic', 'require', 'civic_galactic_sovereign_megacorp', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_psionic_sovereign', 'Divine Sovereign', NULL, 'special', NULL, 1, 'gfx/interface/icons/governments/civics/civic_psionic_sovereign.dds', 128);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_psionic_sovereign', 'Divine Sovereign', NULL, 'special', NULL, 1, 1, 'gfx/interface/icons/governments/civics/civic_psionic_sovereign.dds', 128);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_psionic_sovereign', 'country_government_civic_points_add', '1.0', 0);
@@ -18826,32 +18827,32 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_psionic_sovereign', 'civic', 'require', 'civic_psionic_sovereign', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_caravaneer_caravansary', NULL, NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_caravaneer_caravansary.dds', 129);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_caravaneer_caravansary', NULL, NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_caravaneer_caravansary.dds', 129);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_caravaneer_caravansary', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_caravaneer_fleet1', 'Orlan Topless Pyramid', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_caravaneer_fleet1.dds', 130);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_caravaneer_fleet1', 'Orlan Topless Pyramid', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_caravaneer_fleet1.dds', 130);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_caravaneer_fleet1', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_caravaneer_fleet2', 'Mercantile Priesthood', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_caravaneer_fleet2.dds', 131);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_caravaneer_fleet2', 'Mercantile Priesthood', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_caravaneer_fleet2.dds', 131);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_caravaneer_fleet2', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_caravaneer_fleet3', 'Absolute Commodifiers', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_caravaneer_fleet3.dds', 132);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_caravaneer_fleet3', 'Absolute Commodifiers', NULL, 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_caravaneer_fleet3.dds', 132);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_caravaneer_fleet3', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_subspace_ephapse', 'Subspace Ephapse', NULL, 'gestalt', NULL, 1, NULL, 133);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_subspace_ephapse', 'Subspace Ephapse', NULL, 'gestalt', NULL, 1, 0, NULL, 133);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_subspace_ephapse', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
@@ -18871,8 +18872,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_subspace_ephapse', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_natural_neural_network', 'Natural Neural Network', NULL, 'gestalt', NULL, 1, NULL, 134);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_natural_neural_network', 'Natural Neural Network', NULL, 'gestalt', NULL, 1, 0, NULL, 134);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_natural_neural_network', 'num_tech_alternatives_add', '1.0', 0);
@@ -18885,8 +18886,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_natural_neural_network', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_ascetic', 'Ascetic', NULL, 'gestalt', NULL, 1, NULL, 135);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_ascetic', 'Ascetic', NULL, 'gestalt', NULL, 1, 0, NULL, 135);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_ascetic', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -18911,8 +18912,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_ascetic', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_one_mind', 'One Mind', NULL, 'gestalt', NULL, 1, NULL, 136);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_one_mind', 'One Mind', NULL, 'gestalt', NULL, 1, 0, NULL, 136);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_one_mind', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -18932,8 +18933,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_one_mind', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_divided_attention', 'Divided Attention', NULL, 'gestalt', NULL, 1, NULL, 137);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_divided_attention', 'Divided Attention', NULL, 'gestalt', NULL, 1, 0, NULL, 137);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_divided_attention', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -18953,8 +18954,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_divided_attention', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_strength_of_legions', 'Strength of Legions', NULL, 'gestalt', NULL, 1, NULL, 138);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_strength_of_legions', 'Strength of Legions', NULL, 'gestalt', NULL, 1, 0, NULL, 138);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_strength_of_legions', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -18994,8 +18995,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_strength_of_legions', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_subsumed_will', 'Subsumed Will', 'Waives all Unity costs for Pop Drone Resettlement.', 'gestalt', NULL, 1, NULL, 139);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_subsumed_will', 'Subsumed Will', 'Waives all Unity costs for Pop Drone Resettlement.', 'gestalt', NULL, 1, 0, NULL, 139);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_subsumed_will', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -19030,8 +19031,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_subsumed_will', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_pooled_knowledge', 'Pooled Knowledge', NULL, 'gestalt', NULL, 1, NULL, 140);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_pooled_knowledge', 'Pooled Knowledge', NULL, 'gestalt', NULL, 1, 0, NULL, 140);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_pooled_knowledge', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -19056,12 +19057,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_pooled_knowledge', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_devouring_swarm', 'Devouring Swarm', 'Cannot engage in Diplomacy with other empires!
 Cannot access the Galactic Market
 Has the ''Hunger'' casus belli on all other empires
 Xeno Pops will always be eaten
-Gains Society Research from eating Pop Xeno Pops', 'gestalt', NULL, 1, NULL, 141);
+Gains Society Research from eating Pop Xeno Pops', 'gestalt', NULL, 1, 1, NULL, 141);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_devouring_swarm', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
@@ -19148,8 +19149,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_devouring_swarm', 'origin', 'forbid', 'origin_tree_of_life', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_empath', 'Empath', 'Reduces the Opinion penalty Gestalts normally have with biological empires.', 'gestalt', 'Federations', 1, NULL, 142);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_empath', 'Empath', 'Reduces the Opinion penalty Gestalts normally have with biological empires.', 'gestalt', 'Federations', 1, 0, NULL, 142);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_empath', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -19193,10 +19194,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_empath', 'origin', 'forbid', 'origin_necrophage', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_memorialist', 'Memorialist', 'Can build Sanctuary of Repose
 Sanctuaries of Repose decrease Deviancy on Tomb Worlds and Relic Worlds
-Chronicle Drones turn Energy Credits (or Food) into Unity and Stability', 'gestalt', 'Necroids Species Pack', 1, NULL, 143);
+Chronicle Drones turn Energy Credits (or Food) into Unity and Stability', 'gestalt', 'Necroids Species Pack', 1, 0, NULL, 143);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_memorialist', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -19223,9 +19224,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_memorialist', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_catalytic_processing', 'Organic Reprocessing', 'Foundry Drones are replaced with Catalytic Drones
-Industrial Jobs have their Minerals Upkeep replaced with Food Upkeep.', 'gestalt', 'Plantoids Species Pack', 1, NULL, 144);
+Industrial Jobs have their Minerals Upkeep replaced with Food Upkeep.', 'gestalt', 'Plantoids Species Pack', 1, 0, NULL, 144);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_catalytic_processing', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -19246,10 +19247,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_catalytic_processing', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_idyllic_bloom', 'Mycorrhizal Ideal', 'Can build Gaia Seeders on your and your vassal''s worlds ideal to your starting species.
 Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.
-As you unlock improved Society Terraforming technologies, Gaia Seeders can be constructed on additional planet types.', 'gestalt', 'Plantoids Species Pack', 1, NULL, 145);
+As you unlock improved Society Terraforming technologies, Gaia Seeders can be constructed on additional planet types.', 'gestalt', 'Plantoids Species Pack', 1, 1, NULL, 145);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_idyllic_bloom', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -19270,9 +19271,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_idyllic_bloom', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_toxic_baths', 'Permutation Pools', 'Available Buildings: Mutagenic Permutation Pool
-Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a Colony with Mutagenic Permutation Pool.', 'gestalt', NULL, 1, NULL, 146);
+Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a Colony with Mutagenic Permutation Pool.', 'gestalt', NULL, 1, 0, NULL, 146);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_toxic_baths', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -19293,8 +19294,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_toxic_baths', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_ascensionists', 'Elevational Contemplations', 'Colonies have +1 Ascension Tier on game start.', 'gestalt', NULL, 1, NULL, 147);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_ascensionists', 'Elevational Contemplations', 'Colonies have +1 Ascension Tier on game start.', 'gestalt', NULL, 1, 0, NULL, 147);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_ascensionists', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -19324,12 +19325,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_ascensionists', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_cordyceptic_drones', 'Cordyceptic Drones', 'Start the game with 3 Reanimated Amoebas.
 Defeated organic Space Fauna are automatically reanimated.
 Some defeated organic Leviathans can be resurrected.
 Controlled cloned organic Space Fauna can be reanimated
-Gain Genetic Material from killing Space Fauna.', 'gestalt', NULL, 1, NULL, 148);
+Gain Genetic Material from killing Space Fauna.', 'gestalt', NULL, 1, 0, NULL, 148);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_cordyceptic_drones', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
@@ -19359,11 +19360,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_cordyceptic_drones', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_stargazers', 'Stargazers', 'Start with 2 Exploration Vessels and an Engineering Vessel equipped with Subspace Drives, making them incapable of Hyperlane travel but granting limited Jump Drive abilities.
 Gain an increased chance to discover FTL Travel Technologies
 Adds the Stargazer trait.
-Begin with low Intel about your starting cluster.', 'gestalt', NULL, 1, NULL, 149);
+Begin with low Intel about your starting cluster.', 'gestalt', NULL, 1, 1, NULL, 149);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_stargazers', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
@@ -19400,8 +19401,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_stargazers', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_memory_vault_hive', 'Neural Vaults', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, NULL, 150);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_memory_vault_hive', 'Neural Vaults', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, 0, NULL, 150);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault_hive', 'restored_node_bonus_skill', '1.0', 0);
@@ -19431,8 +19432,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_memory_vault_hive', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_upkeep_twister', 'Autonomous Drones', 'Change 1 Base Unity Leader Upkeep to 2 Food, Minerals or 1 Alloys', 'gestalt', 'Galactic Paragons', 1, NULL, 151);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_upkeep_twister', 'Autonomous Drones', 'Change 1 Base Unity Leader Upkeep to 2 Food, Minerals or 1 Alloys', 'gestalt', 'Galactic Paragons', 1, 0, NULL, 151);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_upkeep_twister', 'leader_trait_selection_options_add', '1.0', 0);
@@ -19447,10 +19448,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_upkeep_twister', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_void_hive', 'Void Hive', 'Automatically generate Mining and Research Stations over a random unexploited deposit in a system we own, every four months.
 Lacking the technology to exploit a given resource reduces output from it by -75%.
-Directly building Mining and Research Stations will have an additional Build Cost of 10 Unity.', 'gestalt', NULL, 1, NULL, 152);
+Directly building Mining and Research Stations will have an additional Build Cost of 10 Unity.', 'gestalt', NULL, 1, 0, NULL, 152);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_void_hive', 'megastructures_cost_mult', '-0.05', 0);
@@ -19475,9 +19476,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_void_hive', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_hyperspace_specialty', 'Hyperspace Synchronicity', 'Physics Hyperlane Breach Points is Guaranteed Research Option.
-Has Low Intel on all systems within 3 Hyperlanes of your starting system.', 'gestalt', NULL, 1, NULL, 153);
+Has Low Intel on all systems within 3 Hyperlanes of your starting system.', 'gestalt', NULL, 1, 0, NULL, 153);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_hyperspace_specialty', 'planet_sensor_range_add', '2.0', 0);
@@ -19510,10 +19511,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_hyperspace_specialty', 'civic', 'forbid', 'civic_hive_stargazers', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_sovereign_guardianship', 'Guardian Cluster', 'Unlocks Matrix Units as defense armies.
 Allows building a Reloading Bay in starbases.
-Enables Inner Focus Edict, converting Influence into Unity.', 'gestalt', NULL, 1, NULL, 154);
+Enables Inner Focus Edict, converting Influence into Unity.', 'gestalt', NULL, 1, 1, NULL, 154);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_sovereign_guardianship', 'empire_size_colonies_mult', '0.75', 0);
@@ -19564,8 +19565,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_sovereign_guardianship', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_hive_natural_design', 'Innate Design', 'Available Buildings: Genomic Safeguard Warren', 'gestalt', NULL, 1, NULL, 155);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_hive_natural_design', 'Innate Design', 'Available Buildings: Genomic Safeguard Warren', 'gestalt', NULL, 1, 1, NULL, 155);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_natural_design', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19585,10 +19586,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_natural_design', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_guided_sapience', 'Genesis Symbiotes', 'Available Colony Ships: Genesis Ark
 Planets Colonized with Genesis Arks: Pre-Sapient Pops: +300, Planetary Features: Genesis Preserve
-Gains Unity from uplifting Pre-Sapient Species', 'gestalt', NULL, 1, NULL, 156);
+Gains Unity from uplifting Pre-Sapient Species', 'gestalt', NULL, 1, 0, NULL, 156);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_guided_sapience', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -19632,12 +19633,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_guided_sapience', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_beastmasters', 'Wild Swarm', 'Additional Starting Technologies:  
 Available Starbase Buildings:
 Home System: Start with a
 Starting Military Ships are replaced with Space Amoebas
-Starting Genetic Material : Common Space Amoeba', 'gestalt', NULL, 1, NULL, 157);
+Starting Genetic Material : Common Space Amoeba', 'gestalt', NULL, 1, 1, NULL, 157);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_beastmasters', 'starbase_shipyard_artificial_build_cost_mult', '2.0', 0);
@@ -19684,9 +19685,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_beastmasters', 'origin', 'forbid', 'origin_cosmic_dawn', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_astrometeorology_hive', 'Climate Modeling', 'Available Buildings: Astrometeorology Observatory
-Additional Starting Buildings: Astrometeorology Observatory', 'gestalt', NULL, 1, NULL, 158);
+Additional Starting Buildings: Astrometeorology Observatory', 'gestalt', NULL, 1, 0, NULL, 158);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_astrometeorology_hive', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -19699,11 +19700,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_astrometeorology_hive', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_environmental_architects_hive', 'Cultivation Drones', 'Additional Starting Technologies: Society Technologies to remove Blocker on the Homeworld
 Society Technologies to remove Blocker Natural Blockers are granted as Permanent Research Options upon Colonization
 Mastery of Nature replaced with Cultivated Worldscaping Planetary
-For each Blocker Natural Blocker on Colonized Planet : Resources from Jobs: -10%, Pop Assembly: -10%, Pop Upkeep: +15%', 'gestalt', NULL, 1, NULL, 159);
+For each Blocker Natural Blocker on Colonized Planet : Resources from Jobs: -10%, Pop Assembly: -10%, Pop Upkeep: +15%', 'gestalt', NULL, 1, 1, NULL, 159);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_hive', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -19762,12 +19763,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmental_architects_hive', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_galactic_curators', 'Caretaker Network', 'Guaranteed Research Options: Society Research Galactic Archivism
 Initial Specimens: One Common of each Collection Category
 Gain Unity each time you find a Specimen or complete an Archaeological Site
 Purchases from the Curator Enclave: $@galactic_curators_curator_enclave_purchase_cost|%0$
-Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output', 'gestalt', NULL, 1, NULL, 160);
+Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output', 'gestalt', NULL, 1, 1, NULL, 160);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_galactic_curators', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -19802,9 +19803,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_galactic_curators', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_familiar_face', 'Familiar Face', 'Envoys and Officials take on the physical form of the Empires they are assigned to.
-Trust Required to perform Diplomatic Actions: -50%', 'gestalt', NULL, 1, NULL, 161);
+Trust Required to perform Diplomatic Actions: -50%', 'gestalt', NULL, 1, 1, NULL, 161);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_familiar_face', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -19838,9 +19839,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_familiar_face', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_shared_genetics', 'Shared Genetics', 'For each Positive main species trait: +2.5% Ship Hull, +0.5% Upkeep.
-For each Negative main species trait: +1.5% Ship Fire Rate, +0.5% Upkeep.', 'gestalt', NULL, 1, NULL, 162);
+For each Negative main species trait: +1.5% Ship Fire Rate, +0.5% Upkeep.', 'gestalt', NULL, 1, 1, NULL, 162);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_shared_genetics', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -19863,10 +19864,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_shared_genetics', 'ship_type', 'require_any', 'organic', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_aerospace_adaptation', 'Aerospace Adaptation', 'Biological Ships in orbit of Friendly colonies have -50% ship upkeep.
 Friendly colonies with Biological Ships in orbit get increased Build Speed, Amenities, Clear Blocker Speed and potentially Job Output, depending on fleet size.
-Biological Ships in orbit of Hostile colonies have -85% ship upkeep.', 'gestalt', NULL, 1, NULL, 163);
+Biological Ships in orbit of Hostile colonies have -85% ship upkeep.', 'gestalt', NULL, 1, 1, NULL, 163);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_aerospace_adaptation', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
@@ -19889,10 +19890,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_aerospace_adaptation', 'ship_type', 'require_any', 'organic', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_bodysnatcher', 'Bodysnatcher', 'Start the game with 1000 assimilated Pops and the ability to Assimilate organics into the hive mind.
 Has access to the Prepare Invasion Espionage Mission
-Gains extra Pops from the Smuggle Population Espionage Mission', 'gestalt', NULL, 1, NULL, 164);
+Gains extra Pops from the Smuggle Population Espionage Mission', 'gestalt', NULL, 1, 1, NULL, 164);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_bodysnatcher', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -19922,10 +19923,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_bodysnatcher', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_entropy_drinkers_hive_mind', 'Parasitic Caste', 'Enables the following Edicts: Energy Drain, Sanguine Council, Convergence of Will
 Can construct: Leeching Tower.
-Leaders start with the Psychic trait.', 'gestalt', NULL, 1, NULL, 165);
+Leaders start with the Psychic trait.', 'gestalt', NULL, 1, 0, NULL, 165);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers_hive_mind', 'planet_jobs_produces_mult', '-0.1', 0);
@@ -19975,10 +19976,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_entropy_drinkers_hive_mind', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_superstitious_beliefs', 'Zodiac Nexus', 'Enables Galactic Dowsing
 Every 13 years, the Cycle changes.
-Fortune Events will periodically benefit or impair your empire.', 'gestalt', NULL, 1, NULL, 166);
+Fortune Events will periodically benefit or impair your empire.', 'gestalt', NULL, 1, 1, NULL, 166);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_superstitious_beliefs', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -19988,9 +19989,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_superstitious_beliefs', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_twisted_experimenters_hive_mind', 'Corrective Consciousness', 'Starts with Experimental Testing situation, which grants technology insight upon completion.
-Can construct and starts with: Experimentation Chambers.', 'gestalt', NULL, 1, NULL, 167);
+Can construct and starts with: Experimentation Chambers.', 'gestalt', NULL, 1, 0, NULL, 167);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_twisted_experimenters_hive_mind', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -20003,9 +20004,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_twisted_experimenters_hive_mind', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_chosen', 'Chosen Many', 'Starts the game in contact with a Shroud Patron.
-Additional Starting Technologies: Society Psionic Aura', 'gestalt', NULL, 1, NULL, 168);
+Additional Starting Technologies: Society Psionic Aura', 'gestalt', NULL, 1, 1, NULL, 168);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_chosen', 'psionic_aura_intensity_add', '10.0', 0);
@@ -20029,13 +20030,13 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_chosen', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_scorched_earth', 'Pyromanic Instinct', 'Cannot engage in Diplomacy except with Thermophiles.
 Cannot access the Galactic Market.
 Grants the ''Cleansing Blaze'' casus belli on other species.
 Gains Unity when bombarding with the Firestorm bombardment stance.
 Creates special blockers with the Seismic Carpet Bombing bombardment stance on the planet below.
-Non-Thermophile Species are restricted to Slavery or worse.', 'gestalt', NULL, 1, NULL, 169);
+Non-Thermophile Species are restricted to Slavery or worse.', 'gestalt', NULL, 1, 1, NULL, 169);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_scorched_earth', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -20147,12 +20148,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_scorched_earth', 'origin', 'forbid', 'origin_fear_of_the_dark', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_world_forgers', 'Volcanic Nesting', 'Unlocks starting planet: Volcanic World.
 Guaranteed Research Options: Society Research Volcanic Forge.
 Can construct Volcanic Forge building which adds Pyroclastic Drones.
 Planets with a Volcanic Forge will gradually turn into a Volcanic World.
-Guaranteed Habitable Worlds will be Dry worlds.', 'gestalt', NULL, 1, NULL, 170);
+Guaranteed Habitable Worlds will be Dry worlds.', 'gestalt', NULL, 1, 1, NULL, 170);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_world_forgers', 'pc_volcanic_max_districts_add', '3.0', 0);
@@ -20178,14 +20179,14 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_world_forgers', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_galvanic_symbiosis', 'Galvanic Symbiosis', 'Starts with Engineering Research already researched.
 Homeworld has a .
 Gain access to special Edicts:  
 Gives access to Sr Living Metal components:  
 Has access to Planetary Decision: Distribute Living Metal.
 Can recruit the Mimetic Strike Force armies.
-Can build a in systems with a Molten World for jobs.', 'gestalt', NULL, 1, NULL, 171);
+Can build a in systems with a Molten World for jobs.', 'gestalt', NULL, 1, 1, NULL, 171);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
@@ -20209,10 +20210,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_galvanic_symbiosis', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_servitor', 'Rogue Servitor', 'Start the game with 2K Pop Organic Pops with Bio-Trophy citizenship and Mandatory Pampering living standard
 Available Buildings: Organic Sanctuary
-Available Holdings: Organic Haven', 'gestalt', NULL, 1, NULL, 172);
+Available Holdings: Organic Haven', 'gestalt', NULL, 1, 1, NULL, 172);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_servitor', 'refugee_attraction', '0.3', 0);
@@ -20244,13 +20245,13 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_servitor', 'origin', 'forbid', 'origin_shroud_forged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_terminator', 'Determined Exterminator', 'Cannot engage in Diplomacy with organic species!
 Cannot access the Galactic Market
 Has the ''Purification'' casus belli on organic species
 Will always Purge Pop Organic Pops
 Gains Unity from purging Pop Organic Pops
-May use Armageddon bombardment stance', 'gestalt', NULL, 1, NULL, 173);
+May use Armageddon bombardment stance', 'gestalt', NULL, 1, 1, NULL, 173);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_terminator', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
@@ -20326,13 +20327,13 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_terminator', 'origin', 'forbid', 'origin_shroud_forged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_assimilator', 'Driven Assimilator', 'Start the game with 1K cyborg Pops and the ability to Assimilate organics as cyborgs
 Assimilating Pop Organic Pops generates a small amount of Unity and Society Research
 Non-assimilating Pop Organic Pops are automatically Purged over time
 Has the ''Assimilation'' casus belli on all other empires
 Decreased Opinion for most other empires
-Allows access to the Cybernetic Ascension Path.', 'gestalt', NULL, 1, NULL, 174);
+Allows access to the Cybernetic Ascension Path.', 'gestalt', NULL, 1, 1, NULL, 174);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_assimilator', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -20362,8 +20363,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_assimilator', 'origin', 'forbid', 'origin_shroud_forged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_builder', 'Constructobot', 'Waives Technology requirements for Zone Basic District Specializations', 'gestalt', NULL, 1, NULL, 175);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_builder', 'Constructobot', 'Waives Technology requirements for Zone Basic District Specializations', 'gestalt', NULL, 1, 0, NULL, 175);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_builder', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -20388,8 +20389,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_builder', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_factory_overclock', 'Factory Overclocking', NULL, 'gestalt', NULL, 1, 'gfx/interface/icons/governments/civics/civic_machine_factory_overclock.dds', 176);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_factory_overclock', 'Factory Overclocking', NULL, 'gestalt', NULL, 1, 0, 'gfx/interface/icons/governments/civics/civic_machine_factory_overclock.dds', 176);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_factory_overclock', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -20414,8 +20415,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_factory_overclock', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_unitary_cohesion', 'Unitary Cohesion', NULL, 'gestalt', NULL, 1, NULL, 177);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_unitary_cohesion', 'Unitary Cohesion', NULL, 'gestalt', NULL, 1, 0, NULL, 177);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_unitary_cohesion', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -20430,8 +20431,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_unitary_cohesion', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_rockbreakers', 'Rockbreakers', NULL, 'gestalt', NULL, 1, NULL, 178);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_rockbreakers', 'Rockbreakers', NULL, 'gestalt', NULL, 1, 0, NULL, 178);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_rockbreakers', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -20451,8 +20452,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_rockbreakers', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_zero_waste_protocols', 'Zero-Waste Protocols', NULL, 'gestalt', NULL, 1, NULL, 179);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_zero_waste_protocols', 'Zero-Waste Protocols', NULL, 'gestalt', NULL, 1, 0, NULL, 179);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_zero_waste_protocols', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -20482,8 +20483,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_zero_waste_protocols', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_built_to_last', 'Built to Last', NULL, 'gestalt', NULL, 1, NULL, 180);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_built_to_last', 'Built to Last', NULL, 'gestalt', NULL, 1, 0, NULL, 180);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_built_to_last', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -20503,8 +20504,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_built_to_last', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_ota_updates', 'OTA Updates', 'Waives all Unity costs for Pop Drone Resettlement.', 'gestalt', NULL, 1, NULL, 181);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_ota_updates', 'OTA Updates', 'Waives all Unity costs for Pop Drone Resettlement.', 'gestalt', NULL, 1, 0, NULL, 181);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_ota_updates', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
@@ -20534,8 +20535,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_ota_updates', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_warbots', 'Warbots', NULL, 'gestalt', NULL, 1, NULL, 182);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_warbots', 'Warbots', NULL, 'gestalt', NULL, 1, 0, NULL, 182);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_warbots', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
@@ -20573,8 +20574,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_warbots', 'civic', 'forbid', 'civic_machine_obsessional_directive', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_introspective', 'Introspective', NULL, 'gestalt', NULL, 1, NULL, 183);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_introspective', 'Introspective', NULL, 'gestalt', NULL, 1, 0, NULL, 183);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_introspective', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -20594,8 +20595,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_introspective', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_delegated_functions', 'Delegated Functions', NULL, 'gestalt', NULL, 1, NULL, 184);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_delegated_functions', 'Delegated Functions', NULL, 'gestalt', NULL, 1, 0, NULL, 184);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_delegated_functions', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -20613,8 +20614,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_delegated_functions', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_predictive_analysis', 'Static Research Analysis', 'The Cognitive Node starts with a random Expertise trait', 'gestalt', NULL, 1, NULL, 185);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_predictive_analysis', 'Static Research Analysis', 'The Cognitive Node starts with a random Expertise trait', 'gestalt', NULL, 1, 0, NULL, 185);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_predictive_analysis', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -20632,8 +20633,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_predictive_analysis', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_replication', 'Rapid Replicator', NULL, 'gestalt', NULL, 1, NULL, 186);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_replication', 'Rapid Replicator', NULL, 'gestalt', NULL, 1, 0, NULL, 186);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_replication', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -20648,8 +20649,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_replication', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_maintenance_protocols', 'Maintenance Protocols', NULL, 'gestalt', NULL, 1, NULL, 187);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_maintenance_protocols', 'Maintenance Protocols', NULL, 'gestalt', NULL, 1, 0, NULL, 187);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_maintenance_protocols', 'planet_maintenance_drones_unity_produces_add', '1.0', 0);
@@ -20669,10 +20670,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_maintenance_protocols', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_memorialist', 'Memorialist', 'Can build Sanctuary of Repose
 Sanctuaries of Repose decrease Deviancy on Tomb Worlds and Relic Worlds
-Chronicle Drones turn Energy Credits (or Food) into Unity and Stability', 'gestalt', 'Necroids Species Pack', 1, NULL, 188);
+Chronicle Drones turn Energy Credits (or Food) into Unity and Stability', 'gestalt', 'Necroids Species Pack', 1, 0, NULL, 188);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_memorialist', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -20696,9 +20697,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_memorialist', 'civic', 'forbid', 'civic_entropy_drinkers_machine', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_catalytic_processing', 'Organic Retrofitting', 'Fabricators are replaced with Catalytic Drones
-Industrial Jobs have their Minerals Upkeep replaced with Food Upkeep.', 'gestalt', 'Plantoids Species Pack', 1, NULL, 189);
+Industrial Jobs have their Minerals Upkeep replaced with Food Upkeep.', 'gestalt', 'Plantoids Species Pack', 1, 0, NULL, 189);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_catalytic_processing', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -20716,9 +20717,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_catalytic_processing', 'origin', 'forbid', 'origin_machine', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_toxic_baths', 'Hyper Lubrication Basin', 'Available Buildings: Hyper Lubrication Basin
-Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a Colony with Hyper Lubrication Basin.', 'gestalt', NULL, 1, NULL, 190);
+Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a Colony with Hyper Lubrication Basin.', 'gestalt', NULL, 1, 0, NULL, 190);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_toxic_baths', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -20736,8 +20737,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_toxic_baths', 'origin', 'forbid', 'origin_life_seeded', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_ascensionists', 'Elevational Hypotheses', 'Colonies have +1 Ascension Tier on game start.', 'gestalt', NULL, 1, NULL, 191);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_ascensionists', 'Elevational Hypotheses', 'Colonies have +1 Ascension Tier on game start.', 'gestalt', NULL, 1, 0, NULL, 191);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_ascensionists', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -20767,11 +20768,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_ascensionists', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_exploration_protocol', 'Exploration Protocols', 'Start with 2 Exploration Vessels and an Engineering Vessel equipped with Subspace Drives, making them incapable of Hyperlane travel but granting limited Jump Drive abilities.
 Gain an increased chance to discover FTL Travel Technologies
 Gain 50% more Insight progress from observing pre-FTL Civilizations.
-Gain Unity every time you finish establishing first contact.', 'gestalt', NULL, 1, NULL, 192);
+Gain Unity every time you finish establishing first contact.', 'gestalt', NULL, 1, 0, NULL, 192);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_exploration_protocol', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
@@ -20806,9 +20807,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_exploration_protocol', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_hyperspace_specialty', 'Hyperspace Calculations', 'Physics Hyperlane Breach Points is Guaranteed Research Option.
-Has Low Intel on all systems within 3 Hyperlanes of your starting system.', 'gestalt', NULL, 1, NULL, 193);
+Has Low Intel on all systems within 3 Hyperlanes of your starting system.', 'gestalt', NULL, 1, 0, NULL, 193);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_hyperspace_specialty', 'planet_sensor_range_add', '2.0', 0);
@@ -20841,8 +20842,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_hyperspace_specialty', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_memory_vault_machine', 'Experience Cache', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, NULL, 194);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_memory_vault_machine', 'Experience Cache', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, 0, NULL, 194);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault_machine', 'restored_node_bonus_skill', '1.0', 0);
@@ -20872,8 +20873,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_memory_vault_machine', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_upkeep_twister', 'Sovereign Circuits', 'Change 1 Base Unity Leader Upkeep to 2 Energy Credits', 'gestalt', 'Galactic Paragons', 1, NULL, 195);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_upkeep_twister', 'Sovereign Circuits', 'Change 1 Base Unity Leader Upkeep to 2 Energy Credits', 'gestalt', 'Galactic Paragons', 1, 0, NULL, 195);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_upkeep_twister', 'leader_trait_selection_options_add', '1.0', 0);
@@ -20888,10 +20889,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_upkeep_twister', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_sovereign_guardianship', 'Guardian Matrix', 'Unlocks Matrix Units as defense armies.
 Allows building a Reloading Bay in starbases.
-Enables Inner Focus Edict, converting Influence into Unity.', 'gestalt', NULL, 1, NULL, 196);
+Enables Inner Focus Edict, converting Influence into Unity.', 'gestalt', NULL, 1, 1, NULL, 196);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_sovereign_guardianship', 'empire_size_colonies_mult', '0.75', 0);
@@ -20939,8 +20940,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_sovereign_guardianship', 'civic', 'forbid', 'civic_machine_terminator', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_obsessional_directive', 'Obsessional Directive', 'Commodities Consolidation situation, granting rewards upon completion if production targets are met', 'gestalt', NULL, 1, NULL, 197);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_obsessional_directive', 'Obsessional Directive', 'Commodities Consolidation situation, granting rewards upon completion if production targets are met', 'gestalt', NULL, 1, 1, NULL, 197);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_obsessional_directive', 'pop_artisan_drone_bonus_workforce_mult', '0.15', 0);
@@ -20968,8 +20969,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_obsessional_directive', 'civic', 'forbid', 'civic_machine_warbots', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_diplomatic_protocols', 'Diplomatic Protocols', NULL, 'gestalt', NULL, 1, NULL, 198);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_diplomatic_protocols', 'Diplomatic Protocols', NULL, 'gestalt', NULL, 1, 0, NULL, 198);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_diplomatic_protocols', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -21005,11 +21006,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_diplomatic_protocols', 'civic', 'forbid', 'civic_machine_terminator', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_tactical_algorithms', 'Tactical Algorithms', 'Commanders start with the Tactical Algorithms trait
 Can trade Commanders to other Empires
 Can create Mercenary Enclaves
-Starts game with Military Academy, Military Academy grants Tactical Insights', 'gestalt', NULL, 1, NULL, 199);
+Starts game with Military Academy, Military Academy grants Tactical Insights', 'gestalt', NULL, 1, 1, NULL, 199);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_tactical_algorithms', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
@@ -21032,10 +21033,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_tactical_algorithms', 'civic', 'forbid', 'civic_machine_terminator', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_guided_sapience', 'Genesis Architects', 'Available Colony Ships: Genesis Ark
 Planets Colonized with Genesis Arks: Pre-Sapient Pops: +300, Planetary Features: Genesis Preserve
-Gains Unity from uplifting Pre-Sapient Species', 'gestalt', NULL, 1, NULL, 200);
+Gains Unity from uplifting Pre-Sapient Species', 'gestalt', NULL, 1, 0, NULL, 200);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_guided_sapience', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -21079,8 +21080,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_guided_sapience', 'origin', 'forbid', 'origin_life_seeded', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_spybots', 'Spyware Directives', NULL, 'gestalt', NULL, 1, NULL, 201);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_spybots', 'Spyware Directives', NULL, 'gestalt', NULL, 1, 0, NULL, 201);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_spybots', 'intel_decryption_add', '1.0', 0);
@@ -21113,9 +21114,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_spybots', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_astromining_drones', 'Astro-Mining Drones', 'Replaces the Solar Panel Network Starbase Module with the Astro-Mining Bay
-Available Starbase Buildings: Astro-Mining Hub', 'gestalt', NULL, 1, NULL, 202);
+Available Starbase Buildings: Astro-Mining Hub', 'gestalt', NULL, 1, 0, NULL, 202);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_astromining_drones', 'planet_miners_minerals_produces_add', '-2.0', 0);
@@ -21163,12 +21164,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_astromining_drones', 'origin', 'forbid', 'origin_machine', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_beastmasters', 'Biodrones', 'Additional Starting Technologies:  
 Available Starbase Buildings:
 Home System: Start with a
 Starting Military Ships are replaced with Space Amoebas
-Starting Genetic Material : Common Space Amoeba', 'gestalt', NULL, 1, NULL, 203);
+Starting Genetic Material : Common Space Amoeba', 'gestalt', NULL, 1, 1, NULL, 203);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_beastmasters', 'artificial_ship_naval_cap_usage_mult', '2.0', 0);
@@ -21210,9 +21211,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_beastmasters', 'origin', 'forbid', 'origin_cosmic_dawn', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_astrometeorology_machine', 'Climate Modeling', 'Available Buildings: Astrometeorology Observatory
-Additional Starting Buildings: Astrometeorology Observatory', 'gestalt', NULL, 1, NULL, 204);
+Additional Starting Buildings: Astrometeorology Observatory', 'gestalt', NULL, 1, 0, NULL, 204);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_astrometeorology_machine', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -21222,11 +21223,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_astrometeorology_machine', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_environmental_architects_machine', 'Gardening Protocols', 'Additional Starting Technologies: Society Technologies to remove Blocker on the Homeworld
 Society Technologies to remove Blocker Natural Blockers are granted as Permanent Research Options upon Colonization
 Mastery of Nature replaced with Cultivated Worldscaping Planetary
-For each Blocker Natural Blocker on Colonized Planet : Resources from Jobs: -10%, Pop Assembly: -10%, Pop Upkeep: +15%', 'gestalt', NULL, 1, NULL, 205);
+For each Blocker Natural Blocker on Colonized Planet : Resources from Jobs: -10%, Pop Assembly: -10%, Pop Upkeep: +15%', 'gestalt', NULL, 1, 1, NULL, 205);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_machine', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -21282,12 +21283,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmental_architects_machine', 'origin', 'forbid', 'origin_machine', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_galactic_curators', 'Caretaker Network', 'Guaranteed Research Options: Society Research Galactic Archivism
 Initial Specimens: One Common of each Collection Category
 Gain Unity each time you find a Specimen or complete an Archaeological Site
 Purchases from the Curator Enclave: $@galactic_curators_curator_enclave_purchase_cost|%0$
-Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output', 'gestalt', NULL, 1, NULL, 206);
+Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output', 'gestalt', NULL, 1, 1, NULL, 206);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_galactic_curators', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -21322,8 +21323,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_galactic_curators', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_machine_stalwart_network', 'Stalwart Network', NULL, 'gestalt', NULL, 1, NULL, 207);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_machine_stalwart_network', 'Stalwart Network', NULL, 'gestalt', NULL, 1, 0, NULL, 207);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_stalwart_network', 'defensive_stations_tracking_add', '10.0', 0);
@@ -21358,10 +21359,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_stalwart_network', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_entropy_drinkers_machine', 'Energy Extractors', 'Enables the following Edicts: Energy Drain, Nexus Charge, Convergence of Will
 Can construct: Siphon Battery.
-Leaders start with the Psychic trait.', 'gestalt', NULL, 1, NULL, 208);
+Leaders start with the Psychic trait.', 'gestalt', NULL, 1, 0, NULL, 208);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers_machine', 'planet_jobs_produces_mult', '-0.1', 0);
@@ -21402,10 +21403,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_entropy_drinkers_machine', 'civic', 'forbid', 'civic_machine_memorialist', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_superstitious_beliefs', 'Pattern Finders', 'Enables Galactic Dowsing
 Every 13 years, the Cycle changes.
-Fortune Events will periodically benefit or impair your empire.', 'gestalt', NULL, 1, NULL, 209);
+Fortune Events will periodically benefit or impair your empire.', 'gestalt', NULL, 1, 1, NULL, 209);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_superstitious_beliefs', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
@@ -21415,9 +21416,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_superstitious_beliefs', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_chosen', 'Apostle Network', 'Starts the game in contact with a Shroud Patron.
-Additional Starting Technologies: Society Psionic Aura', 'gestalt', NULL, 1, NULL, 210);
+Additional Starting Technologies: Society Psionic Aura', 'gestalt', NULL, 1, 1, NULL, 210);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_chosen', 'psionic_aura_intensity_add', '10.0', 0);
@@ -21435,12 +21436,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_chosen', 'origin', 'forbid', 'origin_shroud_forged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_world_forgers', 'Thermal Optimizers', 'Unlocks starting planet: Volcanic World.
 Guaranteed Research Options: Society Research Volcanic Forge.
 Can construct Volcanic Forge building which adds Pyroclastic Drones.
 Planets with a Volcanic Forge will gradually turn into a Volcanic World.
-Guaranteed Habitable Worlds will be Dry worlds.', 'gestalt', NULL, 1, NULL, 211);
+Guaranteed Habitable Worlds will be Dry worlds.', 'gestalt', NULL, 1, 1, NULL, 211);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_world_forgers', 'pc_volcanic_max_districts_add', '3.0', 0);
@@ -21466,14 +21467,14 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_world_forgers', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_galvanic_symbiosis', 'Galvanic Retrofitting', 'Starts with Engineering Research already researched.
 Homeworld has a .
 Gain access to special Edicts:  
 Gives access to Sr Living Metal components:  
 Has access to Planetary Decision: Distribute Living Metal.
 Can recruit the Mimetic Strike Force armies.
-Can build a in systems with a Molten World for jobs.', 'gestalt', NULL, 1, NULL, 212);
+Can build a in systems with a Molten World for jobs.', 'gestalt', NULL, 1, 1, NULL, 212);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
@@ -21494,10 +21495,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_galvanic_symbiosis', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_franchising', 'Franchising', 'Your Subjects cannot have the following Agreement Terms: Expansion Prohibited, Limited Diplomacy, Independent Sensors
 Available Holdings: Franchise Headquarters on Subject colonies
-The Commercial Forum Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 213);
+The Commercial Forum Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 213);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_franchising', 'divided_patrongage_max_subjects', '1.0', 0);
@@ -21509,8 +21510,8 @@ INSERT OR IGNORE INTO civic_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_trading_posts', 'Trading Posts', 'The Commercial Forum Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 214);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_trading_posts', 'Trading Posts', 'The Commercial Forum Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 214);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_trading_posts', 'country_starbase_capacity_add', '4.0', 0);
@@ -21530,10 +21531,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_trading_posts', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_media_conglomerate', 'Media Conglomerate', 'Factions will form in your empire shortly after the game starts, but Faction Output is reduced for the first ten years.
 Faction Unity Output is replaced with Trade Output
-The Virtual Entertainment Studios Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 215);
+The Virtual Entertainment Studios Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 215);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_media_conglomerate', 'faction_demands_met_mult', '0.25', 0);
@@ -21576,8 +21577,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_media_conglomerate', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_naval_contractors', 'Naval Contractors', 'The Private Military Industries Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 216);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_naval_contractors', 'Naval Contractors', 'The Private Military Industries Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 216);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_naval_contractors', 'country_naval_cap_mult', '0.15', 0);
@@ -21598,8 +21599,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_naval_contractors', 'civic', 'forbid', 'civic_citizen_service', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_free_traders', 'Free Traders', NULL, 'corporate', NULL, 1, NULL, 217);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_free_traders', 'Free Traders', NULL, 'corporate', NULL, 1, 0, NULL, 217);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_free_traders', 'branch_office_value_mult', '0.1', 0);
@@ -21611,9 +21612,9 @@ INSERT OR IGNORE INTO civic_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_private_prospectors', 'Private Prospectors', 'Unlocks Ship Type: Private Colony Ship
-The Private Mining Consortium Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 218);
+The Private Mining Consortium Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 218);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_prospectors', 'empire_size_systems_mult', '-0.15', 0);
@@ -21642,9 +21643,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_private_prospectors', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_gospel_of_the_masses', 'Gospel of the Masses', 'Pop Spiritualist Pops give additional Trade on all Planets and Branch Offices
-Can build Temple of Prosperity Corporate Building', 'corporate', NULL, 1, NULL, 219);
+Can build Temple of Prosperity Corporate Building', 'corporate', NULL, 1, 0, NULL, 219);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_gospel_of_the_masses', 'pop_ethic_spiritualist_attraction_mult', '0.5', 0);
@@ -21667,8 +21668,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_gospel_of_the_masses', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_ruthless_competition', 'Ruthless Competition', 'The Executive Retreat Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 220);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_ruthless_competition', 'Ruthless Competition', 'The Executive Retreat Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 220);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ruthless_competition', 'species_leader_exp_gain', '0.1', 0);
@@ -21696,10 +21697,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_ruthless_competition', 'civic', 'forbid', 'civic_worker_coop', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_criminal_heritage', 'Criminal Heritage', 'Can build Branch Offices on the planet of any regular empire they have no war or active truce with
 Crime on Branch Office Planets increases Branch Office Value
-Can build special Crime-increasing Corporate Buildings', 'corporate', NULL, 1, NULL, 221);
+Can build special Crime-increasing Corporate Buildings', 'corporate', NULL, 1, 1, NULL, 221);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_criminal_heritage', 'planet_branch_offices_cost_mult', '-0.2', 0);
@@ -21719,8 +21720,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_criminal_heritage', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_private_military_companies', 'Private Military Companies', 'The Mercenary Liaison Office Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 222);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_private_military_companies', 'Private Military Companies', 'The Mercenary Liaison Office Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 222);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_military_companies', 'commander_initial_skill', '1.0', 0);
@@ -21759,8 +21760,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_private_military_companies', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_indentured_assets', 'Indentured Assets', 'The Private Security Company Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 223);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_indentured_assets', 'Indentured Assets', 'The Private Security Company Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 223);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_indentured_assets', 'pop_slave_bonus_workforce_mult', '0.15', 0);
@@ -21795,8 +21796,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_indentured_assets', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_brand_loyalty', 'Brand Loyalty', 'The Corporate Embassy Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 224);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_brand_loyalty', 'Brand Loyalty', 'The Corporate Embassy Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 224);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_brand_loyalty', 'country_unity_produces_mult', '0.15', 0);
@@ -21816,8 +21817,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_brand_loyalty', 'civic', 'forbid', 'civic_beacon_of_liberty', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_public_relations_specialists', 'Public Relations Specialists', 'The Public Relations Firm Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Federations', 1, NULL, 225);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_public_relations_specialists', 'Public Relations Specialists', 'The Public Relations Firm Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Federations', 1, 0, NULL, 225);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_public_relations_specialists', 'envoys_add', '2.0', 0);
@@ -21845,13 +21846,13 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_public_relations_specialists', 'civic', 'forbid', 'civic_diplomatic_corps', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_death_cult_corporate', 'Corporate Death Cult', 'Available Buildings:
 Additional Starting Buildings: Sacrificial Temple
 Available Holdings:
 Access to
 Priests are converted into Death Priests
-The Xeno-Outreach Agency Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Necroids Species Pack', 1, NULL, 226);
+The Xeno-Outreach Agency Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Necroids Species Pack', 1, 0, NULL, 226);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_death_cult_corporate', 'ethic', 'require_any', 'ethic_spiritualist', 1);
@@ -21871,10 +21872,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_death_cult_corporate', 'origin', 'forbid', 'origin_necrophage', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_catalytic_processing', 'Catalytic Recyclers', 'are replaced with Catalytic Technicians
 Industrial Jobs have their Minerals Upkeep replaced with Food Upkeep.
-The Private Military Industries Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Plantoids Species Pack', 1, NULL, 227);
+The Private Military Industries Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Plantoids Species Pack', 1, 0, NULL, 227);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_catalytic_processing', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -21887,12 +21888,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_catalytic_processing', 'origin', 'forbid', 'origin_lithoid', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_hedonism', 'Corporate Hedonism', 'Pop Cat Civilians are converted into Hedonists, which do not produce Amenities
 Allows Decadent Lifestyle Living Standard, under which all Pops have increased Happiness, Consumer Goods Upkeep and Amenities Usage
 Hedonists with Decadent Lifestyle provide Unity and Pop Growth (or Assembly) Speed, but require Amenities
 Additional Starting Buildings:
-The Amusement Megaplex Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 228);
+The Amusement Megaplex Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 228);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_hedonism', 'add_attunement_the_instrument_of_desire', '60.0', 0);
@@ -21911,10 +21912,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_hedonism', 'civic', 'forbid', 'civic_slaver_guilds', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_anglers', 'Trawling Operations', 'On Ocean Worlds, Agriculture Districts are uncapped.
 On Wet worlds: Agriculture Districts have the Zone Aquaculture Specialization, Farmers are converted into Anglers, Artisans are converted into Pearl Divers
-The Fast Food Chain Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 229);
+The Fast Food Chain Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 229);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_anglers', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -21939,10 +21940,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_anglers', 'origin', 'forbid', 'origin_void_dwellers', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_machine_anglers', 'Maritime Robotics', 'On Ocean Worlds, Agriculture Districts are uncapped.
 On Wet worlds: Agriculture Districts have the Zone Aquaculture Specialization, Farmers are converted into Anglers, Artisans are converted into Pearl Divers
-The Fast Food Chain Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 230);
+The Fast Food Chain Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 1, NULL, 230);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_machine_anglers', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -21958,10 +21959,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_machine_anglers', 'origin', 'forbid', 'origin_void_machines', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_crafters', 'Mastercraft Inc.', 'Artisans are replaced with Artificers
 Artificers turn Minerals into Consumer Goods and Trade
-The Virtual Entertainment Studios Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 231);
+The Virtual Entertainment Studios Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 231);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_crafters', 'add_attunement_the_instrument_of_desire', '60.0', 0);
@@ -21971,11 +21972,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_crafters', 'civic', 'forbid', 'civic_crafters', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_permanent_employment', 'Permanent Employment', 'Can build Posthumous Employment Center, turn Consumer Goods and Food (or equivalent) into Monthly Organic Pop Growth. All assembled Pops have the Zombie trait.
 Grants access to the Reemployment Center Holding.
 Some defeated organic Leviathans can be resurrected.
-The Fast Food Chain Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Necroids Species Pack', 1, NULL, 232);
+The Fast Food Chain Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Necroids Species Pack', 1, 0, NULL, 232);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_permanent_employment', 'add_attunement_the_instrument_of_desire', '60.0', 0);
@@ -22006,9 +22007,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_permanent_employment', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_relentless_industrialists', 'Shareholder Values', 'Can build Coordinated Fulfillment Center, significantly increasing Alloy and Consumer Goods output at the cost of reduced Pop Growth and gradually turning planets into Tomb Worlds.
-The Industrial Subsidiary Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 233);
+The Industrial Subsidiary Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 233);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_relentless_industrialists', 'add_attunement_the_instrument_of_desire', '60.0', 0);
@@ -22051,11 +22052,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_relentless_industrialists', 'origin', 'forbid', 'origin_life_seeded', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_toxic_baths', 'Mutagenic Luxury', 'Available Buildings:
 Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a Colony with Mutagenic Spas.
 Can build Corporate Clinic Corporate Building
-The Corporate Clinic Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 234);
+The Corporate Clinic Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 234);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_toxic_baths', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -22068,10 +22069,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_toxic_baths', 'origin', 'forbid', 'origin_life_seeded', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_scavengers', 'Refurbishment Division', 'Researching Debris grants both Physics Society Engineering Research and a portion of other Resource Costs of the destroyed fleet
 Ships can be salvaged from some Debris
-The Industrial Subsidiary Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 235);
+The Industrial Subsidiary Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 235);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_scavengers', 'ships_alloys_upkeep_mult', '-0.05', 0);
@@ -22091,9 +22092,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_scavengers', 'civic', 'forbid', 'civic_scavengers', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_ascensionists', 'Gigacorp', 'Colonies have +1 Ascension Tier on game start.
-The Public Relations Firm Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 236);
+The Public Relations Firm Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 236);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_ascensionists', 'planetary_ascension_effect_mult', '0.25', 0);
@@ -22124,11 +22125,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_ascensionists', 'civic', 'forbid', 'civic_ascensionists', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_privatized_exploration', 'Privatized Exploration', 'Start with 2 Exploration Vessels and an Engineering Vessel equipped with Subspace Drives, making them incapable of Hyperlane travel but granting limited Jump Drive abilities.
 Gain an increased chance to discover FTL Travel Technologies
 Start with the Starhold technology and a Starhold already built in your home system.
-The Private Mining Consortium Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 237);
+The Private Mining Consortium Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 237);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_privatized_exploration', 'starbase_building_build_speed_mult', '0.3', 0);
@@ -22215,10 +22216,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_privatized_exploration', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_hyperspace_specialty', 'Hyperspace Trade', 'Physics Hyperlane Breach Points is Guaranteed Research Option.
 Has Low Intel on all systems within 3 Hyperlanes of your starting system.
-The Amusement Megaplex Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 238);
+The Amusement Megaplex Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 238);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_hyperspace_specialty', 'planet_sensor_range_add', '2.0', 0);
@@ -22258,9 +22259,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_hyperspace_specialty', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_dimensional_worship', 'Dimensional Enterprise', 'Available Starbase Buildings:
-The Xeno-Outreach Agency Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 239);
+The Xeno-Outreach Agency Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 239);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_dimensional_worship', 'planet_bureaucrats_physics_research_produces_add', '1.0', 0);
@@ -22282,10 +22283,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_dimensional_worship', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_crusader_spirit_corporate', 'Letters of Marque', 'Commanders start with the Material Liberator trait
 Has the ''Pirate Raid'' casus belli on all other empires.
-The Mercenary Liaison Office Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, NULL, 240);
+The Mercenary Liaison Office Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, 0, NULL, 240);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_crusader_spirit_corporate', 'ships_upkeep_mult', '-0.05', 0);
@@ -22313,8 +22314,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_crusader_spirit_corporate', 'ethic', 'require_any', 'ethic_fanatic_authoritarian', 1);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_task_delegation_corporate', 'Precision Cogs', 'The Executive Retreat Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, NULL, 241);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_task_delegation_corporate', 'Precision Cogs', 'The Executive Retreat Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, 0, NULL, 241);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_task_delegation_corporate', 'country_official_cap_add', '1.0', 0);
@@ -22334,12 +22335,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_task_delegation_corporate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_private_healthcare_corporate', 'Pharma State', 'Capital Buildings provide +100 Jobs
 Amenities from : +2
 Trade from : +4
 Can build Corporate Clinic Corporate Building
-The Corporate Clinic Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, NULL, 242);
+The Corporate Clinic Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, 0, NULL, 242);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_healthcare_corporate', 'leader_lifespan_add', '10.0', 0);
@@ -22365,9 +22366,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_private_healthcare_corporate', 'origin', 'forbid', 'origin_payback', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_memory_vault_corporate', 'Knowledge Mentorship', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and Trade based on Destiny Traits acquired.
-The Commercial Forum Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, NULL, 243);
+The Commercial Forum Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, 0, NULL, 243);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault_corporate', 'councilor_skill_add', '1.0', 0);
@@ -22390,12 +22391,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_memory_vault_corporate', 'civic', 'forbid', 'civic_memory_vault', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_worker_coop', 'Worker Cooperative', 'Allows Employee Ownership Living Standard, under which all Pops have high Consumer Goods Upkeep regardless of Strata
 Disables the use of most other Living Standards
 Available Policies: Mutual Aid
 Replaces Executive and Manager Jobs with Steward Jobs
-The Corporate Embassy Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 244);
+The Corporate Embassy Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 244);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_worker_coop', 'election_term_years_mult', '-0.5', 0);
@@ -22442,11 +22443,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_worker_coop', 'civic', 'forbid', 'civic_police_state', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_dark_consortium', 'Shadow Corporation', 'Additional Starting Technologies: 
 Access to
 Has access to the Dark Matter Breakthrough Council Agenda.
-The Private Research Enterprises Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 245);
+The Private Research Enterprises Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 245);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_dark_consortium', 'civic', 'forbid', 'civic_dark_consortium', 0);
@@ -22454,11 +22455,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_dark_consortium', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_augmentation_bazaars', 'Augmentation Bazaars', 'Species Traits: Allows selection of Universal Augmentations Traits
 Available Buildings: Augmentation Bazaar
 Available Holdings: Offworld Implant Hub
-Executives are replaced with Augmentation Merchants', 'corporate', NULL, 1, NULL, 246);
+Executives are replaced with Augmentation Merchants', 'corporate', NULL, 1, 1, NULL, 246);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_augmentation_bazaars', 'planet_augmentors_trade_produces_add', '4.0', 0);
@@ -22495,10 +22496,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_augmentation_bazaars', 'origin', 'forbid', 'origin_endbringers', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_sovereign_guardianship', 'Corporate Protectorate', 'Unlocks Fanatic Guardians as defense armies.
 Allows building a Reloading Bay in starbases.
-Enables Inner Focus Edict, converting Influence into Unity.', 'corporate', NULL, 1, NULL, 247);
+Enables Inner Focus Edict, converting Influence into Unity.', 'corporate', NULL, 1, 0, NULL, 247);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_sovereign_guardianship', 'empire_size_colonies_mult', '0.75', 0);
@@ -22579,11 +22580,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_sovereign_guardianship', 'origin', 'forbid', 'origin_broken_shackles', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_guided_sapience', 'Astrogenesis Technologies', 'Available Colony Ships: Genesis Ark
 Planets Colonized with Genesis Arks: Pre-Sapient Pops: +300, Planetary Features: Genesis Preserve
 Gains Unity from uplifting Pre-Sapient Species
-The Xeno-Outreach Agency Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 248);
+The Xeno-Outreach Agency Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 248);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_guided_sapience', 'terraforming_cost_mult', '-0.25', 0);
@@ -22631,11 +22632,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_guided_sapience', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_toxic_baths_individual_machine', 'Luxury Lubrication Pools', 'Available Buildings:
 Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a Colony with Hyper Lubrication Basin.
 Can build Corporate Clinic Corporate Building
-The Corporate Clinic Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 249);
+The Corporate Clinic Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 249);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_toxic_baths_individual_machine', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -22648,16 +22649,16 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_toxic_baths_individual_machine', 'origin', 'forbid', 'origin_life_seeded', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_astrometeorology_megacorp', 'Weather Exploitation', 'Available Buildings:
 Additional Starting Buildings: Astrometeorology Observatory
-The Private Research Enterprises Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 250);
+The Private Research Enterprises Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 250);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_storm_callers_megacorp', 'Storm Influencers', 'Available Buildings:
 Replaces Jobs with Storm Dancer Jobs
 Species Traits:
-The Amusement Megaplex Corporate Building generates additional Branch Office Value and adds +50 Merchant jobs to our Capital.', 'corporate', NULL, 1, NULL, 251);
+The Amusement Megaplex Corporate Building generates additional Branch Office Value and adds +50 Merchant jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 251);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_storm_callers_megacorp', 'capital_storm_diplo_weight_mult', '0.2', 0);
@@ -22672,12 +22673,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_storm_callers_megacorp', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_environmental_architects_megacorp', 'Geo-Engineering Inc.', 'Additional Starting Technologies: Society Technologies to remove Blocker on the Homeworld
 Society Technologies to remove Blocker Natural Blockers are granted as Permanent Research Options upon Colonization
 Mastery of Nature replaced with Cultivated Worldscaping Planetary
 For each Blocker Natural Blocker on Colonized Planet : Resources from Jobs: -10%, Pop Growth Speed: -10%, Pop Upkeep: +15%
-The Executive Retreat Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 252);
+The Executive Retreat Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 252);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_megacorp', 'planet_jobs_produces_mult', '0.1', 0);
@@ -22755,14 +22756,14 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmental_architects_megacorp', 'origin', 'forbid', 'origin_void_machines', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_galactic_curators', 'Antiquarian Expertise', 'Guaranteed Research Options:
 Initial : One Common of each Collection Category
 Gain Unity each time you find a Specimen or complete an Archaeological Site
 Purchases from the Curator Enclave: $@galactic_curators_curator_enclave_purchase_cost|%0$
 Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output
 Replaces Entertainer Jobs with Museum Curator Jobs
-The Public Relations Firm Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 253);
+The Public Relations Firm Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 253);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_galactic_curators', 'planet_jobs_unity_produces_mult', '-0.1', 0);
@@ -22797,13 +22798,13 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_galactic_curators', 'civic', 'forbid', 'civic_galactic_curators', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_beastmasters', 'Space Ranchers', 'Additional Starting Technologies:  
 Available Starbase Buildings:
 Home System: Start with a
 Starting Military Ships are replaced with Space Amoebas
 Starting Genetic Material : Common Space Amoeba
-The Fast Food Chain Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 254);
+The Fast Food Chain Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 254);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_beastmasters', 'starbase_shipyard_artificial_build_cost_mult', '2.0', 0);
@@ -22842,8 +22843,8 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_beastmasters', 'origin', 'forbid', 'origin_cosmic_dawn', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
-               VALUES ('civic_corporate_genetic_identification', 'Sequenced Securities', 'The Private Security Company Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 255);
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
+               VALUES ('civic_corporate_genetic_identification', 'Sequenced Securities', 'The Private Security Company Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 255);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_genetic_identification', 'planet_bureaucrats_society_research_produces_add', '1.5', 0);
@@ -22871,10 +22872,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_genetic_identification', 'civic', 'forbid', 'civic_genetic_identification', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_crowdsourcing', 'Decentralized R&D', 'Factions produce Physics Society Engineering Research instead of Unity
 Factions will form in your empire shortly after the game starts, but Faction Output is reduced for the first ten years
-The Private Research Enterprises Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 256);
+The Private Research Enterprises Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 256);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_crowdsourcing', 'add_attunement_the_cradle_of_souls', '60.0', 0);
@@ -22923,11 +22924,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_crowdsourcing', 'civic', 'forbid', 'civic_secret_societies_corporate', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_entropy_drinkers_corporate', 'Corporate Vampires', 'Enables the following Edicts: Energy Drain, Sanguine Council, Convergence of Will
 Can construct: Synergy Headquarters.
 Leaders start with the Psychic trait.
-The Executive Retreat Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 257);
+The Executive Retreat Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 257);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers_corporate', 'planet_jobs_produces_mult', '-0.1', 0);
@@ -22990,11 +22991,11 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_entropy_drinkers_corporate', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_superstitious_beliefs', 'Fortune Enterprise', 'Replaces: Priests with Fortune Tellers, High Priests with Fortune Brokers
 Enables
 Every 13 years, the changes.
-Fortune Events will periodically benefit or impair your empire.', 'corporate', NULL, 1, NULL, 258);
+Fortune Events will periodically benefit or impair your empire.', 'corporate', NULL, 1, 0, NULL, 258);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_superstitious_beliefs', 'civic', 'forbid', 'civic_superstitious_beliefs', 0);
@@ -23008,12 +23009,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_superstitious_beliefs', 'origin', 'forbid', 'origin_cybernetic_creed', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_twisted_experimenters_corporate', 'Judicial R&D', 'Starts with Experimental Testing situation, which grants technology insight upon completion.
 Can construct and starts with: Experimentation Chambers.
 Can construct Experimentation Offices Corporate Building.
 All non-Machine slaves get access to the Orderlies Slave Job.
-Access to Slave Army: Abominations', 'corporate', NULL, 1, NULL, 259);
+Access to Slave Army: Abominations', 'corporate', NULL, 1, 0, NULL, 259);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_twisted_experimenters_corporate', 'refugee_attraction', '-0.15', 0);
@@ -23038,12 +23039,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_twisted_experimenters_corporate', 'civic', 'forbid', 'civic_natural_design', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_secret_societies_corporate', 'Influential Cartel', 'Clandestine Factions will emerge after contacting other empires.
 Starts with the ability to conduct Proxy Wars., will produce Unity per active and successful Proxy War.
 Starts in First Contact with two neighboring empires.
 Infiltration Level gained on empires after First Contact: +$@secret_society_infiltration_gain|0$
-The Corporate Embassy Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 260);
+The Corporate Embassy Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 260);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_secret_societies_corporate', 'proxy_war_cost_mult', '-0.25', 0);
@@ -23093,10 +23094,10 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_secret_societies_corporate', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_chosen', 'Chosen Executives', 'Starts the game in contact with a Shroud Patron.
 Additional Starting Technologies: Society
-The Psionic Offices Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 261);
+The Psionic Offices Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 261);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_chosen', 'psionic_aura_intensity_add', '10.0', 0);
@@ -23133,9 +23134,9 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_chosen', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_tankbound_corporate', 'Corporate Thinktank', 'Adds the trait., , , and are fully Automated., Jobs are Pop Cat Specialists., District Urban Districts have additional Production Overseers jobs.
-The Virtual Entertainment Studios Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 262);
+The Virtual Entertainment Studios Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 262);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_tankbound_corporate', 'planet_automated_jobs_upkeep_mult', '-0.25', 0);
@@ -23193,12 +23194,12 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_tankbound_corporate', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_world_forgers', 'Planetary Architects', 'Unlocks starting planet: Volcanic World.
 Guaranteed Research Options: Society Research Volcanic Forge.
 Can construct Volcanic Forge building which adds Thermotechnic Mentors.
 Planets with a Volcanic Forge will gradually turn into a Volcanic World.
-Guaranteed Habitable Worlds will be Dry worlds.', 'corporate', NULL, 1, NULL, 263);
+Guaranteed Habitable Worlds will be Dry worlds.', 'corporate', NULL, 1, 0, NULL, 263);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_world_forgers', 'pc_volcanic_max_districts_add', '3.0', 0);
@@ -23225,7 +23226,7 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_world_forgers', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_galvanic_symbiosis', 'Biometallic Cartel', 'Starts with Engineering Research already researched.
 Homeworld has a .
 Gain access to special Edicts:  
@@ -23233,7 +23234,7 @@ Gives access to Sr Living Metal components:
 Has access to Planetary Decision: Distribute Living Metal.
 Can recruit the Mimetic Strike Force armies.
 Can build a in systems with a Molten World for jobs.
-Can build the Living Metal Enhancement Clinic Corporate Building.', 'corporate', NULL, 1, NULL, 264);
+Can build the Living Metal Enhancement Clinic Corporate Building.', 'corporate', NULL, 1, 0, NULL, 264);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
