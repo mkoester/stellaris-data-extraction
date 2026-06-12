@@ -2182,1089 +2182,908 @@ INSERT OR IGNORE INTO trait
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_desert_preference', 'pc_desert_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_desert_preference', 'pc_arid_habitability', '0.6', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_desert_preference', 'pc_savannah_habitability', '0.6', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_desert_preference', 'pc_tropical_habitability', '0.2', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_desert_preference', 'pc_continental_habitability', '0.2', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_desert_preference', 'pc_tundra_habitability', '0.2', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_desert_preference', 'pc_arctic_habitability', '0.2', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_desert_preference', 'pc_ocean_habitability', '0.2', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_desert_preference', 'pc_alpine_habitability', '0.2', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arid_preference', 'pc_arid_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arid_preference', 'pc_desert_habitability', '0.6', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arid_preference', 'pc_savannah_habitability', '0.6', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arid_preference', 'pc_tropical_habitability', '0.2', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arid_preference', 'pc_continental_habitability', '0.2', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arid_preference', 'pc_tundra_habitability', '0.2', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arid_preference', 'pc_arctic_habitability', '0.2', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arid_preference', 'pc_ocean_habitability', '0.2', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arid_preference', 'pc_alpine_habitability', '0.2', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_savannah_preference', 'pc_savannah_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_savannah_preference', 'pc_desert_habitability', '0.6', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_savannah_preference', 'pc_arid_habitability', '0.6', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_savannah_preference', 'pc_tropical_habitability', '0.2', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_savannah_preference', 'pc_continental_habitability', '0.2', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_savannah_preference', 'pc_tundra_habitability', '0.2', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_savannah_preference', 'pc_arctic_habitability', '0.2', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_savannah_preference', 'pc_ocean_habitability', '0.2', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_savannah_preference', 'pc_alpine_habitability', '0.2', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tropical_preference', 'pc_tropical_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tropical_preference', 'pc_continental_habitability', '0.6', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tropical_preference', 'pc_ocean_habitability', '0.6', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tropical_preference', 'pc_desert_habitability', '0.2', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tropical_preference', 'pc_arid_habitability', '0.2', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tropical_preference', 'pc_tundra_habitability', '0.2', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tropical_preference', 'pc_arctic_habitability', '0.2', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tropical_preference', 'pc_alpine_habitability', '0.2', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tropical_preference', 'pc_savannah_habitability', '0.2', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_continental_preference', 'pc_continental_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_continental_preference', 'pc_tropical_habitability', '0.6', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_continental_preference', 'pc_ocean_habitability', '0.6', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_continental_preference', 'pc_desert_habitability', '0.2', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_continental_preference', 'pc_arid_habitability', '0.2', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_continental_preference', 'pc_tundra_habitability', '0.2', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_continental_preference', 'pc_arctic_habitability', '0.2', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_continental_preference', 'pc_alpine_habitability', '0.2', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_continental_preference', 'pc_savannah_habitability', '0.2', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ocean_preference', 'pc_ocean_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ocean_preference', 'pc_continental_habitability', '0.6', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ocean_preference', 'pc_tropical_habitability', '0.6', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ocean_preference', 'pc_desert_habitability', '0.2', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ocean_preference', 'pc_arid_habitability', '0.2', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ocean_preference', 'pc_tundra_habitability', '0.2', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ocean_preference', 'pc_arctic_habitability', '0.2', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ocean_preference', 'pc_alpine_habitability', '0.2', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ocean_preference', 'pc_savannah_habitability', '0.2', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arctic_preference', 'pc_arctic_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arctic_preference', 'pc_tundra_habitability', '0.6', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arctic_preference', 'pc_alpine_habitability', '0.6', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arctic_preference', 'pc_ocean_habitability', '0.2', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arctic_preference', 'pc_desert_habitability', '0.2', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arctic_preference', 'pc_tropical_habitability', '0.2', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arctic_preference', 'pc_continental_habitability', '0.2', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arctic_preference', 'pc_arid_habitability', '0.2', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_arctic_preference', 'pc_savannah_habitability', '0.2', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tundra_preference', 'pc_tundra_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tundra_preference', 'pc_arctic_habitability', '0.6', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tundra_preference', 'pc_alpine_habitability', '0.6', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tundra_preference', 'pc_ocean_habitability', '0.2', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tundra_preference', 'pc_desert_habitability', '0.2', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tundra_preference', 'pc_tropical_habitability', '0.2', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tundra_preference', 'pc_continental_habitability', '0.2', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tundra_preference', 'pc_arid_habitability', '0.2', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_tundra_preference', 'pc_savannah_habitability', '0.2', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_alpine_preference', 'pc_alpine_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_alpine_preference', 'pc_arctic_habitability', '0.6', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_alpine_preference', 'pc_tundra_habitability', '0.6', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_alpine_preference', 'pc_ocean_habitability', '0.2', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_alpine_preference', 'pc_desert_habitability', '0.2', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_alpine_preference', 'pc_tropical_habitability', '0.2', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_alpine_preference', 'pc_continental_habitability', '0.2', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_alpine_preference', 'pc_arid_habitability', '0.2', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_alpine_preference', 'pc_savannah_habitability', '0.2', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_volcanic_preference', 'pc_volcanic_habitability', '0.6', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_volcanic_preference', 'pc_desert_habitability', '0.6', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_volcanic_preference', 'pc_arid_habitability', '0.6', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_volcanic_preference', 'pc_savannah_habitability', '0.6', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_volcanic_preference', 'pc_tropical_habitability', '0.2', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_volcanic_preference', 'pc_continental_habitability', '0.2', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_volcanic_preference', 'pc_ocean_habitability', '0.2', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ai_preference', 'pc_ai_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ai_habitability', 'Machine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ai_habitability', 'Machine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ai_preference', 'pc_desert_habitability', '0.01', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ai_preference', 'pc_tropical_habitability', '0.01', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ai_preference', 'pc_continental_habitability', '0.01', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ai_preference', 'pc_ocean_habitability', '0.01', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ai_preference', 'pc_alpine_habitability', '0.01', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ai_preference', 'pc_arctic_habitability', '0.01', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ai_preference', 'pc_tundra_habitability', '0.01', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ai_preference', 'pc_arid_habitability', '0.01', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ai_preference', 'pc_savannah_habitability', '0.01', 9);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_nuked_preference', 'pc_nuked_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_nuked_preference', 'pc_desert_habitability', '0.6', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_nuked_preference', 'pc_tropical_habitability', '0.6', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_nuked_preference', 'pc_continental_habitability', '0.6', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_nuked_preference', 'pc_ocean_habitability', '0.6', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_nuked_preference', 'pc_arctic_habitability', '0.6', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_nuked_preference', 'pc_tundra_habitability', '0.6', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_nuked_preference', 'pc_arid_habitability', '0.6', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_nuked_preference', 'pc_savannah_habitability', '0.6', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_nuked_preference', 'pc_alpine_habitability', '0.6', 9);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_gaia_preference', 'pc_gaia_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_gaia_habitability', 'Gaia World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_gaia_habitability', 'Gaia World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_ringworld_habitable_preference', 'pc_ringworld_habitable_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ringworld_habitable_habitability', 'Ring World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ringworld_habitable_habitability', 'Ring World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_habitat_preference', 'pc_habitat_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_habitat_habitability', 'Habitat Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_habitat_habitability', 'Habitat Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_machine_preference', 'pc_machine_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_machine_habitability', 'Machine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_machine_habitability', 'Machine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_hive_preference', 'pc_hive_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_hive_habitability', 'Hive World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_hive_habitability', 'Hive World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_relic_preference', 'pc_relic_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_relic_habitability', 'Relic World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_relic_habitability', 'Relic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_shattered_ring_habitable_preference', 'pc_ringworld_habitable_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ringworld_habitable_habitability', 'Ring World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ringworld_habitable_habitability', 'Ring World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_gaia_preference_terraforming', 'pc_gaia_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_gaia_habitability', 'Gaia World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_gaia_habitability', 'Gaia World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_city_preference', 'pc_city_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_city_habitability', 'Ecumenopolis Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_city_habitability', 'Ecumenopolis Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_dry_planet_preference', 'pc_desert_habitability', '0.75', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_dry_planet_preference', 'pc_arid_habitability', '0.75', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_dry_planet_preference', 'pc_savannah_habitability', '0.75', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_dry_planet_preference', 'pc_ocean_habitability', '0.5', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_dry_planet_preference', 'pc_continental_habitability', '0.5', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_dry_planet_preference', 'pc_tropical_habitability', '0.5', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_dry_planet_preference', 'pc_arctic_habitability', '0.5', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_dry_planet_preference', 'pc_alpine_habitability', '0.5', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_dry_planet_preference', 'pc_tundra_habitability', '0.5', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_dry_planet_preference', 'pc_volcanic_habitability', '0.25', 9);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_volcanic_planet_preference', 'pc_volcanic_habitability', '0.75', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_volcanic_planet_preference', 'pc_desert_habitability', '0.5', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_volcanic_planet_preference', 'pc_arid_habitability', '0.5', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_volcanic_planet_preference', 'pc_savannah_habitability', '0.5', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_volcanic_planet_preference', 'pc_ocean_habitability', '0.5', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_volcanic_planet_preference', 'pc_continental_habitability', '0.5', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_volcanic_planet_preference', 'pc_tropical_habitability', '0.5', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wet_planet_preference', 'pc_ocean_habitability', '0.75', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wet_planet_preference', 'pc_continental_habitability', '0.75', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wet_planet_preference', 'pc_tropical_habitability', '0.75', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wet_planet_preference', 'pc_desert_habitability', '0.5', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wet_planet_preference', 'pc_arid_habitability', '0.5', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wet_planet_preference', 'pc_savannah_habitability', '0.5', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wet_planet_preference', 'pc_arctic_habitability', '0.5', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wet_planet_preference', 'pc_alpine_habitability', '0.5', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wet_planet_preference', 'pc_tundra_habitability', '0.5', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wet_planet_preference', 'pc_volcanic_habitability', '0.25', 9);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cold_planet_preference', 'pc_arctic_habitability', '0.75', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cold_planet_preference', 'pc_alpine_habitability', '0.75', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cold_planet_preference', 'pc_tundra_habitability', '0.75', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cold_planet_preference', 'pc_desert_habitability', '0.5', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cold_planet_preference', 'pc_arid_habitability', '0.5', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cold_planet_preference', 'pc_savannah_habitability', '0.5', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cold_planet_preference', 'pc_ocean_habitability', '0.5', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cold_planet_preference', 'pc_continental_habitability', '0.5', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cold_planet_preference', 'pc_tropical_habitability', '0.5', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cold_planet_preference', 'pc_volcanic_habitability', '0.25', 9);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_habitat_planet_preference', 'pc_habitat_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_habitat_habitability', 'Habitat Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_habitat_habitability', 'Habitat Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_cosmogenesis_world_preference', 'pc_cosmogenesis_world_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_cosmogenesis_world_habitability', 'Synaptic Lathe Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_cosmogenesis_world_habitability', 'Synaptic Lathe Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_gaia_preference', 'pc_gaia_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_gaia_habitability', 'Gaia World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_gaia_habitability', 'Gaia World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_machine_preference', 'pc_machine_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_machine_habitability', 'Machine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_machine_habitability', 'Machine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_shattered_ring_habitable_preference', 'pc_ringworld_habitable_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ringworld_habitable_habitability', 'Ring World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ringworld_habitable_habitability', 'Ring World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_ringworld_habitable_preference', 'pc_ringworld_habitable_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ringworld_habitable_habitability', 'Ring World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ringworld_habitable_habitability', 'Ring World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_relic_preference', 'pc_relic_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_relic_habitability', 'Relic World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_relic_habitability', 'Relic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nuked_preference', 'pc_nuked_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nuked_preference', 'pc_desert_habitability', '0.6', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nuked_preference', 'pc_tropical_habitability', '0.6', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nuked_preference', 'pc_continental_habitability', '0.6', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nuked_preference', 'pc_ocean_habitability', '0.6', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nuked_preference', 'pc_arctic_habitability', '0.6', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nuked_preference', 'pc_tundra_habitability', '0.6', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nuked_preference', 'pc_arid_habitability', '0.6', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nuked_preference', 'pc_savannah_habitability', '0.6', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nuked_preference', 'pc_alpine_habitability', '0.6', 9);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nanotech_preference', 'pc_nanotech_habitability', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_nanotech_habitability', 'Nanite World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_nanotech_habitability', 'Nanite World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nanotech_preference', 'pc_desert_habitability', '0.6', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_desert_habitability', 'Desert Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nanotech_preference', 'pc_tropical_habitability', '0.6', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tropical_habitability', 'Tropical Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nanotech_preference', 'pc_continental_habitability', '0.6', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_continental_habitability', 'Continental Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nanotech_preference', 'pc_ocean_habitability', '0.6', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nanotech_preference', 'pc_arctic_habitability', '0.6', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arctic_habitability', 'Arctic Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nanotech_preference', 'pc_tundra_habitability', '0.6', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_tundra_habitability', 'Tundra Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nanotech_preference', 'pc_arid_habitability', '0.6', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_arid_habitability', 'Arid Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nanotech_preference', 'pc_savannah_habitability', '0.6', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_savannah_habitability', 'Savanna World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_pc_nanotech_preference', 'pc_alpine_habitability', '0.6', 9);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('trait_hive_mind', 0, NULL, 0, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
@@ -3478,327 +3297,273 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_perfected_genes'
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_unit', 'pc_machine_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_machine_habitability', 'Machine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_machine_habitability', 'Machine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_unit', 'leader_lifespan_add', '20.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_machine_unit', 'habitability_floor_add', '0.5', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_mechanical', 'pc_machine_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_machine_habitability', 'Machine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_machine_habitability', 'Machine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_mechanical', 'habitability_floor_add', '0.5', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_syncretic_proles', 'pop_happiness', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_syncretic_proles', 'worker_and_simple_drone_cat_bonus_workforce_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_lithoid', 'logistic_growth_mult', '-0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_lithoid', 'bonus_pop_growth_mult', '-0.25', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_lithoid', 'pop_environment_tolerance', '0.5', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_lithoid', 'army_health', '0.5', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_health', 'Army Health', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_health', 'Army Health', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_lithoid', 'leader_lifespan_add', '50.0', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_aquatic', 'pc_ocean_habitability', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_aquatic', 'pc_ocean_habitability', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ocean_habitability', 'Ocean Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_necrophage', 'leader_lifespan_add', '80.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_necrophage', 'logistic_growth_mult', '-0.5', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_necrophage', 'bonus_pop_growth_mult', '-0.5', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_necrophage', 'planet_pops_organics_food_upkeep_mult', '-0.5', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_food_upkeep_mult', 'Pop Food Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_food_upkeep_mult', 'Pop Food Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_necrophage', 'planet_pops_organics_minerals_upkeep_mult', '-0.5', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_minerals_upkeep_mult', 'Pop Mineral Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_minerals_upkeep_mult', 'Pop Mineral Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_necrophage', 'planet_pops_organics_energy_upkeep_mult', '-0.5', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_energy_upkeep_mult', 'Pop Energy Upkeep', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_energy_upkeep_mult', 'Pop Energy Upkeep', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_necrophage', 'planet_pops_organics_alloys_upkeep_mult', '-0.5', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_alloys_upkeep_mult', 'Pop Alloy Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_alloys_upkeep_mult', 'Pop Alloy Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_necrophage', 'pop_cat_ruler_bonus_workforce_mult', '0.05', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_ruler_bonus_workforce_mult', 'Job Efficiency for Elites', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_bonus_workforce_mult', 'Job Efficiency for Elites', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_necrophage', 'pop_cat_specialist_bonus_workforce_mult', '0.05', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_specialist_bonus_workforce_mult', 'Job Efficiency for Specialists', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_bonus_workforce_mult', 'Job Efficiency for Specialists', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_necrophage', 'pop_cat_worker_bonus_workforce_mult', '-0.1', 9);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_worker_bonus_workforce_mult', 'Job Efficiency for Workers', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_bonus_workforce_mult', 'Job Efficiency for Workers', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile', 'pop_government_ethic_attraction', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile', 'leader_lifespan_add', '-40.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile', 'army_damage_mult', '0.5', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile', 'planet_pops_organics_food_upkeep_mult', '0.25', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_food_upkeep_mult', 'Pop Food Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_food_upkeep_mult', 'Pop Food Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile', 'planet_pops_organics_minerals_upkeep_mult', '0.25', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_minerals_upkeep_mult', 'Pop Mineral Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_minerals_upkeep_mult', 'Pop Mineral Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile', 'planet_pops_organics_alloys_upkeep_mult', '0.25', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_alloys_upkeep_mult', 'Pop Alloy Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_alloys_upkeep_mult', 'Pop Alloy Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile_full_potential', 'pop_government_ethic_attraction', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile_full_potential', 'pop_environment_tolerance', '0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile_full_potential', 'pop_cat_ruler_bonus_workforce_mult', '0.4', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_ruler_bonus_workforce_mult', 'Job Efficiency for Elites', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_bonus_workforce_mult', 'Job Efficiency for Elites', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile_full_potential', 'specialist_and_complex_drone_cat_bonus_workforce_mult', '0.25', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('specialist_and_complex_drone_cat_bonus_workforce_mult', 'Job Efficiency for Specialists & Complex Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('specialist_and_complex_drone_cat_bonus_workforce_mult', 'Job Efficiency for Specialists & Complex Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile_full_potential', 'planet_pops_organics_food_upkeep_mult', '0.3', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_food_upkeep_mult', 'Pop Food Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_food_upkeep_mult', 'Pop Food Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile_full_potential', 'planet_pops_organics_minerals_upkeep_mult', '0.3', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_minerals_upkeep_mult', 'Pop Mineral Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_minerals_upkeep_mult', 'Pop Mineral Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile_full_potential', 'planet_pops_organics_alloys_upkeep_mult', '0.3', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_alloys_upkeep_mult', 'Pop Alloy Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_alloys_upkeep_mult', 'Pop Alloy Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile_full_potential', 'army_damage_mult', '0.75', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_infertile_full_potential', 'army_health', '0.25', 8);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_health', 'Army Health', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_health', 'Army Health', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_fertile', 'pop_government_ethic_attraction', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_fertile', 'army_damage_mult', '0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_fertile', 'planet_pops_organics_food_upkeep_mult', '0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_food_upkeep_mult', 'Pop Food Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_food_upkeep_mult', 'Pop Food Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_fertile', 'planet_pops_organics_minerals_upkeep_mult', '0.1', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_minerals_upkeep_mult', 'Pop Mineral Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_minerals_upkeep_mult', 'Pop Mineral Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_clone_soldier_fertile', 'planet_pops_organics_alloys_upkeep_mult', '0.1', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_alloys_upkeep_mult', 'Pop Alloy Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_alloys_upkeep_mult', 'Pop Alloy Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cave_dweller', 'habitability_floor_add', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cave_dweller', 'miner_jobs_bonus_workforce_mult', '0.15', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('miner_jobs_bonus_workforce_mult', 'Job Efficiency for Miner jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('miner_jobs_bonus_workforce_mult', 'Job Efficiency for Miner jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cave_dweller', 'species_empire_size_mult', '0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_cave_dweller', 'habitability_floor_add', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_cave_dweller', 'miner_jobs_bonus_workforce_mult', '0.15', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('miner_jobs_bonus_workforce_mult', 'Job Efficiency for Miner jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('miner_jobs_bonus_workforce_mult', 'Job Efficiency for Miner jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_cave_dweller', 'species_empire_size_mult', '0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_shroud_forged', 'specialist_and_complex_drone_cat_bonus_workforce_mult', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('specialist_and_complex_drone_cat_bonus_workforce_mult', 'Job Efficiency for Specialists & Complex Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('specialist_and_complex_drone_cat_bonus_workforce_mult', 'Job Efficiency for Specialists & Complex Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_shroud_forged', 'worker_and_simple_drone_cat_bonus_workforce_mult', '-0.25', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_perfected_genes', 'leader_lifespan_add', '25.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_perfected_genes', 'species_leader_exp_gain', '-0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('trait_presapient_starborn', 0, NULL, 0, 1, 0, NULL, '03_species_traits_presapients.txt');
@@ -3940,159 +3705,133 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_stage
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_starborn', 'pop_resettlement_cost_mult', '-0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_starborn', 'pop_environment_tolerance', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_earthbound', 'technician_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('technician_jobs_bonus_workforce_mult', 'Job Efficiency for Technician jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('technician_jobs_bonus_workforce_mult', 'Job Efficiency for Technician jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_earthbound', 'army_defense_damage_mult', '0.5', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_defense_damage_mult', 'Defense Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_defense_damage_mult', 'Defense Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_natural_intellectuals', 'bureaucrat_jobs_bonus_workforce_mult', '0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_natural_intellectuals', 'researcher_jobs_bonus_workforce_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_natural_intellectuals', 'worker_and_simple_drone_cat_bonus_workforce_mult', '-0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_proles', 'army_damage_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_proles', 'worker_and_simple_drone_cat_bonus_workforce_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_proles', 'researcher_jobs_bonus_workforce_mult', '-0.15', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_conservative', 'pop_happiness', '0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_conservative', 'pop_government_ethic_attraction', '0.25', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_conservative', 'species_leader_exp_gain', '-0.5', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_irradiated', 'pc_nuked_habitability', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_irradiated', 'leader_lifespan_add', '30.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_docile_livestock', 'logistic_growth_mult', '0.3', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_docile_livestock', 'bureaucrat_jobs_bonus_workforce_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_docile_livestock', 'technician_jobs_bonus_workforce_mult', '-0.5', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('technician_jobs_bonus_workforce_mult', 'Job Efficiency for Technician jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('technician_jobs_bonus_workforce_mult', 'Job Efficiency for Technician jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_docile_livestock', 'researcher_jobs_bonus_workforce_mult', '-0.75', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_forcefully_devolved', 'army_damage_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_forcefully_devolved', 'pop_bonus_workforce_mult', '-0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_forcefully_devolved', 'logistic_growth_mult', '-0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_forcefully_devolved', 'species_leader_exp_gain', '-0.2', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_unintelligent', 'logistic_growth_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_unintelligent', 'technician_jobs_bonus_workforce_mult', '-1.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('technician_jobs_bonus_workforce_mult', 'Job Efficiency for Technician jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('technician_jobs_bonus_workforce_mult', 'Job Efficiency for Technician jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_presapient_unintelligent', 'researcher_jobs_bonus_workforce_mult', '-1.0', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('trait_auto_mod_biological', 3, 'normal', 0, 0, 0, NULL, '04_species_traits.txt');
@@ -4968,441 +4707,368 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_jinxed'
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_agrarian', 'farmer_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('farmer_jobs_bonus_workforce_mult', 'Job Efficiency for Farmer jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('farmer_jobs_bonus_workforce_mult', 'Job Efficiency for Farmer jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_ingenious', 'technician_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('technician_jobs_bonus_workforce_mult', 'Job Efficiency for Technician jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('technician_jobs_bonus_workforce_mult', 'Job Efficiency for Technician jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_industrious', 'miner_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('miner_jobs_bonus_workforce_mult', 'Job Efficiency for Miner jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('miner_jobs_bonus_workforce_mult', 'Job Efficiency for Miner jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_intelligent', 'researcher_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_thrifty', 'trader_jobs_bonus_workforce_mult', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_natural_engineers', 'engineer_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('engineer_jobs_bonus_workforce_mult', 'Job Efficiency for Engineer jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('engineer_jobs_bonus_workforce_mult', 'Job Efficiency for Engineer jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_natural_physicists', 'physicist_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('physicist_jobs_bonus_workforce_mult', 'Job Efficiency for Physicist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('physicist_jobs_bonus_workforce_mult', 'Job Efficiency for Physicist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_natural_sociologists', 'biologist_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('biologist_jobs_bonus_workforce_mult', 'Job Efficiency for Biologist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('biologist_jobs_bonus_workforce_mult', 'Job Efficiency for Biologist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_extremely_adaptive', 'pop_environment_tolerance', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_adaptive', 'pop_environment_tolerance', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_nonadaptive', 'pop_environment_tolerance', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_rapid_breeders', 'logistic_growth_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_slow_breeders', 'logistic_growth_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_talented', 'negative_leader_traits_species', '-1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_talented', 'leaders_upkeep_mult', '-0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_quick_learners', 'species_leader_exp_gain', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_slow_learners', 'species_leader_exp_gain', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_traditional', 'bureaucrat_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_quarrelsome', 'bureaucrat_jobs_bonus_workforce_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_docile', 'species_empire_size_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unruly', 'species_empire_size_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_very_strong', 'army_damage_mult', '0.4', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_very_strong', 'worker_and_simple_drone_cat_bonus_workforce_mult', '0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_very_strong', 'soldier_jobs_bonus_workforce_mult', '0.15', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_strong', 'army_damage_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_strong', 'worker_and_simple_drone_cat_bonus_workforce_mult', '0.025', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_strong', 'soldier_jobs_bonus_workforce_mult', '0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_weak', 'army_damage_mult', '-0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_weak', 'worker_and_simple_drone_cat_bonus_workforce_mult', '-0.025', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_weak', 'soldier_jobs_bonus_workforce_mult', '-0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_nomadic', 'pop_resettlement_cost_mult', '-0.35', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_sedentary', 'pop_resettlement_cost_mult', '0.35', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_communal', 'pop_housing_usage_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_solitary', 'pop_housing_usage_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_charismatic', 'influential_jobs_bonus_workforce_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_repugnant', 'influential_jobs_bonus_workforce_mult', '-0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_conformists', 'pop_government_ethic_attraction', '0.3', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_deviants', 'pop_government_ethic_attraction', '-0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_venerable', 'leader_lifespan_add', '80.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_enduring', 'leader_lifespan_add', '20.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_fleeting', 'leader_lifespan_add', '-10.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_fleeting_lithoid', 'leader_lifespan_add', '-25.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_decadent', 'pop_cat_worker_happiness', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_worker_happiness', 'Worker Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_happiness', 'Worker Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_decadent', 'pop_cat_slave_happiness', '-0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_slave_happiness', 'Slave Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_slave_happiness', 'Slave Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_resilient', 'army_defense_damage_mult', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_defense_damage_mult', 'Defense Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_defense_damage_mult', 'Defense Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_conservational', 'planet_pops_consumer_goods_upkeep_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wasteful', 'planet_pops_consumer_goods_upkeep_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cybernetic', 'pop_environment_tolerance', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cybernetic', 'army_damage_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cybernetic', 'leader_lifespan_add', '40.0', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_survivor', 'pc_nuked_habitability', '0.7', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_survivor', 'leader_lifespan_add', '10.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_survivor', 'pop_housing_usage_mult', '-0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_survivor', 'pop_amenities_usage_mult', '-0.15', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_enigmatic_intelligence', 'researcher_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_enigmatic_intelligence', 'species_leader_exp_gain', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_enigmatic_intelligence_poor', 'researcher_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_enigmatic_intelligence_failed', 'researcher_jobs_bonus_workforce_mult', '-0.6', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_bioadaptability', 'habitability_floor_add', '0.3', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_bioadaptability', 'pop_amenities_usage_mult', '-0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_bioadaptability', 'logistic_growth_mult', '0.05', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_social_pheromones', 'pop_housing_usage_mult', '-0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_social_pheromones', 'pop_amenities_usage_mult', '-0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_social_pheromones', 'logistic_growth_mult', '0.05', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_limited_regeneration', 'army_damage_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_limited_regeneration', 'leader_lifespan_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_limited_regeneration', 'pop_amenities_usage_mult', '-0.05', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_limited_regeneration', 'logistic_growth_mult', '0.05', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_plantoid_radiotrophic', 'pc_nuked_habitability', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_zombie', 'pop_bonus_workforce_mult', '-0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_zombie', 'civilian_and_maintenance_drone_cat_bonus_workforce_mult', '-0.5', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('civilian_and_maintenance_drone_cat_bonus_workforce_mult', 'Job Efficiency for Civilians & Maintenance Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('civilian_and_maintenance_drone_cat_bonus_workforce_mult', 'Job Efficiency for Civilians & Maintenance Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_zombie', 'planet_pops_upkeep_mult', '-1.0', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_humanoid_jinxed', 'negative_leader_traits_species', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('trait_auto_mod_robotic', 3, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
@@ -6094,471 +5760,393 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_psionic', 
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_power_drills', 'miner_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('miner_jobs_bonus_workforce_mult', 'Job Efficiency for Miner jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('miner_jobs_bonus_workforce_mult', 'Job Efficiency for Miner jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_harvesters', 'farmer_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('farmer_jobs_bonus_workforce_mult', 'Job Efficiency for Farmer jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('farmer_jobs_bonus_workforce_mult', 'Job Efficiency for Farmer jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_superconductive', 'technician_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('technician_jobs_bonus_workforce_mult', 'Job Efficiency for Technician jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('technician_jobs_bonus_workforce_mult', 'Job Efficiency for Technician jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_efficient_processors', 'pop_bonus_workforce_mult', '0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_logic_engines', 'researcher_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_loyalty_circuits', 'pop_happiness', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_domestic_protocols', 'influential_jobs_bonus_workforce_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_double_jointed', 'pop_housing_usage_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_bulky', 'pop_housing_usage_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_enhanced_memory', 'negative_leader_traits_species', '-1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_enhanced_memory', 'leaders_upkeep_mult', '-0.25', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_emotion_emulators', 'influential_jobs_bonus_workforce_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_uncanny', 'influential_jobs_bonus_workforce_mult', '-0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_durable', 'planet_pops_robotics_upkeep_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_robotics_upkeep_mult', 'Robot Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_robotics_upkeep_mult', 'Robot Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_high_maintenance', 'planet_pops_robotics_upkeep_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_robotics_upkeep_mult', 'Robot Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_robotics_upkeep_mult', 'Robot Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_learning_algorithms', 'species_leader_exp_gain', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_repurposed_hardware', 'species_leader_exp_gain', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_mass_produced', 'planet_pop_assembly_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_custom_made', 'planet_pop_assembly_mult', '-0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_recycled', 'roboticist_jobs_bonus_workforce_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('roboticist_jobs_bonus_workforce_mult', 'Job Efficiency for Roboticist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('roboticist_jobs_bonus_workforce_mult', 'Job Efficiency for Roboticist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_luxurious', 'roboticist_jobs_bonus_workforce_mult', '-0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('roboticist_jobs_bonus_workforce_mult', 'Job Efficiency for Roboticist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('roboticist_jobs_bonus_workforce_mult', 'Job Efficiency for Roboticist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_propaganda_machines', 'bureaucrat_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_streamlined_protocols', 'species_empire_size_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_high_bandwidth', 'species_empire_size_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_trading_algorithms', 'trader_jobs_bonus_workforce_mult', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_quarrelsome', 'bureaucrat_jobs_bonus_workforce_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_deviants', 'pop_government_ethic_attraction', '-0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_decadent', 'pop_cat_worker_happiness', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_worker_happiness', 'Worker Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_happiness', 'Worker Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_decadent', 'pop_cat_slave_happiness', '-0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_slave_happiness', 'Slave Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_slave_happiness', 'Slave Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_wasteful', 'planet_pops_consumer_goods_upkeep_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_artificial_engineers', 'engineer_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('engineer_jobs_bonus_workforce_mult', 'Job Efficiency for Engineer jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('engineer_jobs_bonus_workforce_mult', 'Job Efficiency for Engineer jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_artificial_physicists', 'physicist_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('physicist_jobs_bonus_workforce_mult', 'Job Efficiency for Physicist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('physicist_jobs_bonus_workforce_mult', 'Job Efficiency for Physicist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_artificial_sociologists', 'biologist_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('biologist_jobs_bonus_workforce_mult', 'Job Efficiency for Biologist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('biologist_jobs_bonus_workforce_mult', 'Job Efficiency for Biologist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_integrated_weaponry', 'army_damage_mult', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_integrated_weaponry', 'enforcer_jobs_bonus_workforce_mult', '0.15', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('enforcer_jobs_bonus_workforce_mult', 'Job Efficiency for Enforcer jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('enforcer_jobs_bonus_workforce_mult', 'Job Efficiency for Enforcer jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_integrated_weaponry', 'soldier_jobs_bonus_workforce_mult', '0.15', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_delicate_frames', 'army_damage_mult', '-0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_delicate_frames', 'worker_and_simple_drone_cat_bonus_workforce_mult', '-0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_delicate_frames', 'soldier_jobs_bonus_workforce_mult', '-0.15', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_scarcity_algorithms', 'trader_jobs_bonus_workforce_mult', '-0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_ancient_dreadnought', 'army_damage_mult', '5.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_ancient_dreadnought', 'foundry_jobs_bonus_workforce_mult', '0.15', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('foundry_jobs_bonus_workforce_mult', 'Job Efficiency for Metallurgist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('foundry_jobs_bonus_workforce_mult', 'Job Efficiency for Metallurgist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_enigmatic_fortress', 'pop_amenities_usage_mult', '-0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_infinity_sphere', 'researcher_jobs_bonus_workforce_mult', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_scavenger_bot', 'planet_pop_assembly_mult', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_history_warbot', 'army_damage_mult', '0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_history_artbot', 'influential_jobs_bonus_workforce_mult', '0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_history_explorebot', 'bureaucrat_jobs_bonus_workforce_mult', '0.02', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_history_researchbot', 'researcher_jobs_bonus_workforce_mult', '0.02', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_history_resourcebot', 'miner_jobs_bonus_workforce_mult', '0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('miner_jobs_bonus_workforce_mult', 'Job Efficiency for Miner jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('miner_jobs_bonus_workforce_mult', 'Job Efficiency for Miner jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_history_chatbot', 'trader_jobs_bonus_workforce_mult', '0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_survivor', 'pc_nuked_habitability', '0.7', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_survivor', 'leader_lifespan_add', '10.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_survivor', 'pop_housing_usage_mult', '-0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_survivor', 'pop_amenities_usage_mult', '-0.15', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_digital_1', 'habitability_floor_add', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_digital_2', 'habitability_floor_add', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_suppressed', 'pop_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_suppressed', 'species_leader_exp_gain', '-1.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_suppressed', 'civilian_and_maintenance_drone_cat_bonus_workforce_mult', '-0.85', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('civilian_and_maintenance_drone_cat_bonus_workforce_mult', 'Job Efficiency for Civilians & Maintenance Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('civilian_and_maintenance_drone_cat_bonus_workforce_mult', 'Job Efficiency for Civilians & Maintenance Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_shielded_components', 'pop_environment_tolerance', '0.3', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_shielded_components', 'pop_bonus_workforce_mult', '0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_shielded_components', 'leader_lifespan_add', '50.0', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_monoform', 'pop_housing_usage_mult', '-0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_monoform', 'planet_pop_assembly_mult', '0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_inquisitative_axioms', 'researcher_jobs_bonus_workforce_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_inquisitative_axioms', 'leaders_upkeep_mult', '-0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_inquisitative_axioms', 'negative_traits_leader', '-1.0', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('negative_traits_leader', 'Leader Maximum Negative Traits', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_traits_leader', 'Leader Maximum Negative Traits', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 'pop_bonus_workforce_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_ferro_viscosity_augmentation', 'leader_lifespan_mult', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_biomimetic_assembly', 'roboticist_jobs_bonus_workforce_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('roboticist_jobs_bonus_workforce_mult', 'Job Efficiency for Roboticist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('roboticist_jobs_bonus_workforce_mult', 'Job Efficiency for Roboticist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_matrix_trading', 'trader_jobs_bonus_workforce_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_exotic_fuel_consumption', 'specialist_and_complex_drone_cat_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('specialist_and_complex_drone_cat_bonus_workforce_mult', 'Job Efficiency for Specialists & Complex Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('specialist_and_complex_drone_cat_bonus_workforce_mult', 'Job Efficiency for Specialists & Complex Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_rare_crystal_exterior', 'pop_environment_tolerance', '0.3', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_volatile_mote_reactor', 'worker_and_simple_drone_cat_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_synthetic_dawn', 'pop_government_ethic_attraction', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_synthetic_dawn', 'pop_happiness', '0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_synthetic_dawn', 'bureaucrat_jobs_bonus_workforce_mult', '0.05', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('leader_trait_brainslug', NULL, NULL, 0, 0, 0, NULL, '06_distant_stars_traits.txt');
@@ -6625,51 +6213,43 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_notofthisworld',
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_brainslug', 'researcher_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_brainslug', 'bureaucrat_jobs_bonus_workforce_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_brainslug', 'logistic_growth_mult', '-0.25', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_nivlac', 'pop_environment_tolerance', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_nivlac', 'logistic_growth_mult', '0.15', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robot_notofthisworld', 'planet_pops_upkeep_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_notofthisworld', 'leader_lifespan_add', '-10.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_notofthisworld', 'planet_pops_upkeep_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('leader_trait_caravan_counter', 1, NULL, 0, 0, 0, NULL, '07_megacorp_traits.txt');
@@ -6685,9 +6265,8 @@ INSERT OR IGNORE INTO trait
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_nuumismatic_administration', 'trader_jobs_bonus_workforce_mult', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('leader_trait_traumatized', NULL, NULL, 0, 0, 0, NULL, '08_ancrel_traits.txt');
@@ -6715,24 +6294,21 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_traumatized', 'ship_archaeological_site_excavation_speed_mult', '-0.3', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_archaeological_site_excavation_speed_mult', 'Archaeology Excavation Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_archaeological_site_excavation_speed_mult', 'Archaeology Excavation Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_traumatized_2', 'ship_anomaly_research_speed_mult', '-0.2', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_traumatized_2', 'ship_archaeological_site_excavation_speed_mult', '-1.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_archaeological_site_excavation_speed_mult', 'Archaeology Excavation Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_archaeological_site_excavation_speed_mult', 'Archaeology Excavation Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_inspired_archaeologist', 'ship_archaeological_site_excavation_speed_mult', '0.3', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_archaeological_site_excavation_speed_mult', 'Archaeology Excavation Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_archaeological_site_excavation_speed_mult', 'Archaeology Excavation Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_inspired_surveyor', 'ship_anomaly_research_speed_mult', '0.1', 0);
@@ -6951,153 +6527,128 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_tiyanki', 'genet
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_adaptive_lithoid', 'pop_environment_tolerance', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_rapid_breeders_lithoid', 'logistic_growth_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_delicious', 'pop_livestock_bonus_workforce_mult', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_livestock_bonus_workforce_mult', 'Job Efficiency for Livestock', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_livestock_bonus_workforce_mult', 'Job Efficiency for Livestock', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_nerve_stapled', 'pop_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_nerve_stapled', 'species_leader_exp_gain', '-1.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_nerve_stapled', 'species_empire_size_mult', '-0.15', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_nerve_stapled', 'civilian_and_maintenance_drone_cat_bonus_workforce_mult', '-0.9', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('civilian_and_maintenance_drone_cat_bonus_workforce_mult', 'Job Efficiency for Civilians & Maintenance Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('civilian_and_maintenance_drone_cat_bonus_workforce_mult', 'Job Efficiency for Civilians & Maintenance Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_fertile', 'logistic_growth_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_fertile', 'pop_housing_usage_mult', '-0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_fertile', 'pop_happiness', '0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robust', 'pop_environment_tolerance', '0.3', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robust', 'pop_bonus_workforce_mult', '0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_robust', 'leader_lifespan_add', '50.0', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_erudite', 'researcher_jobs_bonus_workforce_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_erudite', 'negative_leader_traits_species', '-1.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_erudite', 'leaders_upkeep_mult', '-0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_vat_grown', 'bonus_pop_growth_mult', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_vat_grown', 'pop_housing_usage_mult', '-0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_vat_grown', 'pop_amenities_usage_mult', '-0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_felsic', 'pop_livestock_lithoid_bonus_workforce_mult', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_livestock_lithoid_bonus_workforce_mult', 'Job Efficiency for Livestock', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_livestock_lithoid_bonus_workforce_mult', 'Job Efficiency for Livestock', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_ductile', 'pop_livestock_infernal_bonus_workforce_mult', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_livestock_infernal_bonus_workforce_mult', 'Job Efficiency for Livestock', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_livestock_infernal_bonus_workforce_mult', 'Job Efficiency for Livestock', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_natural_machinist', 'foundry_jobs_bonus_workforce_mult', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('foundry_jobs_bonus_workforce_mult', 'Job Efficiency for Metallurgist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('foundry_jobs_bonus_workforce_mult', 'Job Efficiency for Metallurgist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_natural_machinist', 'artisan_jobs_bonus_workforce_mult', '0.25', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('artisan_jobs_bonus_workforce_mult', 'Job Efficiency for Artisan jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('artisan_jobs_bonus_workforce_mult', 'Job Efficiency for Artisan jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_drake_scaled', 'army_health', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_health', 'Army Health', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_health', 'Army Health', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_voidling', 'habitability_floor_add', '0.8', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('leader_trait_bulwark_watcher', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
@@ -7179,36 +6730,31 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_scholarium_observer', 'ship_anomaly_generation_chance_mult', '0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_anomaly_generation_chance_mult', 'Anomaly Discovery Chance', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_anomaly_generation_chance_mult', 'Anomaly Discovery Chance', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_scientist_mind_wipe_02', 'ship_archaeological_site_excavation_speed_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_archaeological_site_excavation_speed_mult', 'Archaeology Excavation Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_archaeological_site_excavation_speed_mult', 'Archaeology Excavation Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_scientist_mind_wipe_02', 'ship_archaeological_site_clues_add', '1.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_archaeological_site_clues_add', 'Archaeology Skill', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_archaeological_site_clues_add', 'Archaeology Skill', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('gestalt_trait_scientist_mind_wipe_02', 'science_ship_survey_speed', '-0.25', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('gestalt_trait_scientist_mind_wipe_02', 'ship_archaeological_site_excavation_speed_mult', '0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_archaeological_site_excavation_speed_mult', 'Archaeology Excavation Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_archaeological_site_excavation_speed_mult', 'Archaeology Excavation Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('gestalt_trait_scientist_mind_wipe_02', 'ship_archaeological_site_clues_add', '1.0', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_archaeological_site_clues_add', 'Archaeology Skill', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_archaeological_site_clues_add', 'Archaeology Skill', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('trait_incubator', 2, NULL, 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
@@ -7429,231 +6975,193 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_excessive_endura
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_inorganic_breath', 'planet_pops_upkeep_mult', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_noxious', 'habitability_floor_add', '0.3', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_noxious', 'habitability_ceil_add', '-0.3', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitability_ceil_add', 'Species Maximum Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_noxious', 'army_damage_mult', '0.5', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_noxious', 'pop_housing_usage_mult', '0.1', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_exotic_metabolism', 'leader_lifespan_add', '50.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_auto_mod_overtuned', 'leader_lifespan_add', '-20.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_spliced_adaptability', 'leader_lifespan_add', '-10.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_spliced_adaptability', 'logistic_growth_mult', '-0.015', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_juiced_power', 'army_damage_mult', '0.4', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_juiced_power', 'leader_lifespan_add', '-10.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_juiced_power', 'logistic_growth_mult', '-0.015', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_farm_hands', 'leader_lifespan_add', '-10.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_farm_hands', 'logistic_growth_mult', '-0.015', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_crack_miner', 'leader_lifespan_add', '-10.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_crack_miner', 'logistic_growth_mult', '-0.015', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_technical_skill', 'leader_lifespan_add', '-10.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_technical_skill', 'logistic_growth_mult', '-0.015', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_commercial_genius', 'leader_lifespan_add', '-10.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_commercial_genius', 'logistic_growth_mult', '-0.015', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_crafted_smiles', 'leader_lifespan_add', '-10.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_crafted_smiles', 'logistic_growth_mult', '-0.015', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_low_maintenance', 'leader_lifespan_add', '-10.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_low_maintenance', 'logistic_growth_mult', '-0.015', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_artificial_intelligence', 'leader_lifespan_add', '-10.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_artificial_intelligence', 'logistic_growth_mult', '-0.015', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_gene_mentorship', 'leader_lifespan_add', '-10.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_gene_mentorship', 'logistic_growth_mult', '-0.015', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_expressed_tradition', 'leader_lifespan_add', '-10.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_expressed_tradition', 'logistic_growth_mult', '-0.015', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_elevated_synapses', 'leader_lifespan_add', '-30.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_elevated_synapses', 'logistic_growth_mult', '-0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_preplanned_growth', 'planet_pops_organics_food_upkeep_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_food_upkeep_mult', 'Pop Food Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_food_upkeep_mult', 'Pop Food Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_preplanned_growth', 'planet_pops_organics_minerals_upkeep_mult', '0.15', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_minerals_upkeep_mult', 'Pop Mineral Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_minerals_upkeep_mult', 'Pop Mineral Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_preplanned_growth', 'planet_pops_organics_alloys_upkeep_mult', '0.15', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_organics_alloys_upkeep_mult', 'Pop Alloy Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_alloys_upkeep_mult', 'Pop Alloy Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_preplanned_growth', 'leader_lifespan_add', '-30.0', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_excessive_endurance', 'logistic_growth_mult', '-0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_excessive_endurance', 'leader_lifespan_add', '-30.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('trait_auto_mod_cyborg', 2, 'cyborg', 0, 0, 0, NULL, '10_species_traits_cyborg.txt');
@@ -8105,363 +7613,303 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ritualist
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_power_drills', 'miner_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('miner_jobs_bonus_workforce_mult', 'Job Efficiency for Miner jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('miner_jobs_bonus_workforce_mult', 'Job Efficiency for Miner jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_harvesters', 'farmer_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('farmer_jobs_bonus_workforce_mult', 'Job Efficiency for Farmer jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('farmer_jobs_bonus_workforce_mult', 'Job Efficiency for Farmer jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_superconductive', 'technician_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('technician_jobs_bonus_workforce_mult', 'Job Efficiency for Technician jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('technician_jobs_bonus_workforce_mult', 'Job Efficiency for Technician jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_efficient_processors', 'pop_bonus_workforce_mult', '0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_logic_engines', 'researcher_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_loyalty_circuits', 'pop_happiness', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_double_jointed', 'pop_housing_usage_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_double_jointed', 'pop_resettlement_cost_mult', '-0.35', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_bulky', 'pop_housing_usage_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_bulky', 'pop_resettlement_cost_mult', '0.35', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_enhanced_memory', 'negative_leader_traits_species', '-1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_enhanced_memory', 'leaders_upkeep_mult', '-0.25', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_durable', 'pop_amenities_usage_add', '-0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_add', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_add', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_high_maintenance', 'pop_amenities_usage_add', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_add', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_add', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_learning_algorithms', 'species_leader_exp_gain', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_learning_algorithms', 'leader_skill_add', '1.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_skill_add', 'Effective Leader Skill Level', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_skill_add', 'Effective Leader Skill Level', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_neural_limiters', 'species_leader_exp_gain', '-0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_neural_limiters', 'councilor_skill_add', '-1.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_streamlined_protocols', 'species_empire_size_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_high_bandwidth', 'species_empire_size_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_trading_algorithms', 'trader_jobs_bonus_workforce_mult', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_stainless_steel_smile', 'influential_jobs_bonus_workforce_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_welded_countenance', 'influential_jobs_bonus_workforce_mult', '-0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('influential_jobs_bonus_workforce_mult', 'Job Efficiency for Influential jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_apathy_loops', 'pop_happiness', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_bionic_engineers', 'engineer_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('engineer_jobs_bonus_workforce_mult', 'Job Efficiency for Engineer jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('engineer_jobs_bonus_workforce_mult', 'Job Efficiency for Engineer jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_bionic_physicists', 'physicist_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('physicist_jobs_bonus_workforce_mult', 'Job Efficiency for Physicist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('physicist_jobs_bonus_workforce_mult', 'Job Efficiency for Physicist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_bionic_sociologists', 'biologist_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('biologist_jobs_bonus_workforce_mult', 'Job Efficiency for Biologist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('biologist_jobs_bonus_workforce_mult', 'Job Efficiency for Biologist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_integrated_weaponry', 'army_damage_mult', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_integrated_weaponry', 'enforcer_jobs_bonus_workforce_mult', '0.15', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('enforcer_jobs_bonus_workforce_mult', 'Job Efficiency for Enforcer jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('enforcer_jobs_bonus_workforce_mult', 'Job Efficiency for Enforcer jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_integrated_weaponry', 'soldier_jobs_bonus_workforce_mult', '0.15', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_mass_produced', 'logistic_growth_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_propaganda_machines', 'bureaucrat_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_delicate_frames', 'army_damage_mult', '-0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_delicate_frames', 'worker_and_simple_drone_cat_bonus_workforce_mult', '-0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_delicate_frames', 'soldier_jobs_bonus_workforce_mult', '-0.15', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_limited_memory', 'species_leader_exp_gain', '-0.4', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_scarcity_algorithms', 'trader_jobs_bonus_workforce_mult', '-0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_ancient_dreadnought', 'army_damage_mult', '5.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_ancient_dreadnought', 'foundry_jobs_bonus_workforce_mult', '0.15', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('foundry_jobs_bonus_workforce_mult', 'Job Efficiency for Metallurgist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('foundry_jobs_bonus_workforce_mult', 'Job Efficiency for Metallurgist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_enigmatic_fortress', 'pop_amenities_usage_mult', '-0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_infinity_sphere', 'researcher_jobs_bonus_workforce_mult', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_scavenger_bot', 'logistic_growth_mult', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_creed_of_construction', 'foundry_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('foundry_jobs_bonus_workforce_mult', 'Job Efficiency for Metallurgist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('foundry_jobs_bonus_workforce_mult', 'Job Efficiency for Metallurgist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_creed_of_construction', 'artisan_jobs_bonus_workforce_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('artisan_jobs_bonus_workforce_mult', 'Job Efficiency for Artisan jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('artisan_jobs_bonus_workforce_mult', 'Job Efficiency for Artisan jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_creed_of_construction', 'bureaucrat_jobs_bonus_workforce_mult', '0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_creed_of_war', 'army_health', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_health', 'Army Health', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_health', 'Army Health', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_creed_of_war', 'army_damage_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_creed_of_war', 'soldier_jobs_bonus_workforce_mult', '0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_creed_of_war', 'bureaucrat_jobs_bonus_workforce_mult', '0.1', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_creed_of_research', 'researcher_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_creed_of_research', 'bureaucrat_jobs_bonus_workforce_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_creed_of_labor', 'pop_cat_worker_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_worker_bonus_workforce_mult', 'Job Efficiency for Workers', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_bonus_workforce_mult', 'Job Efficiency for Workers', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_creed_of_labor', 'bureaucrat_jobs_bonus_workforce_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_ritualistic_implants', 'foundry_jobs_bonus_workforce_mult', '0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('foundry_jobs_bonus_workforce_mult', 'Job Efficiency for Metallurgist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('foundry_jobs_bonus_workforce_mult', 'Job Efficiency for Metallurgist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_ritualistic_implants', 'artisan_jobs_bonus_workforce_mult', '0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('artisan_jobs_bonus_workforce_mult', 'Job Efficiency for Artisan jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('artisan_jobs_bonus_workforce_mult', 'Job Efficiency for Artisan jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_ritualistic_implants', 'engineer_jobs_bonus_workforce_mult', '0.05', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('engineer_jobs_bonus_workforce_mult', 'Job Efficiency for Engineer jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('engineer_jobs_bonus_workforce_mult', 'Job Efficiency for Engineer jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_ritualistic_implants', 'bureaucrat_jobs_bonus_workforce_mult', '0.05', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_ritualistic_implants', 'soldier_jobs_bonus_workforce_mult', '0.05', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_ritualistic_implants', 'pop_cat_worker_bonus_workforce_mult', '0.05', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_worker_bonus_workforce_mult', 'Job Efficiency for Workers', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_bonus_workforce_mult', 'Job Efficiency for Workers', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_ritualistic_implants', 'army_damage_mult', '0.05', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('leader_trait_fotd_scientist', 0, NULL, 0, 0, 0, NULL, '11_first_contact_traits.txt');
@@ -8493,15 +7941,13 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_stargazer', 'spe
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_stargazer', 'pop_resettlement_cost_mult', '-0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_stargazer', 'pop_environment_tolerance', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('leader_trait_rift_warped', NULL, NULL, 0, 0, 0, NULL, '12_astral_planes_traits.txt');
@@ -8569,135 +8015,114 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exd', 'special')
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_planar_theorist', 'country_astral_rift_speed_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('country_astral_rift_speed_mult', 'Astral Rift Exploration Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_astral_rift_speed_mult', 'Astral Rift Exploration Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_planar_theorist_2', 'country_astral_rift_speed_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('country_astral_rift_speed_mult', 'Astral Rift Exploration Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_astral_rift_speed_mult', 'Astral Rift Exploration Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_academic_astral_rift_expert', 'ship_astral_rift_clues_add', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_astral_rift_clues_add', 'Astral Rift Skill', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_astral_rift_clues_add', 'Astral Rift Skill', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_academic_astral_rift_expert_2', 'ship_astral_rift_clues_add', '2.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_astral_rift_clues_add', 'Astral Rift Skill', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_astral_rift_clues_add', 'Astral Rift Skill', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_academic_astral_rift_expert_3', 'ship_astral_rift_clues_add', '3.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_astral_rift_clues_add', 'Astral Rift Skill', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_astral_rift_clues_add', 'Astral Rift Skill', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_foreign_consciousness', 'ship_astral_rift_speed_mult', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_astral_rift_speed_mult', 'Astral Rift Exploration Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_astral_rift_speed_mult', 'Astral Rift Exploration Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_foreign_consciousness', 'ship_astral_rift_clues_add', '2.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_astral_rift_clues_add', 'Astral Rift Skill', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_astral_rift_clues_add', 'Astral Rift Skill', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_black_light_blinded', 'science_ship_survey_speed', '-0.5', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_black_light_blinded', 'ship_astral_rift_speed_mult', '-0.5', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_astral_rift_speed_mult', 'Astral Rift Exploration Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_astral_rift_speed_mult', 'Astral Rift Exploration Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_black_light_blinded', 'ship_astral_rift_clues_add', '-2.0', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_astral_rift_clues_add', 'Astral Rift Skill', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_astral_rift_clues_add', 'Astral Rift Skill', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_black_light_blinded', 'ship_archaeological_site_excavation_speed_mult', '-0.5', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_archaeological_site_excavation_speed_mult', 'Archaeology Excavation Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_archaeological_site_excavation_speed_mult', 'Archaeology Excavation Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_black_light_blinded', 'ship_archaeological_site_clues_add', '-2.0', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_archaeological_site_clues_add', 'Archaeology Skill', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_archaeological_site_clues_add', 'Archaeology Skill', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_sanitary_drone', 'ship_anomaly_research_speed_mult', '0.05', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_sanitary_drone', 'ship_astral_rift_clues_add', '1.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_astral_rift_clues_add', 'Astral Rift Skill', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_astral_rift_clues_add', 'Astral Rift Skill', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_spacebender', 'ship_ftl_jumpdrive_range_mult', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_ftl_jumpdrive_range_mult', 'Jump Drive Range', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_ftl_jumpdrive_range_mult', 'Jump Drive Range', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_spacebender', 'ship_jumpdrive_cooldown_mult', '-0.9', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_jumpdrive_cooldown_mult', 'Jump Drive Cooldown', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_jumpdrive_cooldown_mult', 'Jump Drive Cooldown', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_plasmic', 'logistic_growth_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_plasmic', 'pop_housing_usage_mult', '-0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_plasmic', 'pop_environment_tolerance', '0.15', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_exd', 'leader_lifespan_mult', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_exd', 'pop_environment_tolerance', '0.5', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_exd', 'logistic_growth_mult', '-0.25', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_exd', 'planet_pops_upkeep_mult', '0.5', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('trait_storm_touched', 0, NULL, 0, 0, 0, NULL, '13_cosmic_storms_traits.txt');
@@ -8777,15 +8202,13 @@ INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_ceta
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_limited_cybernetic', 'pop_bonus_workforce_mult', '0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cetanas_prisoner', 'pop_bonus_workforce_mult', '-0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('leader_trait_buccaneer', 1, NULL, 0, 0, 0, NULL, '14_grand_archive_traits.txt');
@@ -8840,69 +8263,58 @@ INSERT OR IGNORE INTO trait
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_gifted_trapper', 'ship_capture_chance_add', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_capture_chance_add', 'Fauna Capture Chance', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_capture_chance_add', 'Fauna Capture Chance', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_gifted_trapper', 'gravity_snare_cooldown_mult', '-0.25', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('gravity_snare_cooldown_mult', 'Gravity Snare Cooldown', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('gravity_snare_cooldown_mult', 'Gravity Snare Cooldown', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_gifted_trapper', 'ship_speed_mult', '0.1', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_void_tracker', 'gravity_snare_cost_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('gravity_snare_cost_mult', 'Gravity Snare Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('gravity_snare_cost_mult', 'Gravity Snare Cost', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_void_tracker', 'gravity_snare_cooldown_mult', '-0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('gravity_snare_cooldown_mult', 'Gravity Snare Cooldown', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('gravity_snare_cooldown_mult', 'Gravity Snare Cooldown', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_void_tracker', 'ship_capture_chance_add', '0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_capture_chance_add', 'Fauna Capture Chance', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_capture_chance_add', 'Fauna Capture Chance', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_void_tracker', 'ship_capture_amount_add', '1.0', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_capture_amount_add', 'Fauna Capture Amount', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_capture_amount_add', 'Fauna Capture Amount', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_void_tracker_2', 'gravity_snare_cost_mult', '-0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('gravity_snare_cost_mult', 'Gravity Snare Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('gravity_snare_cost_mult', 'Gravity Snare Cost', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_void_tracker_2', 'gravity_snare_cooldown_mult', '-0.25', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('gravity_snare_cooldown_mult', 'Gravity Snare Cooldown', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('gravity_snare_cooldown_mult', 'Gravity Snare Cooldown', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_void_tracker_2', 'ship_capture_chance_add', '0.25', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_capture_chance_add', 'Fauna Capture Chance', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_capture_chance_add', 'Fauna Capture Chance', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_void_tracker_2', 'ship_capture_amount_add', '2.0', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_capture_amount_add', 'Fauna Capture Amount', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_capture_amount_add', 'Fauna Capture Amount', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('trait_egg_laying', 2, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
@@ -9383,159 +8795,133 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_wilderness', 'sp
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_seasonal_dormancy', 'planet_pops_upkeep_mult', '-0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_rooted', 'pop_resettlement_cost_mult', '2.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_acidic_vascularity', 'pop_cat_purge_bonus_workforce_mult', '-0.75', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_purge_bonus_workforce_mult', 'Job Efficiency for Undesirables', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_purge_bonus_workforce_mult', 'Job Efficiency for Undesirables', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_shelled', 'pop_housing_usage_mult', '-0.3', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_shelled', 'pop_environment_tolerance', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_camouflage', 'physicist_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('physicist_jobs_bonus_workforce_mult', 'Job Efficiency for Physicist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('physicist_jobs_bonus_workforce_mult', 'Job Efficiency for Physicist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_camouflage', 'army_health', '0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_health', 'Army Health', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_health', 'Army Health', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_chromalogs', 'physicist_jobs_bonus_workforce_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('physicist_jobs_bonus_workforce_mult', 'Job Efficiency for Physicist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('physicist_jobs_bonus_workforce_mult', 'Job Efficiency for Physicist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_chromalogs', 'bureaucrat_jobs_bonus_workforce_mult', '0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_chromalogs', 'army_health', '0.4', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_health', 'Army Health', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_health', 'Army Health', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_chromalogs', 'pop_government_ethic_attraction', '0.15', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_brittle', 'pop_amenities_usage_add', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_add', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_add', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_flight', 'commander_skill_add', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('commander_skill_add', 'Effective commander Commander Skill Level', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commander_skill_add', 'Effective Commander Skill Level', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_flight', 'army_damage_taken_mult', '-0.3', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_taken_mult', 'Army Damage Taken', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_taken_mult', 'Army Damage Taken', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_spatial_mastery', 'leader_skill_add', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_skill_add', 'Effective Leader Skill Level', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_skill_add', 'Effective Leader Skill Level', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_spatial_mastery', 'army_damage_taken_mult', '-0.5', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_taken_mult', 'Army Damage Taken', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_taken_mult', 'Army Damage Taken', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_spatial_mastery', 'pop_housing_usage_mult', '-0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_spare_organs', 'livestock_jobs_bonus_workforce_mult', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('livestock_jobs_bonus_workforce_mult', 'Job Efficiency for Livestock jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('livestock_jobs_bonus_workforce_mult', 'Job Efficiency for Livestock jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wilderness', 'pc_city_habitability', '-2.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_city_habitability', 'Ecumenopolis Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_city_habitability', 'Ecumenopolis Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wilderness', 'pc_machine_habitability', '-2.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_machine_habitability', 'Machine World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_machine_habitability', 'Machine World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wilderness', 'pc_relic_habitability', '-2.0', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_relic_habitability', 'Relic World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_relic_habitability', 'Relic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wilderness', 'pc_hive_habitability', '-2.0', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_hive_habitability', 'Hive World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_hive_habitability', 'Hive World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wilderness', 'pc_ringworld_habitable_habitability', '-2.0', 4);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_ringworld_habitable_habitability', 'Ring World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ringworld_habitable_habitability', 'Ring World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wilderness', 'pc_shattered_ring_habitable_habitability', '-2.0', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_shattered_ring_habitable_habitability', 'Shattered Ring Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_shattered_ring_habitable_habitability', 'Shattered Ring Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wilderness', 'pc_nanotech_habitability', '-2.0', 6);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_nanotech_habitability', 'Nanite World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_nanotech_habitability', 'Nanite World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_wilderness', 'pc_habitat_habitability', '-2.0', 7);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_habitat_habitability', 'Habitat Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_habitat_habitability', 'Habitat Habitability', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('leader_trait_altered_metabolism', NULL, NULL, 0, 0, 0, NULL, '15_extreme_frontiers_traits.txt');
@@ -9564,15 +8950,13 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_slimeborn', 'logistic_growth_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_slimeborn', 'planet_pops_upkeep_mult', '-0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('trait_inner_darkness', NULL, NULL, 0, 0, 0, NULL, '15_strange_worlds_traits.txt');
@@ -9606,63 +8990,53 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic_ephapse'
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_inner_darkness', 'physicist_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('physicist_jobs_bonus_workforce_mult', 'Job Efficiency for Physicist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('physicist_jobs_bonus_workforce_mult', 'Job Efficiency for Physicist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_inner_darkness', 'leader_lifespan_add', '-20.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_inner_darkness', 'logistic_growth_mult', '-0.2', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_inner_darkness', 'planet_pop_assembly_mult', '-0.2', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_geleboric_mutations', 'leader_lifespan_mult', '-0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_geleboric_mutations', 'logistic_growth_mult', '-0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_geleboric_mutations', 'pop_happiness', '-0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_geleboric_mutations', 'biologist_jobs_bonus_workforce_mult', '0.25', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('biologist_jobs_bonus_workforce_mult', 'Job Efficiency for Biologist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('biologist_jobs_bonus_workforce_mult', 'Job Efficiency for Biologist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_psionic_ephapse', 'pop_happiness', '0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_psionic_ephapse', 'pop_bonus_workforce_mult', '0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('trait_unplugged_cybernetic_positives_3', 0, NULL, 0, 0, 0, NULL, '15_unplugged_traits.txt');
@@ -9754,135 +9128,113 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_regeno
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_cybernetic_positives_3', 'army_damage_mult', '0.75', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_cybernetic_positives_3', 'logistic_growth_mult', '-0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_cybernetic_positives_3', 'soldier_jobs_bonus_workforce_mult', '0.15', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_cybernetic_positives_2', 'army_damage_mult', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_cybernetic_positives_2', 'logistic_growth_mult', '-0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_cybernetic_positives_2', 'soldier_jobs_bonus_workforce_mult', '0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_cybernetic_positives_1', 'army_damage_mult', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_cybernetic_positives_1', 'soldier_jobs_bonus_workforce_mult', '0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_cybernetic_negatives_3', 'pop_amenities_usage_add', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_add', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_add', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_cybernetic_negatives_3', 'leader_lifespan_add', '-20.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_cybernetic_negatives_2', 'pop_amenities_usage_add', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_add', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_add', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_cybernetic_negatives_1', 'pop_amenities_usage_add', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_add', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_add', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_decyberized', 'biologist_jobs_bonus_workforce_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('biologist_jobs_bonus_workforce_mult', 'Job Efficiency for Biologist jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('biologist_jobs_bonus_workforce_mult', 'Job Efficiency for Biologist jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_decyberized', 'bureaucrat_jobs_bonus_workforce_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_decyberized', 'pop_happiness', '0.05', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_decyberized', 'pop_government_ethic_attraction', '0.2', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_neurocalmed', 'species_empire_size_mult', '-0.05', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_empire_size_mult', 'Empire Size from Pops', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_neurocalmed', 'pop_government_ethic_attraction', '0.15', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_neurosavant', 'negative_leader_traits_species', '-1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_neurosavant', 'species_leader_exp_gain', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_regenoptimized', 'pop_environment_tolerance', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_unplugged_regenoptimized', 'logistic_growth_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('trait_infernal', 0, 'normal', 0, 0, 0, NULL, '16_infernals_traits.txt');
@@ -9965,15 +9317,13 @@ INSERT OR IGNORE INTO trait
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_infernal', 'leader_lifespan_add', '10.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_infernal', 'pc_volcanic_habitability', '0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
             VALUES ('trait_tankbound', NULL, NULL, 0, 0, 0, 'Shadows of the Shroud', '17_shroud_species_traits.txt');
@@ -10035,75 +9385,63 @@ INSERT OR IGNORE INTO trait
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_tankbound', 'pop_amenities_usage_mult', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_tankbound', 'logistic_growth_mult', '-0.25', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_uncanny_intuition', 'councilor_skill_add', '2.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cranial_hypertrophy', 'researcher_jobs_bonus_workforce_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cranial_hypertrophy', 'worker_and_simple_drone_cat_bonus_workforce_mult', '-0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cranial_megatrophy', 'researcher_jobs_bonus_workforce_mult', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cranial_megatrophy', 'worker_and_simple_drone_cat_bonus_workforce_mult', '-0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_haunting_visions', 'specialist_and_complex_drone_cat_bonus_workforce_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('specialist_and_complex_drone_cat_bonus_workforce_mult', 'Job Efficiency for Specialists & Complex Drones', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('specialist_and_complex_drone_cat_bonus_workforce_mult', 'Job Efficiency for Specialists & Complex Drones', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_haunting_visions', 'pop_cat_ruler_bonus_workforce_mult', '-0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_ruler_bonus_workforce_mult', 'Job Efficiency for Elites', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_bonus_workforce_mult', 'Job Efficiency for Elites', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_blindness', 'bureaucrat_jobs_bonus_workforce_mult', '0.25', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bureaucrat_jobs_bonus_workforce_mult', 'Job Efficiency for Administrative jobs', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_marked', 'army_health', '-0.06', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_health', 'Army Health', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_health', 'Army Health', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_marked', 'army_morale_damage_mult', '0.06', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('army_morale_damage_mult', 'Army Morale Damage', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_morale_damage_mult', 'Army Morale Damage', 1);
 INSERT OR REPLACE INTO named_color (key, r, g, b, a, source_file)
             VALUES ('placeholder', 255, 0, 255, 255, '00_basic_colors.txt');
 INSERT OR REPLACE INTO named_color (key, r, g, b, a, source_file)
@@ -10302,15 +9640,13 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_authoritarian', 'country_ethic_influence_produces_add', '1.0', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('country_ethic_influence_produces_add', 'Monthly Influence', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ethic_influence_produces_add', 'Monthly Influence', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_authoritarian', 'pop_cat_worker_bonus_workforce_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_worker_bonus_workforce_mult', 'Job Efficiency for Workers', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_bonus_workforce_mult', 'Job Efficiency for Workers', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_fanatic_authoritarian', 'ETHIC_ALLOWS_STRATIFIED_SOCIETY', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10329,15 +9665,13 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_authoritarian', 'country_ethic_influence_produces_add', '0.5', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('country_ethic_influence_produces_add', 'Monthly Influence', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ethic_influence_produces_add', 'Monthly Influence', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_authoritarian', 'pop_cat_worker_bonus_workforce_mult', '0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_worker_bonus_workforce_mult', 'Job Efficiency for Workers', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_bonus_workforce_mult', 'Job Efficiency for Workers', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_authoritarian', 'ETHIC_ALLOWS_STRATIFIED_SOCIETY', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10356,15 +9690,13 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_egalitarian', 'pop_factions_produces_mult', '0.3', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_factions_produces_mult', 'Faction Resource Output', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_factions_produces_mult', 'Faction Resource Output', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_egalitarian', 'pop_cat_specialist_bonus_workforce_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_specialist_bonus_workforce_mult', 'Job Efficiency for Specialists', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_bonus_workforce_mult', 'Job Efficiency for Specialists', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_fanatic_egalitarian', 'ETHIC_ONLY_DEMOCRACY', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10379,15 +9711,13 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_egalitarian', 'pop_factions_produces_mult', '0.15', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_factions_produces_mult', 'Faction Resource Output', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_factions_produces_mult', 'Faction Resource Output', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_egalitarian', 'pop_cat_specialist_bonus_workforce_mult', '0.05', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('pop_cat_specialist_bonus_workforce_mult', 'Job Efficiency for Specialists', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_bonus_workforce_mult', 'Job Efficiency for Specialists', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_egalitarian', 'ETHIC_NEVER_AUTOCRACY', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10402,21 +9732,18 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_xenophobe', 'country_starbase_influence_cost_mult', '-0.4', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_xenophobe', 'founder_species_growth_mult', '0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_xenophobe', 'refugee_attraction', '-0.3', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_fanatic_xenophobe', 'ETHIC_ALLOWS_PURGE', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10447,21 +9774,18 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_xenophobe', 'country_starbase_influence_cost_mult', '-0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_xenophobe', 'founder_species_growth_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_xenophobe', 'refugee_attraction', '-0.15', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_xenophobe', 'ETHIC_ALLOWS_PURGE', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10492,18 +9816,16 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_xenophile', 'planet_jobs_trade_produces_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_jobs_trade_produces_mult', 'trade Trade from job Jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_xenophile', 'envoys_add', '2.0', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_xenophile', 'refugee_attraction', '0.3', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_fanatic_xenophile', 'ETHIC_IMPROVED_DIPLOMACY', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10526,18 +9848,16 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_xenophile', 'planet_jobs_trade_produces_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_jobs_trade_produces_mult', 'trade Trade from job Jobs', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_xenophile', 'envoys_add', '1.0', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_xenophile', 'refugee_attraction', '0.15', 5);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_xenophile', 'ETHIC_IMPROVED_DIPLOMACY', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10560,15 +9880,13 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_militarist', 'country_claim_influence_cost_mult', '-0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_militarist', 'ship_fire_rate_mult', '0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_fanatic_militarist', 'ETHIC_ALLOW_NO_RETREAT', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10579,15 +9897,13 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_militarist', 'country_claim_influence_cost_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_militarist', 'ship_fire_rate_mult', '0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_militarist', 'ETHIC_ALLOW_NO_RETREAT', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10598,21 +9914,18 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_pacifist', 'empire_size_pops_mult', '-0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_pacifist', 'planet_stability_add', '10.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_pacifist', 'the_eater_of_worlds_attunement_mult', '-0.35', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('the_eater_of_worlds_attunement_mult', 'Attunement with', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('the_eater_of_worlds_attunement_mult', 'Attunement with', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_fanatic_pacifist', 'ETHIC_DISALLOW_OFFENSIVE_WARS', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10627,21 +9940,18 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_pacifist', 'empire_size_pops_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_pacifist', 'planet_stability_add', '5.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_pacifist', 'the_eater_of_worlds_attunement_mult', '-0.25', 3);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('the_eater_of_worlds_attunement_mult', 'Attunement with', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('the_eater_of_worlds_attunement_mult', 'Attunement with', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_pacifist', 'ETHIC_DISALLOW_CONQUEST_WARS', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10656,21 +9966,18 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_spiritualist', 'country_unity_produces_mult', '0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_spiritualist', 'edicts_upkeep_mult', '-0.2', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('edicts_upkeep_mult', 'Edict Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('edicts_upkeep_mult', 'Edict Upkeep', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_spiritualist', 'edicts_cost_mult', '-0.2', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('edicts_cost_mult', 'Edict Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('edicts_cost_mult', 'Edict Cost', 0);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_fanatic_spiritualist', 'ETHIC_ALLOWS_TEMPLE', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10685,21 +9992,18 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_spiritualist', 'country_unity_produces_mult', '0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_spiritualist', 'edicts_upkeep_mult', '-0.1', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('edicts_upkeep_mult', 'Edict Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('edicts_upkeep_mult', 'Edict Upkeep', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_spiritualist', 'edicts_cost_mult', '-0.1', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('edicts_cost_mult', 'Edict Cost', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('edicts_cost_mult', 'Edict Cost', 0);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_spiritualist', 'ETHIC_ALLOWS_TEMPLE', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10714,9 +10018,8 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_materialist', 'planet_pops_robotics_upkeep_mult', '-0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_robotics_upkeep_mult', 'Robot Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_robotics_upkeep_mult', 'Robot Upkeep', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_materialist', 'all_technology_research_speed', '0.1', 1);
@@ -10738,9 +10041,8 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_materialist', 'planet_pops_robotics_upkeep_mult', '-0.1', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('planet_pops_robotics_upkeep_mult', 'Robot Upkeep', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_robotics_upkeep_mult', 'Robot Upkeep', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_materialist', 'all_technology_research_speed', '0.05', 1);
@@ -10762,21 +10064,18 @@ INSERT OR REPLACE INTO ethic
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_gestalt_consciousness', 'country_war_exhaustion_mult', '-0.2', 0);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_gestalt_consciousness', 'country_ethic_influence_produces_add', '1.0', 1);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('country_ethic_influence_produces_add', 'Monthly Influence', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ethic_influence_produces_add', 'Monthly Influence', 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_gestalt_consciousness', 'intel_encryption_add', '2.0', 2);
-INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
 INSERT OR IGNORE INTO ethic_tag (ethic_key, tag, sort_order)
                    VALUES ('ethic_gestalt_consciousness', 'ETHIC_GESTALT_CONSCIOUSNESS_NO_TUTORIAL', 0);
 INSERT OR REPLACE INTO ethic_tag_label (tag, label)
@@ -10998,13 +10297,13 @@ INSERT OR IGNORE INTO precursor_building_modifier
                     condition, sort_order)
                VALUES ('building_vultaum_reality_computer', 'planet', 'planet_physicists_physics_research_produces_add', '1.0', '2.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_physicists_physics_research_produces_add', 'physics_research Produced per 100', 1);
+           VALUES ('planet_physicists_physics_research_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
                    (building_key, scope, modifier_key, modifier_value, ae_value,
                     condition, sort_order)
                VALUES ('building_vultaum_reality_computer', 'planet', 'planet_physicists_advanced_logic_produces_add', '0.25', NULL, 'ap_cosmogenesis', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_physicists_advanced_logic_produces_add', 'advanced_logic Produced per 100', 1);
+           VALUES ('planet_physicists_advanced_logic_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
                    (building_key, scope, modifier_key, modifier_value, ae_value,
                     condition, sort_order)
@@ -11137,7 +10436,7 @@ INSERT OR IGNORE INTO precursor_building_modifier
                     condition, sort_order)
                VALUES ('building_league_offices', 'planet', 'planet_bureaucrats_unity_produces_add', '0.25', NULL, NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_bureaucrats_unity_produces_add', 'unity Produced per 100', 1);
+           VALUES ('planet_bureaucrats_unity_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
                    (building_key, scope, modifier_key, modifier_value, ae_value,
                     condition, sort_order)
@@ -11313,13 +10612,13 @@ INSERT OR IGNORE INTO precursor_building_modifier
                     condition, sort_order)
                VALUES ('building_baol_organic_plant', 'planet', 'planet_farmers_consumer_goods_produces_add', '0.1', '0.225', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_farmers_consumer_goods_produces_add', 'consumer_goods Produced per 100', 1);
+           VALUES ('planet_farmers_consumer_goods_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
                    (building_key, scope, modifier_key, modifier_value, ae_value,
                     condition, sort_order)
                VALUES ('building_baol_organic_plant', 'planet', 'planet_farmers_energy_produces_add', '0.25', '0.5', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_farmers_energy_produces_add', 'energy Produced per 100', 1);
+           VALUES ('planet_farmers_energy_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
                    (building_key, scope, modifier_key, modifier_value, ae_value,
                     condition, sort_order)
@@ -11391,19 +10690,19 @@ INSERT OR IGNORE INTO precursor_building_modifier
                     condition, sort_order)
                VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_physics_research_produces_add', '0.5', NULL, NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_biologists_physics_research_produces_add', 'physics_research Produced per 100', 1);
+           VALUES ('planet_biologists_physics_research_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
                    (building_key, scope, modifier_key, modifier_value, ae_value,
                     condition, sort_order)
                VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_society_research_produces_add', '0.5', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_biologists_society_research_produces_add', 'society_research Produced per 100', 1);
+           VALUES ('planet_biologists_society_research_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
                    (building_key, scope, modifier_key, modifier_value, ae_value,
                     condition, sort_order)
                VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_sr_zro_upkeep_add', '0.5', NULL, NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_biologists_sr_zro_upkeep_add', 'sr_zro Upkeep per 100', 1);
+           VALUES ('planet_biologists_sr_zro_upkeep_add', 'Upkeep per 100', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
                    (building_key, scope, modifier_key, modifier_value, ae_value,
                     condition, sort_order)
@@ -11867,7 +11166,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_poisonous_algae', 'planet_farmers_food_produces_mult', '-0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_farmers_food_produces_mult', 'food Produced from', 1);
+           VALUES ('planet_farmers_food_produces_mult', 'Produced from', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_venomous_insects', 'blocker Venomous Insects', 'deposit_cat_blockers', 1, 360, '01_blocker_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -12597,7 +11896,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_metal_boneyard', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_migrating_forests', 'Migrating Forests', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -12617,7 +11916,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_migrating_forest_reserve', 'planet_jobs_society_research_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_junk_wastes', 'Junk Wastes', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -12647,21 +11946,21 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_valley_of_zanaam', 'planet_jobs_society_research_produces_mult', '0.3');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_valley_of_zanaam', 'planet_jobs_engineering_research_produces_mult', '0.3');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_engineering_research_produces_mult', 'engineering_research Engineering Research from job Jobs', 1);
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_valley_of_zanaam', 'planet_jobs_physics_research_produces_mult', '0.3');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_abandoned_primitive_homesteads', 'Abandoned Homesteads', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_abandoned_primitive_homesteads', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_abandoned_primitive_homesteads', 'district_farming_max_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -12673,7 +11972,7 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_the_zone', 'planet_jobs_physics_research_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_hyperfertile_valley', 'Hyperfertile Valley', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -12691,31 +11990,31 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_toy_factory_complex', 'planet_engineers_society_research_produces_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_engineers_society_research_produces_add', 'society_research Produced per 100', 1);
+           VALUES ('planet_engineers_society_research_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_mutant_landfill', 'Mutant Landfill', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_mutant_landfill', 'planet_jobs_society_research_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_ancient_bombardment_craters', 'Ancient Bombardment Craters', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_ancient_bombardment_craters', 'planet_jobs_physics_research_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_ancient_battlefield', 'Ancient Battlefield', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_ancient_battlefield', 'planet_jobs_engineering_research_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_engineering_research_produces_mult', 'engineering_research Engineering Research from job Jobs', 1);
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_irradiated_ruins', 'Irradiated Ruins', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_irradiated_ruins', 'planet_jobs_society_research_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_impact_crater', 'Impact Crater', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -12729,19 +12028,19 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_ancient_particle_accelerator', 'planet_jobs_physics_research_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_underground_vault', 'Underground Vault', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_underground_vault', 'planet_jobs_society_research_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_underground_vault_2', 'Underground Vault', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_underground_vault_2', 'planet_jobs_engineering_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_engineering_research_produces_mult', 'engineering_research Engineering Research from job Jobs', 1);
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_underground_vault_2', 'district_mining_max_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -12755,7 +12054,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_flooded_mounds', 'planet_jobs_society_research_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_processing_pens', 'Processing Pens', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -12771,13 +12070,13 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_wetware_computer', 'planet_biologists_physics_research_produces_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_biologists_physics_research_produces_add', 'physics_research Produced per 100', 1);
+           VALUES ('planet_biologists_physics_research_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_savage_wildlands', 'Savage Wildlands', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_savage_wildlands', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_mothballed_facilities', 'blocker Mothballed Facilities', 'deposit_cat_blockers', 1, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -12805,7 +12104,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_organic_landfill', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_underground_farm', 'Subterranean Farming Caverns', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -12867,7 +12166,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_portal_research_zone', 'planet_physicists_physics_research_produces_add', '4.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_physicists_physics_research_produces_add', 'physics_research Produced per 100', 1);
+           VALUES ('planet_physicists_physics_research_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_ancient_one', 'Ancient One', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -12901,7 +12200,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_sentinels', 'planet_jobs_unity_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_unity_produces_mult', 'unity Unity from job Jobs', 1);
+           VALUES ('planet_jobs_unity_produces_mult', 'Unity from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_sentinels_metal', 'Sentinels', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -12941,7 +12240,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_house_turtle', 'planet_jobs_society_research_produces_mult', '0.025');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_turtle_miner', 'Nemma Mining Operation', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
@@ -12949,7 +12248,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_turtle_corpse', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_turtle_corpse', 'district_mining_max_add', '3.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -12973,13 +12272,13 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_nano_corpses', 'planet_miners_alloys_produces_add', '0.25');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_alloys_produces_add', 'alloys Produced per 100', 1);
+           VALUES ('planet_miners_alloys_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_fungal_study_zone', 'Fungal Study Zone', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_fungal_study_zone', 'planet_jobs_society_research_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_landed_dragon', 'Feeding Dragon', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -12995,11 +12294,11 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_living_snow_reserve', 'planet_jobs_physics_research_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_living_snow_reserve', 'planet_jobs_society_research_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_living_snow_reserve', 'planet_max_districts_add', '-2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -13013,13 +12312,13 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_dayside_farm', 'planet_jobs_energy_produces_mult', '0.3');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_energy_produces_mult', 'energy Energy Credits from job Jobs', 1);
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_radiotrophic_preserve', 'Radiotrophic Preserve', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_radiotrophic_preserve', 'planet_jobs_society_research_produces_mult', '0.05');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_machine_care_home', 'Organic-Machine Interface Center', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
@@ -13053,7 +12352,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_shroud_flora_deposit', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_dimensional_manipulation_device', 'Dimensional Manipulation Device', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -13081,7 +12380,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_toxic_god_deitys_swarms_upgraded', 'planet_jobs_food_produces_mult', '0.25');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_food_produces_mult', 'food Food from job Jobs', 1);
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_toxic_god_pools_most_venemous', 'Pools Most Venemous', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -13105,7 +12404,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_toxic_god_pestilential_wasteland_upgraded', 'planet_jobs_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_toxic_god_envenomed_seas', 'Envenomed Seas', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -13137,11 +12436,11 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_ancient_manufactorium_scrapyard', 'planet_engineers_engineering_research_produces_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_engineers_engineering_research_produces_add', 'engineering_research Produced per 100', 1);
+           VALUES ('planet_engineers_engineering_research_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_ancient_manufactorium_scrapyard', 'planet_engineers_alloys_produces_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_engineers_alloys_produces_add', 'alloys Produced per 100', 1);
+           VALUES ('planet_engineers_alloys_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_ancient_manufactorium_crater', 'Destroyed Vault', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -13217,11 +12516,11 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_mineral_seabed', 'planet_miners_alloys_produces_add', '1.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_alloys_produces_add', 'alloys Produced per 100', 1);
+           VALUES ('planet_miners_alloys_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_mineral_seabed', 'planet_miners_minerals_produces_add', '-1.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_minerals_produces_add', 'minerals Produced per 100', 1);
+           VALUES ('planet_miners_minerals_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_floodplains', 'Growing Floodplains', 'deposit_cat_blockers', 1, 360, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -13543,29 +12842,29 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_central_spire', 'planet_jobs_society_research_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_central_spire', 'planet_jobs_engineering_research_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_engineering_research_produces_mult', 'engineering_research Engineering Research from job Jobs', 1);
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_central_spire', 'planet_jobs_physics_research_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_industrial_sector', 'Industrial Sector', 'deposit_cat_rare', 0, NULL, '06_ancient_relics_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_industrial_sector', 'planet_miners_rare_crystals_produces_add', '0.25');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_rare_crystals_produces_add', 'rare_crystals Produced per 100', 1);
+           VALUES ('planet_miners_rare_crystals_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_industrial_sector', 'planet_farmers_exotic_gases_produces_add', '0.25');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_farmers_exotic_gases_produces_add', 'exotic_gases Produced per 100', 1);
+           VALUES ('planet_farmers_exotic_gases_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_industrial_sector', 'planet_technician_volatile_motes_produces_add', '0.25');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_technician_volatile_motes_produces_add', 'volatile_motes Produced per 100', 1);
+           VALUES ('planet_technician_volatile_motes_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_industrial_sector', 'district_farming_max_add', '6.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -13579,29 +12878,29 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_relic_dense_ruins', 'planet_jobs_society_research_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_relic_dense_ruins', 'planet_jobs_engineering_research_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_engineering_research_produces_mult', 'engineering_research Engineering Research from job Jobs', 1);
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_relic_dense_ruins', 'planet_jobs_physics_research_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_former_relic_world', 'Former Relic World', 'deposit_cat_rare', 0, NULL, '06_ancient_relics_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_former_relic_world', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_former_relic_world', 'planet_jobs_engineering_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_engineering_research_produces_mult', 'engineering_research Engineering Research from job Jobs', 1);
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_former_relic_world', 'planet_jobs_physics_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_mutation_vats', 'Mutation Vats', 'deposit_cat_rare', 0, NULL, '06_ancient_relics_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -13821,7 +13120,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_tree_of_life_home', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_tree_of_life_home', 'planet_housing_add', '1000.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -13841,7 +13140,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_tree_of_life_colony', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_tree_of_life_colony', 'planet_housing_add', '500.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -13913,7 +13212,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_project_cornucopia', 'planet_jobs_minerals_produces_mult', '0.05');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_minerals_produces_mult', 'minerals Minerals from job Jobs', 1);
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_project_cornucopia', 'pop_environment_tolerance', '-0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -13927,7 +13226,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_disco_planet', 'planet_miners_exotic_gases_produces_add', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_exotic_gases_produces_add', 'exotic_gases Produced per 100', 1);
+           VALUES ('planet_miners_exotic_gases_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_disco_planet', 'logistic_growth_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -13947,27 +13246,27 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_impossiblecorrie', 'planet_jobs_physics_research_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_bluelotus', 'Blue Lotus Prototype', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_bluelotus', 'planet_metallurgists_alloys_produces_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_metallurgists_alloys_produces_add', 'alloys Produced per 100', 1);
+           VALUES ('planet_metallurgists_alloys_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_bluelotus', 'planet_metallurgists_energy_upkeep_add', '1.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_metallurgists_energy_upkeep_add', 'energy Upkeep per 100', 1);
+           VALUES ('planet_metallurgists_energy_upkeep_add', 'Upkeep per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_bluelotus2', 'Blue Lotus Facility', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_bluelotus2', 'planet_metallurgists_alloys_produces_add', '1.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_metallurgists_alloys_produces_add', 'alloys Produced per 100', 1);
+           VALUES ('planet_metallurgists_alloys_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_bluelotus2', 'planet_metallurgists_energy_upkeep_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_metallurgists_energy_upkeep_add', 'energy Upkeep per 100', 1);
+           VALUES ('planet_metallurgists_energy_upkeep_add', 'Upkeep per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_ruin_bluelotus', 'Blue Lotus Ruin', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -13975,7 +13274,7 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_ruin_bluelotus', 'planet_jobs_physics_research_produces_mult', '0.05');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_crater_bluelotus', 'Blue Lotus Crater', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -13987,7 +13286,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_crater_bluelotus', 'planet_miners_alloys_produces_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_alloys_produces_add', 'alloys Produced per 100', 1);
+           VALUES ('planet_miners_alloys_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_federation_hegemony_monument_1', 'Federation Monument', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
@@ -14015,7 +13314,7 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_technocracy_toxic_waste_blocker', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_technocracy_toxic_waste_blocker', 'planet_max_districts_add', '-3.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14027,7 +13326,7 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_technocracy_barren_lands_blocker', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_technocracy_barren_lands_blocker', 'logistic_growth_mult', '-0.25');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14039,7 +13338,7 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_technocracy_toxic_ocean_blocker', 'planet_jobs_physics_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_technocracy_toxic_ocean_blocker', 'logistic_growth_mult', '-0.25');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14051,7 +13350,7 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_technocracy_molten_waste_blocker', 'planet_jobs_physics_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_technocracy_molten_waste_blocker', 'planet_max_districts_add', '-3.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14119,7 +13418,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_crashed_slaver_ship_memorial', 'planet_civilians_unity_produces_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_civilians_unity_produces_add', 'unity Produced per 100', 1);
+           VALUES ('planet_civilians_unity_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_ship_debris_broken_shackles_blocker', 'Ship Debris', 'deposit_cat_rare_blocker', 1, NULL, '09_first_contact_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -14139,15 +13438,15 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_payback_habitat_research', 'planet_jobs_physics_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_payback_habitat_research', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_payback_habitat_research', 'planet_jobs_engineering_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_engineering_research_produces_mult', 'engineering_research Engineering Research from job Jobs', 1);
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_payback_habitat_research', 'district_hab_science_max_add', '8.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14187,7 +13486,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_volcanic_active_planet', 'planet_miners_volatile_motes_produces_add', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_volatile_motes_produces_add', 'volatile_motes Produced per 100', 1);
+           VALUES ('planet_miners_volatile_motes_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_hostile_fauna', 'Aggressive Wildlife', 'deposit_cat_rare', 0, NULL, '10_paragon_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -14213,7 +13512,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_space_ship_graveyard', 'planet_jobs_minerals_produces_mult', '-0.05');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_minerals_produces_mult', 'minerals Minerals from job Jobs', 1);
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_fallen_orbital_shipyard', 'Fallen Shipyard', 'deposit_cat_rare', 0, NULL, '10_paragon_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -14233,7 +13532,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_pulsar_scarred', 'planet_technician_energy_produces_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_technician_energy_produces_add', 'energy Produced per 100', 1);
+           VALUES ('planet_technician_energy_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_ancient_facilities', 'Ancient Facilities', 'deposit_cat_rare', 0, NULL, '10_paragon_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -14289,7 +13588,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_rockworm_hive', 'planet_jobs_minerals_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_minerals_produces_mult', 'minerals Minerals from job Jobs', 1);
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_rockworm_hive', 'district_mining_max_add', '5.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14299,7 +13598,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_rockworm_hive_volcanic', 'planet_jobs_minerals_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_minerals_produces_mult', 'minerals Minerals from job Jobs', 1);
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_rockworm_hive_volcanic', 'district_mining_max_add', '5.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14309,7 +13608,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_forceful_winds', 'planet_jobs_energy_produces_mult', '0.3');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_energy_produces_mult', 'energy Energy Credits from job Jobs', 1);
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_forceful_winds', 'district_generator_max_add', '5.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14329,15 +13628,15 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_weapon_extraction_facility', 'planet_jobs_engineering_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_engineering_research_produces_mult', 'engineering_research Engineering Research from job Jobs', 1);
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_weapon_extraction_facility', 'planet_engineers_engineering_research_produces_add', '6.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_engineers_engineering_research_produces_add', 'engineering_research Produced per 100', 1);
+           VALUES ('planet_engineers_engineering_research_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_weapon_extraction_facility', 'planet_engineers_alloys_produces_add', '1.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_engineers_alloys_produces_add', 'alloys Produced per 100', 1);
+           VALUES ('planet_engineers_alloys_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_electrified_oceans', 'Electrified Oceans', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -14347,7 +13646,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_electrified_oceans', 'planet_jobs_energy_produces_mult', '0.05');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_energy_produces_mult', 'energy Energy Credits from job Jobs', 1);
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_electrified_oceans', 'pop_environment_tolerance', '-0.05');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14367,7 +13666,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_ghostly_canyon', 'planet_jobs_unity_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_unity_produces_mult', 'unity Unity from job Jobs', 1);
+           VALUES ('planet_jobs_unity_produces_mult', 'Unity from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_sky_mountain', 'Mountains in the Sky', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -14377,11 +13676,11 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_sky_mountain', 'planet_miners_physics_research_produces_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_physics_research_produces_add', 'physics_research Produced per 100', 1);
+           VALUES ('planet_miners_physics_research_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_sky_mountain', 'planet_miners_minerals_produces_add', '-1.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_minerals_produces_add', 'minerals Produced per 100', 1);
+           VALUES ('planet_miners_minerals_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_avian_reserve', 'Avian Reserve', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -14399,7 +13698,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_magnetic_storm_1_minerals', 'planet_jobs_minerals_produces_mult', '0.25');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_minerals_produces_mult', 'minerals Minerals from job Jobs', 1);
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_magnetic_storm_2_alloys', 'Storm-Forged Foundry', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -14409,7 +13708,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_magnetic_storm_2_alloys', 'planet_metallurgists_alloys_produces_mult', '0.3');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_metallurgists_alloys_produces_mult', 'alloys Produced from', 1);
+           VALUES ('planet_metallurgists_alloys_produces_mult', 'Produced from', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_magnetic_storm_3_mix', 'Skybound Plateaus', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -14423,11 +13722,11 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_magnetic_storm_3_mix', 'planet_jobs_minerals_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_minerals_produces_mult', 'minerals Minerals from job Jobs', 1);
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_magnetic_storm_3_mix', 'planet_metallurgists_alloys_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_metallurgists_alloys_produces_mult', 'alloys Produced from', 1);
+           VALUES ('planet_metallurgists_alloys_produces_mult', 'Produced from', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_electric_storm_1_engineering', 'Lightning Struck Ruins', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
@@ -14439,7 +13738,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_particle_storm_1_society', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_particle_storm_1_society', 'planet_max_districts_add', '-2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14453,7 +13752,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_solar_storm_1_energy', 'planet_jobs_energy_produces_mult', '1.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_energy_produces_mult', 'energy Energy Credits from job Jobs', 1);
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_solar_storm_1_energy', 'logistic_growth_mult', '-0.25');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14477,7 +13776,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_celestial_storm_2_society', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_celestial_storm_3_crystal', 'Stardust Dunes', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
@@ -14491,7 +13790,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_gravity_storm_2_unity', 'planet_jobs_unity_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_unity_produces_mult', 'unity Unity from job Jobs', 1);
+           VALUES ('planet_jobs_unity_produces_mult', 'Unity from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_gravity_storm_3_engineering', 'Gravitational Caves', 'deposit_cat_rare', 0, NULL, '12_cosmic_storms_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
@@ -14499,7 +13798,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_shroud_storm_1_society', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_shroud_storm_1_society', 'logistic_growth_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -14753,7 +14052,7 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_hive_dwelling', 'planet_jobs_society_research_produces_mult', '0.05');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_ruined_hive_dwelling', 'Ruined Hive Mind Dwelling', 'deposit_cat_rare', 0, NULL, '14_grand_archive_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -14761,7 +14060,7 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_ruined_hive_dwelling', 'planet_jobs_society_research_produces_mult', '0.05');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_bioship_remains', 'Biological Ship Remains', 'deposit_cat_blockers', 1, 360, '15_biogenesis_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -15119,11 +14418,11 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_geothermal_hotspot', 'planet_technician_physics_research_produces_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_technician_physics_research_produces_add', 'physics_research Produced per 100', 1);
+           VALUES ('planet_technician_physics_research_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_geothermal_hotspot', 'planet_technician_energy_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_technician_energy_produces_mult', 'energy Produced from', 1);
+           VALUES ('planet_technician_energy_produces_mult', 'Produced from', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_ancient_cloaking_array', 'Ancient Cloaking Array', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -15141,7 +14440,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_lava_tubes', 'planet_miners_minerals_produces_add', '3.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_minerals_produces_add', 'minerals Produced per 100', 1);
+           VALUES ('planet_miners_minerals_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_lava_tubes', 'district_mining_max_add', '3.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -15151,21 +14450,21 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_hydroactive_eggs', 'planet_jobs_food_produces_mult', '0.3');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_food_produces_mult', 'food Food from job Jobs', 1);
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_hydroactive_eggs', 'planet_jobs_society_research_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_mountains_of_steel', 'Mountains Of Steel', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_mountains_of_steel', 'planet_jobs_minerals_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_minerals_produces_mult', 'minerals Minerals from job Jobs', 1);
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_mountains_of_steel', 'planet_jobs_alloys_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_alloys_produces_mult', 'alloys Alloys from job Jobs', 1);
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_mountains_of_steel', 'planet_max_districts_add', '-2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -15207,7 +14506,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_bogplants', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_society_research_produces_mult', 'society_research Society Research from job Jobs', 1);
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_liquid_dark_matter', 'Liquid Dark Matter', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -15215,7 +14514,7 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_liquid_dark_matter', 'planet_jobs_physics_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_physics_research_produces_mult', 'physics_research Physics Research from job Jobs', 1);
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_liquid_dark_matter', 'planet_max_districts_add', '1.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -15237,7 +14536,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_georadiation_displacement', 'planet_jobs_productive_produces_mult', '-0.05');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_productive_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_productive_produces_mult', 'Resources from Jobs', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_georadiation_displacement', 'pop_happiness', '-0.05');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -15765,7 +15064,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corvee_system', 'add_attunement_the_composer_of_strands', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corvee_system', 'authority', 'forbid', 'auth_corporate', 0);
@@ -15832,7 +15131,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_beacon_of_liberty', 'add_attunement_the_cradle_of_souls', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_beacon_of_liberty', 'authority', 'forbid', 'auth_corporate', 0);
@@ -15864,7 +15163,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_exalted_priesthood', 'planet_bureaucrats_unity_produces_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_bureaucrats_unity_produces_add', 'unity Produced per 100', 1);
+           VALUES ('planet_bureaucrats_unity_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_exalted_priesthood', 'authority', 'forbid', 'auth_corporate', 0);
@@ -15915,7 +15214,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_meritocracy', 'add_attunement_the_cradle_of_souls', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_meritocracy', 'authority', 'forbid', 'auth_corporate', 0);
@@ -15940,12 +15239,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_citizen_service', 'planet_soldiers_unity_produces_add', '2.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_soldiers_unity_produces_add', 'unity Produced per 100', 1);
+           VALUES ('planet_soldiers_unity_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_citizen_service', 'add_attunement_the_eater_of_worlds', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_citizen_service', 'authority', 'forbid', 'auth_corporate', 0);
@@ -15983,12 +15282,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_technocracy', 'country_scientist_cap_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_scientist_cap_add', 'scientist Scientist Capacity', 1);
+           VALUES ('country_scientist_cap_add', 'Scientist Capacity', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_technocracy', 'country_official_cap_add', '-1.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_official_cap_add', 'official Official Capacity', 1);
+           VALUES ('country_official_cap_add', 'Official Capacity', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_technocracy', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16026,7 +15325,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_feudal_realm', 'add_attunement_the_eater_of_worlds', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_feudal_realm', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16048,7 +15347,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_police_state', 'planet_enforcers_unity_produces_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_enforcers_unity_produces_add', 'unity Produced per 100', 1);
+           VALUES ('planet_enforcers_unity_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_police_state', 'enforcer_jobs_bonus_workforce_mult', '0.1', 2);
@@ -16058,7 +15357,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_police_state', 'add_attunement_the_instrument_of_desire', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_police_state', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16088,7 +15387,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_idealistic_foundation', 'add_attunement_the_cradle_of_souls', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_idealistic_foundation', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16113,7 +15412,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmentalist', 'add_attunement_the_composer_of_strands', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmentalist', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16146,7 +15445,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_slaver_guilds', 'add_attunement_the_instrument_of_desire', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_slaver_guilds', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16277,7 +15576,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_warrior_culture', 'add_attunement_the_eater_of_worlds', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_warrior_culture', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16308,7 +15607,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_distinguished_admiralty', 'leader_commanders_upkeep_mult', '-0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('leader_commanders_upkeep_mult', 'commander Commander Upkeep', 1);
+           VALUES ('leader_commanders_upkeep_mult', 'Commander Upkeep', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_distinguished_admiralty', 'command_limit_mult', '0.2', 2);
@@ -16318,12 +15617,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_distinguished_admiralty', 'commander_initial_skill', '2.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('commander_initial_skill', 'commander Commander Starting Skill Level', 1);
+           VALUES ('commander_initial_skill', 'Commander Starting Skill Level', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_distinguished_admiralty', 'add_attunement_the_eater_of_worlds', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_distinguished_admiralty', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16358,7 +15657,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_free_haven', 'add_attunement_the_cradle_of_souls', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_free_haven', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16394,7 +15693,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_cutthroat_politics', 'add_attunement_the_cradle_of_souls', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_cutthroat_politics', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16411,7 +15710,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_dominion', 'add_attunement_the_instrument_of_desire', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_dominion', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16434,7 +15733,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_agrarian_idyll', 'add_attunement_the_composer_of_strands', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_agrarian_idyll', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16507,7 +15806,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_shadow_council', 'add_attunement_the_instrument_of_desire', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_shadow_council', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16530,12 +15829,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_mining_guilds', 'planet_miners_minerals_produces_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_minerals_produces_add', 'minerals Produced per 100', 1);
+           VALUES ('planet_miners_minerals_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_mining_guilds', 'add_attunement_the_instrument_of_desire', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_mining_guilds', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16562,7 +15861,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_parliamentary_system', 'add_attunement_the_cradle_of_souls', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_parliamentary_system', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16602,7 +15901,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_efficient_bureaucracy', 'add_attunement_the_instrument_of_desire', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_efficient_bureaucracy', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16631,7 +15930,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_nationalistic_zeal', 'add_attunement_the_eater_of_worlds', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_nationalistic_zeal', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16661,7 +15960,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_functional_architecture', 'add_attunement_the_composer_of_strands', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_functional_architecture', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16685,7 +15984,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_aristocratic_elite', 'add_attunement_the_instrument_of_desire', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_aristocratic_elite', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16719,7 +16018,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_shared_burden', 'add_attunement_the_composer_of_strands', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_shared_burden', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16768,7 +16067,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_fanatic_purifiers', 'add_attunement_the_eater_of_worlds', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_fanatic_purifiers', 'the_cradle_of_souls_attunement_mult', '-0.25', 5);
@@ -16853,7 +16152,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_barbaric_despoilers', 'add_attunement_the_eater_of_worlds', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_barbaric_despoilers', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16903,12 +16202,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_byzantine_bureaucracy', 'planet_bureaucrats_unity_produces_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_bureaucrats_unity_produces_add', 'unity Produced per 100', 1);
+           VALUES ('planet_bureaucrats_unity_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_byzantine_bureaucracy', 'planet_bureaucrats_stability_produces_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_bureaucrats_stability_produces_add', 'mod_planet_stability_add Produced per 100', 1);
+           VALUES ('planet_bureaucrats_stability_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_byzantine_bureaucracy', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16922,7 +16221,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_merchant_guilds', 'add_attunement_the_instrument_of_desire', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_merchant_guilds', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16936,7 +16235,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_reanimated_armies', 'add_attunement_the_eater_of_worlds', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_reanimated_armies', 'pop_soldier_bonus_workforce_mult', '0.1', 1);
@@ -16997,7 +16296,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_diplomatic_corps', 'add_attunement_the_cradle_of_souls', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_diplomatic_corps', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17053,7 +16352,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memorialist', 'add_attunement_the_composer_of_strands', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_memorialist', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17097,7 +16396,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_crafters', 'add_attunement_the_instrument_of_desire', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_crafters', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17111,7 +16410,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_pleasure_seekers', 'add_attunement_the_instrument_of_desire', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_pleasure_seekers', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17143,7 +16442,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_idyllic_bloom', 'add_attunement_the_composer_of_strands', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_idyllic_bloom', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17184,7 +16483,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_anglers', 'add_attunement_the_composer_of_strands', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_anglers', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17210,7 +16509,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_anglers', 'add_attunement_the_composer_of_strands', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_anglers', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17254,7 +16553,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_pompous_purists', 'add_attunement_the_cradle_of_souls', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_pompous_purists', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17286,7 +16585,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_toxic_baths', 'add_attunement_the_composer_of_strands', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_toxic_baths', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17309,7 +16608,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_relentless_industrialists', 'add_attunement_the_instrument_of_desire', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_relentless_industrialists', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17359,7 +16658,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_scavengers', 'ships_alloys_upkeep_mult', '-0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('ships_alloys_upkeep_mult', 'Ships alloys Alloys Upkeep', 1);
+           VALUES ('ships_alloys_upkeep_mult', 'Ships Alloys Upkeep', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_scavengers', 'planet_building_refund_mult', '0.1', 1);
@@ -17401,7 +16700,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ascensionists', 'add_attunement_the_instrument_of_desire', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_ascensionists', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17461,7 +16760,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_crusader_spirit', 'add_attunement_the_cradle_of_souls', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_crusader_spirit', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17545,12 +16844,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hyperspace_specialty', 'country_physics_tech_research_speed', '0.15', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_physics_tech_research_speed', 'Research Speed ( physics Physics)', 1);
+           VALUES ('country_physics_tech_research_speed', 'Research Speed ( Physics)', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hyperspace_specialty', 'add_attunement_the_composer_of_strands', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hyperspace_specialty', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17582,7 +16881,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_dimensional_worship', 'planet_bureaucrats_physics_research_produces_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_bureaucrats_physics_research_produces_add', 'physics_research Produced per 100', 1);
+           VALUES ('planet_bureaucrats_physics_research_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_dimensional_worship', 'rare_tech_draw_chance_mult', '0.1', 1);
@@ -17608,17 +16907,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_heroic_tales', 'country_official_cap_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_official_cap_add', 'official Official Capacity', 1);
+           VALUES ('country_official_cap_add', 'Official Capacity', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_heroic_tales', 'country_commander_cap_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_commander_cap_add', 'commander Commander Capacity', 1);
+           VALUES ('country_commander_cap_add', 'Commander Capacity', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_heroic_tales', 'country_scientist_cap_add', '1.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_scientist_cap_add', 'scientist Scientist Capacity', 1);
+           VALUES ('country_scientist_cap_add', 'Scientist Capacity', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_heroic_tales', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17635,7 +16934,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_dystopian_society', 'country_commander_cap_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_commander_cap_add', 'commander Commander Capacity', 1);
+           VALUES ('country_commander_cap_add', 'Commander Capacity', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_dystopian_society', 'leaders_upkeep_mult', '-0.2', 1);
@@ -17650,7 +16949,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_dystopian_society', 'add_attunement_the_instrument_of_desire', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_dystopian_society', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17744,7 +17043,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_natural_design', 'planet_doctors_society_research_produces_add', '0.5', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_doctors_society_research_produces_add', 'society_research Produced per 100', 1);
+           VALUES ('planet_doctors_society_research_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_natural_design', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17827,12 +17126,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_sovereign_guardianship', 'planet_soldiers_unity_produces_add', '1.0', 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_soldiers_unity_produces_add', 'unity Produced per 100', 1);
+           VALUES ('planet_soldiers_unity_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_sovereign_guardianship', 'add_attunement_the_cradle_of_souls', '60.0', 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_sovereign_guardianship', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17896,7 +17195,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_guided_sapience', 'add_attunement_the_composer_of_strands', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_guided_sapience', 'authority', 'forbid', 'auth_corporate', 0);
@@ -17943,7 +17242,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_toxic_baths_individual_machine', 'add_attunement_the_composer_of_strands', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_toxic_baths_individual_machine', 'authority', 'forbid', 'auth_corporate', 0);
@@ -18009,17 +17308,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_individual_machine_warbots', 'commander_initial_skill', '2.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('commander_initial_skill', 'commander Commander Starting Skill Level', 1);
+           VALUES ('commander_initial_skill', 'Commander Starting Skill Level', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_individual_machine_warbots', 'leader_commanders_upkeep_mult', '-0.25', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('leader_commanders_upkeep_mult', 'commander Commander Upkeep', 1);
+           VALUES ('leader_commanders_upkeep_mult', 'Commander Upkeep', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_individual_machine_warbots', 'add_attunement_the_eater_of_worlds', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_individual_machine_warbots', 'authority', 'forbid', 'auth_corporate', 0);
@@ -18050,7 +17349,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_storm_callers', 'add_attunement_the_composer_of_strands', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_storm_callers', 'authority', 'forbid', 'auth_corporate', 0);
@@ -18067,7 +17366,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects', 'planet_jobs_produces_mult', '0.1', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects', 'founder_species_growth_mult', '0.1', 1);
@@ -18087,7 +17386,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects', 'add_attunement_the_instrument_of_desire', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmental_architects', 'authority', 'forbid', 'auth_corporate', 0);
@@ -18158,7 +17457,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_galactic_curators', 'planet_jobs_unity_produces_mult', '-0.1', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_unity_produces_mult', 'unity Unity from job Jobs', 1);
+           VALUES ('planet_jobs_unity_produces_mult', 'Unity from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_galactic_curators', 'ship_anomaly_generation_chance_mult', '0.1', 1);
@@ -18178,7 +17477,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_galactic_curators', 'add_attunement_the_instrument_of_desire', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_galactic_curators', 'authority', 'forbid', 'auth_corporate', 0);
@@ -18215,7 +17514,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_beastmasters', 'add_attunement_the_composer_of_strands', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_beastmasters', 'authority', 'forbid', 'auth_corporate', 0);
@@ -18241,7 +17540,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_genetic_identification', 'planet_bureaucrats_society_research_produces_add', '1.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_bureaucrats_society_research_produces_add', 'society_research Produced per 100', 1);
+           VALUES ('planet_bureaucrats_society_research_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_genetic_identification', 'planet_crime_mult', '-0.15', 1);
@@ -18256,7 +17555,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_genetic_identification', 'add_attunement_the_instrument_of_desire', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_genetic_identification', 'authority', 'forbid', 'auth_corporate', 0);
@@ -18273,7 +17572,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_crowdsourcing', 'add_attunement_the_cradle_of_souls', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_crowdsourcing', 'authority', 'forbid', 'auth_corporate', 0);
@@ -18326,7 +17625,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_civil_education', 'add_attunement_the_cradle_of_souls', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_civil_education', 'authority', 'forbid', 'auth_corporate', 0);
@@ -18346,7 +17645,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers', 'planet_jobs_produces_mult', '-0.1', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers', 'all_technology_research_speed', '-0.1', 1);
@@ -18894,7 +18193,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_malfunctioning_custodian', 'planet_jobs_energy_produces_mult', '0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_energy_produces_mult', 'energy Energy Credits from job Jobs', 1);
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_malfunctioning_custodian', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -18913,7 +18212,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_final_defense_protocols', 'planet_jobs_energy_produces_mult', '0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_energy_produces_mult', 'energy Energy Credits from job Jobs', 1);
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_final_defense_protocols', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -18958,7 +18257,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_sluggish_drones', 'planet_jobs_produces_mult', '-0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_sluggish_drones', 'authority', 'require', 'auth_hive_mind', 0);
@@ -18986,7 +18285,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hyper_aggressive_drones', 'planet_jobs_produces_mult', '-0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hyper_aggressive_drones', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19000,7 +18299,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_unstable_drones', 'planet_jobs_produces_mult', '-0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_unstable_drones', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19014,7 +18313,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_stunted_drones', 'planet_jobs_produces_mult', '-0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_stunted_drones', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19091,7 +18390,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ancient_memories_of_control', 'planet_jobs_produces_mult', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ancient_memories_of_control', 'planet_crime_no_happiness_add', '-30.0', 1);
@@ -19126,7 +18425,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ancient_caches_of_technology', 'planet_jobs_produces_mult', '0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ancient_caches_of_technology', 'bonus_automated_workforce_mult', '5.0', 1);
@@ -19296,7 +18595,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_great_khans_vision', 'country_commander_cap_add', '10.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_commander_cap_add', 'commander Commander Capacity', 1);
+           VALUES ('country_commander_cap_add', 'Commander Capacity', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_great_khans_vision', 'country_naval_cap_add', '1000.0', 1);
@@ -19427,7 +18726,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_subspace_ephapse', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_subspace_ephapse', 'country_naval_cap_mult', '0.15', 1);
@@ -19451,7 +18750,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_natural_neural_network', 'councilor_gestalt_cognitive_exp_gain', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_natural_neural_network', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19462,7 +18761,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_ascetic', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_ascetic', 'pop_environment_tolerance', '0.05', 1);
@@ -19477,7 +18776,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_ascetic', 'add_attunement_the_composer_of_strands', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_ascetic', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19488,7 +18787,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_one_mind', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_one_mind', 'country_unity_produces_mult', '0.15', 1);
@@ -19509,7 +18808,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_divided_attention', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_divided_attention', 'empire_size_penalty_mult', '-0.25', 1);
@@ -19519,7 +18818,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_divided_attention', 'add_attunement_the_composer_of_strands', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_divided_attention', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19530,7 +18829,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_strength_of_legions', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_strength_of_legions', 'army_starting_experience_add', '100.0', 1);
@@ -19550,17 +18849,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_strength_of_legions', 'commander_initial_skill', '2.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('commander_initial_skill', 'commander Commander Starting Skill Level', 1);
+           VALUES ('commander_initial_skill', 'Commander Starting Skill Level', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_strength_of_legions', 'leader_commanders_upkeep_mult', '-0.25', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('leader_commanders_upkeep_mult', 'commander Commander Upkeep', 1);
+           VALUES ('leader_commanders_upkeep_mult', 'Commander Upkeep', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_strength_of_legions', 'add_attunement_the_eater_of_worlds', '60.0', 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_strength_of_legions', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19571,7 +18870,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_subsumed_will', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_subsumed_will', 'empire_size_pops_mult', '-0.1', 1);
@@ -19596,7 +18895,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_subsumed_will', 'add_attunement_the_composer_of_strands', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_subsumed_will', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19607,22 +18906,22 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_pooled_knowledge', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_pooled_knowledge', 'country_official_cap_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_official_cap_add', 'official Official Capacity', 1);
+           VALUES ('country_official_cap_add', 'Official Capacity', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_pooled_knowledge', 'country_commander_cap_add', '1.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_commander_cap_add', 'commander Commander Capacity', 1);
+           VALUES ('country_commander_cap_add', 'Commander Capacity', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_pooled_knowledge', 'country_scientist_cap_add', '1.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_scientist_cap_add', 'scientist Scientist Capacity', 1);
+           VALUES ('country_scientist_cap_add', 'Scientist Capacity', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_pooled_knowledge', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19633,7 +18932,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_devouring_swarm', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_devouring_swarm', 'country_starbase_influence_cost_mult', '-0.5', 1);
@@ -19678,7 +18977,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_devouring_swarm', 'add_attunement_the_eater_of_worlds', '60.0', 9);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_devouring_swarm', 'the_cradle_of_souls_attunement_mult', '-0.25', 10);
@@ -19721,12 +19020,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_empath', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_empath', 'official_initial_skill', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('official_initial_skill', 'official Official Starting Skill Level', 1);
+           VALUES ('official_initial_skill', 'Official Starting Skill Level', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_empath', 'diplo_weight_mult', '0.2', 2);
@@ -19746,7 +19045,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_empath', 'add_attunement_the_cradle_of_souls', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_empath', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19766,12 +19065,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_memorialist', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_memorialist', 'add_attunement_the_composer_of_strands', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_memorialist', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19794,12 +19093,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_catalytic_processing', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_catalytic_processing', 'add_attunement_the_composer_of_strands', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_catalytic_processing', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19816,12 +19115,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_idyllic_bloom', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_idyllic_bloom', 'add_attunement_the_composer_of_strands', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_idyllic_bloom', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19838,12 +19137,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_toxic_baths', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_toxic_baths', 'add_attunement_the_composer_of_strands', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_toxic_baths', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19860,7 +19159,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_ascensionists', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_ascensionists', 'planetary_ascension_effect_mult', '0.25', 1);
@@ -19880,7 +19179,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_ascensionists', 'add_attunement_the_instrument_of_desire', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_ascensionists', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19891,7 +19190,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_cordyceptic_drones', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_cordyceptic_drones', 'attached_space_fauna_component_damage_mult', '0.5', 1);
@@ -19911,7 +19210,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_cordyceptic_drones', 'add_attunement_the_eater_of_worlds', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_cordyceptic_drones', 'authority', 'require', 'auth_hive_mind', 0);
@@ -19922,7 +19221,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_stargazers', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_stargazers', 'ship_sensor_range_add', '1.0', 1);
@@ -19965,7 +19264,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault_hive', 'councilor_gestalt_cognitive_exp_gain', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault_hive', 'councilor_skill_add', '1.0', 2);
@@ -19996,7 +19295,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_upkeep_twister', 'councilor_gestalt_regulatory_exp_gain', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_upkeep_twister', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20017,12 +19316,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_void_hive', 'councilor_gestalt_growth_exp_gain', '0.25', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_void_hive', 'add_attunement_the_composer_of_strands', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_void_hive', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20043,17 +19342,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_hyperspace_specialty', 'country_physics_tech_research_speed', '0.15', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_physics_tech_research_speed', 'Research Speed ( physics Physics)', 1);
+           VALUES ('country_physics_tech_research_speed', 'Research Speed ( Physics)', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_hyperspace_specialty', 'councilor_gestalt_cognitive_exp_gain', '0.25', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_hyperspace_specialty', 'add_attunement_the_composer_of_strands', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_hyperspace_specialty', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20092,17 +19391,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_sovereign_guardianship', 'councilor_gestalt_regulatory_exp_gain', '0.25', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_sovereign_guardianship', 'planet_soldiers_unity_produces_add', '1.0', 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_soldiers_unity_produces_add', 'unity Produced per 100', 1);
+           VALUES ('planet_soldiers_unity_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_sovereign_guardianship', 'add_attunement_the_cradle_of_souls', '60.0', 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_sovereign_guardianship', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20140,7 +19439,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_guided_sapience', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_guided_sapience', 'terraforming_cost_mult', '-0.25', 1);
@@ -20153,7 +19452,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_guided_sapience', 'add_attunement_the_composer_of_strands', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_guided_sapience', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20195,7 +19494,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_beastmasters', 'councilor_gestalt_legion_exp_gain', '0.25', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_beastmasters', 'space_fauna_ship_cost_mult', '-0.15', 3);
@@ -20210,7 +19509,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_beastmasters', 'add_attunement_the_composer_of_strands', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_beastmasters', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20233,7 +19532,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_astrometeorology_hive', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_astrometeorology_hive', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20247,12 +19546,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_hive', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_hive', 'planet_jobs_produces_mult', '0.1', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_hive', 'founder_species_growth_mult', '0.1', 2);
@@ -20272,7 +19571,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_hive', 'add_attunement_the_instrument_of_desire', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmental_architects_hive', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20307,12 +19606,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_galactic_curators', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_galactic_curators', 'planet_jobs_unity_produces_mult', '-0.1', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_unity_produces_mult', 'unity Unity from job Jobs', 1);
+           VALUES ('planet_jobs_unity_produces_mult', 'Unity from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_galactic_curators', 'ship_anomaly_generation_chance_mult', '0.1', 2);
@@ -20332,7 +19631,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_galactic_curators', 'add_attunement_the_instrument_of_desire', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_galactic_curators', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20343,7 +19642,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_familiar_face', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_familiar_face', 'envoys_add', '2.0', 1);
@@ -20361,7 +19660,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_familiar_face', 'add_attunement_the_cradle_of_souls', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_familiar_face', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20378,7 +19677,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_shared_genetics', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_shared_genetics', 'starbase_shipyard_build_speed_mult', '0.1', 1);
@@ -20388,7 +19687,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_shared_genetics', 'add_attunement_the_composer_of_strands', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_shared_genetics', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20402,7 +19701,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_aerospace_adaptation', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_aerospace_adaptation', 'ship_orbital_bombardment_mult', '1.0', 1);
@@ -20412,7 +19711,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_aerospace_adaptation', 'add_attunement_the_composer_of_strands', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_aerospace_adaptation', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20426,7 +19725,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_bodysnatcher', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_bodysnatcher', 'operation_smuggle_pops_difficulty_add', '-2.0', 1);
@@ -20457,7 +19756,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers_hive_mind', 'planet_jobs_produces_mult', '-0.1', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers_hive_mind', 'all_technology_research_speed', '-0.1', 1);
@@ -20485,7 +19784,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers_hive_mind', 'councilor_gestalt_growth_exp_gain', '0.25', 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_entropy_drinkers_hive_mind', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20508,7 +19807,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_superstitious_beliefs', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_superstitious_beliefs', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20519,7 +19818,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_twisted_experimenters_hive_mind', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_twisted_experimenters_hive_mind', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20538,7 +19837,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_chosen', 'councilor_gestalt_growth_exp_gain', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_chosen', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20558,7 +19857,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_scorched_earth', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_scorched_earth', 'ship_weapon_range_mult', '0.15', 1);
@@ -20681,7 +19980,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_world_forgers', 'councilor_gestalt_growth_exp_gain', '0.25', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_world_forgers', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20703,7 +20002,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_galvanic_symbiosis', 'councilor_gestalt_growth_exp_gain', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_galvanic_symbiosis', 'authority', 'require', 'auth_hive_mind', 0);
@@ -20728,12 +20027,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_servitor', 'councilor_gestalt_regulatory_exp_gain', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_servitor', 'add_attunement_the_cradle_of_souls', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_servitor', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -20756,7 +20055,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_terminator', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_terminator', 'country_starbase_influence_cost_mult', '-0.3', 1);
@@ -20781,7 +20080,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_terminator', 'add_attunement_the_eater_of_worlds', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_terminator', 'the_cradle_of_souls_attunement_mult', '-0.25', 6);
@@ -20833,12 +20132,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_assimilator', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_assimilator', 'add_attunement_the_eater_of_worlds', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_assimilator', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -20864,7 +20163,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_builder', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_builder', 'planet_structures_cost_mult', '-0.15', 1);
@@ -20879,7 +20178,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_builder', 'add_attunement_the_composer_of_strands', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_builder', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -20890,22 +20189,22 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_factory_overclock', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_factory_overclock', 'country_official_cap_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_official_cap_add', 'official Official Capacity', 1);
+           VALUES ('country_official_cap_add', 'Official Capacity', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_factory_overclock', 'country_commander_cap_add', '1.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_commander_cap_add', 'commander Commander Capacity', 1);
+           VALUES ('country_commander_cap_add', 'Commander Capacity', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_factory_overclock', 'country_scientist_cap_add', '1.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_scientist_cap_add', 'scientist Scientist Capacity', 1);
+           VALUES ('country_scientist_cap_add', 'Scientist Capacity', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_factory_overclock', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -20916,7 +20215,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_unitary_cohesion', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_unitary_cohesion', 'country_unity_produces_mult', '0.15', 1);
@@ -20932,17 +20231,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_rockbreakers', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_rockbreakers', 'planet_miners_minerals_produces_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_minerals_produces_add', 'minerals Produced per 100', 1);
+           VALUES ('planet_miners_minerals_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_rockbreakers', 'add_attunement_the_instrument_of_desire', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_rockbreakers', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -20953,7 +20252,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_zero_waste_protocols', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_zero_waste_protocols', 'planet_pops_robotics_upkeep_mult', '-0.1', 1);
@@ -20973,7 +20272,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_zero_waste_protocols', 'add_attunement_the_composer_of_strands', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_zero_waste_protocols', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -20984,7 +20283,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_built_to_last', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_built_to_last', 'pop_amenities_usage_no_happiness_mult', '-0.15', 1);
@@ -20994,7 +20293,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_built_to_last', 'add_attunement_the_composer_of_strands', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_built_to_last', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21005,7 +20304,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_ota_updates', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_ota_updates', 'empire_size_pops_mult', '-0.1', 1);
@@ -21025,7 +20324,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_ota_updates', 'add_attunement_the_composer_of_strands', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_ota_updates', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21036,7 +20335,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_warbots', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_warbots', 'army_damage_mult', '0.2', 1);
@@ -21051,17 +20350,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_warbots', 'commander_initial_skill', '2.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('commander_initial_skill', 'commander Commander Starting Skill Level', 1);
+           VALUES ('commander_initial_skill', 'Commander Starting Skill Level', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_warbots', 'leader_commanders_upkeep_mult', '-0.25', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('leader_commanders_upkeep_mult', 'commander Commander Upkeep', 1);
+           VALUES ('leader_commanders_upkeep_mult', 'Commander Upkeep', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_warbots', 'add_attunement_the_eater_of_worlds', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_warbots', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21075,12 +20374,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_introspective', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_introspective', 'country_engineering_tech_research_speed', '0.2', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_engineering_tech_research_speed', 'Research Speed ( engineering Engineering)', 1);
+           VALUES ('country_engineering_tech_research_speed', 'Research Speed ( Engineering)', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_introspective', 'intel_encryption_add', '1.0', 2);
@@ -21096,7 +20395,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_delegated_functions', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_delegated_functions', 'country_leader_pool_size', '1.0', 1);
@@ -21115,7 +20414,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_predictive_analysis', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_predictive_analysis', 'num_tech_alternatives_add', '1.0', 1);
@@ -21134,7 +20433,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_replication', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_replication', 'planet_pop_assembly_mult', '0.2', 1);
@@ -21150,7 +20449,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_maintenance_protocols', 'planet_maintenance_drones_unity_produces_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_maintenance_drones_unity_produces_add', 'unity Unity per 100', 1);
+           VALUES ('planet_maintenance_drones_unity_produces_add', 'Unity per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_maintenance_protocols', 'planet_jobs_simple_drone_produces_mult', '0.05', 1);
@@ -21160,7 +20459,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_maintenance_protocols', 'councilor_gestalt_growth_exp_gain', '0.25', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_maintenance_protocols', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21171,12 +20470,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_memorialist', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_memorialist', 'add_attunement_the_composer_of_strands', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_memorialist', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21196,12 +20495,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_catalytic_processing', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_catalytic_processing', 'add_attunement_the_composer_of_strands', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_catalytic_processing', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21215,12 +20514,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_toxic_baths', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_toxic_baths', 'add_attunement_the_composer_of_strands', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_toxic_baths', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21234,7 +20533,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_ascensionists', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_ascensionists', 'planetary_ascension_effect_mult', '0.25', 1);
@@ -21254,7 +20553,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_ascensionists', 'add_attunement_the_instrument_of_desire', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_ascensionists', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21265,7 +20564,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_exploration_protocol', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_exploration_protocol', 'first_contact_speed_mult', '0.2', 1);
@@ -21311,17 +20610,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_hyperspace_specialty', 'country_physics_tech_research_speed', '0.15', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_physics_tech_research_speed', 'Research Speed ( physics Physics)', 1);
+           VALUES ('country_physics_tech_research_speed', 'Research Speed ( Physics)', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_hyperspace_specialty', 'councilor_gestalt_cognitive_exp_gain', '0.25', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_hyperspace_specialty', 'add_attunement_the_composer_of_strands', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_hyperspace_specialty', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21340,7 +20639,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault_machine', 'councilor_gestalt_cognitive_exp_gain', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault_machine', 'councilor_skill_add', '1.0', 2);
@@ -21371,7 +20670,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_upkeep_twister', 'councilor_gestalt_regulatory_exp_gain', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_upkeep_twister', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21407,17 +20706,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_sovereign_guardianship', 'councilor_gestalt_regulatory_exp_gain', '0.25', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_sovereign_guardianship', 'planet_soldiers_unity_produces_add', '1.0', 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_soldiers_unity_produces_add', 'unity Produced per 100', 1);
+           VALUES ('planet_soldiers_unity_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_sovereign_guardianship', 'add_attunement_the_cradle_of_souls', '60.0', 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_sovereign_guardianship', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21441,12 +20740,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_obsessional_directive', 'councilor_gestalt_growth_exp_gain', '0.25', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_obsessional_directive', 'add_attunement_the_instrument_of_desire', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_obsessional_directive', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21460,7 +20759,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_diplomatic_protocols', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_diplomatic_protocols', 'envoys_add', '2.0', 1);
@@ -21483,7 +20782,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_diplomatic_protocols', 'add_attunement_the_cradle_of_souls', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_diplomatic_protocols', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21497,7 +20796,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_tactical_algorithms', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_tactical_algorithms', 'add_base_country_intel', '20.0', 1);
@@ -21507,7 +20806,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_tactical_algorithms', 'add_attunement_the_eater_of_worlds', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_tactical_algorithms', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21521,7 +20820,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_guided_sapience', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_guided_sapience', 'terraforming_cost_mult', '-0.25', 1);
@@ -21534,7 +20833,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_guided_sapience', 'add_attunement_the_composer_of_strands', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_guided_sapience', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21584,12 +20883,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_spybots', 'councilor_gestalt_regulatory_exp_gain', '0.25', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_spybots', 'add_attunement_the_cradle_of_souls', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_spybots', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21600,12 +20899,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_astromining_drones', 'planet_miners_minerals_produces_add', '-2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_minerals_produces_add', 'minerals Produced per 100', 1);
+           VALUES ('planet_miners_minerals_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_astromining_drones', 'planet_technician_energy_produces_add', '-1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_technician_energy_produces_add', 'energy Produced per 100', 1);
+           VALUES ('planet_technician_energy_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_astromining_drones', 'station_gatherers_produces_mult', '0.5', 2);
@@ -21630,12 +20929,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_astromining_drones', 'councilor_gestalt_growth_exp_gain', '0.25', 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_astromining_drones', 'add_attunement_the_composer_of_strands', '60.0', 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_astromining_drones', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21654,7 +20953,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_beastmasters', 'councilor_gestalt_legion_exp_gain', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_beastmasters', 'space_fauna_ship_cost_mult', '-0.15', 2);
@@ -21669,7 +20968,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_beastmasters', 'add_attunement_the_composer_of_strands', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_beastmasters', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21692,7 +20991,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_astrometeorology_machine', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_astrometeorology_machine', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21703,12 +21002,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_machine', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_machine', 'planet_jobs_produces_mult', '0.1', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_machine', 'founder_species_growth_mult', '0.1', 2);
@@ -21728,7 +21027,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_machine', 'add_attunement_the_instrument_of_desire', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmental_architects_machine', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21760,12 +21059,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_galactic_curators', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_galactic_curators', 'planet_jobs_unity_produces_mult', '-0.1', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_unity_produces_mult', 'unity Unity from job Jobs', 1);
+           VALUES ('planet_jobs_unity_produces_mult', 'Unity from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_galactic_curators', 'ship_anomaly_generation_chance_mult', '0.1', 2);
@@ -21785,7 +21084,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_galactic_curators', 'add_attunement_the_instrument_of_desire', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_galactic_curators', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21816,12 +21115,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_stalwart_network', 'councilor_gestalt_legion_exp_gain', '0.25', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_stalwart_network', 'add_attunement_the_eater_of_worlds', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_stalwart_network', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21832,7 +21131,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers_machine', 'planet_jobs_produces_mult', '-0.1', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers_machine', 'all_technology_research_speed', '-0.1', 1);
@@ -21860,7 +21159,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers_machine', 'councilor_gestalt_growth_exp_gain', '0.25', 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_entropy_drinkers_machine', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21874,7 +21173,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_superstitious_beliefs', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_superstitious_beliefs', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21890,7 +21189,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_chosen', 'councilor_gestalt_growth_exp_gain', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_chosen', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21914,7 +21213,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_world_forgers', 'councilor_gestalt_growth_exp_gain', '0.25', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_world_forgers', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21936,7 +21235,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_galvanic_symbiosis', 'councilor_gestalt_growth_exp_gain', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_galvanic_symbiosis', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -21958,7 +21257,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_franchising', 'add_attunement_the_instrument_of_desire', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
                VALUES ('civic_trading_posts', 'Trading Posts', '- The building Commercial Forum Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 214);
@@ -21971,12 +21270,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_trading_posts', 'starbase_buildings_trade_produces_add', '2.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('starbase_buildings_trade_produces_add', 'trade Trade from Starbase Buildings', 1);
+           VALUES ('starbase_buildings_trade_produces_add', 'Trade from Starbase Buildings', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_trading_posts', 'add_attunement_the_cradle_of_souls', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_trading_posts', 'origin', 'forbid', 'origin_unplugged', 0);
@@ -22002,7 +21301,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_media_conglomerate', 'add_attunement_the_cradle_of_souls', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_media_conglomerate', 'civic', 'forbid', 'civic_idealistic_foundation', 0);
@@ -22036,7 +21335,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_naval_contractors', 'add_attunement_the_eater_of_worlds', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_naval_contractors', 'ethic', 'require_any', 'ethic_militarist', 1);
@@ -22058,7 +21357,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_free_traders', 'planet_traders_trade_produces_add', '2.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_traders_trade_produces_add', 'trade Produced per 100', 1);
+           VALUES ('planet_traders_trade_produces_add', 'Produced per 100', 1);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
                VALUES ('civic_private_prospectors', 'Private Prospectors', '- Unlocks Ship Type: Private Colony Ship - The building Private Mining Consortium Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 218);
@@ -22076,7 +21375,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_prospectors', 'add_attunement_the_composer_of_strands', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_private_prospectors', 'civic', 'forbid', 'civic_guided_sapience', 0);
@@ -22101,12 +21400,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_gospel_of_the_masses', 'planet_bureaucrats_trade_produces_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_bureaucrats_trade_produces_add', 'trade Produced per 100', 1);
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_gospel_of_the_masses', 'add_attunement_the_composer_of_strands', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_gospel_of_the_masses', 'ethic', 'require_any', 'ethic_spiritualist', 1);
@@ -22135,7 +21434,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ruthless_competition', 'add_attunement_the_instrument_of_desire', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_ruthless_competition', 'civic', 'forbid', 'civic_meritocracy', 0);
@@ -22170,7 +21469,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_military_companies', 'commander_initial_skill', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('commander_initial_skill', 'commander Commander Starting Skill Level', 1);
+           VALUES ('commander_initial_skill', 'Commander Starting Skill Level', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_military_companies', 'army_starting_experience_add', '100.0', 1);
@@ -22190,7 +21489,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_military_companies', 'add_attunement_the_eater_of_worlds', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_private_military_companies', 'ethic', 'require_any', 'ethic_militarist', 1);
@@ -22220,7 +21519,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_indentured_assets', 'add_attunement_the_instrument_of_desire', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_indentured_assets', 'ethic', 'require_any', 'ethic_authoritarian', 1);
@@ -22256,7 +21555,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_brand_loyalty', 'add_attunement_the_cradle_of_souls', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_brand_loyalty', 'civic', 'forbid', 'civic_beacon_of_liberty', 0);
@@ -22285,7 +21584,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_public_relations_specialists', 'add_attunement_the_cradle_of_souls', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_public_relations_specialists', 'civic', 'forbid', 'civic_diplomatic_corps', 0);
@@ -22317,7 +21616,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_catalytic_processing', 'add_attunement_the_composer_of_strands', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_catalytic_processing', 'civic', 'forbid', 'civic_catalytic_processing', 0);
@@ -22331,7 +21630,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_hedonism', 'add_attunement_the_instrument_of_desire', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_hedonism', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -22351,7 +21650,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_anglers', 'add_attunement_the_composer_of_strands', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_anglers', 'civic', 'forbid', 'civic_anglers', 0);
@@ -22377,7 +21676,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_machine_anglers', 'add_attunement_the_composer_of_strands', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_machine_anglers', 'origin', 'forbid', 'origin_post_apocalyptic_machines', 0);
@@ -22394,7 +21693,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_crafters', 'add_attunement_the_instrument_of_desire', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_crafters', 'civic', 'forbid', 'civic_crafters', 0);
@@ -22405,7 +21704,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_permanent_employment', 'add_attunement_the_instrument_of_desire', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_permanent_employment', 'ethic', 'forbid', 'ethic_egalitarian', 0);
@@ -22437,7 +21736,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_relentless_industrialists', 'add_attunement_the_instrument_of_desire', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_relentless_industrialists', 'ethic', 'require_any', 'ethic_materialist', 1);
@@ -22481,7 +21780,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_toxic_baths', 'add_attunement_the_composer_of_strands', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_toxic_baths', 'civic', 'forbid', 'civic_toxic_baths', 0);
@@ -22495,7 +21794,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_scavengers', 'ships_alloys_upkeep_mult', '-0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('ships_alloys_upkeep_mult', 'Ships alloys Alloys Upkeep', 1);
+           VALUES ('ships_alloys_upkeep_mult', 'Ships Alloys Upkeep', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_scavengers', 'planet_building_refund_mult', '0.1', 1);
@@ -22531,7 +21830,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_ascensionists', 'add_attunement_the_instrument_of_desire', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_ascensionists', 'ethic', 'require_any', 'ethic_spiritualist', 1);
@@ -22646,12 +21945,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_hyperspace_specialty', 'country_physics_tech_research_speed', '0.15', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_physics_tech_research_speed', 'Research Speed ( physics Physics)', 1);
+           VALUES ('country_physics_tech_research_speed', 'Research Speed ( Physics)', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_hyperspace_specialty', 'add_attunement_the_composer_of_strands', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_hyperspace_specialty', 'civic', 'forbid', 'civic_hyperspace_specialty', 0);
@@ -22677,7 +21976,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_dimensional_worship', 'planet_bureaucrats_physics_research_produces_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_bureaucrats_physics_research_produces_add', 'physics_research Produced per 100', 1);
+           VALUES ('planet_bureaucrats_physics_research_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_dimensional_worship', 'rare_tech_draw_chance_mult', '0.1', 1);
@@ -22729,17 +22028,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_task_delegation_corporate', 'country_official_cap_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_official_cap_add', 'official Official Capacity', 1);
+           VALUES ('country_official_cap_add', 'Official Capacity', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_task_delegation_corporate', 'country_commander_cap_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_commander_cap_add', 'commander Commander Capacity', 1);
+           VALUES ('country_commander_cap_add', 'Commander Capacity', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_task_delegation_corporate', 'country_scientist_cap_add', '1.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_scientist_cap_add', 'scientist Scientist Capacity', 1);
+           VALUES ('country_scientist_cap_add', 'Scientist Capacity', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_task_delegation_corporate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -22755,12 +22054,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_healthcare_corporate', 'planet_doctors_trade_produces_add', '4.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_doctors_trade_produces_add', 'trade Produced per 100', 1);
+           VALUES ('planet_doctors_trade_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_healthcare_corporate', 'add_attunement_the_instrument_of_desire', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_private_healthcare_corporate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -22811,7 +22110,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_worker_coop', 'add_attunement_the_cradle_of_souls', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_worker_coop', 'ethic', 'forbid', 'ethic_xenophobe', 0);
@@ -22858,7 +22157,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_augmentation_bazaars', 'planet_augmentors_trade_produces_add', '4.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_augmentors_trade_produces_add', 'trade Produced per 100 job_augmentor Augmentors', 1);
+           VALUES ('planet_augmentors_trade_produces_add', 'Produced per 100 Augmentors', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_augmentation_bazaars', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -22926,12 +22225,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_sovereign_guardianship', 'planet_soldiers_unity_produces_add', '1.0', 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_soldiers_unity_produces_add', 'unity Produced per 100', 1);
+           VALUES ('planet_soldiers_unity_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_sovereign_guardianship', 'add_attunement_the_cradle_of_souls', '60.0', 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_sovereign_guardianship', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -22986,7 +22285,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_guided_sapience', 'add_attunement_the_composer_of_strands', '60.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_guided_sapience', 'authority', 'require', 'auth_corporate', 0);
@@ -23027,7 +22326,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_toxic_baths_individual_machine', 'add_attunement_the_composer_of_strands', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_toxic_baths_individual_machine', 'civic', 'forbid', 'civic_toxic_baths_individual_machine', 0);
@@ -23049,7 +22348,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_storm_callers_megacorp', 'add_attunement_the_composer_of_strands', '60.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_storm_callers_megacorp', 'origin', 'forbid', 'origin_unplugged', 0);
@@ -23060,7 +22359,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_megacorp', 'planet_jobs_produces_mult', '0.1', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_megacorp', 'founder_species_growth_mult', '0.1', 1);
@@ -23080,7 +22379,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_megacorp', 'add_attunement_the_instrument_of_desire', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmental_architects_megacorp', 'civic', 'forbid', 'civic_environmental_architects', 0);
@@ -23139,7 +22438,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_galactic_curators', 'planet_jobs_unity_produces_mult', '-0.1', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_unity_produces_mult', 'unity Unity from job Jobs', 1);
+           VALUES ('planet_jobs_unity_produces_mult', 'Unity from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_galactic_curators', 'country_specimen_selling_cost_mult', '1.0', 1);
@@ -23164,7 +22463,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_galactic_curators', 'add_attunement_the_instrument_of_desire', '60.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_galactic_curators', 'civic', 'forbid', 'civic_galactic_curators', 0);
@@ -23195,7 +22494,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_beastmasters', 'add_attunement_the_composer_of_strands', '60.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_beastmasters', 'civic', 'forbid', 'civic_beastmasters', 0);
@@ -23215,7 +22514,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_genetic_identification', 'planet_bureaucrats_society_research_produces_add', '1.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_bureaucrats_society_research_produces_add', 'society_research Produced per 100', 1);
+           VALUES ('planet_bureaucrats_society_research_produces_add', 'Produced per 100', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_genetic_identification', 'planet_crime_mult', '-0.15', 1);
@@ -23230,7 +22529,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_genetic_identification', 'add_attunement_the_instrument_of_desire', '60.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_genetic_identification', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -23244,7 +22543,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_crowdsourcing', 'add_attunement_the_cradle_of_souls', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_crowdsourcing', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -23294,7 +22593,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers_corporate', 'planet_jobs_produces_mult', '-0.1', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_entropy_drinkers_corporate', 'all_technology_research_speed', '-0.1', 1);
@@ -25199,12 +24498,12 @@ INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_tree_of_life', 'ship_colonizer_food_cost_add', '500.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('ship_colonizer_food_cost_add', 'Colony Ship food Food Build Cost', 1);
+           VALUES ('ship_colonizer_food_cost_add', 'Colony Ship Food Build Cost', 1);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_tree_of_life', 'ship_colonizer_alloys_cost_mult', '-0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('ship_colonizer_alloys_cost_mult', 'Colony Ship alloys Alloys Build Cost', 1);
+           VALUES ('ship_colonizer_alloys_cost_mult', 'Colony Ship Alloys Build Cost', 1);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_tree_of_life', 'authority', 'require', 'auth_hive_mind', 0);
@@ -25335,7 +24634,7 @@ INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_khan_successor', 'commander_initial_skill', '2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('commander_initial_skill', 'commander Commander Starting Skill Level', 1);
+           VALUES ('commander_initial_skill', 'Commander Starting Skill Level', 1);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, icon, sort_order)
                VALUES ('origin_life_seeded_ai_only', 'Life-Seeded', '- Homeworld: Gaia World (Size: planetsize 30) with Rare Planetary Features - Species Traits: Gaia World Preference', NULL, 0, 'gfx/interface/icons/origins/origins_life_seeded.dds', 65);

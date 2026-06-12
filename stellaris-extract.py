@@ -41,10 +41,15 @@ _LOC_CONCEPT    = re.compile(r"\['(\w+)'(?:,\s*([^\]]*))?\]")
 # Any remaining bracket command, e.g. [This.GetName] — not statically resolvable.
 _LOC_COMMAND    = re.compile(r'\[[^\]]*\]')
 
-def _clean_loc(s: str, loc: dict[str, str]) -> str:
+def _clean_loc(s: str, loc: dict[str, str], strip_icons: bool = False) -> str:
     """Expand $KEY$ refs and ['concept', …] scripted-loc tags (up to 4 rounds),
-    strip §X colour codes and [command] tags, and render £icon£ refs as their word
-    (e.g. £alloys£ → "alloys", so "Produces £alloys£5000" reads "Produces alloys 5000")."""
+    strip §X colour codes and [command] tags, and handle £icon£ refs.
+
+    By default an icon is rendered as its word (e.g. £alloys£ → "alloys", so
+    "Produces £alloys£5000" reads "Produces alloys 5000" — the icon carries the
+    resource). With strip_icons=True the icon is dropped entirely; used for modifier
+    labels, where the icon is a leading/embedded picture whose name only duplicates
+    the surrounding words (e.g. "£official£ Official Capacity" → "Official Capacity")."""
     # Concept tags: keep the inline display text when given, else fall back to the
     # concept's own name ($concept_KEY$, resolved by the loop below).
     s = _LOC_CONCEPT.sub(lambda m: m.group(2) if m.group(2) else f'${m.group(1)}$', s)
@@ -56,7 +61,7 @@ def _clean_loc(s: str, loc: dict[str, str]) -> str:
     s = _LOC_COMMAND.sub('', s)        # drop leftover [Command.Chain] tags
     s = re.sub(r'\\[nrt]', ' ', s)     # literal \n \t \r escapes -> space
     s = _LOC_FMT_CODE.sub('', s)       # strip §X colour codes
-    s = _LOC_ICON.sub(r' \1 ', s)      # £icon£ -> spaced word (preserves the resource)
+    s = _LOC_ICON.sub('' if strip_icons else r' \1 ', s)
     return re.sub(r'\s+', ' ', s).strip()
 
 
@@ -1264,24 +1269,9 @@ def extract_trait_modifiers(data: dict, source_file: str, loc: dict[str, str],
                 (trait_key, mod_key, value, order),
             )
 
-            # Lookup order: explicit override, MOD_<UPPER>, mod_<lower>, key as-is
-            override = MODIFIER_LOC_OVERRIDES.get(mod_key)
-            raw_label = (
-                (loc.get(override) if override else None) or
-                loc.get('MOD_' + mod_key.upper()) or
-                loc.get('mod_' + mod_key) or
-                loc.get(mod_key)
-            )
-            if raw_label:
-                label = _clean_loc(raw_label, loc)
-                if '$' not in label:  # skip if references still unresolved
-                    pig = 0 if mod_key in INVERTED_MODIFIERS else 1
-                    w.execute(
-                        """INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES (?, ?, ?)""",
-                        (mod_key, label, pig),
-                    )
+            # Populate modifier_label via the shared helper (icon-stripped,
+            # attunement-aware, same loc lookup order for every modifier source).
+            _write_modifier_label(w, loc, mod_key)
 
             if verbose:
                 print(f"  Modifier: {trait_key} | {mod_key} = {value}")
@@ -1579,24 +1569,9 @@ def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
                 (ethic_key, mod_key, value, order),
             )
 
-            # Populate modifier_label for any new keys
-            override = MODIFIER_LOC_OVERRIDES.get(mod_key)
-            raw_mod_label = (
-                (loc.get(override) if override else None) or
-                loc.get('MOD_' + mod_key.upper()) or
-                loc.get('mod_' + mod_key) or
-                loc.get(mod_key)
-            )
-            if raw_mod_label:
-                mod_label = _clean_loc(raw_mod_label, loc)
-                if '$' not in mod_label:
-                    pig = 0 if mod_key in INVERTED_MODIFIERS else 1
-                    w.execute(
-                        """INSERT OR REPLACE INTO modifier_label
-                               (modifier_key, label, positive_is_good)
-                           VALUES (?, ?, ?)""",
-                        (mod_key, mod_label, pig),
-                    )
+            # Populate modifier_label via the shared helper (icon-stripped,
+            # attunement-aware, same loc lookup order for every modifier source).
+            _write_modifier_label(w, loc, mod_key)
 
             if verbose:
                 print(f"  {ethic_key} | {mod_key} = {value}")
@@ -2077,7 +2052,13 @@ def _write_modifier_label(w: Writer, loc: dict[str, str], mod_key: str):
     )
     if not raw_label:
         return
-    label = _clean_loc(raw_label, loc)
+    label = _clean_loc(raw_label, loc, strip_icons=True)
+    # The attunement modifiers name their target only via an unresolvable colour
+    # command ([This.GetCradleColor] etc.), leaving a dangling "Add Attunement with".
+    # Derive the entity name from the key so it reads "Add Attunement with The …".
+    if mod_key.startswith('add_attunement_'):
+        entity = mod_key[len('add_attunement_'):].replace('_', ' ').title()
+        label = f'Add Attunement with {entity}'
     if '$' in label:
         return
     pig = 0 if mod_key in INVERTED_MODIFIERS else 1
