@@ -229,13 +229,15 @@ DROP TABLE IF EXISTS origin_requirement;
 DROP TABLE IF EXISTS origin_modifier;
 DROP TABLE IF EXISTS origin;
 CREATE TABLE origin (
-    key          TEXT PRIMARY KEY,    -- e.g. "origin_shattered_ring"
-    name         TEXT,                -- localised name
-    description  TEXT,                -- cleaned effects tooltip
-    required_dlc TEXT,                -- from playable host_has_dlc; NULL = base game
-    selectable   INTEGER NOT NULL DEFAULT 1,
-    icon         TEXT,
-    sort_order   INTEGER NOT NULL DEFAULT 0,
+    key            TEXT PRIMARY KEY,  -- e.g. "origin_shattered_ring"
+    name           TEXT,              -- localised name
+    description    TEXT,              -- cleaned effects tooltip
+    required_dlc   TEXT,              -- from playable host_has_dlc; NULL = base game
+    selectable     INTEGER NOT NULL DEFAULT 1,
+    ascension_lock   TEXT,            -- locked to this single ascension path (blocks all others); NULL = unrestricted
+    ascension_blocks TEXT,            -- comma-separated ascension paths blocked (when it still allows others); NULL = none
+    icon             TEXT,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
 );
 
@@ -23250,13 +23252,15 @@ INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_galvanic_symbiosis', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_default', 'Prosperous Unification', 'Initial Pops: +400
 Homeworld: : +1, District Agriculture Districts: +1, Planetary Modifiers:
-Guaranteed Research Options:', NULL, 1, 'gfx/interface/icons/origins/origins_default.dds', 0);
+Guaranteed Research Options:', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_default.dds', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_red_giant', 'Red Giant', 'Homeworld: Volcanic World (Size: Planetsize 20)', 'Infernals Species Pack', 1, 'gfx/interface/icons/origins/origin_red_giant.dds', 1);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_red_giant', 'Red Giant', 'Homeworld: Volcanic World (Size: Planetsize 20)', 'Infernals Species Pack', 1, NULL, NULL, 'gfx/interface/icons/origins/origin_red_giant.dds', 1);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_red_giant', 'pc_volcanic_habitability', '0.2', 0);
@@ -23299,9 +23303,10 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_red_giant', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_cosmic_dawn', 'Cosmic Dawn', 'Homeworld: Volcanic World (Size: Planetsize 14), Blocker Ancient Stasis Pods: +5
-Start with Situation: Deep Excavation', 'Infernals Species Pack', 1, 'gfx/interface/icons/origins/origin_cosmic_dawn.dds', 2);
+Start with Situation: Deep Excavation', 'Infernals Species Pack', 1, NULL, NULL, 'gfx/interface/icons/origins/origin_cosmic_dawn.dds', 2);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_cosmic_dawn', 'authority', 'forbid', 'auth_hive_mind', 0);
@@ -23354,12 +23359,13 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_cosmic_dawn', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_shroud_forged', 'Shroud-Forged', 'Homeworld: Shroud-Touched Region: +4, Start with 1000 Pops Shroud-Forged Pops
 Start with Situation: Forged by the Shroud
 Additional Starting Technologies: Society Zro Distillation
 Unique Building: Shroud Observation Tower
-Available Decision Planetary Decision: Pierce the Shroud', NULL, 1, 'gfx/interface/icons/origins/origins_shroud_forged.dds', 3);
+Available Decision Planetary Decision: Pierce the Shroud', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_shroud_forged.dds', 3);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_shroud_forged', 'ROBOT_species_trait_picks_add', '1.0', 0);
@@ -23386,13 +23392,14 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_shroud_forged', 'civic', 'forbid', 'civic_machine_chosen', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_mindwardens', 'Mindwardens', 'Additional Starting Technologies: Engineering Starhold
 Home System: Start with a Starhold.
 Homeworld: Ancient Ward
 Gain access to the Psionic Containment Casus Belli against psionically ascended Empires.
 Guaranteed Habitable Worlds do not appear.
-Mindwarden Enclaves are not generated at the start of game.', NULL, 1, 'gfx/interface/icons/origins/origins_mindwardens.dds', 4);
+Mindwarden Enclaves are not generated at the start of game.', NULL, 1, NULL, 'Psionic', 'gfx/interface/icons/origins/origins_mindwardens.dds', 4);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_mindwardens', 'intel_encryption_add', '2.0', 0);
@@ -23439,8 +23446,9 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_mindwardens', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_endbringers', 'Endbringers', NULL, NULL, 1, 'gfx/interface/icons/origins/origins_endbringers.dds', 5);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_endbringers', 'Endbringers', NULL, NULL, 1, 'Psionic', NULL, 'gfx/interface/icons/origins/origins_endbringers.dds', 5);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_endbringers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -23463,10 +23471,11 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_endbringers', 'civic', 'forbid', 'civic_augmentation_bazaars', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_evolutionary_predators', 'Evolutionary Predators', 'Species Traits: Malleable Genes
 Situation: Adaptive Evolution
-Homeworld: Genetic Soup', NULL, 1, 'gfx/interface/icons/origins/origin_evolutionary_predators.dds', 6);
+Homeworld: Genetic Soup', NULL, 1, 'Genetic', NULL, 'gfx/interface/icons/origins/origin_evolutionary_predators.dds', 6);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_evolutionary_predators', 'BIOLOGICAL_species_trait_picks_add', '1.0', 0);
@@ -23518,10 +23527,11 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_entropy_drinkers_corporate', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_starlit_citadel', 'Starlit Citadel', 'Home System: Deep Space Citadel I at the edge of the gravity well, Strange Portal leading to an unknown system
 Homeworld: Citadel Uplink, Blocker Biological Ship Remains, Blocker Invasion Site: +2
-Additional Starting Technologies: Engineering Research Deep Space Citadel', NULL, 1, 'gfx/interface/icons/origins/origin_starlit_citadel.dds', 7);
+Additional Starting Technologies: Engineering Research Deep Space Citadel', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origin_starlit_citadel.dds', 7);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_starlit_citadel', 'country_megastructure_build_cap_add', '1.0', 0);
@@ -23536,12 +23546,13 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_starlit_citadel', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_wilderness', 'Wilderness', 'Species Trait: Wilderness
 Replaces all standard Buildings, Districts, and Zone District Specialization with bespoke ones
 Replaces Colony Ship Colonization with Terraforming
 Unlocks new Resource: Biomass
-Homeworld: Size: Planetsize 18, Blocker Scorched Plains', NULL, 1, 'gfx/interface/icons/origins/origins_wilderness.dds', 8);
+Homeworld: Size: Planetsize 18, Blocker Scorched Plains', NULL, 1, NULL, 'Psionic', 'gfx/interface/icons/origins/origins_wilderness.dds', 8);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_wilderness', 'planet_building_capacity_add', '5.0', 0);
@@ -23593,10 +23604,11 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_wilderness', 'ship_type', 'require_any', 'organic', 2);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_treasure_hunters', 'Treasure Hunters', 'Starts with an inactive Celestial Chart
 Every recruited leader has a bonus Adventurous Spirit trait
-Ruler Traits: Buccaneer, Trailblazer, Treasure Hoarder', NULL, 1, 'gfx/interface/icons/origins/origin_treasure_hunters.dds', 9);
+Ruler Traits: Buccaneer, Trailblazer, Treasure Hoarder', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origin_treasure_hunters.dds', 9);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_treasure_hunters', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
@@ -23613,7 +23625,8 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_treasure_hunters', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_primal_calling', 'Primal Calling', 'Homeworld: Planetary Modifiers: Untamed Wilds
 Home System: Space Fauna in a neighboring system
 Available Buildings: Wildlife Ranch
@@ -23622,7 +23635,7 @@ Additional Starting Technologies: Society Research Genome Mapping
 Guaranteed Research Options: Society Xenology
 Gain insight on Physics Research Gravity Snares after First Contact with Space Fauna
 Gain insight on Society Research Artificial Breeding after capturing Space Fauna
-Gain insight on Society Research Controlled Mutations after cloning Space Fauna', NULL, 1, 'gfx/interface/icons/origins/origins_primal_calling.dds', 10);
+Gain insight on Society Research Controlled Mutations after cloning Space Fauna', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_primal_calling.dds', 10);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_primal_calling', 'ship_damage_against_space_fauna_mult', '0.15', 0);
@@ -23660,14 +23673,15 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_primal_calling', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_storm_chasers', 'Storm Chasers', 'Leader Traits: Storm Rider
 Planet Unity from Jobs per Storm Building: +$@storm_chasers_storm_building_unity_produces_mult|%0$
 Capital Buildings automatically provide the modifiers of Storm Shelters once the required technologies are researched.
 Cosmic Storm Appearance Chance Within Borders: +100%
 Cosmic Storm Technology Research Option Chance: +175%
 Access to the Weather Forecasting Mode
-Additional Starting Technologies: Physics Cosmic Weather Models', NULL, 1, 'gfx/interface/icons/origins/origin_storm_chasers.dds', 11);
+Additional Starting Technologies: Physics Cosmic Weather Models', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origin_storm_chasers.dds', 11);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_storm_chasers', 'planet_storm_devastation_mult', '-0.15', 0);
@@ -23694,12 +23708,13 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_storm_chasers', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_cybernetic_creed', 'Cybernetic Creed', 'Homeworld: Initial buildings replaced by Creed Infrastructure
 Cybernetic Creed factions formed shortly after game start
 Species Traits: Ritualistic Implants
 Guaranteed Research Options: Engineering Integrated Cybernetics
-Cybernetic Creed Priesthood Jobs', NULL, 1, 'gfx/interface/icons/origins/origins_cybernetic_creed.dds', 12);
+Cybernetic Creed Priesthood Jobs', NULL, 1, 'Cybernetic', NULL, 'gfx/interface/icons/origins/origins_cybernetic_creed.dds', 12);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_cybernetic_creed', 'ethic', 'require_any', 'ethic_spiritualist', 1);
@@ -23737,13 +23752,14 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_cybernetic_creed', 'civic', 'forbid', 'civic_secret_societies_corporate', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_synthetic_fertility', 'Synthetic Fertility', 'Initial Pops: +900
 Species Traits: Pathogenic Genes
 Homeworld: Size: Planetsize 20, Blocker Abandoned Cities: +2, Identity Repository, Abandoned Gene Clinic
 Situation: Rapid Identity Preservation
 Additional Starting Technologies: AI Technologies
-Guaranteed Research Options: Engineering Research Artificial Workforce', NULL, 1, 'gfx/interface/icons/origins/origin_synthetic_fertility.dds', 13);
+Guaranteed Research Options: Engineering Research Artificial Workforce', NULL, 1, 'Synthetic', NULL, 'gfx/interface/icons/origins/origin_synthetic_fertility.dds', 13);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_synthetic_fertility', 'category_computing_research_speed_mult', '0.15', 0);
@@ -23825,11 +23841,12 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_machine_galvanic_symbiosis', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_arc_welders', 'Arc Welders', 'Homeworld: Initial District Mining Districts replaced with District Generator Districts
 Home System: Arc Furnace: Equatorial Band constructed around a Molten World
 Additional Starting Technologies: Engineering Research Arc Furnace
-Guaranteed Research Options: Engineering Research Mega-Engineering upon constructing a second Arc Furnace', NULL, 1, 'gfx/interface/icons/origins/origin_arc_welders.dds', 14);
+Guaranteed Research Options: Engineering Research Mega-Engineering upon constructing a second Arc Furnace', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origin_arc_welders.dds', 14);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_arc_welders', 'country_megastructure_build_cap_add', '1.0', 0);
@@ -23841,10 +23858,11 @@ INSERT OR IGNORE INTO origin_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('arc_furnace_limit_add', 'Arc Furnace Capacity', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_riftworld', 'Riftworld', 'Homeworld: Ancient Crater Archaeology Site
 Colonized Planets in systems with : Rift Affinity
-Chance for Astral Rifts to appear in systems you control: +100%', NULL, 1, 'gfx/interface/icons/origins/origins_riftworld.dds', 15);
+Chance for Astral Rifts to appear in systems you control: +100%', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_riftworld.dds', 15);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_riftworld', 'country_astral_rift_speed_mult', '0.25', 0);
@@ -23856,16 +23874,18 @@ INSERT OR IGNORE INTO origin_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_astral_rift_fail_mult', 'Astral Rift Fail Probability', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_legendary_leader', 'Under One Rule', 'Species Traits: Perfected Genes
-Ruler Traits: Luminary', 'Galactic Paragons', 1, 'gfx/interface/icons/origins/origins_under_one_rule.dds', 16);
+Ruler Traits: Luminary', 'Galactic Paragons', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_under_one_rule.dds', 16);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_legendary_leader', 'authority', 'require', 'auth_dictatorial', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_legendary_leader_death', 'Broken Rule', 'Species Traits: Perfected Genes
-Ruler Traits: Luminary', NULL, 0, 'gfx/interface/icons/origins/origins_under_one_rule.dds', 17);
+Ruler Traits: Luminary', NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_under_one_rule.dds', 17);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_legendary_leader_death', 'origin', 'require_any', 'origin_legendary_leader_death', 1);
@@ -23876,9 +23896,10 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_legendary_leader_death', 'origin', 'require_any', 'origin_legendary_leader_imperial', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_legendary_leader_imperial', 'Under One Rule', 'Species Traits: Perfected Genes
-Ruler Traits: Luminary', NULL, 0, 'gfx/interface/icons/origins/origins_under_one_rule.dds', 18);
+Ruler Traits: Luminary', NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_under_one_rule.dds', 18);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_legendary_leader_imperial', 'origin', 'require_any', 'origin_legendary_leader_death', 1);
@@ -23889,9 +23910,10 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_legendary_leader_imperial', 'origin', 'require_any', 'origin_legendary_leader_imperial', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_legendary_leader_dictatorial', 'Under One Rule', 'Species Traits: Perfected Genes
-Ruler Traits: Luminary', NULL, 0, 'gfx/interface/icons/origins/origins_under_one_rule.dds', 19);
+Ruler Traits: Luminary', NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_under_one_rule.dds', 19);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_legendary_leader_dictatorial', 'origin', 'require_any', 'origin_legendary_leader_death', 1);
@@ -23902,11 +23924,12 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_legendary_leader_dictatorial', 'origin', 'require_any', 'origin_legendary_leader_imperial', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_payback', 'Payback', 'Homeworld: Advanced Infrastructure, Planetary Modifiers: Unified Purpose
 Home System: The Aftermath of Battle Archaeology Site
 One Advanced AI Empire and several Pre-FTL Civilizations regardless of the Galaxy Settings
-One Pre-FTL Civilization: Uplifted with the Broken Shackles origin', NULL, 1, 'gfx/interface/icons/origins/origins_payback.dds', 20);
+One Pre-FTL Civilization: Uplifted with the Broken Shackles origin', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_payback.dds', 20);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_payback', 'damage_vs_superior_empires_mult', '0.15', 0);
@@ -23952,13 +23975,14 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_payback', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_broken_shackles', 'Broken Shackles', 'Initial Pops: Species from Pre-FTL Civilizations across the galaxy
 Starting Planet: $concept_free_at_last_broken_shackles$ Planetary Modifier, Crashed Slaver Ship Planetary Feature, Spaceship Wreckage
 Starting System: Crashed Slaver Ship Archaeology Site
 One Advanced AI Empire and several Pre-FTL Civilization regardless of the Galaxy Settings
 One Pre-FTL Civilization: Will be this empire''s species and homeworld
-One Pre-FTL Civilization: Uplifted with the Payback origin', NULL, 1, 'gfx/interface/icons/origins/origins_broken_shackles.dds', 21);
+One Pre-FTL Civilization: Uplifted with the Payback origin', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_broken_shackles.dds', 21);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_broken_shackles', 'envoys_add', '1.0', 0);
@@ -24032,8 +24056,9 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_fear_of_the_dark', 'Fear of the Dark', 'Home System: Pre-FTL Civilization created by a Separatist Faction, formerly part of your Empire, granting events and benefits', NULL, 1, 'gfx/interface/icons/origins/origins_fear_of_the_dark.dds', 22);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_fear_of_the_dark', 'Fear of the Dark', 'Home System: Pre-FTL Civilization created by a Separatist Faction, formerly part of your Empire, granting events and benefits', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_fear_of_the_dark.dds', 22);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_fear_of_the_dark', 'ship_anomaly_generation_chance_mult', '0.1', 0);
@@ -24086,10 +24111,11 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_fear_of_the_dark', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_overtuned', 'Overtuned', 'Species Traits: Access to Overtuned Traits
 Overtuned Traits: Can be boosted by the Damn the Consequences Edict, Can be added and removed through Genetic Modification
-Additional Starting Technologies: Society Gene Tailoring', NULL, 1, 'gfx/interface/icons/origins/origins_overtuned.dds', 23);
+Additional Starting Technologies: Society Gene Tailoring', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_overtuned.dds', 23);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_overtuned', 'BIOLOGICAL_species_trait_points_add', '2.0', 0);
@@ -24119,11 +24145,12 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_overtuned', 'civic', 'forbid', 'civic_entropy_drinkers_hive_mind', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_toxic_knights', 'Knights of the Toxic God', 'Homeworld: Toxic Planetary Features, Unique Orbital Habitat: Order''s Keep, District Order''s Demesne, Politician Jobs replaced by Knightly Order Jobs
 Situation: Quest for the Toxic God
 Policies: Knightly Duties
-Available Holdings: Order''s Commanderies on Subject colonies', NULL, 1, 'gfx/interface/icons/origins/origins_toxic_knights.dds', 24);
+Available Holdings: Order''s Commanderies on Subject colonies', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_toxic_knights.dds', 24);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_toxic_knights', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -24143,13 +24170,14 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_toxic_knights', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_progenitor_hive', 'Progenitor Hive', 'Spawning Pools replaced with Offspring Nest
 Available Holdings: Offspring Nest
 If Devouring Swarm Civic is NOT selected: Sectors can be released as Subjects
 Assigned Leaders: Gain additional passive experience
 Available Starbase Buildings: Offspring Outlook
-Can construct Offspring Ships', NULL, 1, 'gfx/interface/icons/origins/origins_progenitor_hive.dds', 25);
+Can construct Offspring Ships', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_progenitor_hive.dds', 25);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_progenitor_hive', 'ship_military_speed_mult', '-0.5', 0);
@@ -24177,11 +24205,12 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_progenitor_hive', 'civic', 'forbid', 'civic_hive_beastmasters', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_subterranean', 'Subterranean', 'Species Traits: Cave Dweller
 : Uncapped
 Available District Specializations: Zone Subterranean Urbanization for Mining Districts
-Homeworld starts with a Zone Subterranean Urbanization already built.', NULL, 1, 'gfx/interface/icons/origins/origins_subterranean.dds', 26);
+Homeworld starts with a Zone Subterranean Urbanization already built.', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_subterranean.dds', 26);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_subterranean', 'mining_district_housing_add', '200.0', 0);
@@ -24218,11 +24247,12 @@ INSERT OR IGNORE INTO origin_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_non_artificial_max_districts_add', 'Max Districts (non-artificial planets only)', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_subterranean_machines', 'Subterranean Machines', 'Species Traits: Molebots
 : Uncapped
 Available District Specializations: Zone Subterranean Urbanization for Mining Districts
-Homeworld starts with a Zone Subterranean Urbanization already built.', NULL, 1, 'gfx/interface/icons/origins/origins_subterranean.dds', 27);
+Homeworld starts with a Zone Subterranean Urbanization already built.', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_subterranean.dds', 27);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_subterranean_machines', 'mining_district_housing_add', '200.0', 0);
@@ -24259,9 +24289,10 @@ INSERT OR IGNORE INTO origin_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_non_artificial_max_districts_add', 'Max Districts (non-artificial planets only)', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_star_slingshot', 'Slingshot to the Stars', 'Home System: Nearby ruined $concept_quantum_catapult_restored_slingshot$ with the Logs from the Quantum Architect Archaeology Site
-Quantic Ambush Effects: Increased to +50% Ship Fire Rate', NULL, 1, 'gfx/interface/icons/origins/origins_star_slingshot.dds', 28);
+Quantic Ambush Effects: Increased to +50% Ship Fire Rate', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_star_slingshot.dds', 28);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_star_slingshot', 'country_starbase_influence_cost_distance_mult', '-0.75', 0);
@@ -24278,11 +24309,12 @@ INSERT OR IGNORE INTO origin_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('catapult_spread_mult', 'Quantum Catapult Accuracy', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_shroudwalker_apprentice', 'Teachers of the Shroud', 'Species Traits: Latent Psionic
 Available Starbase Buildings: Shroud Beacon
 Communications with the Shroudwalker Enclave
-Guaranteed Research Options: Society Psionic Theory.', NULL, 1, 'gfx/interface/icons/origins/origins_shroudwalker_apprentice.dds', 29);
+Guaranteed Research Options: Society Psionic Theory.', NULL, 1, 'Psionic', NULL, 'gfx/interface/icons/origins/origins_shroudwalker_apprentice.dds', 29);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_shroudwalker_apprentice', 'ethic', 'require_any', 'ethic_spiritualist', 1);
@@ -24299,9 +24331,10 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_shroudwalker_apprentice', 'civic', 'forbid', 'civic_augmentation_bazaars', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_imperial_vassal', 'Imperial Fiefdom', 'Subject of an Advanced AI Empire
-Can select a Specialist Subject type at the start of the game', NULL, 1, 'gfx/interface/icons/origins/origins_imperial_vassal.dds', 30);
+Can select a Specialist Subject type at the start of the game', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_imperial_vassal.dds', 30);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_imperial_vassal', 'civic', 'forbid', 'civic_inwards_perfection', 0);
@@ -24324,8 +24357,9 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_imperial_vassal', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_here_be_dragons', 'Here Be Dragons', 'Home System: Inhabited by a protective Sky Dragon, that will become wrathful if displeased', NULL, 1, 'gfx/interface/icons/origins/origin_here_be_dragons.dds', 31);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_here_be_dragons', 'Here Be Dragons', 'Home System: Inhabited by a protective Sky Dragon, that will become wrathful if displeased', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origin_here_be_dragons.dds', 31);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_here_be_dragons', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
@@ -24342,9 +24376,10 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_here_be_dragons', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_ocean_paradise', 'Ocean Paradise', 'Homeworld: Ocean World (size: Planetsize 30), Planetary Modifiers: Ocean Paradise, Planetary Features: Crystal Reef
-Guaranteed Habitable Worlds: Replaced with Frozen Worlds', NULL, 1, 'gfx/interface/icons/origins/origins_ocean_paradise.dds', 32);
+Guaranteed Habitable Worlds: Replaced with Frozen Worlds', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_ocean_paradise.dds', 32);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_ocean_paradise', 'civic', 'forbid', 'civic_pyrolatry', 0);
@@ -24367,9 +24402,10 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_ocean_paradise', 'civic', 'forbid', 'civic_corporate_world_forgers', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_ocean_machines', 'Subaquatic Machines', 'Homeworld: Ocean World (size: Planetsize 30), Planetary Modifiers: Ocean Paradise, Planetary Features: Crystal Reef
-Guaranteed Habitable Worlds: Replaced with Frozen Worlds', NULL, 1, 'gfx/interface/icons/origins/origins_ocean_paradise.dds', 33);
+Guaranteed Habitable Worlds: Replaced with Frozen Worlds', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_ocean_paradise.dds', 33);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_ocean_machines', 'civic', 'forbid', 'civic_pyrolatry', 0);
@@ -24377,11 +24413,12 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_ocean_machines', 'civic', 'forbid', 'civic_machine_world_forgers', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_necrophage', 'Necrophage', 'Homeworld: Chamber of Elevation
 Species Traits: Necrophage
 Prepatent Pops: 1.2K
-Guaranteed Habitable Worlds: Replaced with Pre-FTL Civilizations', 'Necroids Species Pack', 1, 'gfx/interface/icons/origins/origins_necrophage.dds', 34);
+Guaranteed Habitable Worlds: Replaced with Pre-FTL Civilizations', 'Necroids Species Pack', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_necrophage.dds', 34);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_necrophage', 'refugee_attraction', '-0.25', 0);
@@ -24421,16 +24458,18 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_necrophage', 'civic', 'forbid', 'civic_corporate_superstitious_beliefs', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_remnants', 'Remnants', 'Homeworld: Relic World (Size: Planetsize 22), Blocker Ruined Arcology: +6', NULL, 1, 'gfx/interface/icons/origins/origins_remnant.dds', 35);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_remnants', 'Remnants', 'Homeworld: Relic World (Size: Planetsize 22), Blocker Ruined Arcology: +6', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_remnant.dds', 35);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_remnants', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_shattered_ring', 'Shattered Ring', 'Homeworld: Shattered Ring Segment
 Guaranteed Habitable Worlds: Replaced with Colonizable Ring World Segments that have Blockers decreasing Habitability
-Species Traits: Ring World Preference', 'Federations', 1, 'gfx/interface/icons/origins/origins_shattered_ring.dds', 36);
+Species Traits: Ring World Preference', 'Federations', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_shattered_ring.dds', 36);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_shattered_ring', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
@@ -24447,14 +24486,15 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_shattered_ring', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_void_dwellers', 'Void Dwellers', 'Homeworld: Orbital Habitat
 Species Traits: Void Dweller, Habitat Preference
 Additional Starting Technologies: Engineering Research Orbital Habitats
 Guaranteed Research Options: Engineering Research Habitat Expansion
 Guaranteed Habitable Worlds: Resource-rich systems instead of Colonizable Planets
 Can construct advanced housing buildings on Habitats
-Waives Technology requirements for Zone Basic District Specialization on Habitats', 'Federations', 1, 'gfx/interface/icons/origins/origin_void_dwellers.dds', 37);
+Waives Technology requirements for Zone Basic District Specialization on Habitats', 'Federations', 1, NULL, NULL, 'gfx/interface/icons/origins/origin_void_dwellers.dds', 37);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_void_dwellers', 'habitat_max_districts_add', '2.0', 0);
@@ -24502,14 +24542,15 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_void_dwellers', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_void_machines', 'Voidforged', 'Homeworld: Orbital Habitat
 Species Traits: Zero-G Optimized, Habitat Preference
 Additional Starting Technologies: Engineering Research Orbital Habitats
 Guaranteed Research Options: Engineering Research Habitat Expansion
 Guaranteed Habitable Worlds: Resource-rich systems instead of Colonizable Planets
 Can construct advanced housing buildings on Habitats
-Waives Technology requirements for Zone Basic District Specialization on Habitats', 'Federations', 1, 'gfx/interface/icons/origins/origin_void_dwellers.dds', 38);
+Waives Technology requirements for Zone Basic District Specialization on Habitats', 'Federations', 1, NULL, NULL, 'gfx/interface/icons/origins/origin_void_dwellers.dds', 38);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_void_machines', 'habitat_max_districts_add', '2.0', 0);
@@ -24551,11 +24592,12 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_void_machines', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_scion', 'Scion', 'Scion of a Fallen Empire Overlord
 Home System: Connected to Overlord''s capital via a Wormhole
 Fallen Empire present in the galaxy regardless of Galaxy settings
-Chance of receiving powerful gifts from Overlord', 'Federations', 1, 'gfx/interface/icons/origins/origins_scion_1.dds', 39);
+Chance of receiving powerful gifts from Overlord', 'Federations', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_scion_1.dds', 39);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_scion', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -24569,16 +24611,18 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_scion', 'civic', 'forbid', 'civic_scorched_earth', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_shoulders_of_giants', 'On the Shoulders of Giants', 'Home System: Ex Gravitas Archaeology Site related to a mysterious benefactor', 'Federations', 1, 'gfx/interface/icons/origins/origins_one_the_shoulders_of_giant.dds', 40);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_shoulders_of_giants', 'On the Shoulders of Giants', 'Home System: Ex Gravitas Archaeology Site related to a mysterious benefactor', 'Federations', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_one_the_shoulders_of_giant.dds', 40);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_shoulders_of_giants', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_common_ground', 'Common Ground', 'Leader of a non-Hegemony Federation
 : Replaced with Federation members
-Additional Starting Technologies:', 'Federations', 1, 'gfx/interface/icons/origins/origins_common_ground.dds', 41);
+Additional Starting Technologies:', 'Federations', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_common_ground.dds', 41);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_common_ground', 'ethic', 'forbid', 'ethic_xenophobe', 0);
@@ -24607,10 +24651,11 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_common_ground', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_hegemon', 'Hegemon', 'Leader of a Hegemony Federation
 : Replaced with Federation members
-Additional Starting Technologies:', 'Federations', 1, 'gfx/interface/icons/origins/origins_hegemon.dds', 42);
+Additional Starting Technologies:', 'Federations', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_hegemon.dds', 42);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_hegemon', 'ethic', 'forbid', 'ethic_xenophobe', 0);
@@ -24642,14 +24687,16 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_hegemon', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_doomsday', 'Doomsday', NULL, 'Federations', 1, 'gfx/interface/icons/origins/origins_doomsday.dds', 43);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_doomsday', 'Doomsday', NULL, 'Federations', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_doomsday.dds', 43);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_lithoid', 'Calamitous Birth', 'Homeworld: Massive Crater, Blocker Buried Lithoids: +4
 Available Colony Ships: Lithoid Meteorites
 Planets Colonized with Lithoid Meteorites: Blocker Buried Lithoids: +2, Planetary Modifiers: Lithoid Crater
-Available Holdings: Experimental Crater on (Subject) colonies', 'Lithoids Species Pack', 1, 'gfx/interface/icons/origins/origins_lithoid.dds', 44);
+Available Holdings: Experimental Crater on (Subject) colonies', 'Lithoids Species Pack', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_lithoid.dds', 44);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_lithoid', 'civic', 'forbid', 'civic_catalytic_processing', 0);
@@ -24678,9 +24725,10 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_lithoid', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_life_seeded', 'Life-Seeded', 'Homeworld: Gaia World (Size: Planetsize 30) with Rare Planetary Features
-Species Traits: Gaia World Preference', 'Apocalypse', 1, 'gfx/interface/icons/origins/origins_life_seeded.dds', 45);
+Species Traits: Gaia World Preference', 'Apocalypse', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_life_seeded.dds', 45);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_toxic_baths', 0);
@@ -24730,9 +24778,10 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_corporate_world_forgers', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_post_apocalyptic', 'Post-Apocalyptic', 'Homeworld: Tomb World
-Species Traits: Survivor', 'Apocalypse', 1, 'gfx/interface/icons/origins/origins_post_apocalyptic.dds', 46);
+Species Traits: Survivor', 'Apocalypse', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_post_apocalyptic.dds', 46);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_post_apocalyptic', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
@@ -24749,9 +24798,10 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_post_apocalyptic', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_post_apocalyptic_machines', 'Radioactive Rovers', 'Homeworld: Tomb World
-Species Traits: Radiation Shields', 'Apocalypse', 1, 'gfx/interface/icons/origins/origins_post_apocalyptic.dds', 47);
+Species Traits: Radiation Shields', 'Apocalypse', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_post_apocalyptic.dds', 47);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_post_apocalyptic_machines', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
@@ -24768,10 +24818,11 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_post_apocalyptic_machines', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_clone_army', 'Clone Army', 'Homeworld: Ancient Clone Vat: +2
 Species Traits: $concept_clone_soldier_infertile$
-Additional Starting Technologies: Society Research Cloning, Society Research Gene Banks', NULL, 1, 'gfx/interface/icons/origins/origins_clones.dds', 48);
+Additional Starting Technologies: Society Research Cloning, Society Research Gene Banks', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_clones.dds', 48);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_clone_army', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -24788,9 +24839,10 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_clone_army', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_machine', 'Resource Consolidation', 'Homeworld: Prototype Machine World, Planetary Features: Consolidated Resources, If combined with the Driven Assimilator Civic: Planetary Features: Organic Slurry
-Waives Technology requirements for the Machine Worlds Ascension Perk', NULL, 1, 'gfx/interface/icons/origins/origins_resource_consolidation.dds', 49);
+Waives Technology requirements for the Machine Worlds Ascension Perk', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_resource_consolidation.dds', 49);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_machine', 'authority', 'require', 'auth_machine_intelligence', 0);
@@ -24807,10 +24859,11 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_machine', 'civic', 'forbid', 'civic_machine_astromining_drones', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_unplugged', 'Hard Reset', 'Homeworld: Planetary Modifiers: Battlefield Recoveries
 Home System: Contains a Tomb World with an Archaeology Site related to a decimated Pre-FTL Civilization
-Species Traits: Limited access to Cybernetic Traits, Cyber Commandos, Unplugged', NULL, 1, 'gfx/interface/icons/origins/origins_unplugged.dds', 50);
+Species Traits: Limited access to Cybernetic Traits, Cyber Commandos, Unplugged', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_unplugged.dds', 50);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_unplugged', 'ethic', 'forbid', 'ethic_fanatic_spiritualist', 0);
@@ -24917,11 +24970,12 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_unplugged', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_mechanists', 'Mechanist', 'Jobs Robotic Produces Robot Pops: 800, Mechanical Trait: Adaptive Frames
 Homeworld: Robot Assembly Plant
 Additional Starting Technologies: Engineering Research Powered Exoskeletons, Engineering Research Artificial Workforce
-Guaranteed Research Options: Engineering Research Machine Template System', NULL, 1, 'gfx/interface/icons/origins/origins_mechanist.dds', 51);
+Guaranteed Research Options: Engineering Research Machine Template System', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_mechanist.dds', 51);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_mechanists', 'planet_pop_assembly_mult', '0.15', 0);
@@ -24950,8 +25004,9 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_mechanists', 'civic', 'forbid', 'civic_permanent_employment', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_syncretic_evolution', 'Syncretic Evolution', 'Pop Organic Pops with Serviles Trait: 2.4K', NULL, 1, 'gfx/interface/icons/origins/origins_syncretic_evolution.dds', 52);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_syncretic_evolution', 'Syncretic Evolution', 'Pop Organic Pops with Serviles Trait: 2.4K', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_syncretic_evolution.dds', 52);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_syncretic_evolution', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -24980,11 +25035,12 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_syncretic_evolution', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_tree_of_life', 'Tree of Life', 'Homeworld: Tree of Life
 Colonized Planets: Tree of Life Sapling Planetary Feature
 Colonies without the Tree of Life Sapling: Transplant Tree of Life Planetary Decision
-Available Holdings: Tree of Life Sprout on Subject colonies', NULL, 1, 'gfx/interface/icons/origins/origins_tree_of_life.dds', 53);
+Available Holdings: Tree of Life Sprout on Subject colonies', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_tree_of_life.dds', 53);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_tree_of_life', 'ship_colonizer_food_cost_add', '500.0', 0);
@@ -25002,11 +25058,12 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_tree_of_life', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_fruitful', 'Fruitful Partnership', 'Space Fauna: Disperse Seed Pods throughout the galaxy
 Available Starbase Buildings: Starseed Gardens
 Available Bombardment Stances:
-Home System: in a neighboring system', NULL, 1, 'gfx/interface/icons/origins/origins_gardeners.dds', 54);
+Home System: in a neighboring system', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_gardeners.dds', 54);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_fruitful', 'authority', 'forbid', 'auth_machine_intelligence', 0);
@@ -25029,8 +25086,9 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_fruitful', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_galactic_doorstep', 'Galactic Doorstep', 'Home System: Dormant Gateway', NULL, 1, 'gfx/interface/icons/origins/origins_gateway.dds', 55);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_galactic_doorstep', 'Galactic Doorstep', 'Home System: Dormant Gateway', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_gateway.dds', 55);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_galactic_doorstep', 'megastructures_gateways_cost_mult', '-0.25', 0);
@@ -25042,28 +25100,32 @@ INSERT OR IGNORE INTO origin_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('megastructure_build_speed_mult', 'Megastructure Build Speed', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_lost_colony', 'Lost Colony', 'Starting Planet: Colonial Spirit Planetary Modifier
-An Advanced AI Empire of the same species is present in the galaxy', NULL, 1, 'gfx/interface/icons/origins/origins_lost_colony.dds', 56);
+An Advanced AI Empire of the same species is present in the galaxy', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_lost_colony.dds', 56);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_fallen_empire', 'Elder Race', 'No effect', NULL, 0, 'gfx/interface/icons/origins/origins_elder_race.dds', 57);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_fallen_empire', 'Elder Race', 'No effect', NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_elder_race.dds', 57);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_fallen_empire', 'country_naval_cap_add', '1000.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_fallen_empire_hive', 'Elder Race', 'No effect', NULL, 0, 'gfx/interface/icons/origins/origins_elder_race.dds', 58);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_fallen_empire_hive', 'Elder Race', 'No effect', NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_elder_race.dds', 58);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_fallen_empire_hive', 'country_naval_cap_add', '1000.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_enlightened', 'Enlightened', NULL, NULL, 0, 'gfx/interface/icons/origins/origins_enlightened.dds', 59);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_enlightened', 'Enlightened', NULL, NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_enlightened.dds', 59);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_enlightened', 'all_technology_research_speed', '0.1', 0);
@@ -25071,11 +25133,13 @@ INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_enlightened', 'monthly_loyalty', '0.5', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_default_pre_ftl', 'Developing Civilization', 'No effect', NULL, 0, 'gfx/interface/icons/origins/origin_default_pre_ftl.dds', 60);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_default_pre_ftl', 'Developing Civilization', 'No effect', NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origin_default_pre_ftl.dds', 60);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_separatists', 'Separatists', NULL, NULL, 0, 'gfx/interface/icons/origins/origins_separatists.dds', 61);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_separatists', 'Separatists', NULL, NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_separatists.dds', 61);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_separatists', 'planet_stability_add', '10.0', 0);
@@ -25092,8 +25156,9 @@ INSERT OR IGNORE INTO origin_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_liberated', 'Liberated', NULL, NULL, 0, 'gfx/interface/icons/origins/origins_separatists.dds', 62);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_liberated', 'Liberated', NULL, NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_separatists.dds', 62);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_liberated', 'planet_stability_add', '10.0', 0);
@@ -25110,8 +25175,9 @@ INSERT OR IGNORE INTO origin_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_demonic_incursion', 'Daemonic Incursion', NULL, NULL, 0, 'gfx/interface/icons/origins/origins_separatists.dds', 63);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_demonic_incursion', 'Daemonic Incursion', NULL, NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_separatists.dds', 63);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_demonic_incursion', 'country_naval_cap_mult', '1.0', 0);
@@ -25123,20 +25189,23 @@ INSERT OR IGNORE INTO origin_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_khan_successor', 'Khanate Successor', 'Unlocks the Raiding bombardment stance, which in turn allows us to abduct pops from besieged planets and resettle them to our own worlds.', NULL, 0, 'gfx/interface/icons/origins/origins_khan_successor.dds', 64);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_khan_successor', 'Khanate Successor', 'Unlocks the Raiding bombardment stance, which in turn allows us to abduct pops from besieged planets and resettle them to our own worlds.', NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_khan_successor.dds', 64);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_khan_successor', 'commander_initial_skill', '2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('commander_initial_skill', 'Commander Starting Skill Level', 1);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_life_seeded_ai_only', 'Life-Seeded', 'Homeworld: Gaia World (Size: Planetsize 30) with Rare Planetary Features
-Species Traits: Gaia World Preference', NULL, 0, 'gfx/interface/icons/origins/origins_life_seeded.dds', 65);
+Species Traits: Gaia World Preference', NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_life_seeded.dds', 65);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_common_ground_npc', 'Common Ground', 'Start as a member of a non-Hegemony federation with two additional members', NULL, 0, 'gfx/interface/icons/origins/origins_common_ground.dds', 66);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_common_ground_npc', 'Common Ground', 'Start as a member of a non-Hegemony federation with two additional members', NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_common_ground.dds', 66);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_common_ground_npc', 'civic', 'forbid', 'civic_barbaric_despoilers', 0);
@@ -25150,8 +25219,9 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_common_ground_npc', 'civic', 'forbid', 'civic_machine_terminator', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('origin_hegemon_npc', 'Hegemon Subordinate', 'Start as a member of a Hegemony federation with two additional members.', NULL, 0, 'gfx/interface/icons/origins/origins_hegemon.dds', 67);
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES ('origin_hegemon_npc', 'Hegemon Subordinate', 'Start as a member of a Hegemony federation with two additional members.', NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_hegemon.dds', 67);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_hegemon_npc', 'civic', 'forbid', 'civic_inwards_perfection', 0);
@@ -25165,14 +25235,16 @@ INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_hegemon_npc', 'civic', 'forbid', 'civic_machine_terminator', 0);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_imperial_vassal_overlord', 'Imperial Liege', 'Starts as an Advanced Empire
-Starts with several vassals', NULL, 0, 'gfx/interface/icons/origins/origins_imperial_vassal.dds', 68);
+Starts with several vassals', NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_imperial_vassal.dds', 68);
 INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
                VALUES ('origin_slavers', 'Your Ladder To The Sky', 'Starts as an Advanced Empire
 Start with a number of enslaved Pops abducted from Pre-FTL Civilizations across the galaxy.
-Allows the Raiding bombardment stance, which abducts Pops from planets and resettles them to your colonies.', NULL, 0, 'gfx/interface/icons/origins/origins_slavers.dds', 69);
+Allows the Raiding bombardment stance, which abducts Pops from planets and resettles them to your colonies.', NULL, 0, NULL, NULL, 'gfx/interface/icons/origins/origins_slavers.dds', 69);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_slavers', 'country_naval_cap_add', '50.0', 0);

@@ -482,13 +482,15 @@ DROP TABLE IF EXISTS origin_requirement;
 DROP TABLE IF EXISTS origin_modifier;
 DROP TABLE IF EXISTS origin;
 CREATE TABLE origin (
-    key          TEXT PRIMARY KEY,    -- e.g. "origin_shattered_ring"
-    name         TEXT,                -- localised name
-    description  TEXT,                -- cleaned effects tooltip
-    required_dlc TEXT,                -- from playable host_has_dlc; NULL = base game
-    selectable   INTEGER NOT NULL DEFAULT 1,
-    icon         TEXT,
-    sort_order   INTEGER NOT NULL DEFAULT 0,
+    key            TEXT PRIMARY KEY,  -- e.g. "origin_shattered_ring"
+    name           TEXT,              -- localised name
+    description    TEXT,              -- cleaned effects tooltip
+    required_dlc   TEXT,              -- from playable host_has_dlc; NULL = base game
+    selectable     INTEGER NOT NULL DEFAULT 1,
+    ascension_lock   TEXT,            -- locked to this single ascension path (blocks all others); NULL = unrestricted
+    ascension_blocks TEXT,            -- comma-separated ascension paths blocked (when it still allows others); NULL = none
+    icon             TEXT,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
 );
 
@@ -1843,9 +1845,91 @@ def extract_civics(data: dict, civic_type: str, loc: dict[str, str],
 # Extraction: origins
 # ---------------------------------------------------------------------------
 
+def compute_ascension_restrictions(install_dir: Path) -> dict[str, dict]:
+    """Per origin, its ascension-path restriction → {'lock': path|None, 'blocks':[…]}.
+    `lock` = locked to this single path (blocks all others); `blocks` = the paths it
+    forbids when it still allows more than one. Data-driven: each path perk's
+    `potential` has a `NOR = { … has_origin = X … }` listing origins it forbids; an
+    origin forbidden from three of the four paths is locked to the fourth, one
+    forbidden from one or two has those in `blocks`. Auto-ascension origins (forbidden
+    from *every* path perk because they start already ascended) are resolved to their
+    real path via the ascension council-agenda file (origins grouped under a path)."""
+    AP_PATH = {
+        'ap_engineered_evolution': 'Genetic', 'ap_the_flesh_is_weak': 'Cybernetic',
+        'ap_synthetic_evolution': 'Synthetic', 'ap_mind_over_matter': 'Psionic',
+    }
+    ALL_PATHS = ['Genetic', 'Cybernetic', 'Synthetic', 'Psionic']
+
+    def _origins_in(node, neg=0):
+        out = []
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k == 'has_origin':
+                    out += [(x, neg) for x in (v if isinstance(v, list) else [v])]
+                else:
+                    out += _origins_in(v, neg + (1 if k in ('NOT', 'NOR') else 0))
+        elif isinstance(node, list):
+            for x in node:
+                out += _origins_in(x, neg)
+        return out
+
+    forbid: dict[str, set] = {}
+    allow: dict[str, set] = {}
+    try:
+        perks = parse_file(install_dir / 'common' / 'ascension_perks' / '00_ascension_paths.txt')
+    except Exception:
+        return {}
+    for ap, name in AP_PATH.items():
+        perk = perks.get(ap, {})
+        if not isinstance(perk, dict):
+            continue
+        for blk in (perk.get('potential', {}), perk.get('possible', {})):
+            for o, neg in _origins_in(blk):
+                (forbid if neg % 2 else allow).setdefault(o, set()).add(name)
+
+    def _agenda_path(n: str):
+        if re.search(r'psionic|mind_over_matter', n):                          return 'Psionic'
+        if re.search(r'synthetic|virtuality|nanotech', n):                     return 'Synthetic'
+        if re.search(r'flesh_is_weak|cybernetic|organo_machine|modularity', n): return 'Cybernetic'
+        if re.search(r'genetic|engineered_evolution|mutation|cloning|purity', n): return 'Genetic'
+        return None
+    agenda_path: dict[str, set] = {}
+    try:
+        agendas = parse_file(install_dir / 'common' / 'council_agendas'
+                             / '02_council_agendas_ascensions.txt')
+        for an, body in agendas.items():
+            p = _agenda_path(an)
+            if p and isinstance(body, dict):
+                for o, neg in _origins_in(body):
+                    if neg % 2 == 0:
+                        agenda_path.setdefault(o, set()).add(p)
+    except Exception:
+        pass
+
+    # Locked but never positively tied to one path in a machine-readable way.
+    FALLBACK = {'origin_shroudwalker_apprentice': 'Psionic'}
+
+    out: dict[str, dict] = {}
+    for o in set(forbid) | set(allow):
+        blocked = forbid.get(o, set()) - allow.get(o, set())
+        free = [p for p in ALL_PATHS if p not in blocked]
+        lock, blocks = None, []
+        if len(free) == 1 and blocked:
+            lock = free[0]                           # blocked from three → locked to one
+        elif not free:                               # blocked from all → auto-ascension
+            cands = agenda_path.get(o) or ({FALLBACK[o]} if o in FALLBACK else set())
+            if len(cands) == 1:
+                lock = next(iter(cands))
+        elif blocked:                                # blocks one or two, still allows others
+            blocks = [p for p in ALL_PATHS if p in blocked]
+        if lock or blocks:
+            out[o] = {'lock': lock, 'blocks': blocks}
+    return out
+
+
 def extract_origins(data: dict, force_nonselectable: bool, loc: dict[str, str],
                     scripted_vars: dict[str, float], w: Writer, order_start: int,
-                    verbose: bool) -> int:
+                    verbose: bool, ascension: dict[str, dict]) -> int:
     """Extract one origins file. `force_nonselectable` marks every origin in it
     non-selectable (the non-playable file). Returns the next sort_order."""
     variables: dict[str, float] = dict(scripted_vars)
@@ -1888,11 +1972,14 @@ def extract_origins(data: dict, force_nonselectable: bool, loc: dict[str, str],
         icon = odef.get('icon')
         icon = icon.strip('"') if isinstance(icon, str) else None
 
+        asc = ascension.get(key) or {}
         w.execute(
             """INSERT OR REPLACE INTO origin
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (key, name, description, dlc, selectable, icon, order),
+                   (key, name, description, required_dlc, selectable, ascension_lock,
+                    ascension_blocks, icon, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, name, description, dlc, selectable, asc.get('lock'),
+             ','.join(asc.get('blocks', [])) or None, icon, order),
         )
         if verbose:
             print(f"  origin {key} | {name}{'' if selectable else ' (not selectable)'}")
@@ -3617,6 +3704,7 @@ Examples:
     # --- origins (same dir; 00 = playable, 01 = non-playable) ---
     origin_files = (('00_origins.txt', False), ('01_origins_non_playable.txt', True))
     print(f"\n[origins] {civics_dir}", file=progress)
+    ascension = compute_ascension_restrictions(install_dir)
     origin_order = 0
     for fn, nonsel in origin_files:
         f = civics_dir / fn
@@ -3624,7 +3712,7 @@ Examples:
             continue
         try:
             origin_order = extract_origins(parse_file(f), nonsel, loc, scripted_vars, w,
-                                           origin_order, args.verbose)
+                                           origin_order, args.verbose, ascension)
         except Exception as e:
             print(f"  WARNING: failed to parse {fn}: {e}", file=sys.stderr)
 
