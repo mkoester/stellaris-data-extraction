@@ -41,15 +41,57 @@ _LOC_CONCEPT    = re.compile(r"\['(\w+)'(?:,\s*([^\]]*))?\]")
 # Any remaining bracket command, e.g. [This.GetName] — not statically resolvable.
 _LOC_COMMAND    = re.compile(r'\[[^\]]*\]')
 
-def _clean_loc(s: str, loc: dict[str, str], strip_icons: bool = False) -> str:
-    """Expand $KEY$ refs and ['concept', …] scripted-loc tags (up to 4 rounds),
-    strip §X colour codes and [command] tags, and handle £icon£ refs.
+# Icons that are pure decoration / category markers — their name is never useful
+# text (it only ever sits next to the thing it depicts), so drop them outright.
+_ICON_DROP      = re.compile(r'^(job|mod|trigger|leader|relic|tradition|edict|ascension)_|^building$|_node$')
 
-    By default an icon is rendered as its word (e.g. £alloys£ → "alloys", so
-    "Produces £alloys£5000" reads "Produces alloys 5000" — the icon carries the
-    resource). With strip_icons=True the icon is dropped entirely; used for modifier
-    labels, where the icon is a leading/embedded picture whose name only duplicates
-    the surrounding words (e.g. "£official£ Official Capacity" → "Official Capacity")."""
+def _render_icon(m: re.Match) -> str:
+    """£icon£ → its name as words, unless it's a decoration icon (dropped). Resource
+    icons survive so a label like "£unity£ Produced per 100" keeps the resource."""
+    name = m.group(1)
+    if _ICON_DROP.search(name):
+        return ' '
+    return ' ' + name.replace('_', ' ').title() + ' '
+
+def _wnorm(w: str) -> str:
+    """Word key for de-duplication: lowercased, punctuation-free, plural-folded."""
+    w = re.sub(r'\W', '', w.lower())
+    return w[:-1] if len(w) > 3 and w.endswith('s') else w
+
+def _dedup_adjacent(s: str) -> str:
+    """Collapse an icon name that just repeats the phrase beside it — single word
+    ("Official Official Capacity" → "Official Capacity") or multi-word ("Consumer
+    Goods Consumer Goods" → "Consumer Goods"). Keeps the *later* copy (the
+    proper-cased / plural loc name). Icon names are ≤3 words, so that bounds the
+    repeat length we look for."""
+    toks = s.split()                       # any-whitespace split (drops icon padding)
+    norm = [_wnorm(t) for t in toks]
+    out: list[str] = []
+    i, n = 0, len(toks)
+    while i < n:
+        dropped = False
+        for k in range(min(3, (n - i) // 2), 0, -1):
+            a, b = norm[i:i + k], norm[i + k:i + 2 * k]
+            if all(a) and a == b:          # phrase repeats immediately → skip first copy
+                i += k
+                dropped = True
+                break
+        if not dropped:
+            out.append(toks[i])
+            i += 1
+    return ' '.join(out)
+
+def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False) -> str:
+    """Expand $KEY$ refs and ['concept', …] scripted-loc tags (up to 4 rounds),
+    strip §X colour codes and [command] tags, and resolve £icon£ refs.
+
+    Icons are pictures. Decoration/category icons (job/mod/trigger/building/…) are
+    dropped; resource icons are rendered as their name so a label keeps its resource
+    even when the loc doesn't repeat it ("£unity£ Produced per 100" → "Unity Produced
+    per 100"). An icon name that simply repeats the word next to it is then collapsed
+    ("£official£ Official Capacity" → "Official Capacity"). With keep_newlines=True
+    the loc's \\n line breaks are preserved (tooltip rules stay on separate lines);
+    otherwise everything collapses to one space-joined line (names, labels)."""
     # Concept tags: keep the inline display text when given, else fall back to the
     # concept's own name ($concept_KEY$, resolved by the loop below).
     s = _LOC_CONCEPT.sub(lambda m: m.group(2) if m.group(2) else f'${m.group(1)}$', s)
@@ -59,9 +101,17 @@ def _clean_loc(s: str, loc: dict[str, str], strip_icons: bool = False) -> str:
             break
         s = expanded
     s = _LOC_COMMAND.sub('', s)        # drop leftover [Command.Chain] tags
-    s = re.sub(r'\\[nrt]', ' ', s)     # literal \n \t \r escapes -> space
     s = _LOC_FMT_CODE.sub('', s)       # strip §X colour codes
-    s = _LOC_ICON.sub('' if strip_icons else r' \1 ', s)
+    s = _LOC_ICON.sub(_render_icon, s) # £icon£ → word (or dropped, if decoration)
+    s = _dedup_adjacent(s)             # collapse an icon name that repeats its neighbour
+    if keep_newlines:
+        s = re.sub(r'\\n', '\n', s)        # literal \n → real line break (rule separator)
+        s = re.sub(r'\\[tr]', ' ', s)      # \t \r → space
+        s = re.sub(r'[ \t]+', ' ', s)      # collapse runs of spaces within a line
+        s = re.sub(r' *\n *', '\n', s)     # trim around line breaks
+        s = re.sub(r'\n{2,}', '\n', s)     # collapse blank lines
+        return s.strip()
+    s = re.sub(r'\\[nrt]', ' ', s)     # literal \n \t \r escapes -> space
     return re.sub(r'\s+', ' ', s).strip()
 
 
@@ -1708,7 +1758,7 @@ def extract_civics(data: dict, civic_type: str, loc: dict[str, str],
         desc_key = cdef.get('description')
         desc_key = desc_key.strip('"') if isinstance(desc_key, str) else None
         raw_desc = loc.get(desc_key) if desc_key else None
-        description = _clean_loc(raw_desc, loc) if raw_desc else None
+        description = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
         icon = cdef.get('icon')
         icon = icon.strip('"') if isinstance(icon, str) else None
 
@@ -1797,7 +1847,7 @@ def extract_origins(data: dict, force_nonselectable: bool, loc: dict[str, str],
         desc_key = odef.get('description')
         desc_key = desc_key.strip('"') if isinstance(desc_key, str) else None
         raw_desc = loc.get(desc_key) if desc_key else None
-        description = _clean_loc(raw_desc, loc) if raw_desc else None
+        description = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
         icon = odef.get('icon')
         icon = icon.strip('"') if isinstance(icon, str) else None
 
@@ -2052,13 +2102,27 @@ def _write_modifier_label(w: Writer, loc: dict[str, str], mod_key: str):
     )
     if not raw_label:
         return
-    label = _clean_loc(raw_label, loc, strip_icons=True)
+    label = _clean_loc(raw_label, loc)
     # The attunement modifiers name their target only via an unresolvable colour
     # command ([This.GetCradleColor] etc.), leaving a dangling "Add Attunement with".
     # Derive the entity name from the key so it reads "Add Attunement with The …".
     if mod_key.startswith('add_attunement_'):
         entity = mod_key[len('add_attunement_'):].replace('_', ' ').title()
         label = f'Add Attunement with {entity}'
+    # Per-job production modifiers (planet_<job>_<resource>_produces_*) name the job
+    # via a scripted-loc command ([GetSoldierSwapPluralWithIcon]) that can't resolve,
+    # so the cleaned label trails off as "<Resource> Produced per 100" / "… from".
+    # The job is in the key — append it (the resource is already shown, so strip it
+    # off the key tail to find the job): "Unity Produced per 100" → "… Soldiers".
+    mprod = re.search(r'Produced (?:per \d+|from)$', label)
+    keym = re.match(r'^planet_(.+)_produces_(?:add|mult)$', mod_key)
+    if mprod and keym:
+        resource_tok = label[:mprod.start()].strip().lower().replace(' ', '_')
+        inner = keym.group(1)                      # e.g. "soldiers_unity"
+        if resource_tok and inner.endswith('_' + resource_tok):
+            job = inner[: -(len(resource_tok) + 1)]
+            if job:
+                label = f"{label} {job.replace('_', ' ').title()}"
     if '$' in label:
         return
     pig = 0 if mod_key in INVERTED_MODIFIERS else 1
