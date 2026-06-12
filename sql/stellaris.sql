@@ -260,6 +260,21 @@ CREATE TABLE origin_requirement (
     FOREIGN KEY (origin_key) REFERENCES origin(key)
 );
 
+-- Planet classes (the worlds): the colonizable climates and special habitable types,
+-- plus the standard uninhabitable system bodies. `climate` groups habitability
+-- (wet/dry/cold; NULL for special/uninhabitable); `is_standard` = a default startable
+-- climate (initial = yes). Habitability itself is species-preference-based, not a
+-- per-class number, so it's not stored.
+DROP TABLE IF EXISTS planet_class;
+CREATE TABLE planet_class (
+    key         TEXT PRIMARY KEY,   -- e.g. "pc_continental", "pc_gaia", "pc_barren"
+    name        TEXT,               -- localised, e.g. "Continental World"
+    climate     TEXT,               -- 'wet' | 'dry' | 'cold' | NULL
+    colonizable INTEGER NOT NULL DEFAULT 0,
+    is_standard INTEGER NOT NULL DEFAULT 0,  -- initial = yes (default startable climate)
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+
 -- Precursors: the ancient civilisations whose archaeology chains grant rewards.
 -- The precursor<->reward mapping is spread across event files (no single source
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
@@ -18763,6 +18778,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_world_forgers', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_world_forgers', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
                VALUES ('civic_pyrolatry', 'Fire Cult', '- unity Unity Job output increases proportionally with lower Habitability (Up to 500%). - The Scourge of the Volcano faction forms shortly after game start. - Replaces job_priest Priests with job_fire_dancer Fire Dancers. - Replaces job_politician Politicians with job_fire_oracle Fire Oracles on planets with Habitability lower than 50%. - Allows the recruitment of Ember Legion armies on planets with Habitability lower than 20%. - Grants access to the Blazing Scourge planetary decisions which creates blocker Blazing Scourge Blockers. - Synergizes with Civics: Superstitious Beliefs, Exalted Priesthood, Death Cult, Aristocratic Elite, and Merchant Guilds.', 'normal', NULL, 1, NULL, 79);
@@ -19904,6 +19922,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_stargazers', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_stargazers', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
                VALUES ('civic_memory_vault_hive', 'Neural Vaults', 'Can build unique building Vaults of Knowledge building Vaults of Knowledge produce unity Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, NULL, 150);
@@ -20343,6 +20364,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_shared_genetics', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_shared_genetics', 'ship_type', 'require_any', 'organic', 1);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
                VALUES ('civic_hive_aerospace_adaptation', 'Aerospace Adaptation', '- Biological Ships in orbit of Friendly colonies have -50% ship upkeep. - Friendly colonies with Biological Ships in orbit get increased Build Speed, Amenities, Clear Blocker Speed and potentially Job Output, depending on fleet size. - Biological Ships in orbit of Hostile colonies have -85% ship upkeep.', 'gestalt', NULL, 1, NULL, 163);
@@ -20364,6 +20388,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_aerospace_adaptation', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_aerospace_adaptation', 'ship_type', 'require_any', 'organic', 1);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
                VALUES ('civic_hive_bodysnatcher', 'Bodysnatcher', 'Start the game with 1000 assimilated pop Pops and the ability to Assimilate organics into the hive mind. Has access to the Prepare Invasion Espionage Mission Gains extra pop Pops from the Smuggle Population Espionage Mission', 'gestalt', NULL, 1, NULL, 164);
@@ -20633,6 +20660,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_world_forgers', 'civic', 'forbid', 'civic_hive_idyllic_bloom', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_world_forgers', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
                VALUES ('civic_hive_galvanic_symbiosis', 'Galvanic Symbiosis', '- Starts with engineering_research already researched. - Homeworld has a . - Gain access to special Edicts: - - - Gives access to sr_living_metal Living Metal components: - - - Has access to Planetary Decision: Distribute Living Metal. - Can recruit the Mimetic Strike Force armies. - Can build a building in systems with a Molten World for jobs.', 'gestalt', NULL, 1, NULL, 171);
@@ -21233,6 +21263,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_exploration_protocol', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_exploration_protocol', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
                VALUES ('civic_machine_hyperspace_specialty', 'Hyperspace Calculations', 'physics Hyperlane Breach Points is Guaranteed Research Option. Has Low Intel on all systems within 3 Hyperlanes of your starting system.', 'gestalt', NULL, 1, NULL, 193);
@@ -21860,6 +21893,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_world_forgers', 'origin', 'forbid', 'origin_ocean_machines', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_world_forgers', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
                VALUES ('civic_machine_galvanic_symbiosis', 'Galvanic Retrofitting', '- Starts with engineering_research already researched. - Homeworld has a . - Gain access to special Edicts: - - - Gives access to sr_living_metal Living Metal components: - - - Has access to Planetary Decision: Distribute Living Metal. - Can recruit the Mimetic Strike Force armies. - Can build a building in systems with a Molten World for jobs.', 'gestalt', NULL, 1, NULL, 212);
@@ -22562,6 +22598,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_privatized_exploration', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
                VALUES ('civic_corporate_hyperspace_specialty', 'Hyperspace Trade', 'physics Hyperlane Breach Points is Guaranteed Research Option. Has Low Intel on all systems within 3 Hyperlanes of your starting system. The building Amusement Megaplex Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 238);
@@ -23498,6 +23537,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_world_forgers', 'origin', 'forbid', 'origin_ocean_paradise', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_world_forgers', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
                VALUES ('civic_corporate_galvanic_symbiosis', 'Biometallic Cartel', '- Starts with engineering_research already researched. - Homeworld has a . - Gain access to special Edicts: - - - Gives access to sr_living_metal Living Metal components: - - - Has access to Planetary Decision: Distribute Living Metal. - Can recruit the Mimetic Strike Force armies. - Can build a building in systems with a Molten World for jobs. - Can build the building Living Metal Enhancement Clinic Corporate Building.', 'corporate', NULL, 1, NULL, 264);
@@ -23559,6 +23601,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_red_giant', 'civic', 'forbid', 'civic_machine_catalytic_processing', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, icon, sort_order)
                VALUES ('origin_cosmic_dawn', 'Cosmic Dawn', '- Homeworld: - Volcanic World (Size: planetsize 14) - blocker Ancient Stasis Pods: +5 - Start with Situation: Deep Excavation', 'Infernals Species Pack', 1, 'gfx/interface/icons/origins/origin_cosmic_dawn.dds', 2);
@@ -23610,6 +23655,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_cosmic_dawn', 'civic', 'forbid', 'civic_corporate_beastmasters', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, icon, sort_order)
                VALUES ('origin_shroud_forged', 'Shroud-Forged', '- Homeworld: - Shroud-Touched Region: +4 - Start with 1000 pops Shroud-Forged Pops - Start with Situation: Forged by the Shroud - Additional Starting Technologies: society - Unique building Building: - Available decision Planetary Decision: Pierce the Shroud', NULL, 1, 'gfx/interface/icons/origins/origins_shroud_forged.dds', 3);
@@ -23776,6 +23824,9 @@ INSERT OR IGNORE INTO origin_modifier
                        VALUES ('origin_starlit_citadel', 'deep_space_citadel_limit_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('deep_space_citadel_limit_add', 'Deep Space Citadel System Capacity', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_starlit_citadel', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, icon, sort_order)
                VALUES ('origin_wilderness', 'Wilderness', '- Species Trait: - Replaces all standard building Buildings, district Districts, and zone District Specialization with bespoke ones - Replaces Colony Ship Colonization with Terraforming - Unlocks new Resource: biomass Biomass - Homeworld: - Size: planetsize 18 - blocker Scorched Plains', NULL, 1, 'gfx/interface/icons/origins/origins_wilderness.dds', 8);
@@ -23826,6 +23877,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_wilderness', 'civic', 'forbid', 'civic_hive_galvanic_symbiosis', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'ship_type', 'require_any', 'organic', 2);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, icon, sort_order)
                VALUES ('origin_treasure_hunters', 'Treasure Hunters', '- Starts with an inactive Celestial Chart - Every recruited leader has a bonus Adventurous Spirit trait - Ruler Traits: - - -', NULL, 1, 'gfx/interface/icons/origins/origin_treasure_hunters.dds', 9);
@@ -24274,6 +24328,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_fear_of_the_dark', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fear_of_the_dark', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, icon, sort_order)
                VALUES ('origin_overtuned', 'Overtuned', '- Species Traits: Access to Overtuned Traits - Overtuned Traits: - Can be boosted by the Damn the Consequences Edict - Can be added and removed through Genetic Modification - Additional Starting Technologies: society Gene Tailoring', NULL, 1, 'gfx/interface/icons/origins/origins_overtuned.dds', 23);
@@ -24813,6 +24870,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_lithoid', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_lithoid', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, icon, sort_order)
                VALUES ('origin_life_seeded', 'Life-Seeded', '- Homeworld: Gaia World (Size: planetsize 30) with Rare Planetary Features - Species Traits: Gaia World Preference', 'Apocalypse', 1, 'gfx/interface/icons/origins/origins_life_seeded.dds', 45);
@@ -25041,6 +25101,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_unplugged', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, icon, sort_order)
                VALUES ('origin_mechanists', 'Mechanist', '- mod_planet_jobs_robotic_produces_mult Robot pop Pops: 800 - Mechanical Trait: Adaptive Frames - Homeworld: building Robot Assembly Plant - Additional Starting Technologies: - engineering_research Powered Exoskeletons - engineering_research Artificial Workforce - Guaranteed Research Options: engineering_research Machine Template System', NULL, 1, 'gfx/interface/icons/origins/origins_mechanist.dds', 51);
@@ -25289,3 +25352,93 @@ INSERT OR IGNORE INTO origin_modifier
                        VALUES ('origin_slavers', 'country_naval_cap_add', '50.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_desert', 'Desert World', 'dry', 1, 1, 0);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_arid', 'Arid World', 'dry', 1, 1, 1);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_savannah', 'Savanna World', 'dry', 1, 1, 2);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_tropical', 'Tropical World', 'wet', 1, 1, 3);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_continental', 'Continental World', 'wet', 1, 1, 4);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_ocean', 'Ocean World', 'wet', 1, 1, 5);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_tundra', 'Tundra World', 'cold', 1, 1, 6);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_arctic', 'Arctic World', 'cold', 1, 1, 7);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_alpine', 'Alpine World', 'cold', 1, 1, 8);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_volcanic', 'Volcanic World', 'dry', 1, 1, 9);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_gas_giant', 'Gas Giant', NULL, 0, 0, 10);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_asteroid', 'Asteroid', NULL, 0, 0, 11);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_molten', 'Molten World', NULL, 0, 0, 12);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_barren', 'Barren World', NULL, 0, 0, 13);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_barren_cold', 'Barren World', NULL, 0, 0, 14);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_toxic', 'Toxic World', NULL, 0, 0, 15);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_frozen', 'Frozen World', NULL, 0, 0, 16);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_nuked', 'Tomb World', NULL, 1, 0, 17);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_hive', 'Hive World', NULL, 1, 0, 18);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_machine', 'Machine World', NULL, 1, 0, 19);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_gaia', 'Gaia World', NULL, 1, 0, 20);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_nanotech', 'Nanite World', NULL, 1, 0, 21);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_ringworld_habitable', 'Ring Segment', NULL, 1, 0, 22);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_shattered_ring_habitable', 'Shattered Ring Segment', NULL, 1, 0, 23);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_habitat', 'Orbital Habitat', NULL, 1, 0, 24);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_cosmogenesis_world', 'Synaptic Lathe', NULL, 1, 0, 25);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_crystal_habitat', NULL, NULL, 1, 0, 26);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_warden_guardian', NULL, NULL, 1, 0, 27);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_city', 'Ecumenopolis', 'dry', 1, 0, 28);
+INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES ('pc_relic', 'Relic World', 'dry', 1, 0, 29);

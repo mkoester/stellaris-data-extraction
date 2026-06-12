@@ -88,7 +88,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `origin`, `origin_modifier`, `origin_requirement`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
 
 Drop order matters for FK integrity:
 ```sql
@@ -197,6 +197,24 @@ narrative/initializer/event-driven) + `origin_requirement` (**reuses
 **selectable = 0** also for swap-variant forms whose `potential` is gated on already
 having an `origin` (the Legendary Leader death/imperial/dictatorial forms) or a
 `country_type`. ~70 origins, 54 selectable, 88 modifiers, 378 requirement rows.
+
+**Ship-type gate (origins + civics):** `_CIVIC_GATE_KINDS` includes
+`graphical_culture → ship_type`; a `possible.graphical_culture` `NOR`/`OR` of the
+biological cultures (`biogenesis_01/02`) is collapsed to a single `organic` value, so
+an origin/civic carries `ship_type forbid organic` (most) or `ship_type require_any
+organic` (e.g. Wilderness, the gestalt bio-civics). 7 origins / 9 civics forbid, a
+few force.
+
+## Planet Classes Extraction (`extract_planet_classes`)
+
+Merges `common/planet_classes/*.txt` → `planet_class(key, name, climate, colonizable,
+is_standard)`. Keeps the **colonizable** worlds (the standard climates +
+special/engineered types) plus a curated set of standard **uninhabitable** bodies
+(`_STANDARD_UNINHABITABLE`: barren/molten/toxic/frozen/gas_giant/asteroid) for
+home-system context; stars and one-off event worlds are skipped. `climate`
+(wet/dry/cold) is null for special/uninhabitable; `is_standard = initial = yes` (the
+default startable climates). Habitability is species-preference-based, not per-class,
+so it isn't stored. ~30 classes.
 
 **Loc fix shipped here:** `_LOC_ENTRY` changed `^\s+`→`^\s*` so **unindented** loc
 entries are read — the Infernals Species Pack file puts entries at column 0, so e.g.

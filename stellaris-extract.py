@@ -425,6 +425,21 @@ CREATE TABLE origin_requirement (
     FOREIGN KEY (origin_key) REFERENCES origin(key)
 );
 
+-- Planet classes (the worlds): the colonizable climates and special habitable types,
+-- plus the standard uninhabitable system bodies. `climate` groups habitability
+-- (wet/dry/cold; NULL for special/uninhabitable); `is_standard` = a default startable
+-- climate (initial = yes). Habitability itself is species-preference-based, not a
+-- per-class number, so it's not stored.
+DROP TABLE IF EXISTS planet_class;
+CREATE TABLE planet_class (
+    key         TEXT PRIMARY KEY,   -- e.g. "pc_continental", "pc_gaia", "pc_barren"
+    name        TEXT,               -- localised, e.g. "Continental World"
+    climate     TEXT,               -- 'wet' | 'dry' | 'cold' | NULL
+    colonizable INTEGER NOT NULL DEFAULT 0,
+    is_standard INTEGER NOT NULL DEFAULT 0,  -- initial = yes (default startable climate)
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+
 -- Precursors: the ancient civilisations whose archaeology chains grant rewards.
 -- The precursor<->reward mapping is spread across event files (no single source
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
@@ -1596,7 +1611,8 @@ def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
 
 # potential/possible sub-keys we turn into eligibility rules → stored `kind`.
 _CIVIC_GATE_KINDS = {'authority': 'authority', 'ethics': 'ethic',
-                     'civics': 'civic', 'origin': 'origin'}
+                     'civics': 'civic', 'origin': 'origin',
+                     'graphical_culture': 'ship_type'}
 
 
 def _trigger_values(sub) -> list[tuple[str, list[str]]]:
@@ -1639,6 +1655,10 @@ def _civic_requirements(cdef: dict) -> list[tuple[str, str, str, int]]:
                     group += 1
                     gid = group
                 for v in vals:
+                    # The ship-type gate forbids the biological graphical cultures
+                    # (biogenesis_01/02) — collapse them to a single 'organic' value.
+                    if kind == 'ship_type' and v.startswith('biogenesis'):
+                        v = 'organic'
                     if (kind, op, v) in seen:
                         continue
                     seen.add((kind, op, v))
@@ -1813,6 +1833,44 @@ def extract_origins(data: dict, force_nonselectable: bool, loc: dict[str, str],
 
     w.commit()
     return order
+
+
+# ---------------------------------------------------------------------------
+# Extraction: planet classes
+# ---------------------------------------------------------------------------
+
+# Standard uninhabitable system bodies kept (beyond the colonizable worlds) so the
+# reference covers home-system contents too; excludes stars and one-off event worlds.
+_STANDARD_UNINHABITABLE = frozenset({
+    'pc_barren', 'pc_barren_cold', 'pc_molten', 'pc_toxic', 'pc_frozen',
+    'pc_gas_giant', 'pc_asteroid',
+})
+
+
+def extract_planet_classes(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
+    """Colonizable planet classes (+ the standard uninhabitable bodies) → planet_class."""
+    order = 0
+    for key, pdef in data.items():
+        if not key.startswith('pc_') or not isinstance(pdef, dict):
+            continue
+        colonizable = 1 if str(pdef.get('colonizable')).strip() == 'yes' else 0
+        if not colonizable and key not in _STANDARD_UNINHABITABLE:
+            continue
+        climate = pdef.get('climate')
+        climate = climate.strip('"') if isinstance(climate, str) else None
+        is_standard = 1 if str(pdef.get('initial')).strip() == 'yes' else 0
+        raw_name = loc.get(key)
+        name = _clean_loc(raw_name, loc) if raw_name else None
+        w.execute(
+            """INSERT OR REPLACE INTO planet_class
+                   (key, name, climate, colonizable, is_standard, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (key, name, climate, colonizable, is_standard, order),
+        )
+        if verbose:
+            print(f"  planet_class {key} | {name} | climate={climate} colonizable={colonizable}")
+        order += 1
+    w.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -3093,6 +3151,7 @@ Examples:
     technology_dir = install_dir / 'common' / 'technology'
     inline_scripts_dir = install_dir / 'common' / 'inline_scripts'
     civics_dir     = install_dir / 'common' / 'governments' / 'civics'
+    planet_class_dir = install_dir / 'common' / 'planet_classes'
     loc_dir        = install_dir / 'localisation' / 'english'
 
     if not species_dir.exists():
@@ -3385,6 +3444,19 @@ Examples:
                                            origin_order, args.verbose)
         except Exception as e:
             print(f"  WARNING: failed to parse {fn}: {e}", file=sys.stderr)
+
+    # --- planet classes (merge all files, then extract) ---
+    print(f"\n[planet classes] {planet_class_dir}", file=progress)
+    planet_classes: dict = {}
+    if planet_class_dir.exists():
+        for f in sorted(planet_class_dir.glob('*.txt')):
+            try:
+                planet_classes.update(parse_file(f))
+            except Exception as e:
+                print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+        extract_planet_classes(planet_classes, loc, w, args.verbose)
+    else:
+        print(f"  WARNING: {planet_class_dir} not found", file=progress)
 
     w.close()
 
