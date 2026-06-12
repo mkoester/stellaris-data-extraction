@@ -176,6 +176,49 @@ CREATE TABLE ethic_policy_restriction (
     FOREIGN KEY (ethic_key) REFERENCES ethic(key)
 );
 
+-- Civics: the government civics an empire picks at creation (and can later swap).
+-- `civic_type` is derived from the source file (normal / gestalt / corporate /
+-- special). `selectable` is 0 for civics gated to non-player country types (fallen
+-- empires, etc.). `description` is the cleaned effects tooltip; the numeric effects
+-- live in civic_modifier and the eligibility rules in civic_requirement.
+DROP TABLE IF EXISTS civic_requirement;
+DROP TABLE IF EXISTS civic_modifier;
+DROP TABLE IF EXISTS civic;
+CREATE TABLE civic (
+    key          TEXT PRIMARY KEY,    -- e.g. "civic_technocracy"
+    name         TEXT,                -- localised name
+    description  TEXT,                -- cleaned effects tooltip
+    civic_type   TEXT NOT NULL,       -- 'normal' | 'gestalt' | 'corporate' | 'special'
+    required_dlc TEXT,                -- from playable host_has_dlc; NULL = base game
+    selectable   INTEGER NOT NULL DEFAULT 1,  -- 0 = not player-pickable (fallen empire, …)
+    icon         TEXT,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (required_dlc) REFERENCES dlc(name)
+);
+
+CREATE TABLE civic_modifier (
+    civic_key      TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (civic_key, modifier_key),
+    FOREIGN KEY (civic_key) REFERENCES civic(key)
+);
+
+-- Eligibility rules parsed from a civic's potential/possible blocks. `kind` is what
+-- is being constrained (authority / ethic / civic / origin); `operator` is 'require'
+-- (must have), 'forbid' (must not have), or 'require_any' (must have one of an OR set,
+-- grouped by `group_id`); `value` is the constrained key.
+CREATE TABLE civic_requirement (
+    civic_key  TEXT NOT NULL,
+    kind       TEXT NOT NULL,        -- 'authority' | 'ethic' | 'civic' | 'origin'
+    operator   TEXT NOT NULL,        -- 'require' | 'forbid' | 'require_any'
+    value      TEXT NOT NULL,        -- e.g. 'auth_corporate', 'ethic_materialist'
+    group_id   INTEGER NOT NULL DEFAULT 0,  -- ties 'require_any' values from one OR set together
+    PRIMARY KEY (civic_key, kind, operator, value),
+    FOREIGN KEY (civic_key) REFERENCES civic(key)
+);
+
 -- Precursors: the ancient civilisations whose archaeology chains grant rewards.
 -- The precursor<->reward mapping is spread across event files (no single source
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
@@ -15584,3 +15627,7802 @@ INSERT OR REPLACE INTO precursor_planet
                            (id, precursor_key, initializer, name, planet_class,
                             planet_class_label, size, is_moon, is_homeworld, flags, sort_order)
                        VALUES ('adSul_system#3', 'precursor_adakkaria', 'adSul_system', NULL, NULL, NULL, NULL, 0, 0, NULL, 3);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corvee_system', 'Corvée System', '- Waives all unity Unity costs for pop Pop Resettlement.', 'normal', NULL, 1, NULL, 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corvee_system', 'planet_resettlement_unemployed_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_mult', 'Automatic Resettlement Chance', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corvee_system', 'planet_jobs_worker_produces_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corvee_system', 'pop_resettlement_cost_mult', '-0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corvee_system', 'add_attunement_the_composer_of_strands', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corvee_system', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corvee_system', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corvee_system', 'ethic', 'forbid', 'ethic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corvee_system', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corvee_system', 'civic', 'forbid', 'civic_free_haven', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_imperial_cult', 'Imperial Cult', '- Ruler''s Home Planet has additional Jobs', 'normal', NULL, 1, NULL, 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_imperial_cult', 'country_edict_fund_add', '100.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_imperial_cult', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_imperial_cult', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_imperial_cult', 'authority', 'require', 'auth_imperial', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_imperial_cult', 'ethic', 'require_any', 'ethic_authoritarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_imperial_cult', 'ethic', 'require_any', 'ethic_fanatic_authoritarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_imperial_cult', 'ethic', 'require_any', 'ethic_spiritualist', 2);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_imperial_cult', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 2);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_beacon_of_liberty', 'Beacon of Liberty', NULL, 'normal', NULL, 1, NULL, 2);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_beacon_of_liberty', 'country_unity_produces_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_beacon_of_liberty', 'empire_size_pops_mult', '-0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_beacon_of_liberty', 'refugee_attraction', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_beacon_of_liberty', 'add_attunement_the_cradle_of_souls', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beacon_of_liberty', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beacon_of_liberty', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beacon_of_liberty', 'authority', 'require', 'auth_democratic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beacon_of_liberty', 'ethic', 'forbid', 'ethic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beacon_of_liberty', 'ethic', 'forbid', 'ethic_fanatic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beacon_of_liberty', 'ethic', 'require_any', 'ethic_egalitarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beacon_of_liberty', 'ethic', 'require_any', 'ethic_fanatic_egalitarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beacon_of_liberty', 'civic', 'forbid', 'civic_crusader_spirit', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_exalted_priesthood', 'Exalted Priesthood', '- job_politician Politician Jobs are converted to job_high_priest High Priests The building Citadel of Faith grants additional job_high_priest High Priests jobs.', 'normal', NULL, 1, NULL, 3);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_exalted_priesthood', 'planet_bureaucrats_unity_produces_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_unity_produces_add', 'unity Produced per 100', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_exalted_priesthood', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_exalted_priesthood', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_exalted_priesthood', 'authority', 'require_any', 'auth_oligarchic', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_exalted_priesthood', 'authority', 'require_any', 'auth_dictatorial', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_exalted_priesthood', 'ethic', 'require_any', 'ethic_spiritualist', 2);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_exalted_priesthood', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 2);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_philosopher_king', 'Philosopher King', NULL, 'normal', NULL, 1, NULL, 4);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_philosopher_king', 'ruler_skill_add', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ruler_skill_add', 'Effective Ruler Skill', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_philosopher_king', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_philosopher_king', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_philosopher_king', 'authority', 'require_any', 'auth_dictatorial', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_philosopher_king', 'authority', 'require_any', 'auth_imperial', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_meritocracy', 'Meritocracy', NULL, 'normal', NULL, 1, NULL, 5);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_meritocracy', 'planet_jobs_specialist_produces_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_specialist_produces_mult', 'Pop Resource Output', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_meritocracy', 'add_attunement_the_cradle_of_souls', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_meritocracy', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_meritocracy', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_meritocracy', 'authority', 'require_any', 'auth_democratic', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_meritocracy', 'authority', 'require_any', 'auth_oligarchic', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_citizen_service', 'Citizen Service', 'Grants access to the building Recruitment Office Holding', 'normal', NULL, 1, NULL, 6);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_citizen_service', 'country_naval_cap_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_citizen_service', 'planet_soldiers_unity_produces_add', '2.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_unity_produces_add', 'unity Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_citizen_service', 'add_attunement_the_eater_of_worlds', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_citizen_service', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_citizen_service', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_citizen_service', 'authority', 'require_any', 'auth_democratic', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_citizen_service', 'authority', 'require_any', 'auth_oligarchic', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_citizen_service', 'ethic', 'forbid', 'ethic_fanatic_xenophile', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_citizen_service', 'ethic', 'require_any', 'ethic_militarist', 2);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_citizen_service', 'ethic', 'require_any', 'ethic_fanatic_militarist', 2);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_citizen_service', 'civic', 'forbid', 'civic_reanimated_armies', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_citizen_service', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_technocracy', 'Technocracy', '- job_politician Politician Jobs are converted to job_head_researcher Science Directors - The building Research Institute grants additional job_head_researcher Science Directors Jobs - scientist Scientists start with random Expertise trait - Expertise traits have additional effects - Start with an additional scientist Scientist as the Governor of your Homeworld', 'normal', NULL, 1, NULL, 7);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_technocracy', 'num_tech_alternatives_add', '1.0', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_technocracy', 'country_scientist_cap_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_scientist_cap_add', 'scientist Scientist Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_technocracy', 'country_official_cap_add', '-1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_official_cap_add', 'official Official Capacity', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_technocracy', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_technocracy', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_technocracy', 'ethic', 'require_any', 'ethic_materialist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_technocracy', 'ethic', 'require_any', 'ethic_fanatic_materialist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_technocracy', 'civic', 'forbid', 'civic_shared_burden', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_feudal_realm', 'Feudal Society', '- Ignore Diplomatic Requirements when proposing Subjugation - Your Subjects cannot have the following Agreement Terms: trigger_no Expansion Prohibited trigger_no Do not join subject wars trigger_no Limited Diplomacy', 'normal', NULL, 1, NULL, 8);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_feudal_realm', 'country_naval_capacity_contribution_from_subjects_mult', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_capacity_contribution_from_subjects_mult', 'Subject Naval Capacity Contribution', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_feudal_realm', 'divided_patrongage_max_subjects', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('divided_patrongage_max_subjects', 'Subjects Exempt from Divided Patronage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_feudal_realm', 'country_subject_acceptance_add', '25.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_subject_acceptance_add', 'Subjugation Acceptance', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_feudal_realm', 'add_attunement_the_eater_of_worlds', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_feudal_realm', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_feudal_realm', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_feudal_realm', 'authority', 'require', 'auth_imperial', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_police_state', 'Police State', NULL, 'normal', NULL, 1, NULL, 9);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_police_state', 'planet_stability_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_police_state', 'planet_enforcers_unity_produces_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_enforcers_unity_produces_add', 'unity Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_police_state', 'enforcer_jobs_bonus_workforce_mult', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('enforcer_jobs_bonus_workforce_mult', 'Job Efficiency for Enforcer jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_police_state', 'add_attunement_the_instrument_of_desire', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_police_state', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_police_state', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_police_state', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_police_state', 'civic', 'forbid', 'civic_civil_education', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_idealistic_foundation', 'Idealistic Foundation', NULL, 'normal', NULL, 1, NULL, 10);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_idealistic_foundation', 'pop_citizen_happiness', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_citizen_happiness', 'Citizen Pop Happiness', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_idealistic_foundation', 'refugee_attraction', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_idealistic_foundation', 'add_attunement_the_cradle_of_souls', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idealistic_foundation', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idealistic_foundation', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idealistic_foundation', 'ethic', 'require_any', 'ethic_egalitarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idealistic_foundation', 'ethic', 'require_any', 'ethic_fanatic_egalitarian', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_environmentalist', 'Environmentalist', '- Available Buildings: building - Additional Starting Buildings: building Ranger Lodge - Available Holdings: building', 'normal', NULL, 1, NULL, 11);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmentalist', 'planet_pops_consumer_goods_upkeep_mult', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmentalist', 'add_attunement_the_composer_of_strands', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmentalist', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmentalist', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmentalist', 'civic', 'forbid', 'civic_dystopian_society', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmentalist', 'civic', 'forbid', 'civic_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmentalist', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_slaver_guilds', 'Slaver Guilds', NULL, 'normal', NULL, 1, NULL, 12);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_slaver_guilds', 'pop_slave_bonus_workforce_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_bonus_workforce_mult', 'Job Efficiency for Slaves', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_slaver_guilds', 'refugee_attraction', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_slaver_guilds', 'add_attunement_the_instrument_of_desire', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_slaver_guilds', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_slaver_guilds', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_slaver_guilds', 'ethic', 'require_any', 'ethic_authoritarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_slaver_guilds', 'ethic', 'require_any', 'ethic_fanatic_authoritarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_slaver_guilds', 'civic', 'forbid', 'civic_pleasure_seekers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_slaver_guilds', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_inwards_perfection', 'Inward Perfection', 'Cannot have Rivals Cannot form Defensive Pacts Cannot form Migration Treaties Cannot form Research Agreements Cannot form Commercial Pacts Cannot Guarantee Independence Cannot join Federations Cannot Infiltrate pre-FTLs Cannot have forced Subjects Cannot use Unrestricted Wars policy', 'normal', NULL, 1, NULL, 13);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_inwards_perfection', 'country_unity_produces_mult', '0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_inwards_perfection', 'founder_species_growth_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_inwards_perfection', 'country_edict_fund_add', '50.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_inwards_perfection', 'pop_citizen_happiness', '0.05', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_citizen_happiness', 'Citizen Pop Happiness', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_inwards_perfection', 'refugee_attraction', '-0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_inwards_perfection', 'envoys_add', '-1.0', 5);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_inwards_perfection', 'intel_encryption_add', '1.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_inwards_perfection', 'intel_decryption_add', '-1.0', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'ethic', 'require_any', 'ethic_pacifist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'ethic', 'require_any', 'ethic_fanatic_pacifist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'ethic', 'require_any', 'ethic_xenophobe', 2);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'ethic', 'require_any', 'ethic_fanatic_xenophobe', 2);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'civic', 'forbid', 'civic_pompous_purists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'civic', 'forbid', 'civic_privatized_exploration', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'civic', 'forbid', 'civic_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'civic', 'forbid', 'civic_corporate_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'civic', 'forbid', 'civic_hive_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'civic', 'forbid', 'civic_machine_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'origin', 'forbid', 'origin_common_ground', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'origin', 'forbid', 'origin_hegemon', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_inwards_perfection', 'origin', 'forbid', 'origin_fear_of_the_dark', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_warrior_culture', 'Warrior Culture', '- Replaces job_entertainer Entertainer Jobs with job_duelist Duelist Jobs. - job_duelist Duelists turn alloys Alloys into unity Unity, mod_planet_amenities_add Amenities, and mod_country_naval_cap_add Naval Capacity. - Replaces job_xeno_zoo_animal Conserved Fauna Jobs with job_xeno_zoo_beast Gladiatorial Beast Jobs.', 'normal', NULL, 1, NULL, 14);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_warrior_culture', 'army_damage_mult', '0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_warrior_culture', 'country_war_exhaustion_mult', '-0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_warrior_culture', 'add_attunement_the_eater_of_worlds', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_warrior_culture', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_warrior_culture', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_warrior_culture', 'ethic', 'require_any', 'ethic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_warrior_culture', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_warrior_culture', 'civic', 'forbid', 'civic_dystopian_society', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_warrior_culture', 'civic', 'forbid', 'civic_pleasure_seekers', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_distinguished_admiralty', 'Distinguished Admiralty', NULL, 'normal', NULL, 1, NULL, 15);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_distinguished_admiralty', 'ship_fire_rate_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_distinguished_admiralty', 'leader_commanders_upkeep_mult', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_commanders_upkeep_mult', 'commander Commander Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_distinguished_admiralty', 'command_limit_mult', '0.2', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('command_limit_mult', 'Fleet Command Limit', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_distinguished_admiralty', 'commander_initial_skill', '2.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commander_initial_skill', 'commander Commander Starting Skill Level', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_distinguished_admiralty', 'add_attunement_the_eater_of_worlds', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_distinguished_admiralty', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_distinguished_admiralty', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_distinguished_admiralty', 'ethic', 'require_any', 'ethic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_distinguished_admiralty', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_free_haven', 'Free Haven', NULL, 'normal', NULL, 1, NULL, 16);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_free_haven', 'planet_resettlement_unemployed_destination_mult', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_destination_mult', 'Automatic Resettlement Destination Chance', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_free_haven', 'pop_cat_worker_happiness', '0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_happiness', 'Worker Happiness', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_free_haven', 'refugee_attraction', '0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_free_haven', 'add_attunement_the_cradle_of_souls', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_free_haven', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_free_haven', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_free_haven', 'ethic', 'require_any', 'ethic_xenophile', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_free_haven', 'ethic', 'require_any', 'ethic_fanatic_xenophile', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_free_haven', 'civic', 'forbid', 'civic_corvee_system', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_free_haven', 'civic', 'forbid', 'civic_dystopian_society', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_cutthroat_politics', 'Cutthroat Politics', NULL, 'normal', NULL, 1, NULL, 17);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_cutthroat_politics', 'edicts_upkeep_mult', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('edicts_upkeep_mult', 'Edict Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_cutthroat_politics', 'intel_decryption_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_cutthroat_politics', 'add_attunement_the_cradle_of_souls', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_cutthroat_politics', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_cutthroat_politics', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_dominion', 'Corporate Dominion', 'Starts with the Offworld Trade Companies technology already unlocked Unlocks Ship Type: Private Colony Ship', 'normal', NULL, 1, NULL, 18);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_dominion', 'external_leader_pool_add', '1.0', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_dominion', 'add_attunement_the_instrument_of_desire', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_dominion', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_dominion', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_dominion', 'authority', 'require', 'auth_oligarchic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_dominion', 'ethic', 'forbid', 'ethic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_dominion', 'ethic', 'forbid', 'ethic_fanatic_xenophobe', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_agrarian_idyll', 'Agrarian Idyll', 'Agriculture Districts provide 400 more housing Housing. Generator Districts and Mining Districts provide 300 more housing Housing. City Districts provide 200 less housing Housing. job_farmer Farmers also produce 2 amenities Amenities.', 'normal', NULL, 1, NULL, 19);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_agrarian_idyll', 'add_attunement_the_composer_of_strands', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'ethic', 'require_any', 'ethic_pacifist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'ethic', 'require_any', 'ethic_fanatic_pacifist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'civic', 'forbid', 'civic_dystopian_society', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'civic', 'forbid', 'civic_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'origin', 'forbid', 'origin_post_apocalyptic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'origin', 'forbid', 'origin_post_apocalyptic_machines', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'origin', 'forbid', 'origin_shattered_ring', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'origin', 'forbid', 'origin_void_dwellers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'origin', 'forbid', 'origin_void_machines', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'origin', 'forbid', 'origin_remnants', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_shadow_council', 'Shadow Council', NULL, 'normal', NULL, 1, NULL, 20);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_shadow_council', 'election_term_variance_add', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('election_term_variance_add', 'Election Term Variance (Years)', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_shadow_council', 'country_election_cost_mult', '-0.75', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_shadow_council', 'councilor_skill_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_shadow_council', 'intel_decryption_add', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_shadow_council', 'spy_network_daily_value_mult', '0.1', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('spy_network_daily_value_mult', 'Infiltration Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_shadow_council', 'add_attunement_the_instrument_of_desire', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_shadow_council', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_shadow_council', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_shadow_council', 'authority', 'require_any', 'auth_democratic', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_shadow_council', 'authority', 'require_any', 'auth_oligarchic', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_shadow_council', 'authority', 'require_any', 'auth_dictatorial', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_mining_guilds', 'Mining Guilds', NULL, 'normal', NULL, 1, NULL, 21);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_mining_guilds', 'planet_miners_minerals_produces_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_minerals_produces_add', 'minerals Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_mining_guilds', 'add_attunement_the_instrument_of_desire', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_mining_guilds', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_mining_guilds', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_mining_guilds', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_parliamentary_system', 'Parliamentary System', '- Factions will form in your empire shortly after the game starts, but Faction Output is reduced for the first ten years.', 'normal', NULL, 1, NULL, 22);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_parliamentary_system', 'pop_factions_produces_mult', '0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_factions_produces_mult', 'Faction Resource Output', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_parliamentary_system', 'faction_demands_unmet_mult', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('faction_demands_unmet_mult', 'Disapproval from Unmet Faction Demands', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_parliamentary_system', 'add_attunement_the_cradle_of_souls', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_parliamentary_system', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_parliamentary_system', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_parliamentary_system', 'authority', 'require', 'auth_democratic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_parliamentary_system', 'civic', 'forbid', 'civic_corporate_crowdsourcing', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_parliamentary_system', 'civic', 'forbid', 'civic_crowdsourcing', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_parliamentary_system', 'civic', 'forbid', 'civic_secret_societies', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_parliamentary_system', 'civic', 'forbid', 'civic_secret_societies_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_parliamentary_system', 'civic', 'forbid', 'civic_media_conglomerate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_parliamentary_system', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_efficient_bureaucracy', 'Efficient Bureaucracy', 'job_bureaucrat Bureaucrats and provide mod_country_edict_fund_add Edict Fund scaling with their unity Unity production.', 'normal', NULL, 1, NULL, 23);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_efficient_bureaucracy', 'planet_bureaucrats_upkeep_mult', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_upkeep_mult', 'Upkeep for', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_efficient_bureaucracy', 'add_attunement_the_instrument_of_desire', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_efficient_bureaucracy', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_efficient_bureaucracy', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_nationalistic_zeal', 'Nationalistic Zeal', NULL, 'normal', NULL, 1, NULL, 24);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_nationalistic_zeal', 'country_war_exhaustion_mult', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_nationalistic_zeal', 'country_claim_influence_cost_mult', '-0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_nationalistic_zeal', 'diplo_weight_rivals_mult', '0.05', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_rivals_mult', 'Diplomatic Weight Per Rival', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_nationalistic_zeal', 'add_attunement_the_eater_of_worlds', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_nationalistic_zeal', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_nationalistic_zeal', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_nationalistic_zeal', 'ethic', 'require_any', 'ethic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_nationalistic_zeal', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_functional_architecture', 'Functional Architecture', '- Waives Technology requirements for zone Basic District Specializations', 'normal', NULL, 1, NULL, 25);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_functional_architecture', 'planet_structures_cost_mult', '-0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_cost_mult', 'Planetary Infrastructure Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_functional_architecture', 'planet_building_build_speed_mult', '0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Planetary Infrastructure Build Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_functional_architecture', 'add_attunement_the_composer_of_strands', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_functional_architecture', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_functional_architecture', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_aristocratic_elite', 'Aristocratic Elite', '- job_politician Politician Jobs are converted into job_noble Noble Jobs - Can construct building Noble Estates buildings that add additional job_noble Noble Jobs - Grants access to the building Noble Chateaus Holding - Leaders have a 20% chance to start with an additional positive and negative trait.', 'normal', NULL, 1, NULL, 26);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_aristocratic_elite', 'pop_cat_ruler_bonus_workforce_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_bonus_workforce_mult', 'Job Efficiency for Elites', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_aristocratic_elite', 'leaders_upkeep_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_aristocratic_elite', 'add_attunement_the_instrument_of_desire', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_aristocratic_elite', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_aristocratic_elite', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_aristocratic_elite', 'authority', 'require_any', 'auth_oligarchic', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_aristocratic_elite', 'authority', 'require_any', 'auth_imperial', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_aristocratic_elite', 'ethic', 'forbid', 'ethic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_aristocratic_elite', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_aristocratic_elite', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_shared_burden', 'Shared Burdens', 'Allows Shared Burdens Living Standard, under which all pop Pops have moderate consumer_goods Consumer Goods Upkeep regardless of Strata Disables the use of most other Living Standards Grants access to the building Communal Housing Outreach Holding', 'normal', 'Megacorp', 1, NULL, 27);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_shared_burden', 'planet_stability_add', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_shared_burden', 'add_attunement_the_composer_of_strands', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_shared_burden', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_shared_burden', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_shared_burden', 'ethic', 'require', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_shared_burden', 'ethic', 'forbid', 'ethic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_shared_burden', 'ethic', 'forbid', 'ethic_fanatic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_shared_burden', 'civic', 'forbid', 'civic_technocracy', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_shared_burden', 'civic', 'forbid', 'civic_pleasure_seekers', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_fanatic_purifiers', 'Fanatic Purifiers', 'Cannot engage in Diplomacy with other species! Cannot access the Galactic Market Has the ''Purification'' casus belli on other species Xeno Pops will always be purged Gains unity Unity from purging pop Xeno Pops May use Armageddon bombardment stance', 'normal', NULL, 1, NULL, 28);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_fanatic_purifiers', 'ship_fire_rate_mult', '0.33', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_fanatic_purifiers', 'army_damage_mult', '0.33', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_fanatic_purifiers', 'starbase_shipyard_build_cost_mult', '-0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_cost_mult', 'Ship Build Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_fanatic_purifiers', 'country_naval_cap_mult', '0.33', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_fanatic_purifiers', 'add_attunement_the_eater_of_worlds', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_fanatic_purifiers', 'the_cradle_of_souls_attunement_mult', '-0.25', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('the_cradle_of_souls_attunement_mult', 'Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'ethic', 'require', 'ethic_fanatic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'ethic', 'require_any', 'ethic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_barbaric_despoilers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_pompous_purists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_crusader_spirit', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_selective_kinship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_corporate_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_hive_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_machine_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_corporate_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'origin', 'forbid', 'origin_syncretic_evolution', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'origin', 'forbid', 'origin_common_ground', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'origin', 'forbid', 'origin_hegemon', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'origin', 'forbid', 'origin_toxic_knights', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fanatic_purifiers', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_barbaric_despoilers', 'Barbaric Despoilers', 'Cannot form Migration Treaties Cannot form (but can join) Federations other than Martial Alliances or Hegemonies Has the ''Despoliation'' casus belli on all other empires Unlocks the Raiding bombardment stance, which in turn allows us to abduct pops from besieged planets and resettle them to our own worlds. Decreased Opinion for most other empires', 'normal', 'Apocalypse', 1, NULL, 29);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_barbaric_despoilers', 'add_attunement_the_eater_of_worlds', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'origin', 'forbid', 'origin_slavers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'ethic', 'forbid', 'ethic_xenophile', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'ethic', 'forbid', 'ethic_fanatic_xenophile', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'ethic', 'require_any', 'ethic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'ethic', 'require_any', 'ethic_fanatic_authoritarian', 2);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'ethic', 'require_any', 'ethic_authoritarian', 2);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'ethic', 'require_any', 'ethic_fanatic_xenophobe', 2);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'ethic', 'require_any', 'ethic_xenophobe', 2);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_barbaric_despoilers', 'origin', 'forbid', 'origin_common_ground', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_byzantine_bureaucracy', 'Byzantine Bureaucracy', NULL, 'normal', 'Megacorp', 1, NULL, 30);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_byzantine_bureaucracy', 'planet_bureaucrats_unity_produces_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_unity_produces_add', 'unity Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_byzantine_bureaucracy', 'planet_bureaucrats_stability_produces_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_stability_produces_add', 'mod_planet_stability_add Produced per 100', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_byzantine_bureaucracy', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_byzantine_bureaucracy', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_merchant_guilds', 'Merchant Guilds', '- job_politician Politician Jobs are converted to job_merchant Merchant Jobs - The building Galactic Stock Exchange grants additional job_merchant Merchants Jobs.', 'normal', 'Megacorp', 1, NULL, 31);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_merchant_guilds', 'add_attunement_the_instrument_of_desire', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_merchant_guilds', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_merchant_guilds', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_reanimated_armies', 'Reanimators', '- job_soldier Soldiers are replaced with job_necromancer Necromancers - Available Buildings: - Available Holdings: - Defeated Organic Armies are sometimes resurrected as Undead Armies - Defeated organic Leviathans can sometimes be resurrected - Controlled cloned organic Space Fauna can be reanimated', 'normal', 'Necroids Species Pack', 1, NULL, 32);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_reanimated_armies', 'add_attunement_the_eater_of_worlds', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_reanimated_armies', 'pop_soldier_bonus_workforce_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_soldier_bonus_workforce_mult', 'Job Efficiency for', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_reanimated_armies', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_reanimated_armies', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_reanimated_armies', 'ethic', 'forbid', 'ethic_pacifist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_reanimated_armies', 'ethic', 'forbid', 'ethic_fanatic_pacifist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_reanimated_armies', 'civic', 'forbid', 'civic_citizen_service', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_reanimated_armies', 'civic', 'forbid', 'civic_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_reanimated_armies', 'civic', 'forbid', 'civic_corporate_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_reanimated_armies', 'civic', 'forbid', 'civic_hive_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_reanimated_armies', 'civic', 'forbid', 'civic_machine_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_reanimated_armies', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_diplomatic_corps', 'Diplomatic Corps', NULL, 'normal', 'Federations', 1, NULL, 33);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_diplomatic_corps', 'envoys_add', '2.0', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_diplomatic_corps', 'diplo_weight_mult', '0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_diplomatic_corps', 'country_trust_cap_add', '40.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_diplomatic_corps', 'envoy_improve_relations_mult', '0.75', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('envoy_improve_relations_mult', 'Envoy Improve Relations', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_diplomatic_corps', 'add_attunement_the_cradle_of_souls', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_diplomatic_corps', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_diplomatic_corps', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_diplomatic_corps', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_diplomatic_corps', 'civic', 'forbid', 'civic_inwards_perfection', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_diplomatic_corps', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_death_cult', 'Death Cult', '- Available Buildings: building - Additional Starting Buildings: building Sacrificial Temple - Available Holdings: building - Access to Sacrifice Edicts - job_priest Priests are converted into job_death_priest Death Priests', 'normal', 'Necroids Species Pack', 1, NULL, 34);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult', 'civic', 'forbid', 'civic_inwards_perfection', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult', 'civic', 'forbid', 'civic_death_cult_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult', 'origin', 'forbid', 'origin_necrophage', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_memorialist', 'Memorialists', '- Can build building Sanctuary of Repose - Sanctuaries of Repose improve Governing Ethics Attraction on Tomb Worlds and Relic Worlds - job_death_chronicler Death Chroniclers turn consumer_goods Consumer Goods into unity Unity and stability Stability, and inherit the Ethics-based modifiers of', 'normal', 'Necroids Species Pack', 1, NULL, 35);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memorialist', 'add_attunement_the_composer_of_strands', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memorialist', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memorialist', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memorialist', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memorialist', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memorialist', 'civic', 'forbid', 'civic_entropy_drinkers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memorialist', 'civic', 'forbid', 'civic_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memorialist', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_catalytic_processing', 'Catalytic Processing', '- are replaced with job_catalytic_technician Catalytic Technicians - Industrial Jobs have their minerals Minerals Upkeep replaced with food Food Upkeep.', 'normal', 'Plantoids Species Pack', 1, NULL, 36);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_catalytic_processing', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_catalytic_processing', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_catalytic_processing', 'civic', 'forbid', 'civic_corporate_catalytic_processing', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_catalytic_processing', 'origin', 'forbid', 'origin_lithoid', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_crafters', 'Masterful Crafters', 'job_artisan Artisans are replaced with job_artificer Artificers job_artificer Artificers turn minerals Minerals into consumer_goods Consumer Goods and trade Trade', 'normal', NULL, 1, NULL, 37);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_crafters', 'add_attunement_the_instrument_of_desire', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crafters', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crafters', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_pleasure_seekers', 'Pleasure Seekers', '- pop_cat_civilian Civilians are converted into job_fe_hedonist Hedonists, which do not produce mod_planet_amenities_add Amenities - Allows Decadent Lifestyle Living Standard, under which all pop Pops have increased happiness Happiness, consumer_goods Consumer Goods Upkeep and mod_planet_amenities_add Amenities Usage - job_fe_hedonist Hedonists with Decadent Lifestyle provide unity Unity and mod_logistic_growth_mult Pop Growth (or Assembly) Speed, but require mod_planet_amenities_add Amenities - Additional Starting Buildings: building', 'normal', NULL, 1, NULL, 38);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_pleasure_seekers', 'add_attunement_the_instrument_of_desire', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pleasure_seekers', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pleasure_seekers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pleasure_seekers', 'civic', 'forbid', 'civic_warrior_culture', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pleasure_seekers', 'civic', 'forbid', 'civic_shared_burden', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pleasure_seekers', 'civic', 'forbid', 'civic_slaver_guilds', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pleasure_seekers', 'civic', 'forbid', 'civic_corporate_hedonism', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pleasure_seekers', 'civic', 'forbid', 'civic_dystopian_society', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pleasure_seekers', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_idyllic_bloom', 'Idyllic Bloom', 'Can build building Gaia Seeders on your and your vassal''s worlds ideal to your starting species. Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases. As you unlock improved society Terraforming technologies, building Gaia Seeders can be constructed on additional planet types.', 'normal', 'Plantoids Species Pack', 1, NULL, 39);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_idyllic_bloom', 'add_attunement_the_composer_of_strands', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'civic', 'forbid', 'civic_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'civic', 'forbid', 'civic_world_forgers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'civic', 'forbid', 'civic_hive_world_forgers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'civic', 'forbid', 'civic_machine_world_forgers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'civic', 'forbid', 'civic_corporate_world_forgers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'origin', 'forbid', 'origin_void_dwellers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_anglers', 'Anglers', '- On Ocean Worlds, Agriculture Districts are uncapped. - On Wet worlds: - Agriculture Districts have the zone Aquaculture Specialization - job_farmer Farmers are converted into job_angler Anglers - job_artisan Artisans are converted into job_pearl_diver Pearl Divers', 'normal', NULL, 1, NULL, 40);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_anglers', 'add_attunement_the_composer_of_strands', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_anglers', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_anglers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_anglers', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_anglers', 'origin', 'forbid', 'origin_post_apocalyptic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_anglers', 'origin', 'forbid', 'origin_shattered_ring', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_anglers', 'origin', 'forbid', 'origin_void_dwellers', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_anglers', 'Marine Machines', '- On Ocean Worlds, Agriculture Districts are uncapped. - On Wet worlds: - Agriculture Districts have the zone Aquaculture Specialization - job_farmer Farmers are converted into job_angler Anglers - job_artisan Artisans are converted into job_pearl_diver Pearl Divers', 'normal', NULL, 1, NULL, 41);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_anglers', 'add_attunement_the_composer_of_strands', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_anglers', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_anglers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_anglers', 'origin', 'forbid', 'origin_post_apocalyptic_machines', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_anglers', 'origin', 'forbid', 'origin_shattered_ring', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_anglers', 'origin', 'forbid', 'origin_void_machines', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_pompous_purists', 'Pompous Purists', 'Can only engage in Diplomacy with other empires if they are the proposer.', 'normal', NULL, 1, NULL, 42);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_pompous_purists', 'envoy_improve_relations_mult', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('envoy_improve_relations_mult', 'Envoy Improve Relations', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_pompous_purists', 'envoys_add', '1.0', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_pompous_purists', 'diplo_weight_opposing_mult', '0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_opposing_mult', 'Diplomatic Weight When Opposing Resolutions', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_pompous_purists', 'external_leader_pool_add', '-1.0', 3);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_pompous_purists', 'refugee_attraction', '-0.25', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_pompous_purists', 'add_attunement_the_cradle_of_souls', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pompous_purists', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pompous_purists', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pompous_purists', 'ethic', 'require_any', 'ethic_xenophobe', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pompous_purists', 'ethic', 'require_any', 'ethic_fanatic_xenophobe', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pompous_purists', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pompous_purists', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pompous_purists', 'civic', 'forbid', 'civic_inwards_perfection', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pompous_purists', 'origin', 'forbid', 'origin_scion', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_toxic_baths', 'Mutagenic Spas', '- Available Buildings: building - Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a colony Colony with building Mutagenic Spas.', 'normal', NULL, 1, NULL, 43);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_toxic_baths', 'add_attunement_the_composer_of_strands', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_toxic_baths', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_toxic_baths', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_toxic_baths', 'civic', 'forbid', 'civic_corporate_toxic_baths', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_toxic_baths', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_toxic_baths', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_relentless_industrialists', 'Relentless Industrialists', 'Can build building Coordinated Fulfillment Center, significantly increasing alloys Alloy and consumer_goods Consumer Goods output at the cost of reduced mod_logistic_growth_mult Pop Growth and gradually turning planets into Tomb Worlds.', 'normal', NULL, 1, NULL, 44);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_relentless_industrialists', 'add_attunement_the_instrument_of_desire', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'ethic', 'require_any', 'ethic_materialist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'ethic', 'require_any', 'ethic_fanatic_materialist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'civic', 'forbid', 'civic_environmentalist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'civic', 'forbid', 'civic_idyllic_bloom', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'civic', 'forbid', 'civic_memorialist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'civic', 'forbid', 'civic_world_forgers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'civic', 'forbid', 'civic_hive_world_forgers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'civic', 'forbid', 'civic_machine_world_forgers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'civic', 'forbid', 'civic_corporate_world_forgers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_scavengers', 'Scavengers', '- Researching Debris grants both physics society engineering Research and a portion of other Resource Costs of the destroyed fleet - Ships can be salvaged from some Debris', 'normal', NULL, 1, NULL, 45);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_scavengers', 'ships_alloys_upkeep_mult', '-0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_alloys_upkeep_mult', 'Ships alloys Alloys Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_scavengers', 'planet_building_refund_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_refund_mult', 'Planetary Infrastructure Refund', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_scavengers', 'megastructure_dismantle_refund_mult', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructure_dismantle_refund_mult', 'Megastructure Refund', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scavengers', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scavengers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scavengers', 'civic', 'forbid', 'civic_corporate_scavengers', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_ascensionists', 'Ascensionists', '- Colonies have +1 Ascension Tier on game start.', 'normal', NULL, 1, NULL, 46);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ascensionists', 'planetary_ascension_effect_mult', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_effect_mult', 'Colony Ascension Effects', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ascensionists', 'planetary_ascension_cost_mult', '-0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_cost_mult', 'Colony Ascension Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ascensionists', 'tradition_cost_empire_size_mult', '-0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tradition_cost_empire_size_mult', 'Tradition Cost from Empire Size', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ascensionists', 'add_attunement_the_instrument_of_desire', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_ascensionists', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_ascensionists', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_ascensionists', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_ascensionists', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_ascensionists', 'civic', 'forbid', 'civic_corporate_ascensionists', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_memory_vault', 'Vaults of Knowledge', 'Can build unique building Vaults of Knowledge building Vaults of Knowledge produce unity Unity and increase Leader Experience Gain based on Destiny Traits acquired.', 'normal', 'Galactic Paragons', 1, NULL, 47);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault', 'councilor_skill_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault', 'leader_initial_skill', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_initial_skill', 'Leader Starting Skill Level', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault', 'leader_trait_selection_options_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_trait_selection_options_add', 'Additional Leader Trait Options', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memory_vault', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memory_vault', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memory_vault', 'civic', 'forbid', 'civic_memory_vault_corporate', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_crusader_spirit', 'Crusader Spirit', 'commander Commanders start with the Crusader Trait Can only use Liberation Wars policy', 'normal', 'Galactic Paragons', 1, NULL, 48);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_crusader_spirit', 'ship_weapon_damage', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_weapon_damage', 'Ship Weapons Damage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_crusader_spirit', 'starbase_shipyard_build_speed_mult', '0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_crusader_spirit', 'add_attunement_the_cradle_of_souls', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit', 'ethic', 'forbid', 'ethic_pacifist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit', 'ethic', 'forbid', 'ethic_fanatic_pacifist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit', 'ethic', 'require_any', 'ethic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit', 'ethic', 'require_any', 'ethic_authoritarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit', 'ethic', 'require_any', 'ethic_fanatic_authoritarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit', 'civic', 'forbid', 'civic_beacon_of_liberty', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_eager_explorers', 'Eager Explorers', 'Start with 2 Exploration Vessels and an Engineering Vessel equipped with Subspace Drives, making them incapable of Hyperlane travel but granting limited Jump Drive abilities. Gain an increased chance to discover FTL Travel Technologies', 'normal', NULL, 1, NULL, 49);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_eager_explorers', 'ship_speed_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_eager_explorers', 'science_ship_survey_speed', '0.2', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_eager_explorers', 'ship_anomaly_generation_chance_mult', '0.05', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_anomaly_generation_chance_mult', 'Anomaly Discovery Chance', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_eager_explorers', 'category_voidcraft_draw_chance_mult', '0.5', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_voidcraft_draw_chance_mult', 'Chance for Voidcraft Research Options', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_eager_explorers', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_eager_explorers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hyperspace_specialty', 'Hyperspace Specialty', 'physics Hyperlane Breach Points is Guaranteed Research Option. Has Low Intel on all systems within 3 Hyperlanes of your starting system.', 'normal', NULL, 1, NULL, 50);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hyperspace_specialty', 'planet_sensor_range_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_sensor_range_add', 'Planet Sensor Range', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hyperspace_specialty', 'ship_speed_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hyperspace_specialty', 'country_physics_tech_research_speed', '0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_physics_tech_research_speed', 'Research Speed ( physics Physics)', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hyperspace_specialty', 'add_attunement_the_composer_of_strands', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hyperspace_specialty', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hyperspace_specialty', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hyperspace_specialty', 'civic', 'forbid', 'civic_corporate_hyperspace_specialty', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hyperspace_specialty', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hyperspace_specialty', 'civic', 'forbid', 'civic_privatized_exploration', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hyperspace_specialty', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hyperspace_specialty', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hyperspace_specialty', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_dimensional_worship', 'Dimensional Worship', '- Available Starbase Buildings:', 'normal', NULL, 1, NULL, 51);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_dimensional_worship', 'planet_bureaucrats_physics_research_produces_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_physics_research_produces_add', 'physics_research Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_dimensional_worship', 'rare_tech_draw_chance_mult', '0.1', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dimensional_worship', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dimensional_worship', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dimensional_worship', 'civic', 'forbid', 'civic_corporate_dimensional_worship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dimensional_worship', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dimensional_worship', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_heroic_tales', 'Heroic Past', NULL, 'normal', 'Galactic Paragons', 1, NULL, 52);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_heroic_tales', 'country_official_cap_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_official_cap_add', 'official Official Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_heroic_tales', 'country_commander_cap_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_commander_cap_add', 'commander Commander Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_heroic_tales', 'country_scientist_cap_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_scientist_cap_add', 'scientist Scientist Capacity', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_heroic_tales', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_heroic_tales', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_heroic_tales', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_dystopian_society', 'Oppressive Autocracy', '- job_enforcer Enforcers are pop_cat_ruler Elites instead of pop_cat_specialist Specialists - Only pop_cat_ruler Elites can produce mod_planet_amenities_add Amenities and have mod_planet_amenities_add Amenities Upkeep - Forces Dystopian Society Living Standard, under which non-Elite Pops have decreased consumer_goods Consumer Goods Upkeep - Non-Elite Pops generate additional crime Crime - Cannot build building Holo-Theatres', 'normal', 'Galactic Paragons', 1, NULL, 53);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_dystopian_society', 'country_commander_cap_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_commander_cap_add', 'commander Commander Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_dystopian_society', 'leaders_upkeep_mult', '-0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_dystopian_society', 'refugee_attraction', '-0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_dystopian_society', 'add_attunement_the_instrument_of_desire', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dystopian_society', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dystopian_society', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dystopian_society', 'civic', 'forbid', 'civic_civil_education', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dystopian_society', 'ethic', 'require', 'ethic_fanatic_authoritarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dystopian_society', 'civic', 'forbid', 'civic_pleasure_seekers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dystopian_society', 'civic', 'forbid', 'civic_free_haven', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dystopian_society', 'civic', 'forbid', 'civic_warrior_culture', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dystopian_society', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dystopian_society', 'civic', 'forbid', 'civic_environmentalist', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_selective_kinship', 'Selective Kinship', 'Opinion of Empires with shared Species Class: +100 Opinion of other Empires: -50 Refugee Attraction with our Species Class: +30% Refugee Attraction with other Species Classes: -20% pop Pops of our Species Class have Full Citizenship Other pop Pops are barred from Full Citizenship', 'normal', NULL, 1, NULL, 54);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_selective_kinship', 'citizen_pop_same_species_class_happiness', '0.075', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('citizen_pop_same_species_class_happiness', 'Citizen Happiness while sharing planet with same Species Class', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_selective_kinship', 'citizen_pop_different_species_class_happiness', '0.025', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('citizen_pop_different_species_class_happiness', 'Citizen Happiness while oppressing other Species Classes', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_selective_kinship', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_selective_kinship', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_selective_kinship', 'ethic', 'forbid', 'ethic_xenophile', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_selective_kinship', 'ethic', 'forbid', 'ethic_fanatic_xenophile', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_selective_kinship', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_selective_kinship', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_selective_kinship', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_selective_kinship', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_dark_consortium', 'Dark Consortium', '- Additional Starting Technologies: - - Access to Dark Matter Edicts - Has access to the Dark Matter Breakthrough Council Agenda.', 'normal', NULL, 1, NULL, 55);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dark_consortium', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dark_consortium', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_dark_consortium', 'civic', 'forbid', 'civic_corporate_dark_consortium', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_natural_design', 'Natural Design', 'Available Buildings: Genomic Services Center', 'normal', NULL, 1, NULL, 56);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_natural_design', 'BIOLOGICAL_species_trait_picks_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_natural_design', 'BIOLOGICAL_species_trait_points_add', '2.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_points_add', 'Organic Species Modification Points', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_natural_design', 'planet_doctors_society_research_produces_add', '0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_doctors_society_research_produces_add', 'society_research Produced per 100', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'civic', 'forbid', 'civic_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'civic', 'forbid', 'civic_entropy_drinkers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'civic', 'forbid', 'civic_entropy_drinkers_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'civic', 'forbid', 'civic_chosen', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'civic', 'forbid', 'civic_corporate_chosen', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'origin', 'forbid', 'origin_clone_army', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'origin', 'forbid', 'origin_overtuned', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'origin', 'forbid', 'origin_shroudwalker_apprentice', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'origin', 'forbid', 'origin_cybernetic_creed', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'origin', 'forbid', 'origin_endbringers', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_sovereign_guardianship', 'Sovereign Guardianship', 'Unlocks Fanatic Guardians as defense armies. Allows building a Reloading Bay in starbases. Enables Inner Focus Edict, converting influence Influence into unity Unity.', 'normal', NULL, 1, NULL, 57);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_sovereign_guardianship', 'empire_size_colonies_mult', '0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Planets', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_sovereign_guardianship', 'empire_size_branch_office_mult', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_branch_office_mult', 'Empire Size from Branch Offices', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_sovereign_guardianship', 'empire_size_systems_mult', '1.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_sovereign_guardianship', 'empire_size_pops_mult', '-0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_sovereign_guardianship', 'empire_size_districts_mult', '-0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_sovereign_guardianship', 'diplo_weight_mult', '0.2', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_sovereign_guardianship', 'planet_soldiers_unity_produces_add', '1.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_unity_produces_add', 'unity Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_sovereign_guardianship', 'add_attunement_the_cradle_of_souls', '60.0', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'ethic', 'require_any', 'ethic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'civic', 'forbid', 'civic_corporate_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'civic', 'forbid', 'civic_inwards_perfection', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'civic', 'forbid', 'civic_reanimated_armies', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'civic', 'forbid', 'civic_privatized_exploration', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'origin', 'forbid', 'origin_fear_of_the_dark', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'origin', 'forbid', 'origin_payback', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_guided_sapience', 'Genesis Guides', '- Available Colony Ships: Genesis Ark - Planets Colonized with Genesis Arks: - Pre-Sapient Pops: +300 - Planetary Features: Genesis Preserve - Gains unity Unity from uplifting Pre-Sapient Species', 'normal', NULL, 1, NULL, 58);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_guided_sapience', 'terraforming_cost_mult', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('terraforming_cost_mult', 'Terraforming Cost', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_guided_sapience', 'terraform_speed_mult', '0.25', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_guided_sapience', 'add_attunement_the_composer_of_strands', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'ethic', 'forbid', 'ethic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'ethic', 'forbid', 'ethic_fanatic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'civic', 'forbid', 'civic_privatized_exploration', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'origin', 'forbid', 'origin_syncretic_evolution', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_toxic_baths_individual_machine', 'Lubrication Tanks', '- Available Buildings: building - Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a colony Colony with building Hyper Lubrication Basin.', 'normal', NULL, 1, NULL, 59);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_toxic_baths_individual_machine', 'add_attunement_the_composer_of_strands', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_toxic_baths_individual_machine', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_toxic_baths_individual_machine', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_toxic_baths_individual_machine', 'civic', 'forbid', 'civic_corporate_toxic_baths_individual_machine', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_toxic_baths_individual_machine', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_individual_machine_replication', 'Rapid Replicator', NULL, 'normal', NULL, 1, NULL, 60);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_individual_machine_replication', 'planet_pop_assembly_mult', '0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_individual_machine_replication', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_individual_machine_replication', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_individual_machine_predictive_analysis', 'Static Research Analysis', NULL, 'normal', NULL, 1, NULL, 61);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_individual_machine_predictive_analysis', 'num_tech_alternatives_add', '1.0', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_individual_machine_predictive_analysis', 'intel_decryption_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_individual_machine_predictive_analysis', 'councilor_research_exp_gain', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_research_exp_gain', 'Head of Research Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_individual_machine_predictive_analysis', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_individual_machine_predictive_analysis', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_individual_machine_warbots', 'Warbots', NULL, 'normal', NULL, 1, NULL, 62);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_individual_machine_warbots', 'army_damage_mult', '0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_individual_machine_warbots', 'armies_upkeep_mult', '-0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('armies_upkeep_mult', 'Army Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_individual_machine_warbots', 'commander_initial_skill', '2.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commander_initial_skill', 'commander Commander Starting Skill Level', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_individual_machine_warbots', 'leader_commanders_upkeep_mult', '-0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_commanders_upkeep_mult', 'commander Commander Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_individual_machine_warbots', 'add_attunement_the_eater_of_worlds', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_individual_machine_warbots', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_individual_machine_warbots', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_individual_machine_warbots', 'civic', 'forbid', 'civic_machine_obsessional_directive', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_astrometeorology', 'Astrometeorology', '- Available Buildings: building - Additional Starting Buildings: building Astrometeorology Observatory', 'normal', NULL, 1, NULL, 63);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_astrometeorology', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_astrometeorology', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_storm_callers', 'Storm Devotion', '- Available Buildings: building - Replaces Jobs with job_storm_dancer Storm Dancer Jobs - Species Traits:', 'normal', NULL, 1, NULL, 64);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_storm_callers', 'capital_storm_diplo_weight_mult', '0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('capital_storm_diplo_weight_mult', 'Diplomatic Weight while Capital is affected by a Cosmic Storm', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_storm_callers', 'add_attunement_the_composer_of_strands', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_storm_callers', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_storm_callers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_storm_callers', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_environmental_architects', 'Planetscapers', '- Additional Starting Technologies: society Technologies to remove blocker on the Homeworld - society Technologies to remove blocker Natural Blockers are granted as Permanent Research Options upon Colonization - Mastery of Nature replaced with Cultivated Worldscaping Planetary - For each blocker Natural Blocker on Colonized planet : - Resources from Jobs: -10% - Pop Growth Speed: -10% - Pop Upkeep: +15%', 'normal', NULL, 1, NULL, 65);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects', 'planet_jobs_produces_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects', 'founder_species_growth_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects', 'planet_pops_upkeep_mult', '-0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects', 'planet_clear_blocker_speed_mult', '0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects', 'add_attunement_the_instrument_of_desire', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'civic', 'forbid', 'civic_environmental_architects_megacorp', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'civic', 'forbid', 'civic_environmentalist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'civic', 'forbid', 'civic_toxic_baths', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'civic', 'forbid', 'civic_toxic_baths_individual_machine', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'civic', 'forbid', 'civic_corporate_toxic_baths', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'civic', 'forbid', 'civic_corporate_toxic_baths_individual_machine', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'civic', 'forbid', 'civic_hive_toxic_baths', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'civic', 'forbid', 'civic_machine_toxic_baths', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'civic', 'forbid', 'civic_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'origin', 'forbid', 'origin_remnants', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'origin', 'forbid', 'origin_post_apocalyptic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'origin', 'forbid', 'origin_post_apocalyptic_machines', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'origin', 'forbid', 'origin_void_dwellers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'origin', 'forbid', 'origin_void_machines', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'origin', 'forbid', 'origin_shattered_ring', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'origin', 'forbid', 'origin_lithoid', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'origin', 'forbid', 'origin_machine', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_galactic_curators', 'Galactic Curators', '- Guaranteed Research Options: - Initial : One Common of each Collection Category - Gain unity Unity each time you find a Specimen or complete an Archaeological Site - Purchases from the Curator Enclave: $@galactic_curators_curator_enclave_purchase_cost|%0$ - Enables the Decentralized Research Edict, increasing Research Station Output but decreasing job_researcher Job Output - Replaces job_entertainer Entertainer Jobs with job_historical_curator Museum Curator Jobs', 'normal', NULL, 1, NULL, 66);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galactic_curators', 'planet_jobs_unity_produces_mult', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_unity_produces_mult', 'unity Unity from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galactic_curators', 'ship_anomaly_generation_chance_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_anomaly_generation_chance_mult', 'Anomaly Discovery Chance', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galactic_curators', 'specimens_produces_mult', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('specimens_produces_mult', 'Specimens Output', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galactic_curators', 'megastructures_grand_archive_cost_mult', '-0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_grand_archive_cost_mult', 'Grand Archive Build Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galactic_curators', 'add_attunement_the_instrument_of_desire', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_galactic_curators', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_galactic_curators', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_galactic_curators', 'civic', 'forbid', 'civic_corporate_galactic_curators', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_beastmasters', 'Beastmasters', '- Additional Starting Technologies: - - - Available Starbase Buildings: - Home System: Start with a - Starting Military Ships are replaced with Space Amoebas - Starting genetic_material : - Common Space Amoeba', 'normal', NULL, 1, NULL, 67);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_beastmasters', 'starbase_shipyard_artificial_build_cost_mult', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_artificial_build_cost_mult', 'Artificial Military Ship Build Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_beastmasters', 'ship_military_artificial_upkeep_mult', '2.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_military_artificial_upkeep_mult', 'Artificial Military Ship Upkeep Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_beastmasters', 'space_fauna_ship_cost_mult', '-0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_cost_mult', 'Space Fauna Ship Cloning Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_beastmasters', 'space_fauna_ship_upkeep_mult', '-0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_upkeep_mult', 'Space Fauna Ship Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_beastmasters', 'add_attunement_the_composer_of_strands', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beastmasters', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beastmasters', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beastmasters', 'civic', 'forbid', 'civic_corporate_beastmasters', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beastmasters', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beastmasters', 'civic', 'forbid', 'civic_galvanic_symbiosis', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_beastmasters', 'origin', 'forbid', 'origin_cosmic_dawn', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_genetic_identification', 'Genetic Identification', NULL, 'normal', NULL, 1, NULL, 68);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_genetic_identification', 'planet_bureaucrats_society_research_produces_add', '1.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_society_research_produces_add', 'society_research Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_genetic_identification', 'planet_crime_mult', '-0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_mult', '', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_genetic_identification', 'intel_encryption_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_genetic_identification', 'add_attunement_the_instrument_of_desire', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_genetic_identification', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_genetic_identification', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_genetic_identification', 'civic', 'forbid', 'civic_corporate_genetic_identification', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_crowdsourcing', 'Crowdsourcing', '- Factions produce physics society engineering Research instead of unity Unity - Factions will form in your empire shortly after the game starts, but Faction Output is reduced for the first ten years', 'normal', NULL, 1, NULL, 69);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_crowdsourcing', 'add_attunement_the_cradle_of_souls', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_xenophile', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_authoritarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_militarist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_pacifist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_spiritualist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_materialist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'civic', 'forbid', 'civic_corporate_crowdsourcing', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'civic', 'forbid', 'civic_parliamentary_system', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'civic', 'forbid', 'civic_media_conglomerate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'civic', 'forbid', 'civic_secret_societies', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crowdsourcing', 'civic', 'forbid', 'civic_secret_societies_corporate', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_civil_education', 'Civil Education', '- Replaces all job_enforcer Enforcers with job_educator Educators - Replaces building with building', 'normal', NULL, 1, NULL, 70);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_civil_education', 'add_attunement_the_cradle_of_souls', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_civil_education', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_civil_education', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_civil_education', 'civic', 'forbid', 'civic_police_state', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_civil_education', 'civic', 'forbid', 'civic_dystopian_society', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_entropy_drinkers', 'Entropy Drinkers', '- Enables the following Edicts: - - - - Can construct: building . - Leaders start with the Psychic trait.', 'normal', NULL, 1, NULL, 71);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers', 'planet_jobs_produces_mult', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers', 'all_technology_research_speed', '-0.1', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers', 'logistic_growth_mult', '-0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers', 'planet_pop_assembly_mult', '-0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers', 'leaders_upkeep_mult', '-0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers', 'leader_lifespan_mult', '0.5', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers', 'civic', 'forbid', 'civic_entropy_drinkers_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers', 'ethic', 'forbid', 'ethic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers', 'civic', 'forbid', 'civic_memorialist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers', 'origin', 'forbid', 'origin_mindwardens', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers', 'origin', 'forbid', 'origin_cybernetic_creed', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_superstitious_beliefs', 'Superstitious Beliefs', 'Replaces: - job_priest Priests with job_superstitious_beliefs_priest Spirit Mediums - job_high_priest High Priests with job_superstitious_beliefs_high_priest High Astrologists Enables Every 13 years, the changes. Fortune Events will periodically benefit or impair your empire.', 'normal', NULL, 1, NULL, 72);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_superstitious_beliefs', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_superstitious_beliefs', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_superstitious_beliefs', 'civic', 'forbid', 'civic_corporate_superstitious_beliefs', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_superstitious_beliefs', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_superstitious_beliefs', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_superstitious_beliefs', 'origin', 'forbid', 'origin_cybernetic_creed', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_twisted_experimenters', 'Experimental Sentencing', 'Starts with Experimental Testing situation, which grants technology insight upon completion. Can construct and starts with: building . All non-Machine slaves get access to the Orderlies Slave Job. Access to Slave Army: Abominations', 'normal', NULL, 1, NULL, 73);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_twisted_experimenters', 'refugee_attraction', '-0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters', 'civic', 'forbid', 'civic_twisted_experimenters_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters', 'ethic', 'require_any', 'ethic_authoritarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters', 'ethic', 'require_any', 'ethic_fanatic_authoritarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters', 'ethic', 'require_any', 'ethic_xenophobe', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters', 'ethic', 'require_any', 'ethic_fanatic_xenophobe', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_secret_societies', 'Secret Societies', 'Clandestine Factions will emerge after contacting other empires. Starts with the ability to conduct Proxy Wars. will produce unity Unity per active and successful Proxy War. Starts in First Contact with two neighboring empires. Infiltration Level gained on empires after First Contact: +$@secret_society_infiltration_gain|0$', 'normal', NULL, 1, NULL, 74);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_secret_societies', 'proxy_war_cost_mult', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('proxy_war_cost_mult', 'Proxy War Influence Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_secret_societies', 'operations_cost_mult', '-0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('operations_cost_mult', 'Operation Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_secret_societies', 'envoys_add', '1.0', 2);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_secret_societies', 'intel_encryption_add', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies', 'civic', 'forbid', 'civic_secret_societies_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies', 'civic', 'forbid', 'civic_parliamentary_system', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies', 'civic', 'forbid', 'civic_media_conglomerate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies', 'civic', 'forbid', 'civic_crowdsourcing', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies', 'civic', 'forbid', 'civic_corporate_crowdsourcing', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies', 'origin', 'forbid', 'origin_cybernetic_creed', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_chosen', 'Chosen', '- Starts the game in contact with a Shroud Patron. - Additional Starting Technologies: society', 'normal', NULL, 1, NULL, 75);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_chosen', 'psionic_aura_intensity_add', '10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_aura_intensity_add', 'Psionic Aura Intensity Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'civic', 'forbid', 'civic_corporate_chosen', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'civic', 'forbid', 'civic_imperial_cult', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'civic', 'forbid', 'civic_augmentation_bazaars', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'origin', 'forbid', 'origin_cybernetic_creed', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'origin', 'forbid', 'origin_mindwardens', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'origin', 'forbid', 'origin_endbringers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_chosen', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_tankbound', 'Tankbound', 'Adds the trait. , , and are fully Automated. Colonist Jobs are pop_cat_specialist Specialists. district Urban Districts have additional job_production_overseer Production Overseers jobs.', 'normal', NULL, 1, NULL, 76);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_tankbound', 'planet_automated_jobs_upkeep_mult', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_automated_jobs_upkeep_mult', 'Upkeep for Automated Workforce', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_tankbound', 'job_farmer_automated_workforce_mult', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_farmer_automated_workforce_mult', 'Automated Workforce', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_tankbound', 'job_miner_automated_workforce_mult', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_miner_automated_workforce_mult', 'Automated Workforce', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_tankbound', 'job_technician_automated_workforce_mult', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_technician_automated_workforce_mult', 'Automated Workforce', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'civic', 'forbid', 'civic_mining_guilds', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'civic', 'forbid', 'civic_anglers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'civic', 'forbid', 'civic_citizen_service', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'civic', 'forbid', 'civic_slaver_guilds', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'origin', 'forbid', 'origin_payback', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'origin', 'forbid', 'origin_toxic_knights', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'origin', 'forbid', 'origin_clone_army', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'origin', 'forbid', 'origin_primal_calling', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'origin', 'forbid', 'origin_syncretic_evolution', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_scorched_earth', NULL, NULL, 'normal', NULL, 1, NULL, 77);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_scorched_earth', 'ship_weapon_range_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_weapon_range_mult', 'Ship Weapons Range', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_scorched_earth', 'ship_armor_mult', '0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_scorched_earth', 'starbase_shipyard_build_speed_mult', '0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_scorched_earth', 'country_naval_cap_mult', '0.5', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_scorched_earth', 'army_health', '0.4', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_health', 'Army Health', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_scorched_earth', 'category_materials_research_speed_mult', '0.5', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_materials_research_speed_mult', 'Research Speed (Materials)', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'ethic', 'forbid', 'ethic_pacifist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'ethic', 'forbid', 'ethic_fanatic_pacifist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'ethic', 'require_any', 'ethic_xenophobe', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'ethic', 'require_any', 'ethic_fanatic_xenophobe', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_barbaric_despoilers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_pompous_purists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_crusader_spirit', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_selective_kinship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_death_cult', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_secret_societies', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_diplomatic_corps', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_memorialist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_corporate_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_hive_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_machine_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_corporate_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_syncretic_evolution', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_common_ground', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_hegemon', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_tree_of_life', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_toxic_knights', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_here_be_dragons', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_ocean_paradise', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_fear_of_the_dark', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_scion', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_world_forgers', NULL, NULL, 'normal', NULL, 1, NULL, 78);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_world_forgers', 'pc_volcanic_max_districts_add', '3.0', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_world_forgers', 'pc_volcanic_habitability', '0.2', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_world_forgers', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_world_forgers', 'authority', 'forbid', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_world_forgers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_world_forgers', 'civic', 'forbid', 'civic_idyllic_bloom', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_world_forgers', 'civic', 'forbid', 'civic_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_world_forgers', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_world_forgers', 'origin', 'forbid', 'origin_ocean_paradise', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_world_forgers', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_pyrolatry', NULL, NULL, 'normal', NULL, 1, NULL, 79);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pyrolatry', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pyrolatry', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pyrolatry', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pyrolatry', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pyrolatry', 'origin', 'forbid', 'origin_cybernetic_creed', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pyrolatry', 'origin', 'forbid', 'origin_ocean_paradise', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_galvanic_symbiosis', NULL, NULL, 'normal', NULL, 1, NULL, 80);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_refund_mult', 'Planetary Infrastructure Refund', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_galvanic_symbiosis', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_galvanic_symbiosis', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_galvanic_symbiosis', 'civic', 'forbid', 'civic_beastmasters', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_galvanic_symbiosis', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_remnants', 'Fallen Machine Intelligence', 'Unable to construct new ships.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_machine_remnants.dds', 81);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_remnants', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_remnants', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_custodian_directives', 'Custodian Matrix', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_custodian_directives.dds', 82);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_custodian_directives', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_custodian_directives', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_awakened_machine', 'Reactivated Custodian Matrix', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_awakened_machine.dds', 83);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_awakened_machine', 'bonus_automated_workforce_mult', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_automated_workforce_mult', 'Automated Workforce Efficiency', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_awakened_machine', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_awakened_machine', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_malfunctioning_custodian', 'Corrupted Defense Directives', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_malfunctioning_custodian.dds', 84);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_malfunctioning_custodian', 'ship_fire_rate_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_malfunctioning_custodian', 'planet_jobs_energy_produces_mult', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'energy Energy Credits from job Jobs', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_malfunctioning_custodian', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_malfunctioning_custodian', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_final_defense_protocols', 'Final Defense Directives', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_final_defense_protocols.dds', 85);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_final_defense_protocols', 'ship_fire_rate_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_final_defense_protocols', 'planet_jobs_energy_produces_mult', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'energy Energy Credits from job Jobs', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_final_defense_protocols', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_final_defense_protocols', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_lethargic_leadership', 'Lethargic Leadership', 'Unable to construct new ships.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_lethargic_leadership.dds', 86);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_lethargic_leadership', 'country_civics_influence_upkeep_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_civics_influence_upkeep_add', 'Influence Upkeep', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_lethargic_leadership', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_empire_in_decline', 'Empire in Decline', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_empire_in_decline.dds', 87);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_empire_in_decline', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_antediluvian_mind', 'Elder Mind', 'Unable to construct new ships.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_antediluvian_mind.dds', 88);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_antediluvian_mind', 'country_unity_produces_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_antediluvian_mind', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_antediluvian_mind', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_sluggish_drones', 'Undirected Drones', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_sluggish_drones.dds', 89);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_sluggish_drones', 'planet_jobs_produces_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sluggish_drones', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sluggish_drones', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_fragmented_command', 'Fragmented Command', 'Unable to construct new ships.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_fragmented_command.dds', 90);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_fragmented_command', 'empire_size_mult', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_mult', 'Empire Size', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fragmented_command', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_fragmented_command', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hyper_aggressive_drones', 'Hyper-Aggressive Drones', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hyper_aggressive_drones.dds', 91);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hyper_aggressive_drones', 'planet_jobs_produces_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hyper_aggressive_drones', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hyper_aggressive_drones', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_unstable_drones', 'Unstable Drones', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_unstable_drones.dds', 92);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_unstable_drones', 'planet_jobs_produces_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_unstable_drones', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_unstable_drones', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_stunted_drones', 'Stunted Drones', 'Unable to conquer or colonize planets.', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_stunted_drones.dds', 93);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_stunted_drones', 'planet_jobs_produces_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_stunted_drones', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_stunted_drones', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_restored_mind', 'Restored Mind', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_restored_mind.dds', 94);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_restored_mind', 'empire_size_penalty_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_restored_mind', 'bonus_automated_workforce_mult', '5.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_automated_workforce_mult', 'Automated Workforce Efficiency', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_restored_mind', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_ancient_memories_of_war', 'Ancient Memories of War', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_ancient_memories_of_war.dds', 95);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ancient_memories_of_war', 'ship_hull_add', '500.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hull_add', 'Ship Hull Points', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ancient_memories_of_war', 'ship_weapon_range_mult', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_weapon_range_mult', 'Ship Weapons Range', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ancient_memories_of_war', 'ship_disengage_chance_mult', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_disengage_chance_mult', 'Combat Disengagement Chance', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ancient_memories_of_war', 'army_damage_mult', '0.5', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_ancient_memories_of_war', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_ancient_memories_of_growth', 'Ancient Memories of Growth', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_ancient_memories_of_growth.dds', 96);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ancient_memories_of_growth', 'logistic_growth_mult', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ancient_memories_of_growth', 'planetary_ascension_effect_mult', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_effect_mult', 'Colony Ascension Effects', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ancient_memories_of_growth', 'planetary_ascension_cost_mult', '-0.75', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_cost_mult', 'Colony Ascension Cost', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_ancient_memories_of_growth', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_ancient_memories_of_control', 'Ancient Memories of Control', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_ancient_memories_of_control.dds', 97);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ancient_memories_of_control', 'planet_jobs_produces_mult', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ancient_memories_of_control', 'planet_crime_no_happiness_add', '-30.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ancient_memories_of_control', 'monthly_loyalty_from_subjects', '1.0', 2);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ancient_memories_of_control', 'diplo_weight_mult', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_ancient_memories_of_control', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_revanchist_fervor', 'Revanchist Fervor', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_revanchist_fervor.dds', 98);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_revanchist_fervor', 'country_civics_influence_produces_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_civics_influence_produces_add', 'Monthly Influence', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_revanchist_fervor', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_ancient_caches_of_technology', 'Ancient Caches of Technology', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_ancient_caches_of_technology.dds', 99);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ancient_caches_of_technology', 'planet_jobs_produces_mult', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ancient_caches_of_technology', 'bonus_automated_workforce_mult', '5.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_automated_workforce_mult', 'Automated Workforce Efficiency', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_ancient_caches_of_technology', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_secret_of_fire', 'Secret of Fire', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_revanchist_fervor.dds', 100);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_of_fire', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_the_wheel', 'The Wheel', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_agrarian_idyll.dds', 101);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_the_wheel', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_landed_nobility', 'Landed Nobility', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_aristocratic_elite.dds', 102);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_landed_nobility', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_flat_world_theory', 'Flat World Theory', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_agrarian_idyll.dds', 103);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_flat_world_theory', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_increasing_urbanization', 'Increasing Urbanization', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_byzantine_bureaucracy.dds', 104);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_increasing_urbanization', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_atmospheric_pollution', 'Atmospheric Pollution', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_relentless_industrialists.dds', 105);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_atmospheric_pollution', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_life_seeded', 'Life-Seeded', 'Can build building Gaia Seeders on your and your vassal''s worlds ideal to your starting species. Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases. As you unlock improved society Terraforming technologies, building Gaia Seeders can be constructed on additional planet types.', 'special', NULL, 0, NULL, 106);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_secret_of_fire', 'Secret of Fire', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hive_revanchist_fervor.dds', 107);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_secret_of_fire', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_the_wheel', 'The Wheel', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hive_life_seeded.dds', 108);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_the_wheel', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_burgeoning_nodes', 'Burgeoning Nodes', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hive_one_mind.dds', 109);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_burgeoning_nodes', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_flat_world_theory', 'Flat World Theory', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hive_subspace_ephapse.dds', 110);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_flat_world_theory', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_centralized_consciousness', 'Centralized Consciousness', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hive_empath.dds', 111);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_centralized_consciousness', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_atmospheric_pollution', 'Atmospheric Pollution', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_hive_relentless_industrialists.dds', 112);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_atmospheric_pollution', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_ancient_preservers', 'Ancient Preservers', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_ancient_caches_of_technology.dds', 113);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_ancient_preservers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_trading_conglomerate', 'Trading Conglomerate', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_corporate_dominion.dds', 114);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_trading_conglomerate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_artist_collective', 'Artist Collective', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_inwards_perfection.dds', 115);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_artist_collective', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_mercenary_enclave', 'Mercenary Enclave', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_mercenaries.dds', 116);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_mercenary_enclave', 'ship_hull_regen_add_perc', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hull_regen_add_perc', 'Daily Hull Regen', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_mercenary_enclave', 'ship_armor_regen_add_perc', '0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_regen_add_perc', 'Daily Armor Regen', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_mercenary_enclave', 'ship_speed_mult', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_mercenary_enclave', 'starbase_shipyard_build_cost_mult', '-0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_cost_mult', 'Ship Build Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_mercenary_enclave', 'starbase_shipyard_build_speed_mult', '0.25', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_mercenary_enclave', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_salvager_enclave', 'Salvager Enclave', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_salvagers.dds', 117);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_salvager_enclave', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_shroudwalker_enclave', 'Shroudwalker Enclave', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_shroudwalkers.dds', 118);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_shroudwalker_enclave', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_mindwarden_enclave', 'Mindwarden Enclave', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_mindwarden_enclave.dds', 119);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_mindwarden_enclave', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_military_order', 'Military Order', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 120);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_military_order', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_ancient_machine_intelligence', 'Ancient Machine Intelligence', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_awakened_machine.dds', 121);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_anarcho_tribalism', 'Anarcho-Tribalism', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 122);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_great_khans_vision', 'Great Khan''s Vision', '- No effect', 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 123);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_great_khans_vision', 'country_commander_cap_add', '10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_commander_cap_add', 'commander Commander Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_great_khans_vision', 'country_naval_cap_add', '1000.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_diadochi', 'Diadochus', '- No effect', 'special', NULL, 1, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 124);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_diadochi', 'country_naval_cap_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_diadochi', 'origin', 'require', 'origin_khan_successor', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_great_khans_legacy', 'Great Khan''s Legacy', NULL, 'special', NULL, 1, 'gfx/interface/icons/governments/civics/civic_warrior_culture.dds', 125);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_great_khans_legacy', 'ship_fire_rate_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_great_khans_legacy', 'origin', 'require', 'origin_khan_successor', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_galactic_sovereign', 'Galactic Sovereign', NULL, 'special', NULL, 1, 'gfx/interface/icons/governments/civics/civic_galactic_sovereign.dds', 126);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galactic_sovereign', 'country_civics_influence_produces_add', '6.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_civics_influence_produces_add', 'Monthly Influence', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galactic_sovereign', 'diplo_weight_mult', '0.4', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galactic_sovereign', 'envoys_add', '1.0', 2);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galactic_sovereign', 'country_government_civic_points_add', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_government_civic_points_add', 'Civic Slots', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_galactic_sovereign', 'civic', 'require', 'civic_galactic_sovereign', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_galactic_sovereign_megacorp', 'Corporate Sovereign', NULL, 'special', NULL, 1, 'gfx/interface/icons/governments/civics/civic_galactic_sovereign.dds', 127);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galactic_sovereign_megacorp', 'country_civics_influence_produces_add', '6.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_civics_influence_produces_add', 'Monthly Influence', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galactic_sovereign_megacorp', 'diplo_weight_mult', '0.4', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galactic_sovereign_megacorp', 'envoys_add', '1.0', 2);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_galactic_sovereign_megacorp', 'country_government_civic_points_add', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_government_civic_points_add', 'Civic Slots', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_galactic_sovereign_megacorp', 'civic', 'require', 'civic_galactic_sovereign_megacorp', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_psionic_sovereign', 'Divine Sovereign', NULL, 'special', NULL, 1, 'gfx/interface/icons/governments/civics/civic_psionic_sovereign.dds', 128);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_psionic_sovereign', 'country_government_civic_points_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_government_civic_points_add', 'Civic Slots', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_psionic_sovereign', 'country_unity_produces_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_psionic_sovereign', 'pop_government_ethic_attraction', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_psionic_sovereign', 'authority', 'require', 'auth_imperial', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_psionic_sovereign', 'civic', 'require', 'civic_psionic_sovereign', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_caravaneer_caravansary', NULL, NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_caravaneer_caravansary.dds', 129);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_caravaneer_caravansary', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_caravaneer_fleet1', 'Orlan Topless Pyramid', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_caravaneer_fleet1.dds', 130);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_caravaneer_fleet1', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_caravaneer_fleet2', 'Mercantile Priesthood', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_caravaneer_fleet2.dds', 131);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_caravaneer_fleet2', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_caravaneer_fleet3', 'Absolute Commodifiers', NULL, 'special', NULL, 0, 'gfx/interface/icons/governments/civics/civic_caravaneer_fleet3.dds', 132);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_caravaneer_fleet3', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_subspace_ephapse', 'Subspace Ephapse', NULL, 'gestalt', NULL, 1, NULL, 133);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_subspace_ephapse', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_subspace_ephapse', 'country_naval_cap_mult', '0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_subspace_ephapse', 'ship_speed_mult', '0.2', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_subspace_ephapse', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_natural_neural_network', 'Natural Neural Network', NULL, 'gestalt', NULL, 1, NULL, 134);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_natural_neural_network', 'num_tech_alternatives_add', '1.0', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_natural_neural_network', 'councilor_gestalt_cognitive_exp_gain', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_natural_neural_network', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_ascetic', 'Ascetic', NULL, 'gestalt', NULL, 1, NULL, 135);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_ascetic', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_ascetic', 'pop_environment_tolerance', '0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_ascetic', 'pop_amenities_usage_no_happiness_mult', '-0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_ascetic', 'add_attunement_the_composer_of_strands', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_ascetic', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_one_mind', 'One Mind', NULL, 'gestalt', NULL, 1, NULL, 136);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_one_mind', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_one_mind', 'country_unity_produces_mult', '0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_one_mind', 'negative_traits_country', '-1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_traits_country', 'Leader Maximum Negative Traits', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_one_mind', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_divided_attention', 'Divided Attention', NULL, 'gestalt', NULL, 1, NULL, 137);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_divided_attention', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_divided_attention', 'empire_size_penalty_mult', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_divided_attention', 'add_attunement_the_composer_of_strands', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_divided_attention', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_strength_of_legions', 'Strength of Legions', NULL, 'gestalt', NULL, 1, NULL, 138);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_strength_of_legions', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_strength_of_legions', 'army_starting_experience_add', '100.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_starting_experience_add', 'Army Starting Experience', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_strength_of_legions', 'army_damage_mult', '0.2', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_strength_of_legions', 'armies_upkeep_mult', '-0.2', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('armies_upkeep_mult', 'Army Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_strength_of_legions', 'commander_initial_skill', '2.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commander_initial_skill', 'commander Commander Starting Skill Level', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_strength_of_legions', 'leader_commanders_upkeep_mult', '-0.25', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_commanders_upkeep_mult', 'commander Commander Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_strength_of_legions', 'add_attunement_the_eater_of_worlds', '60.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_strength_of_legions', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_subsumed_will', 'Subsumed Will', 'Waives all unity Unity costs for pop Drone Resettlement.', 'gestalt', NULL, 1, NULL, 139);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_subsumed_will', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_subsumed_will', 'empire_size_pops_mult', '-0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_subsumed_will', 'planet_resettlement_unemployed_mult', '0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_mult', 'Automatic Resettlement Chance', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_subsumed_will', 'country_edict_fund_add', '25.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_subsumed_will', 'pop_resettlement_cost_mult', '-0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_subsumed_will', 'add_attunement_the_composer_of_strands', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_subsumed_will', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_pooled_knowledge', 'Pooled Knowledge', NULL, 'gestalt', NULL, 1, NULL, 140);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_pooled_knowledge', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_pooled_knowledge', 'country_official_cap_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_official_cap_add', 'official Official Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_pooled_knowledge', 'country_commander_cap_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_commander_cap_add', 'commander Commander Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_pooled_knowledge', 'country_scientist_cap_add', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_scientist_cap_add', 'scientist Scientist Capacity', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_pooled_knowledge', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_devouring_swarm', 'Devouring Swarm', 'Cannot engage in Diplomacy with other empires! Cannot access the Galactic Market Has the ''Hunger'' casus belli on all other empires Xeno Pops will always be eaten Gains society Society Research from eating pop Xeno Pops', 'gestalt', NULL, 1, NULL, 141);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_devouring_swarm', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_devouring_swarm', 'country_starbase_influence_cost_mult', '-0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_devouring_swarm', 'ship_hull_mult', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hull_mult', 'Ship Hull Points', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_devouring_swarm', 'ship_hull_regen_add_perc', '0.05', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hull_regen_add_perc', 'Daily Hull Regen', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_devouring_swarm', 'ship_armor_regen_add_perc', '0.05', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_regen_add_perc', 'Daily Armor Regen', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_devouring_swarm', 'army_damage_mult', '0.4', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_devouring_swarm', 'category_biology_research_speed_mult', '0.2', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_biology_research_speed_mult', 'Research Speed (Biology)', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_devouring_swarm', 'starbase_shipyard_build_cost_mult', '-0.25', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_cost_mult', 'Ship Build Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_devouring_swarm', 'country_naval_cap_mult', '0.33', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_devouring_swarm', 'add_attunement_the_eater_of_worlds', '60.0', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_devouring_swarm', 'the_cradle_of_souls_attunement_mult', '-0.25', 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('the_cradle_of_souls_attunement_mult', 'Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_devouring_swarm', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_devouring_swarm', 'civic', 'forbid', 'civic_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_devouring_swarm', 'civic', 'forbid', 'civic_corporate_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_devouring_swarm', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_devouring_swarm', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_devouring_swarm', 'civic', 'forbid', 'civic_hive_bodysnatcher', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_devouring_swarm', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_devouring_swarm', 'origin', 'forbid', 'origin_common_ground', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_devouring_swarm', 'origin', 'forbid', 'origin_hegemon', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_devouring_swarm', 'origin', 'forbid', 'origin_tree_of_life', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_empath', 'Empath', 'Reduces the opinion Opinion penalty Gestalts normally have with biological empires.', 'gestalt', 'Federations', 1, NULL, 142);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_empath', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_empath', 'official_initial_skill', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('official_initial_skill', 'official Official Starting Skill Level', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_empath', 'diplo_weight_mult', '0.2', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_empath', 'country_trust_cap_add', '50.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_empath', 'envoy_improve_relations_mult', '0.25', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('envoy_improve_relations_mult', 'Envoy Improve Relations', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_empath', 'add_attunement_the_cradle_of_souls', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_empath', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_empath', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_empath', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_empath', 'origin', 'forbid', 'origin_necrophage', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_memorialist', 'Memorialist', '- Can build building Sanctuary of Repose - Sanctuaries of Repose decrease Deviancy on Tomb Worlds and Relic Worlds - job_chronicle_drone Chronicle Drones turn energy Energy Credits (or food Food) into unity Unity and stability Stability', 'gestalt', 'Necroids Species Pack', 1, NULL, 143);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_memorialist', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_memorialist', 'add_attunement_the_composer_of_strands', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_memorialist', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_memorialist', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_memorialist', 'civic', 'forbid', 'civic_entropy_drinkers_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_memorialist', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_memorialist', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_catalytic_processing', 'Organic Reprocessing', '- Foundry Drones are replaced with job_catalytic_drone Catalytic Drones - Industrial Jobs have their minerals Minerals Upkeep replaced with food Food Upkeep.', 'gestalt', 'Plantoids Species Pack', 1, NULL, 144);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_catalytic_processing', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_catalytic_processing', 'add_attunement_the_composer_of_strands', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_catalytic_processing', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_catalytic_processing', 'origin', 'forbid', 'origin_lithoid', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_catalytic_processing', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_idyllic_bloom', 'Mycorrhizal Ideal', 'Can build building Gaia Seeders on your and your vassal''s worlds ideal to your starting species. Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases. As you unlock improved society Terraforming technologies, building Gaia Seeders can be constructed on additional planet types.', 'gestalt', 'Plantoids Species Pack', 1, NULL, 145);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_idyllic_bloom', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_idyllic_bloom', 'add_attunement_the_composer_of_strands', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_idyllic_bloom', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_idyllic_bloom', 'origin', 'forbid', 'origin_void_dwellers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_idyllic_bloom', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_toxic_baths', 'Permutation Pools', '- Available Buildings: building - Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a colony Colony with building Mutagenic Permutation Pool.', 'gestalt', NULL, 1, NULL, 146);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_toxic_baths', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_toxic_baths', 'add_attunement_the_composer_of_strands', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_toxic_baths', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_toxic_baths', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_toxic_baths', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_ascensionists', 'Elevational Contemplations', '- Colonies have +1 Ascension Tier on game start.', 'gestalt', NULL, 1, NULL, 147);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_ascensionists', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_ascensionists', 'planetary_ascension_effect_mult', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_effect_mult', 'Colony Ascension Effects', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_ascensionists', 'planetary_ascension_cost_mult', '-0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_cost_mult', 'Colony Ascension Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_ascensionists', 'tradition_cost_empire_size_mult', '-0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tradition_cost_empire_size_mult', 'Tradition Cost from Empire Size', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_ascensionists', 'add_attunement_the_instrument_of_desire', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_ascensionists', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_cordyceptic_drones', 'Cordyceptic Drones', '- Start the game with 3 Reanimated Amoebas. - Defeated organic Space Fauna are automatically reanimated. - Some defeated organic Leviathans can be resurrected. - Controlled cloned organic Space Fauna can be reanimated - Gain genetic_material Genetic Material from killing Space Fauna.', 'gestalt', NULL, 1, NULL, 148);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_cordyceptic_drones', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_cordyceptic_drones', 'attached_space_fauna_component_damage_mult', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('attached_space_fauna_component_damage_mult', 'Space Fauna Ship Component Damage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_cordyceptic_drones', 'attached_space_fauna_component_fire_rate_mult', '0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('attached_space_fauna_component_fire_rate_mult', 'Space Fauna Ship Component Fire Rate', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_cordyceptic_drones', 'space_fauna_ship_damage_mult', '0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_damage_mult', 'Space Fauna Ship Damage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_cordyceptic_drones', 'add_attunement_the_eater_of_worlds', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_cordyceptic_drones', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_stargazers', 'Stargazers', 'Start with 2 Exploration Vessels and an Engineering Vessel equipped with Subspace Drives, making them incapable of Hyperlane travel but granting limited Jump Drive abilities. Gain an increased chance to discover FTL Travel Technologies Adds the Stargazer trait. Begin with low Intel about your starting cluster.', 'gestalt', NULL, 1, NULL, 149);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_stargazers', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_stargazers', 'ship_sensor_range_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_stargazers', 'ship_hyperlane_range_add', '2.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hyperlane_range_add', 'Ship Hyperlane Detection Range', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_stargazers', 'country_starbase_influence_cost_distance_mult', '-0.2', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_influence_cost_distance_mult', 'Starbase Influence Distance Cost', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_stargazers', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_stargazers', 'civic', 'forbid', 'civic_hive_hyperspace_specialty', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_stargazers', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_stargazers', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_memory_vault_hive', 'Neural Vaults', 'Can build unique building Vaults of Knowledge building Vaults of Knowledge produce unity Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, NULL, 150);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault_hive', 'restored_node_bonus_skill', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('restored_node_bonus_skill', 'Restored Node Additional Skill', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault_hive', 'councilor_gestalt_cognitive_exp_gain', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault_hive', 'councilor_skill_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault_hive', 'leader_initial_skill', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_initial_skill', 'Leader Starting Skill Level', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault_hive', 'leader_trait_selection_options_add', '1.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_trait_selection_options_add', 'Additional Leader Trait Options', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memory_vault_hive', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_upkeep_twister', 'Autonomous Drones', 'Change 1 Base unity Unity Leader Upkeep to 2 food Food, minerals Minerals or 1 alloys Alloys', 'gestalt', 'Galactic Paragons', 1, NULL, 151);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_upkeep_twister', 'leader_trait_selection_options_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_trait_selection_options_add', 'Additional Leader Trait Options', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_upkeep_twister', 'councilor_gestalt_regulatory_exp_gain', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_upkeep_twister', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_void_hive', 'Void Hive', '- Automatically generate Mining and Research Stations over a random unexploited deposit in a system we own, every four months. - Lacking the technology to exploit a given resource reduces output from it by -75%. - Directly building Mining and Research Stations will have an additional Build Cost of 10 unity Unity.', 'gestalt', NULL, 1, NULL, 152);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_void_hive', 'megastructures_cost_mult', '-0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_cost_mult', 'Megastructure Build Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_void_hive', 'megastructure_build_speed_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructure_build_speed_mult', 'Megastructure Build Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_void_hive', 'councilor_gestalt_growth_exp_gain', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_void_hive', 'add_attunement_the_composer_of_strands', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_void_hive', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_hyperspace_specialty', 'Hyperspace Synchronicity', 'physics Hyperlane Breach Points is Guaranteed Research Option. Has Low Intel on all systems within 3 Hyperlanes of your starting system.', 'gestalt', NULL, 1, NULL, 153);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_hyperspace_specialty', 'planet_sensor_range_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_sensor_range_add', 'Planet Sensor Range', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_hyperspace_specialty', 'ship_speed_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_hyperspace_specialty', 'country_physics_tech_research_speed', '0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_physics_tech_research_speed', 'Research Speed ( physics Physics)', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_hyperspace_specialty', 'councilor_gestalt_cognitive_exp_gain', '0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_hyperspace_specialty', 'add_attunement_the_composer_of_strands', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_hyperspace_specialty', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_hyperspace_specialty', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_sovereign_guardianship', 'Guardian Cluster', 'Unlocks Matrix Units as defense armies. Allows building a Reloading Bay in starbases. Enables Inner Focus Edict, converting influence Influence into unity Unity.', 'gestalt', NULL, 1, NULL, 154);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_sovereign_guardianship', 'empire_size_colonies_mult', '0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Planets', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_sovereign_guardianship', 'empire_size_systems_mult', '1.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_sovereign_guardianship', 'empire_size_pops_mult', '-0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_sovereign_guardianship', 'empire_size_districts_mult', '-0.5', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_sovereign_guardianship', 'diplo_weight_mult', '0.2', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_sovereign_guardianship', 'councilor_gestalt_regulatory_exp_gain', '0.25', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_sovereign_guardianship', 'planet_soldiers_unity_produces_add', '1.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_unity_produces_add', 'unity Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_sovereign_guardianship', 'add_attunement_the_cradle_of_souls', '60.0', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_sovereign_guardianship', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_sovereign_guardianship', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_sovereign_guardianship', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_natural_design', 'Innate Design', '- Available Buildings: Genomic Safeguard Warren', 'gestalt', NULL, 1, NULL, 155);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_natural_design', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_natural_design', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_natural_design', 'civic', 'forbid', 'civic_entropy_drinkers_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_natural_design', 'civic', 'forbid', 'civic_hive_chosen', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_natural_design', 'origin', 'forbid', 'origin_overtuned', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_natural_design', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_guided_sapience', 'Genesis Symbiotes', '- Available Colony Ships: Genesis Ark - Planets Colonized with Genesis Arks: - Pre-Sapient Pops: +300 - Planetary Features: Genesis Preserve - Gains unity Unity from uplifting Pre-Sapient Species', 'gestalt', NULL, 1, NULL, 156);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_guided_sapience', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_guided_sapience', 'terraforming_cost_mult', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('terraforming_cost_mult', 'Terraforming Cost', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_guided_sapience', 'terraform_speed_mult', '0.25', 2);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_guided_sapience', 'add_attunement_the_composer_of_strands', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_guided_sapience', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_guided_sapience', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_guided_sapience', 'authority', 'forbid', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_guided_sapience', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_guided_sapience', 'civic', 'forbid', 'civic_hive_natural_design', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_guided_sapience', 'civic', 'forbid', 'civic_hive_bodysnatcher', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_guided_sapience', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_guided_sapience', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_beastmasters', 'Wild Swarm', '- Additional Starting Technologies: - - - Available Starbase Buildings: - Home System: Start with a - Starting Military Ships are replaced with Space Amoebas - Starting genetic_material : - Common Space Amoeba', 'gestalt', NULL, 1, NULL, 157);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_beastmasters', 'starbase_shipyard_artificial_build_cost_mult', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_artificial_build_cost_mult', 'Artificial Military Ship Build Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_beastmasters', 'ship_military_artificial_upkeep_mult', '2.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_military_artificial_upkeep_mult', 'Artificial Military Ship Upkeep Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_beastmasters', 'councilor_gestalt_legion_exp_gain', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_beastmasters', 'space_fauna_ship_cost_mult', '-0.15', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_cost_mult', 'Space Fauna Ship Cloning Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_beastmasters', 'space_fauna_ship_upkeep_mult', '-0.1', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_upkeep_mult', 'Space Fauna Ship Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_beastmasters', 'add_attunement_the_composer_of_strands', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_beastmasters', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_beastmasters', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_beastmasters', 'civic', 'forbid', 'civic_hive_galvanic_symbiosis', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_beastmasters', 'origin', 'forbid', 'origin_progenitor_hive', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_beastmasters', 'origin', 'forbid', 'origin_cosmic_dawn', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_astrometeorology_hive', 'Climate Modeling', '- Available Buildings: building - Additional Starting Buildings: building Astrometeorology Observatory', 'gestalt', NULL, 1, NULL, 158);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_astrometeorology_hive', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_astrometeorology_hive', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_astrometeorology_hive', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_environmental_architects_hive', 'Cultivation Drones', '- Additional Starting Technologies: society Technologies to remove blocker on the Homeworld - society Technologies to remove blocker Natural Blockers are granted as Permanent Research Options upon Colonization - Mastery of Nature replaced with Cultivated Worldscaping Planetary - For each blocker Natural Blocker on Colonized planet : - Resources from Jobs: -10% - Pop Assembly: -10% - Pop Upkeep: +15%', 'gestalt', NULL, 1, NULL, 159);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_hive', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_hive', 'planet_jobs_produces_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_hive', 'founder_species_growth_mult', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_hive', 'planet_pops_upkeep_mult', '-0.15', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_hive', 'planet_clear_blocker_speed_mult', '0.25', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_hive', 'add_attunement_the_instrument_of_desire', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_hive', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_hive', 'civic', 'forbid', 'civic_hive_toxic_baths', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_hive', 'origin', 'forbid', 'origin_remnants', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_hive', 'origin', 'forbid', 'origin_post_apocalyptic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_hive', 'origin', 'forbid', 'origin_void_dwellers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_hive', 'origin', 'forbid', 'origin_shattered_ring', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_hive', 'origin', 'forbid', 'origin_lithoid', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_hive', 'origin', 'forbid', 'origin_machine', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_hive', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_galactic_curators', 'Caretaker Network', '- Guaranteed Research Options: - Initial Specimens: One Common of each Collection Category - Gain unity Unity each time you find a Specimen or complete an Archaeological Site - Purchases from the Curator Enclave: $@galactic_curators_curator_enclave_purchase_cost|%0$ - Enables the Decentralized Research Edict, increasing Research Station Output but decreasing job_researcher Job Output', 'gestalt', NULL, 1, NULL, 160);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_galactic_curators', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_galactic_curators', 'planet_jobs_unity_produces_mult', '-0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_unity_produces_mult', 'unity Unity from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_galactic_curators', 'ship_anomaly_generation_chance_mult', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_anomaly_generation_chance_mult', 'Anomaly Discovery Chance', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_galactic_curators', 'specimens_produces_mult', '0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('specimens_produces_mult', 'Specimens Output', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_galactic_curators', 'megastructures_grand_archive_cost_mult', '-0.25', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_grand_archive_cost_mult', 'Grand Archive Build Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_galactic_curators', 'add_attunement_the_instrument_of_desire', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_galactic_curators', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_familiar_face', 'Familiar Face', 'Envoys and Officials take on the physical form of the Empires they are assigned to. Trust Required to perform Diplomatic Actions: -50%', 'gestalt', NULL, 1, NULL, 161);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_familiar_face', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_familiar_face', 'envoys_add', '2.0', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_familiar_face', 'spy_network_daily_value_mult', '0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('spy_network_daily_value_mult', 'Infiltration Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_familiar_face', 'espionage_operation_difficulty_add', '-2.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('espionage_operation_difficulty_add', 'Operation Difficulty', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_familiar_face', 'add_attunement_the_cradle_of_souls', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_familiar_face', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_familiar_face', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_familiar_face', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_shared_genetics', 'Shared Genetics', '- For each Positive main species trait: +2.5% Ship Hull, +0.5% Upkeep. - For each Negative main species trait: +1.5% Ship Fire Rate, +0.5% Upkeep.', 'gestalt', NULL, 1, NULL, 162);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_shared_genetics', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_shared_genetics', 'starbase_shipyard_build_speed_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_shared_genetics', 'add_attunement_the_composer_of_strands', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_shared_genetics', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_aerospace_adaptation', 'Aerospace Adaptation', '- Biological Ships in orbit of Friendly colonies have -50% ship upkeep. - Friendly colonies with Biological Ships in orbit get increased Build Speed, Amenities, Clear Blocker Speed and potentially Job Output, depending on fleet size. - Biological Ships in orbit of Hostile colonies have -85% ship upkeep.', 'gestalt', NULL, 1, NULL, 163);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_aerospace_adaptation', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_aerospace_adaptation', 'ship_orbital_bombardment_mult', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_orbital_bombardment_mult', 'Orbital Bombardment Damage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_aerospace_adaptation', 'add_attunement_the_composer_of_strands', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_aerospace_adaptation', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_bodysnatcher', 'Bodysnatcher', 'Start the game with 1000 assimilated pop Pops and the ability to Assimilate organics into the hive mind. Has access to the Prepare Invasion Espionage Mission Gains extra pop Pops from the Smuggle Population Espionage Mission', 'gestalt', NULL, 1, NULL, 164);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_bodysnatcher', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_bodysnatcher', 'operation_smuggle_pops_difficulty_add', '-2.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('operation_smuggle_pops_difficulty_add', 'Smuggle Population Operation Difficulty', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_bodysnatcher', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_bodysnatcher', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_bodysnatcher', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_bodysnatcher', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_bodysnatcher', 'origin', 'forbid', 'origin_necrophage', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_bodysnatcher', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_entropy_drinkers_hive_mind', 'Parasitic Caste', '- Enables the following Edicts: - - - - Can construct: building . - Leaders start with the Psychic trait.', 'gestalt', NULL, 1, NULL, 165);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_hive_mind', 'planet_jobs_produces_mult', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_hive_mind', 'all_technology_research_speed', '-0.1', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_hive_mind', 'logistic_growth_mult', '-0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_hive_mind', 'planet_pop_assembly_mult', '-0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_hive_mind', 'leaders_upkeep_mult', '-0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_hive_mind', 'leader_lifespan_mult', '0.5', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_hive_mind', 'councilor_gestalt_growth_exp_gain', '0.25', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_hive_mind', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_hive_mind', 'civic', 'forbid', 'civic_hive_memorialist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_hive_mind', 'civic', 'forbid', 'civic_hive_natural_design', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_hive_mind', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_hive_mind', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_superstitious_beliefs', 'Zodiac Nexus', 'Enables Every 13 years, the Cycle changes. Fortune Events will periodically benefit or impair your empire.', 'gestalt', NULL, 1, NULL, 166);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_superstitious_beliefs', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_superstitious_beliefs', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_twisted_experimenters_hive_mind', 'Corrective Consciousness', 'Starts with Experimental Testing situation, which grants technology insight upon completion. Can construct and starts with: building .', 'gestalt', NULL, 1, NULL, 167);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_twisted_experimenters_hive_mind', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters_hive_mind', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters_hive_mind', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_chosen', 'Chosen Many', '- Starts the game in contact with a Shroud Patron. - Additional Starting Technologies: society', 'gestalt', NULL, 1, NULL, 168);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_chosen', 'psionic_aura_intensity_add', '10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_aura_intensity_add', 'Psionic Aura Intensity Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_chosen', 'councilor_gestalt_growth_exp_gain', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_chosen', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_chosen', 'civic', 'forbid', 'civic_hive_natural_design', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_chosen', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_chosen', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_scorched_earth', 'Pyromanic Instinct', NULL, 'gestalt', NULL, 1, NULL, 169);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_scorched_earth', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_scorched_earth', 'ship_weapon_range_mult', '0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_weapon_range_mult', 'Ship Weapons Range', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_scorched_earth', 'ship_armor_mult', '0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_scorched_earth', 'starbase_shipyard_build_speed_mult', '0.15', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_scorched_earth', 'country_naval_cap_mult', '0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_scorched_earth', 'army_health', '0.4', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_health', 'Army Health', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_scorched_earth', 'category_materials_research_speed_mult', '0.5', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_materials_research_speed_mult', 'Research Speed (Materials)', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_death_cult', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_hive_empath', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_hive_memorialist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_hive_familiar_face', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_secret_societies', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_hive_bodysnatcher', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_corporate_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_hive_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_machine_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_corporate_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'origin', 'forbid', 'origin_syncretic_evolution', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'origin', 'forbid', 'origin_common_ground', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'origin', 'forbid', 'origin_hegemon', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'origin', 'forbid', 'origin_tree_of_life', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'origin', 'forbid', 'origin_toxic_knights', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'origin', 'forbid', 'origin_here_be_dragons', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'origin', 'forbid', 'origin_ocean_paradise', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'origin', 'forbid', 'origin_fear_of_the_dark', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_world_forgers', NULL, NULL, 'gestalt', NULL, 1, NULL, 170);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_world_forgers', 'pc_volcanic_max_districts_add', '3.0', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_world_forgers', 'pc_volcanic_habitability', '0.2', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_world_forgers', 'councilor_gestalt_growth_exp_gain', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_world_forgers', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_world_forgers', 'civic', 'forbid', 'civic_hive_idyllic_bloom', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_hive_galvanic_symbiosis', NULL, NULL, 'gestalt', NULL, 1, NULL, 171);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_refund_mult', 'Planetary Infrastructure Refund', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_hive_galvanic_symbiosis', 'councilor_gestalt_growth_exp_gain', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_galvanic_symbiosis', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_galvanic_symbiosis', 'civic', 'forbid', 'civic_hive_beastmasters', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_galvanic_symbiosis', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_galvanic_symbiosis', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_servitor', 'Rogue Servitor', '- Start the game with 2K pop Organic Pops with job_bio_trophy Bio-Trophy citizenship and Mandatory Pampering living standard - Available Buildings: building - Available Holdings: building', 'gestalt', NULL, 1, NULL, 172);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_servitor', 'refugee_attraction', '0.3', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_servitor', 'councilor_gestalt_regulatory_exp_gain', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_servitor', 'add_attunement_the_cradle_of_souls', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_servitor', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_servitor', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_servitor', 'civic', 'forbid', 'civic_machine_assimilator', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_servitor', 'origin', 'forbid', 'origin_machine', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_servitor', 'origin', 'forbid', 'origin_shroud_forged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_terminator', 'Determined Exterminator', 'Cannot engage in Diplomacy with organic species! Cannot access the Galactic Market Has the ''Purification'' casus belli on organic species Will always Purge pop Organic Pops Gains unity Unity from purging pop Organic Pops May use Armageddon bombardment stance', 'gestalt', NULL, 1, NULL, 173);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_terminator', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_terminator', 'country_starbase_influence_cost_mult', '-0.3', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_terminator', 'ship_weapon_damage', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_weapon_damage', 'Ship Weapons Damage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_terminator', 'starbase_shipyard_build_cost_mult', '-0.15', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_cost_mult', 'Ship Build Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_terminator', 'country_naval_cap_mult', '0.33', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_terminator', 'add_attunement_the_eater_of_worlds', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_terminator', 'the_cradle_of_souls_attunement_mult', '-0.25', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('the_cradle_of_souls_attunement_mult', 'Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_terminator', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_terminator', 'civic', 'forbid', 'civic_machine_servitor', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_terminator', 'civic', 'forbid', 'civic_machine_assimilator', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_terminator', 'civic', 'forbid', 'civic_machine_memorialist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_terminator', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_terminator', 'civic', 'forbid', 'civic_machine_diplomatic_protocols', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_terminator', 'civic', 'forbid', 'civic_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_terminator', 'civic', 'forbid', 'civic_corporate_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_terminator', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_terminator', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_terminator', 'origin', 'forbid', 'origin_common_ground', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_terminator', 'origin', 'forbid', 'origin_hegemon', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_terminator', 'origin', 'forbid', 'origin_shroud_forged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_assimilator', 'Driven Assimilator', 'Start the game with 1K cyborg pop Pops and the ability to Assimilate organics as cyborgs Assimilating pop Organic Pops generates a small amount of unity Unity and society Society Research Non-assimilating pop Organic Pops are automatically Purged over time Has the ''Assimilation'' casus belli on all other empires Decreased Opinion for most other empires Allows access to the Cybernetic Ascension Path.', 'gestalt', NULL, 1, NULL, 174);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_assimilator', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_assimilator', 'add_attunement_the_eater_of_worlds', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_assimilator', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_assimilator', 'civic', 'forbid', 'civic_machine_servitor', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_assimilator', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_assimilator', 'civic', 'forbid', 'civic_machine_memorialist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_assimilator', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_assimilator', 'origin', 'forbid', 'origin_shroud_forged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_builder', 'Constructobot', '- Waives Technology requirements for zone Basic District Specializations', 'gestalt', NULL, 1, NULL, 175);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_builder', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_builder', 'planet_structures_cost_mult', '-0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_cost_mult', 'Planetary Infrastructure Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_builder', 'planet_building_build_speed_mult', '0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Planetary Infrastructure Build Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_builder', 'add_attunement_the_composer_of_strands', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_builder', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_factory_overclock', 'Factory Overclocking', NULL, 'gestalt', NULL, 1, 'gfx/interface/icons/governments/civics/civic_machine_factory_overclock.dds', 176);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_factory_overclock', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_factory_overclock', 'country_official_cap_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_official_cap_add', 'official Official Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_factory_overclock', 'country_commander_cap_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_commander_cap_add', 'commander Commander Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_factory_overclock', 'country_scientist_cap_add', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_scientist_cap_add', 'scientist Scientist Capacity', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_factory_overclock', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_unitary_cohesion', 'Unitary Cohesion', NULL, 'gestalt', NULL, 1, NULL, 177);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_unitary_cohesion', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_unitary_cohesion', 'country_unity_produces_mult', '0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_unitary_cohesion', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_rockbreakers', 'Rockbreakers', NULL, 'gestalt', NULL, 1, NULL, 178);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_rockbreakers', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_rockbreakers', 'planet_miners_minerals_produces_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_minerals_produces_add', 'minerals Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_rockbreakers', 'add_attunement_the_instrument_of_desire', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_rockbreakers', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_zero_waste_protocols', 'Zero-Waste Protocols', NULL, 'gestalt', NULL, 1, NULL, 179);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_zero_waste_protocols', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_zero_waste_protocols', 'planet_pops_robotics_upkeep_mult', '-0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_robotics_upkeep_mult', 'Robot Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_zero_waste_protocols', 'planet_structures_upkeep_mult', '-0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_upkeep_mult', 'Planetary Infrastructure Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_zero_waste_protocols', 'ships_upkeep_mult', '-0.05', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_zero_waste_protocols', 'add_attunement_the_composer_of_strands', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_zero_waste_protocols', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_built_to_last', 'Built to Last', NULL, 'gestalt', NULL, 1, NULL, 180);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_built_to_last', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_built_to_last', 'pop_amenities_usage_no_happiness_mult', '-0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_built_to_last', 'add_attunement_the_composer_of_strands', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_built_to_last', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_ota_updates', 'OTA Updates', 'Waives all unity Unity costs for pop Drone Resettlement.', 'gestalt', NULL, 1, NULL, 181);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_ota_updates', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_ota_updates', 'empire_size_pops_mult', '-0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_ota_updates', 'planet_resettlement_unemployed_mult', '0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_mult', 'Automatic Resettlement Chance', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_ota_updates', 'country_edict_fund_add', '25.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_ota_updates', 'add_attunement_the_composer_of_strands', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_ota_updates', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_warbots', 'Warbots', NULL, 'gestalt', NULL, 1, NULL, 182);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_warbots', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_warbots', 'army_damage_mult', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_warbots', 'armies_upkeep_mult', '-0.2', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('armies_upkeep_mult', 'Army Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_warbots', 'commander_initial_skill', '2.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commander_initial_skill', 'commander Commander Starting Skill Level', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_warbots', 'leader_commanders_upkeep_mult', '-0.25', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_commanders_upkeep_mult', 'commander Commander Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_warbots', 'add_attunement_the_eater_of_worlds', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_warbots', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_warbots', 'civic', 'forbid', 'civic_machine_obsessional_directive', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_introspective', 'Introspective', NULL, 'gestalt', NULL, 1, NULL, 183);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_introspective', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_introspective', 'country_engineering_tech_research_speed', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_engineering_tech_research_speed', 'Research Speed ( engineering Engineering)', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_introspective', 'intel_encryption_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_introspective', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_delegated_functions', 'Delegated Functions', NULL, 'gestalt', NULL, 1, NULL, 184);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_delegated_functions', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_delegated_functions', 'country_leader_pool_size', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_leader_pool_size', 'Recruitable Leaders per Class', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_delegated_functions', 'envoys_add', '1.0', 2);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_delegated_functions', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_predictive_analysis', 'Static Research Analysis', '- The Cognitive Node starts with a random Expertise trait', 'gestalt', NULL, 1, NULL, 185);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_predictive_analysis', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_predictive_analysis', 'num_tech_alternatives_add', '1.0', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_predictive_analysis', 'intel_decryption_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_predictive_analysis', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_replication', 'Rapid Replicator', NULL, 'gestalt', NULL, 1, NULL, 186);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_replication', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_replication', 'planet_pop_assembly_mult', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_replication', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_maintenance_protocols', 'Maintenance Protocols', NULL, 'gestalt', NULL, 1, NULL, 187);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_maintenance_protocols', 'planet_maintenance_drones_unity_produces_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_unity_produces_add', 'unity Unity per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_maintenance_protocols', 'planet_jobs_simple_drone_produces_mult', '0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_simple_drone_produces_mult', 'Menial Drone Output', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_maintenance_protocols', 'councilor_gestalt_growth_exp_gain', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_maintenance_protocols', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_memorialist', 'Memorialist', '- Can build building Sanctuary of Repose - Sanctuaries of Repose decrease Deviancy on Tomb Worlds and Relic Worlds - job_chronicle_drone Chronicle Drones turn energy Energy Credits (or food Food) into unity Unity and stability Stability', 'gestalt', 'Necroids Species Pack', 1, NULL, 188);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_memorialist', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_memorialist', 'add_attunement_the_composer_of_strands', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_memorialist', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_memorialist', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_memorialist', 'civic', 'forbid', 'civic_machine_assimilator', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_memorialist', 'civic', 'forbid', 'civic_entropy_drinkers_machine', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_catalytic_processing', 'Organic Retrofitting', '- Fabricators are replaced with job_catalytic_drone Catalytic Drones - Industrial Jobs have their minerals Minerals Upkeep replaced with food Food Upkeep.', 'gestalt', 'Plantoids Species Pack', 1, NULL, 189);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_catalytic_processing', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_catalytic_processing', 'add_attunement_the_composer_of_strands', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_catalytic_processing', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_catalytic_processing', 'origin', 'forbid', 'origin_machine', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_toxic_baths', 'Hyper Lubrication Basin', '- Available Buildings: building - Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a colony Colony with building Hyper Lubrication Basin.', 'gestalt', NULL, 1, NULL, 190);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_toxic_baths', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_toxic_baths', 'add_attunement_the_composer_of_strands', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_toxic_baths', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_toxic_baths', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_ascensionists', 'Elevational Hypotheses', '- Colonies have +1 Ascension Tier on game start.', 'gestalt', NULL, 1, NULL, 191);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_ascensionists', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_ascensionists', 'planetary_ascension_effect_mult', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_effect_mult', 'Colony Ascension Effects', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_ascensionists', 'planetary_ascension_cost_mult', '-0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_cost_mult', 'Colony Ascension Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_ascensionists', 'tradition_cost_empire_size_mult', '-0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tradition_cost_empire_size_mult', 'Tradition Cost from Empire Size', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_ascensionists', 'add_attunement_the_instrument_of_desire', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_ascensionists', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_exploration_protocol', 'Exploration Protocols', 'Start with 2 Exploration Vessels and an Engineering Vessel equipped with Subspace Drives, making them incapable of Hyperlane travel but granting limited Jump Drive abilities. Gain an increased chance to discover FTL Travel Technologies Gain 50% more Insight progress from observing pre-FTL Civilizations. Gain unity Unity every time you finish establishing first contact.', 'gestalt', NULL, 1, NULL, 192);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_exploration_protocol', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_exploration_protocol', 'first_contact_speed_mult', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('first_contact_speed_mult', 'First Contact Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_exploration_protocol', 'station_observers_unity_produces_add', '3.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('station_observers_unity_produces_add', 'Monthly Unity from Observation Outposts', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_exploration_protocol', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_exploration_protocol', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_exploration_protocol', 'civic', 'forbid', 'civic_machine_assimilator', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_exploration_protocol', 'civic', 'forbid', 'civic_machine_hyperspace_specialty', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_exploration_protocol', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_hyperspace_specialty', 'Hyperspace Calculations', 'physics Hyperlane Breach Points is Guaranteed Research Option. Has Low Intel on all systems within 3 Hyperlanes of your starting system.', 'gestalt', NULL, 1, NULL, 193);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_hyperspace_specialty', 'planet_sensor_range_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_sensor_range_add', 'Planet Sensor Range', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_hyperspace_specialty', 'ship_speed_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_hyperspace_specialty', 'country_physics_tech_research_speed', '0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_physics_tech_research_speed', 'Research Speed ( physics Physics)', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_hyperspace_specialty', 'councilor_gestalt_cognitive_exp_gain', '0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_hyperspace_specialty', 'add_attunement_the_composer_of_strands', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_hyperspace_specialty', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_hyperspace_specialty', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_memory_vault_machine', 'Experience Cache', 'Can build unique building Vaults of Knowledge building Vaults of Knowledge produce unity Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, NULL, 194);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault_machine', 'restored_node_bonus_skill', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('restored_node_bonus_skill', 'Restored Node Additional Skill', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault_machine', 'councilor_gestalt_cognitive_exp_gain', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault_machine', 'councilor_skill_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault_machine', 'leader_initial_skill', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_initial_skill', 'Leader Starting Skill Level', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault_machine', 'leader_trait_selection_options_add', '1.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_trait_selection_options_add', 'Additional Leader Trait Options', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memory_vault_machine', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_upkeep_twister', 'Sovereign Circuits', 'Change 1 Base unity Unity Leader Upkeep to 2 energy Energy Credits', 'gestalt', 'Galactic Paragons', 1, NULL, 195);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_upkeep_twister', 'leader_trait_selection_options_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_trait_selection_options_add', 'Additional Leader Trait Options', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_upkeep_twister', 'councilor_gestalt_regulatory_exp_gain', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_upkeep_twister', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_sovereign_guardianship', 'Guardian Matrix', 'Unlocks Matrix Units as defense armies. Allows building a Reloading Bay in starbases. Enables Inner Focus Edict, converting influence Influence into unity Unity.', 'gestalt', NULL, 1, NULL, 196);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_sovereign_guardianship', 'empire_size_colonies_mult', '0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Planets', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_sovereign_guardianship', 'empire_size_systems_mult', '1.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_sovereign_guardianship', 'empire_size_pops_mult', '-0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_sovereign_guardianship', 'empire_size_districts_mult', '-0.5', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_sovereign_guardianship', 'diplo_weight_mult', '0.2', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_sovereign_guardianship', 'councilor_gestalt_regulatory_exp_gain', '0.25', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_sovereign_guardianship', 'planet_soldiers_unity_produces_add', '1.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_unity_produces_add', 'unity Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_sovereign_guardianship', 'add_attunement_the_cradle_of_souls', '60.0', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_sovereign_guardianship', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_sovereign_guardianship', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_obsessional_directive', 'Obsessional Directive', '- Commodities Consolidation situation, granting rewards upon completion if production targets are met', 'gestalt', NULL, 1, NULL, 197);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_obsessional_directive', 'pop_artisan_drone_bonus_workforce_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_artisan_drone_bonus_workforce_mult', 'Job Efficiency for', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_obsessional_directive', 'country_resource_max_consumer_goods_add', '15000.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_resource_max_consumer_goods_add', 'Consumer Goods Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_obsessional_directive', 'councilor_gestalt_growth_exp_gain', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_obsessional_directive', 'add_attunement_the_instrument_of_desire', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_obsessional_directive', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_obsessional_directive', 'civic', 'forbid', 'civic_machine_warbots', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_diplomatic_protocols', 'Diplomatic Protocols', NULL, 'gestalt', NULL, 1, NULL, 198);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_diplomatic_protocols', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_diplomatic_protocols', 'envoys_add', '2.0', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_diplomatic_protocols', 'diplo_weight_mult', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_diplomatic_protocols', 'country_trust_cap_add', '35.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_diplomatic_protocols', 'envoy_improve_relations_mult', '0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('envoy_improve_relations_mult', 'Envoy Improve Relations', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_diplomatic_protocols', 'add_attunement_the_cradle_of_souls', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_diplomatic_protocols', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_diplomatic_protocols', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_tactical_algorithms', 'Tactical Algorithms', 'commander Commanders start with the Tactical Algorithms trait Can trade commander Commanders to other Empires Can create Mercenary Enclaves Starts game with building Military Academy building Military Academy grants Tactical Insights', 'gestalt', NULL, 1, NULL, 199);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_tactical_algorithms', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_tactical_algorithms', 'add_base_country_intel', '20.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_base_country_intel', 'Base Intel Level', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_tactical_algorithms', 'add_attunement_the_eater_of_worlds', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_tactical_algorithms', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_tactical_algorithms', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_guided_sapience', 'Genesis Architects', '- Available Colony Ships: Genesis Ark - Planets Colonized with Genesis Arks: - Pre-Sapient Pops: +300 - Planetary Features: Genesis Preserve - Gains unity Unity from uplifting Pre-Sapient Species', 'gestalt', NULL, 1, NULL, 200);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_guided_sapience', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_guided_sapience', 'terraforming_cost_mult', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('terraforming_cost_mult', 'Terraforming Cost', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_guided_sapience', 'terraform_speed_mult', '0.25', 2);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_guided_sapience', 'add_attunement_the_composer_of_strands', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_guided_sapience', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_guided_sapience', 'authority', 'forbid', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_guided_sapience', 'authority', 'forbid', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_guided_sapience', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_guided_sapience', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_guided_sapience', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_guided_sapience', 'origin', 'forbid', 'origin_machine', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_guided_sapience', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_spybots', 'Spyware Directives', NULL, 'gestalt', NULL, 1, NULL, 201);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_spybots', 'intel_decryption_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_spybots', 'spy_network_daily_value_mult', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('spy_network_daily_value_mult', 'Infiltration Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_spybots', 'envoys_add', '1.0', 2);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_spybots', 'country_trust_cap_add', '-25.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_spybots', 'councilor_gestalt_regulatory_exp_gain', '0.25', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_spybots', 'add_attunement_the_cradle_of_souls', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_spybots', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_astromining_drones', 'Astro-Mining Drones', '- Replaces the Starbase Module with the - Available Starbase Buildings:', 'gestalt', NULL, 1, NULL, 202);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_astromining_drones', 'planet_miners_minerals_produces_add', '-2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_minerals_produces_add', 'minerals Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_astromining_drones', 'planet_technician_energy_produces_add', '-1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_energy_produces_add', 'energy Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_astromining_drones', 'station_gatherers_produces_mult', '0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('station_gatherers_produces_mult', 'Resources Produced from Mining Stations', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_astromining_drones', 'country_starbase_capacity_mult', '0.5', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_mult', 'Starbase Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_astromining_drones', 'stations_cost_mult', '-0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('stations_cost_mult', 'Orbital Stations Build Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_astromining_drones', 'planet_jobs_simple_drone_produces_mult', '-0.5', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_simple_drone_produces_mult', 'Menial Drone Output', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_astromining_drones', 'councilor_gestalt_growth_exp_gain', '0.25', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_astromining_drones', 'add_attunement_the_composer_of_strands', '60.0', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_astromining_drones', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_astromining_drones', 'origin', 'forbid', 'origin_machine', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_beastmasters', 'Biodrones', '- Additional Starting Technologies: - - - Available Starbase Buildings: - Home System: Start with a - Starting Military Ships are replaced with Space Amoebas - Starting genetic_material : - Common Space Amoeba', 'gestalt', NULL, 1, NULL, 203);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_beastmasters', 'artificial_ship_naval_cap_usage_mult', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('artificial_ship_naval_cap_usage_mult', 'Artificial Ships Naval Capacity Usage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_beastmasters', 'councilor_gestalt_legion_exp_gain', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_beastmasters', 'space_fauna_ship_cost_mult', '-0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_cost_mult', 'Space Fauna Ship Cloning Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_beastmasters', 'space_fauna_ship_upkeep_mult', '-0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_upkeep_mult', 'Space Fauna Ship Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_beastmasters', 'add_attunement_the_composer_of_strands', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_beastmasters', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_beastmasters', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_beastmasters', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_beastmasters', 'civic', 'forbid', 'civic_machine_galvanic_symbiosis', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_beastmasters', 'origin', 'forbid', 'origin_cosmic_dawn', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_astrometeorology_machine', 'Climate Modeling', '- Available Buildings: building - Additional Starting Buildings: building Astrometeorology Observatory', 'gestalt', NULL, 1, NULL, 204);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_astrometeorology_machine', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_astrometeorology_machine', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_environmental_architects_machine', 'Gardening Protocols', '- Additional Starting Technologies: society Technologies to remove blocker on the Homeworld - society Technologies to remove blocker Natural Blockers are granted as Permanent Research Options upon Colonization - Mastery of Nature replaced with Cultivated Worldscaping Planetary - For each blocker Natural Blocker on Colonized planet : - Resources from Jobs: -10% - Pop Assembly: -10% - Pop Upkeep: +15%', 'gestalt', NULL, 1, NULL, 205);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_machine', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_machine', 'planet_jobs_produces_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_machine', 'founder_species_growth_mult', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_machine', 'planet_pops_upkeep_mult', '-0.15', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_machine', 'planet_clear_blocker_speed_mult', '0.25', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_machine', 'add_attunement_the_instrument_of_desire', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_machine', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_machine', 'civic', 'forbid', 'civic_machine_toxic_baths', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_machine', 'origin', 'forbid', 'origin_remnants', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_machine', 'origin', 'forbid', 'origin_post_apocalyptic_machines', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_machine', 'origin', 'forbid', 'origin_void_machines', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_machine', 'origin', 'forbid', 'origin_shattered_ring', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_machine', 'origin', 'forbid', 'origin_lithoid', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_machine', 'origin', 'forbid', 'origin_machine', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_galactic_curators', 'Caretaker Network', '- Guaranteed Research Options: - Initial Specimens: One Common of each Collection Category - Gain unity Unity each time you find a Specimen or complete an Archaeological Site - Purchases from the Curator Enclave: $@galactic_curators_curator_enclave_purchase_cost|%0$ - Enables the Decentralized Research Edict, increasing Research Station Output but decreasing job_researcher Job Output', 'gestalt', NULL, 1, NULL, 206);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_galactic_curators', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'cognitive_node Cognitive Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_galactic_curators', 'planet_jobs_unity_produces_mult', '-0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_unity_produces_mult', 'unity Unity from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_galactic_curators', 'ship_anomaly_generation_chance_mult', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_anomaly_generation_chance_mult', 'Anomaly Discovery Chance', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_galactic_curators', 'specimens_produces_mult', '0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('specimens_produces_mult', 'Specimens Output', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_galactic_curators', 'megastructures_grand_archive_cost_mult', '-0.25', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_grand_archive_cost_mult', 'Grand Archive Build Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_galactic_curators', 'add_attunement_the_instrument_of_desire', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_galactic_curators', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_stalwart_network', 'Stalwart Network', NULL, 'gestalt', NULL, 1, NULL, 207);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_stalwart_network', 'defensive_stations_tracking_add', '10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('defensive_stations_tracking_add', '- Starbase and Defensive Stations Tracking', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_stalwart_network', 'starbases_upkeep_mult', '-0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Starbase Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_stalwart_network', 'ship_home_territory_fire_rate_mult', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_home_territory_fire_rate_mult', 'Home Territory Fire Rate', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_stalwart_network', 'ship_disengage_opportunities_add', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_disengage_opportunities_add', 'Disengagement Opportunities', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_stalwart_network', 'councilor_gestalt_legion_exp_gain', '0.25', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'legion_node Legion Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_stalwart_network', 'add_attunement_the_eater_of_worlds', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_stalwart_network', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_entropy_drinkers_machine', 'Energy Extractors', '- Enables the following Edicts: - - - - Can construct: building . - Leaders start with the Psychic trait.', 'gestalt', NULL, 1, NULL, 208);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_machine', 'planet_jobs_produces_mult', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_machine', 'all_technology_research_speed', '-0.1', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_machine', 'logistic_growth_mult', '-0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_machine', 'planet_pop_assembly_mult', '-0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_machine', 'leaders_upkeep_mult', '-0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_machine', 'leader_lifespan_mult', '0.5', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_machine', 'councilor_gestalt_growth_exp_gain', '0.25', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_machine', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_machine', 'civic', 'forbid', 'civic_machine_memorialist', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_superstitious_beliefs', 'Pattern Finders', 'Enables Every 13 years, the Cycle changes. Fortune Events will periodically benefit or impair your empire.', 'gestalt', NULL, 1, NULL, 209);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_superstitious_beliefs', 'councilor_gestalt_regulatory_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'regulatory_node Regulatory Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_superstitious_beliefs', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_chosen', 'Apostle Network', '- Starts the game in contact with a Shroud Patron. - Additional Starting Technologies: society', 'gestalt', NULL, 1, NULL, 210);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_chosen', 'psionic_aura_intensity_add', '10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_aura_intensity_add', 'Psionic Aura Intensity Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_chosen', 'councilor_gestalt_growth_exp_gain', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_chosen', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_chosen', 'origin', 'forbid', 'origin_shroud_forged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_world_forgers', NULL, NULL, 'gestalt', NULL, 1, NULL, 211);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_world_forgers', 'pc_volcanic_max_districts_add', '3.0', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_world_forgers', 'pc_volcanic_habitability', '0.1', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_world_forgers', 'councilor_gestalt_growth_exp_gain', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_world_forgers', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_world_forgers', 'origin', 'forbid', 'origin_ocean_machines', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_machine_galvanic_symbiosis', NULL, NULL, 'gestalt', NULL, 1, NULL, 212);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_refund_mult', 'Planetary Infrastructure Refund', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_machine_galvanic_symbiosis', 'councilor_gestalt_growth_exp_gain', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'growth_node Growth Node Experience Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_galvanic_symbiosis', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_galvanic_symbiosis', 'civic', 'forbid', 'civic_machine_beastmasters', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_galvanic_symbiosis', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_franchising', 'Franchising', '- Your Subjects cannot have the following Agreement Terms: trigger_no Expansion Prohibited trigger_no Limited Diplomacy trigger_no Independent Sensors - Available Holdings: building Franchise Headquarters on Subject colonies - The building Commercial Forum Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 213);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_franchising', 'divided_patrongage_max_subjects', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('divided_patrongage_max_subjects', 'Subjects Exempt from Divided Patronage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_franchising', 'add_attunement_the_instrument_of_desire', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_trading_posts', 'Trading Posts', '- The building Commercial Forum Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 214);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_trading_posts', 'country_starbase_capacity_add', '4.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Starbase Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_trading_posts', 'starbase_buildings_trade_produces_add', '2.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_buildings_trade_produces_add', 'trade Trade from Starbase Buildings', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_trading_posts', 'add_attunement_the_cradle_of_souls', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_trading_posts', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_media_conglomerate', 'Media Conglomerate', '- Factions will form in your empire shortly after the game starts, but Faction Output is reduced for the first ten years. - Faction unity Unity Output is replaced with trade Trade Output - The building Virtual Entertainment Studios Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 215);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_media_conglomerate', 'faction_demands_met_mult', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('faction_demands_met_mult', 'Approval from Met Faction Demands', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_media_conglomerate', 'faction_demands_unmet_mult', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('faction_demands_unmet_mult', 'Disapproval from Unmet Faction Demands', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_media_conglomerate', 'refugee_attraction', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_media_conglomerate', 'add_attunement_the_cradle_of_souls', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_media_conglomerate', 'civic', 'forbid', 'civic_idealistic_foundation', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_media_conglomerate', 'civic', 'forbid', 'civic_corporate_crowdsourcing', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_media_conglomerate', 'civic', 'forbid', 'civic_crowdsourcing', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_media_conglomerate', 'civic', 'forbid', 'civic_secret_societies', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_media_conglomerate', 'civic', 'forbid', 'civic_secret_societies_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_media_conglomerate', 'civic', 'forbid', 'civic_parliamentary_system', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_media_conglomerate', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_naval_contractors', 'Naval Contractors', '- The building Private Military Industries Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 216);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_naval_contractors', 'country_naval_cap_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_naval_contractors', 'add_attunement_the_eater_of_worlds', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_naval_contractors', 'ethic', 'require_any', 'ethic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_naval_contractors', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_naval_contractors', 'civic', 'forbid', 'civic_citizen_service', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_free_traders', 'Free Traders', NULL, 'corporate', NULL, 1, NULL, 217);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_free_traders', 'branch_office_value_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('branch_office_value_mult', 'Branch Office Value', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_free_traders', 'planet_traders_trade_produces_add', '2.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'trade Produced per 100', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_private_prospectors', 'Private Prospectors', '- Unlocks Ship Type: Private Colony Ship - The building Private Mining Consortium Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 218);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_private_prospectors', 'empire_size_systems_mult', '-0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_private_prospectors', 'empire_size_colonies_mult', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Planets', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_private_prospectors', 'add_attunement_the_composer_of_strands', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_private_prospectors', 'civic', 'forbid', 'civic_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_private_prospectors', 'civic', 'forbid', 'civic_corporate_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_private_prospectors', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_private_prospectors', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_gospel_of_the_masses', 'Gospel of the Masses', 'pop Spiritualist Pops give additional trade Trade on all Planets and Branch Offices Can build building Temple of Prosperity Corporate Building', 'corporate', NULL, 1, NULL, 219);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_gospel_of_the_masses', 'pop_ethic_spiritualist_attraction_mult', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_spiritualist_attraction_mult', 'Spiritualist Ethics Attraction', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_gospel_of_the_masses', 'planet_bureaucrats_trade_produces_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'trade Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_gospel_of_the_masses', 'add_attunement_the_composer_of_strands', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_gospel_of_the_masses', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_gospel_of_the_masses', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_ruthless_competition', 'Ruthless Competition', '- The building Executive Retreat Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 220);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ruthless_competition', 'species_leader_exp_gain', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ruthless_competition', 'intel_decryption_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ruthless_competition', 'country_leader_pool_size', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_leader_pool_size', 'Recruitable Leaders per Class', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_ruthless_competition', 'add_attunement_the_instrument_of_desire', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_ruthless_competition', 'civic', 'forbid', 'civic_meritocracy', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_ruthless_competition', 'civic', 'forbid', 'civic_worker_coop', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_criminal_heritage', 'Criminal Heritage', 'Can build Branch Offices on the planet of any regular empire they have no war or active truce with Crime on Branch Office Planets increases Branch Office Value Can build special Crime-increasing building Corporate Buildings', 'corporate', NULL, 1, NULL, 221);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_criminal_heritage', 'planet_branch_offices_cost_mult', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_branch_offices_cost_mult', 'Branch Office Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_criminal_heritage', 'spy_network_daily_value_mult', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('spy_network_daily_value_mult', 'Infiltration Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_criminal_heritage', 'intel_decryption_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_criminal_heritage', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_private_military_companies', 'Private Military Companies', '- The building Mercenary Liaison Office Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 222);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_private_military_companies', 'commander_initial_skill', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commander_initial_skill', 'commander Commander Starting Skill Level', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_private_military_companies', 'army_starting_experience_add', '100.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_starting_experience_add', 'Army Starting Experience', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_private_military_companies', 'army_damage_mult', '0.2', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_private_military_companies', 'armies_upkeep_mult', '-0.2', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('armies_upkeep_mult', 'Army Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_private_military_companies', 'add_attunement_the_eater_of_worlds', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'mod_add_attunement_the_eater_of_worlds Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_private_military_companies', 'ethic', 'require_any', 'ethic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_private_military_companies', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_private_military_companies', 'civic', 'forbid', 'civic_warrior_culture', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_private_military_companies', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_indentured_assets', 'Indentured Assets', '- The building Private Security Company Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 223);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_indentured_assets', 'pop_slave_bonus_workforce_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_bonus_workforce_mult', 'Job Efficiency for Slaves', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_indentured_assets', 'refugee_attraction', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_indentured_assets', 'add_attunement_the_instrument_of_desire', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_indentured_assets', 'ethic', 'require_any', 'ethic_authoritarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_indentured_assets', 'ethic', 'require_any', 'ethic_fanatic_authoritarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_indentured_assets', 'civic', 'forbid', 'civic_corporate_hedonism', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_indentured_assets', 'civic', 'forbid', 'civic_slaver_guilds', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_indentured_assets', 'civic', 'forbid', 'civic_pleasure_seekers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_indentured_assets', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_brand_loyalty', 'Brand Loyalty', '- The building Corporate Embassy Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 224);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_brand_loyalty', 'country_unity_produces_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_brand_loyalty', 'country_edict_fund_add', '25.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_brand_loyalty', 'add_attunement_the_cradle_of_souls', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_brand_loyalty', 'civic', 'forbid', 'civic_beacon_of_liberty', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_public_relations_specialists', 'Public Relations Specialists', '- The building Public Relations Firm Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', 'Federations', 1, NULL, 225);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_public_relations_specialists', 'envoys_add', '2.0', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_public_relations_specialists', 'diplo_weight_mult', '0.3', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_public_relations_specialists', 'country_trust_cap_add', '15.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_public_relations_specialists', 'envoy_improve_relations_mult', '0.3', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('envoy_improve_relations_mult', 'Envoy Improve Relations', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_public_relations_specialists', 'add_attunement_the_cradle_of_souls', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_public_relations_specialists', 'civic', 'forbid', 'civic_diplomatic_corps', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_death_cult_corporate', 'Corporate Death Cult', '- Available Buildings: building - Additional Starting Buildings: building Sacrificial Temple - Available Holdings: building - Access to - job_priest Priests are converted into job_death_priest Death Priests - The building Xeno-Outreach Agency Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', 'Necroids Species Pack', 1, NULL, 226);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult_corporate', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult_corporate', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult_corporate', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult_corporate', 'civic', 'forbid', 'civic_inwards_perfection', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult_corporate', 'civic', 'forbid', 'civic_death_cult', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_death_cult_corporate', 'origin', 'forbid', 'origin_necrophage', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_catalytic_processing', 'Catalytic Recyclers', '- are replaced with job_catalytic_technician Catalytic Technicians - Industrial Jobs have their minerals Minerals Upkeep replaced with food Food Upkeep. - The building Private Military Industries Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', 'Plantoids Species Pack', 1, NULL, 227);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_catalytic_processing', 'add_attunement_the_composer_of_strands', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_catalytic_processing', 'civic', 'forbid', 'civic_catalytic_processing', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_catalytic_processing', 'origin', 'forbid', 'origin_lithoid', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_hedonism', 'Corporate Hedonism', '- pop_cat_civilian Civilians are converted into job_fe_hedonist Hedonists, which do not produce mod_planet_amenities_add Amenities - Allows Decadent Lifestyle Living Standard, under which all pop Pops have increased happiness Happiness, consumer_goods Consumer Goods Upkeep and mod_planet_amenities_add Amenities Usage - job_fe_hedonist Hedonists with Decadent Lifestyle provide unity Unity and mod_logistic_growth_mult Pop Growth (or Assembly) Speed, but require mod_planet_amenities_add Amenities - Additional Starting Buildings: building - The building Amusement Megaplex Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 228);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_hedonism', 'add_attunement_the_instrument_of_desire', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_hedonism', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_hedonism', 'civic', 'forbid', 'civic_pleasure_seekers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_hedonism', 'civic', 'forbid', 'civic_indentured_assets', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_hedonism', 'civic', 'forbid', 'civic_slaver_guilds', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_anglers', 'Trawling Operations', '- On Ocean Worlds, Agriculture Districts are uncapped. - On Wet worlds: - Agriculture Districts have the zone Aquaculture Specialization - job_farmer Farmers are converted into job_angler Anglers - job_artisan Artisans are converted into job_pearl_diver Pearl Divers - The building Fast Food Chain Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 229);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_anglers', 'add_attunement_the_composer_of_strands', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_anglers', 'civic', 'forbid', 'civic_anglers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_anglers', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_anglers', 'origin', 'forbid', 'origin_post_apocalyptic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_anglers', 'origin', 'forbid', 'origin_post_apocalyptic_machines', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_anglers', 'origin', 'forbid', 'origin_shattered_ring', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_anglers', 'origin', 'forbid', 'origin_void_dwellers', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_machine_anglers', 'Maritime Robotics', '- On Ocean Worlds, Agriculture Districts are uncapped. - On Wet worlds: - Agriculture Districts have the zone Aquaculture Specialization - job_farmer Farmers are converted into job_angler Anglers - job_artisan Artisans are converted into job_pearl_diver Pearl Divers - The building Fast Food Chain Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 230);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_machine_anglers', 'add_attunement_the_composer_of_strands', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_machine_anglers', 'origin', 'forbid', 'origin_post_apocalyptic_machines', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_machine_anglers', 'origin', 'forbid', 'origin_shattered_ring', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_machine_anglers', 'origin', 'forbid', 'origin_void_machines', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_crafters', 'Mastercraft Inc.', 'job_artisan Artisans are replaced with job_artificer Artificers job_artificer Artificers turn minerals Minerals into consumer_goods Consumer Goods and trade Trade The building Virtual Entertainment Studios Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 231);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_crafters', 'add_attunement_the_instrument_of_desire', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crafters', 'civic', 'forbid', 'civic_crafters', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_permanent_employment', 'Permanent Employment', 'Can build building Posthumous Employment Center job_necromancer turn consumer_goods Consumer Goods and food Food (or equivalent) into mod_logistic_growth_mult Monthly Organic Pop Growth. All assembled pop Pops have the Zombie trait. Grants access to the building Reemployment Center Holding. Some defeated organic Leviathans can be resurrected. The building Fast Food Chain Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', 'Necroids Species Pack', 1, NULL, 232);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_permanent_employment', 'add_attunement_the_instrument_of_desire', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_permanent_employment', 'ethic', 'forbid', 'ethic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_permanent_employment', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_permanent_employment', 'origin', 'forbid', 'origin_necrophage', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_permanent_employment', 'origin', 'forbid', 'origin_mechanists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_permanent_employment', 'origin', 'forbid', 'origin_clone_army', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_permanent_employment', 'origin', 'forbid', 'origin_cybernetic_creed', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_permanent_employment', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_permanent_employment', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_relentless_industrialists', 'Shareholder Values', 'Can build building Coordinated Fulfillment Center, significantly increasing alloys Alloy and consumer_goods Consumer Goods output at the cost of reduced mod_logistic_growth_mult Pop Growth and gradually turning planets into Tomb Worlds. The building Industrial Subsidiary Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 233);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_relentless_industrialists', 'add_attunement_the_instrument_of_desire', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_relentless_industrialists', 'ethic', 'require_any', 'ethic_materialist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_relentless_industrialists', 'ethic', 'require_any', 'ethic_fanatic_materialist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_relentless_industrialists', 'civic', 'forbid', 'civic_environmentalist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_relentless_industrialists', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_relentless_industrialists', 'civic', 'forbid', 'civic_idyllic_bloom', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_relentless_industrialists', 'civic', 'forbid', 'civic_memorialist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_relentless_industrialists', 'civic', 'forbid', 'civic_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_relentless_industrialists', 'civic', 'forbid', 'civic_world_forgers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_relentless_industrialists', 'civic', 'forbid', 'civic_hive_world_forgers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_relentless_industrialists', 'civic', 'forbid', 'civic_machine_world_forgers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_relentless_industrialists', 'civic', 'forbid', 'civic_corporate_world_forgers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_relentless_industrialists', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_toxic_baths', 'Mutagenic Luxury', '- Available Buildings: building - Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a colony Colony with building Mutagenic Spas. - Can build building Corporate Clinic Corporate Building - The building Corporate Clinic Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 234);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_toxic_baths', 'add_attunement_the_composer_of_strands', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_toxic_baths', 'civic', 'forbid', 'civic_toxic_baths', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_toxic_baths', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_scavengers', 'Refurbishment Division', '- Researching Debris grants both physics society engineering Research and a portion of other Resource Costs of the destroyed fleet - Ships can be salvaged from some Debris - The building Industrial Subsidiary Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 235);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_scavengers', 'ships_alloys_upkeep_mult', '-0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_alloys_upkeep_mult', 'Ships alloys Alloys Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_scavengers', 'planet_building_refund_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_refund_mult', 'Planetary Infrastructure Refund', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_scavengers', 'megastructure_dismantle_refund_mult', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructure_dismantle_refund_mult', 'Megastructure Refund', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_scavengers', 'civic', 'forbid', 'civic_scavengers', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_ascensionists', 'Gigacorp', '- Colonies have +1 Ascension Tier on game start. - The building Public Relations Firm Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 236);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_ascensionists', 'planetary_ascension_effect_mult', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_effect_mult', 'Colony Ascension Effects', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_ascensionists', 'planetary_ascension_cost_mult', '-0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_cost_mult', 'Colony Ascension Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_ascensionists', 'tradition_cost_empire_size_mult', '-0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tradition_cost_empire_size_mult', 'Tradition Cost from Empire Size', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_ascensionists', 'add_attunement_the_instrument_of_desire', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_ascensionists', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_ascensionists', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_ascensionists', 'civic', 'forbid', 'civic_ascensionists', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_privatized_exploration', 'Privatized Exploration', 'Start with 2 Exploration Vessels and an Engineering Vessel equipped with Subspace Drives, making them incapable of Hyperlane travel but granting limited Jump Drive abilities. Gain an increased chance to discover FTL Travel Technologies Start with the Starhold technology and a Starhold already built in your home system. The building Private Mining Consortium Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 237);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_privatized_exploration', 'starbase_building_build_speed_mult', '0.3', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_building_build_speed_mult', 'Starbase Building Build Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_privatized_exploration', 'starbase_module_build_speed_mult', '0.3', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_module_build_speed_mult', 'Starbase Module Build Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_privatized_exploration', 'starbase_upgrade_speed_mult', '0.3', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_speed_mult', 'Starbase Upgrade Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_privatized_exploration', 'station_gatherers_produces_mult', '0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('station_gatherers_produces_mult', 'Resources Produced from Mining Stations', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_privatized_exploration', 'station_researchers_produces_mult', '0.25', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('station_researchers_produces_mult', 'Resources Produced from Research Stations', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'civic', 'forbid', 'civic_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'civic', 'forbid', 'civic_corporate_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'civic', 'forbid', 'civic_hive_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'civic', 'forbid', 'civic_machine_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'civic', 'forbid', 'civic_hyperspace_specialty', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'civic', 'forbid', 'civic_corporate_hyperspace_specialty', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'civic', 'forbid', 'civic_hive_hyperspace_specialty', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'civic', 'forbid', 'civic_machine_hyperspace_specialty', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'civic', 'forbid', 'civic_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'civic', 'forbid', 'civic_corporate_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'civic', 'forbid', 'civic_hive_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'origin', 'forbid', 'origin_payback', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'origin', 'forbid', 'origin_fear_of_the_dark', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_hyperspace_specialty', 'Hyperspace Trade', 'physics Hyperlane Breach Points is Guaranteed Research Option. Has Low Intel on all systems within 3 Hyperlanes of your starting system. The building Amusement Megaplex Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 238);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_hyperspace_specialty', 'planet_sensor_range_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_sensor_range_add', 'Planet Sensor Range', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_hyperspace_specialty', 'ship_speed_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_hyperspace_specialty', 'country_physics_tech_research_speed', '0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_physics_tech_research_speed', 'Research Speed ( physics Physics)', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_hyperspace_specialty', 'add_attunement_the_composer_of_strands', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_hyperspace_specialty', 'civic', 'forbid', 'civic_hyperspace_specialty', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_hyperspace_specialty', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_hyperspace_specialty', 'civic', 'forbid', 'civic_privatized_exploration', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_hyperspace_specialty', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_hyperspace_specialty', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_hyperspace_specialty', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_dimensional_worship', 'Dimensional Enterprise', '- Available Starbase Buildings: - The building Xeno-Outreach Agency Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 239);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_dimensional_worship', 'planet_bureaucrats_physics_research_produces_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_physics_research_produces_add', 'physics_research Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_dimensional_worship', 'rare_tech_draw_chance_mult', '0.1', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_dimensional_worship', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_dimensional_worship', 'civic', 'forbid', 'civic_dimensional_worship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_dimensional_worship', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_dimensional_worship', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_crusader_spirit_corporate', 'Letters of Marque', 'commander Commanders start with the Material Liberator trait Has the ''Pirate Raid'' casus belli on all other empires. The building Mercenary Liaison Office Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, NULL, 240);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_crusader_spirit_corporate', 'ships_upkeep_mult', '-0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit_corporate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit_corporate', 'ethic', 'forbid', 'ethic_pacifist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit_corporate', 'ethic', 'forbid', 'ethic_fanatic_pacifist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit_corporate', 'ethic', 'require_any', 'ethic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit_corporate', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit_corporate', 'ethic', 'require_any', 'ethic_authoritarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_crusader_spirit_corporate', 'ethic', 'require_any', 'ethic_fanatic_authoritarian', 1);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_task_delegation_corporate', 'Precision Cogs', '- The building Executive Retreat Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, NULL, 241);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_task_delegation_corporate', 'country_official_cap_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_official_cap_add', 'official Official Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_task_delegation_corporate', 'country_commander_cap_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_commander_cap_add', 'commander Commander Capacity', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_task_delegation_corporate', 'country_scientist_cap_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_scientist_cap_add', 'scientist Scientist Capacity', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_task_delegation_corporate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_private_healthcare_corporate', 'Pharma State', '- building Capital Buildings provide +100 Jobs - mod_planet_amenities_add Amenities from : +2 - trade Trade from : +4 - Can build building Corporate Clinic Corporate Building - The building Corporate Clinic Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, NULL, 242);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_private_healthcare_corporate', 'leader_lifespan_add', '10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_private_healthcare_corporate', 'planet_doctors_trade_produces_add', '4.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_doctors_trade_produces_add', 'trade Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_private_healthcare_corporate', 'add_attunement_the_instrument_of_desire', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_private_healthcare_corporate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_private_healthcare_corporate', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_private_healthcare_corporate', 'origin', 'forbid', 'origin_payback', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_memory_vault_corporate', 'Knowledge Mentorship', 'Can build unique building Vaults of Knowledge building Vaults of Knowledge produce unity Unity and trade Trade based on Destiny Traits acquired. The building Commercial Forum Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, NULL, 243);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault_corporate', 'councilor_skill_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault_corporate', 'leader_initial_skill', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_initial_skill', 'Leader Starting Skill Level', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_memory_vault_corporate', 'leader_trait_selection_options_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_trait_selection_options_add', 'Additional Leader Trait Options', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memory_vault_corporate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_memory_vault_corporate', 'civic', 'forbid', 'civic_memory_vault', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_worker_coop', 'Worker Cooperative', '- Allows Employee Ownership Living Standard, under which all pop Pops have high consumer_goods Consumer Goods Upkeep regardless of Strata - Disables the use of most other Living Standards - Available Policies: Mutual Aid - Replaces job_executive Executive and job_manager Manager Jobs with job_manager Steward Jobs - The building Corporate Embassy Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 244);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_worker_coop', 'election_term_years_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('election_term_years_mult', 'Election Term Length (Years)', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_worker_coop', 'pop_ethic_egalitarian_attraction_mult', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_worker_coop', 'add_attunement_the_cradle_of_souls', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_worker_coop', 'ethic', 'forbid', 'ethic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_worker_coop', 'ethic', 'forbid', 'ethic_fanatic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_worker_coop', 'ethic', 'require_any', 'ethic_egalitarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_worker_coop', 'ethic', 'require_any', 'ethic_fanatic_egalitarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_worker_coop', 'civic', 'forbid', 'civic_corporate_hedonism', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_worker_coop', 'civic', 'forbid', 'civic_pleasure_seekers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_worker_coop', 'civic', 'forbid', 'civic_ruthless_competition', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_worker_coop', 'civic', 'forbid', 'civic_cutthroat_politics', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_worker_coop', 'civic', 'forbid', 'civic_shared_burden', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_worker_coop', 'civic', 'forbid', 'civic_police_state', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_dark_consortium', 'Shadow Corporation', '- Additional Starting Technologies: - - Access to - Has access to the Dark Matter Breakthrough Council Agenda. - The building Private Research Enterprises Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 245);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_dark_consortium', 'civic', 'forbid', 'civic_dark_consortium', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_dark_consortium', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_augmentation_bazaars', 'Augmentation Bazaars', '- Species Traits: Allows selection of Universal Augmentations Traits - Available Buildings: Augmentation Bazaar - Available Holdings: Offworld Implant Hub - job_executive Executives are replaced with job_augmentation_merchant Augmentation Merchants', 'corporate', NULL, 1, NULL, 246);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_augmentation_bazaars', 'planet_augmentors_trade_produces_add', '4.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_augmentors_trade_produces_add', 'trade Produced per 100 job_augmentor Augmentors', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_augmentation_bazaars', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_augmentation_bazaars', 'civic', 'forbid', 'civic_chosen', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_augmentation_bazaars', 'civic', 'forbid', 'civic_hive_chosen', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_augmentation_bazaars', 'civic', 'forbid', 'civic_machine_chosen', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_augmentation_bazaars', 'civic', 'forbid', 'civic_corporate_chosen', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_augmentation_bazaars', 'civic', 'forbid', 'civic_entropy_drinkers_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_augmentation_bazaars', 'origin', 'forbid', 'origin_shroudwalker_apprentice', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_augmentation_bazaars', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_augmentation_bazaars', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_augmentation_bazaars', 'origin', 'forbid', 'origin_endbringers', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_sovereign_guardianship', 'Corporate Protectorate', 'Unlocks Fanatic Guardians as defense armies. Allows building a Reloading Bay in starbases. Enables Inner Focus Edict, converting influence Influence into unity Unity.', 'corporate', NULL, 1, NULL, 247);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_sovereign_guardianship', 'empire_size_colonies_mult', '0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Planets', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_sovereign_guardianship', 'empire_size_branch_office_mult', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_branch_office_mult', 'Empire Size from Branch Offices', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_sovereign_guardianship', 'empire_size_systems_mult', '1.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_sovereign_guardianship', 'empire_size_pops_mult', '-0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_sovereign_guardianship', 'empire_size_districts_mult', '-0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_sovereign_guardianship', 'diplo_weight_mult', '0.2', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_sovereign_guardianship', 'planet_soldiers_unity_produces_add', '1.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_unity_produces_add', 'unity Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_sovereign_guardianship', 'add_attunement_the_cradle_of_souls', '60.0', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'ethic', 'require_any', 'ethic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'civic', 'forbid', 'civic_sovereign_guardianship', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'civic', 'forbid', 'civic_inwards_perfection', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'civic', 'forbid', 'civic_fanatic_purifiers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'civic', 'forbid', 'civic_privatized_exploration', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'origin', 'forbid', 'origin_fear_of_the_dark', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'origin', 'forbid', 'origin_payback', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_guided_sapience', 'Astrogenesis Technologies', '- Available Colony Ships: Genesis Ark - Planets Colonized with Genesis Arks: - Pre-Sapient Pops: +300 - Planetary Features: Genesis Preserve - Gains unity Unity from uplifting Pre-Sapient Species - The building Xeno-Outreach Agency Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 248);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_guided_sapience', 'terraforming_cost_mult', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('terraforming_cost_mult', 'Terraforming Cost', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_guided_sapience', 'terraform_speed_mult', '0.25', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_guided_sapience', 'add_attunement_the_composer_of_strands', '60.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_guided_sapience', 'authority', 'require', 'auth_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_guided_sapience', 'ethic', 'forbid', 'ethic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_guided_sapience', 'ethic', 'forbid', 'ethic_fanatic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_guided_sapience', 'civic', 'forbid', 'civic_private_prospectors', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_guided_sapience', 'civic', 'forbid', 'civic_eager_explorers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_guided_sapience', 'civic', 'forbid', 'civic_privatized_exploration', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_guided_sapience', 'civic', 'forbid', 'civic_hive_stargazers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_guided_sapience', 'civic', 'forbid', 'civic_machine_exploration_protocol', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_guided_sapience', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_guided_sapience', 'origin', 'forbid', 'origin_syncretic_evolution', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_guided_sapience', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_toxic_baths_individual_machine', 'Luxury Lubrication Pools', '- Available Buildings: building - Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a colony Colony with building Hyper Lubrication Basin. - Can build building Corporate Clinic Corporate Building - The building Corporate Clinic Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 249);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_toxic_baths_individual_machine', 'add_attunement_the_composer_of_strands', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_toxic_baths_individual_machine', 'civic', 'forbid', 'civic_toxic_baths_individual_machine', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_toxic_baths_individual_machine', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_astrometeorology_megacorp', 'Weather Exploitation', '- Available Buildings: building - Additional Starting Buildings: building Astrometeorology Observatory - The building Private Research Enterprises Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 250);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_storm_callers_megacorp', 'Storm Influencers', '- Available Buildings: building - Replaces Jobs with job_storm_dancer Storm Dancer Jobs - Species Traits: - The building Amusement Megaplex Corporate Building generates additional Branch Office Value and adds +50 job_merchant Merchant jobs to our Capital.', 'corporate', NULL, 1, NULL, 251);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_storm_callers_megacorp', 'capital_storm_diplo_weight_mult', '0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('capital_storm_diplo_weight_mult', 'Diplomatic Weight while Capital is affected by a Cosmic Storm', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_storm_callers_megacorp', 'add_attunement_the_composer_of_strands', '60.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_storm_callers_megacorp', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_environmental_architects_megacorp', 'Geo-Engineering Inc.', '- Additional Starting Technologies: society Technologies to remove blocker on the Homeworld - society Technologies to remove blocker Natural Blockers are granted as Permanent Research Options upon Colonization - Mastery of Nature replaced with Cultivated Worldscaping Planetary - For each blocker Natural Blocker on Colonized planet : - Resources from Jobs: -10% - Pop Growth Speed: -10% - Pop Upkeep: +15% - The building Executive Retreat Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 252);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_megacorp', 'planet_jobs_produces_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_megacorp', 'founder_species_growth_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_megacorp', 'planet_pops_upkeep_mult', '-0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_megacorp', 'planet_clear_blocker_speed_mult', '0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_environmental_architects_megacorp', 'add_attunement_the_instrument_of_desire', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'civic', 'forbid', 'civic_environmental_architects', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'civic', 'forbid', 'civic_environmentalist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'civic', 'forbid', 'civic_toxic_baths', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'civic', 'forbid', 'civic_toxic_baths_individual_machine', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'civic', 'forbid', 'civic_corporate_toxic_baths', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'civic', 'forbid', 'civic_corporate_toxic_baths_individual_machine', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'civic', 'forbid', 'civic_hive_toxic_baths', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'civic', 'forbid', 'civic_machine_toxic_baths', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'civic', 'forbid', 'civic_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'origin', 'forbid', 'origin_remnants', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'origin', 'forbid', 'origin_post_apocalyptic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'origin', 'forbid', 'origin_void_dwellers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'origin', 'forbid', 'origin_shattered_ring', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'origin', 'forbid', 'origin_lithoid', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'origin', 'forbid', 'origin_machine', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'origin', 'forbid', 'origin_void_machines', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_galactic_curators', 'Antiquarian Expertise', '- Guaranteed Research Options: - Initial : One Common of each Collection Category - Gain unity Unity each time you find a Specimen or complete an Archaeological Site - Purchases from the Curator Enclave: $@galactic_curators_curator_enclave_purchase_cost|%0$ - Enables the Decentralized Research Edict, increasing Research Station Output but decreasing job_researcher Job Output - Replaces job_entertainer Entertainer Jobs with job_historical_curator Museum Curator Jobs - The building Public Relations Firm Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 253);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_galactic_curators', 'planet_jobs_unity_produces_mult', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_unity_produces_mult', 'unity Unity from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_galactic_curators', 'country_specimen_selling_cost_mult', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_specimen_selling_cost_mult', 'Specimen Selling Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_galactic_curators', 'country_exhibit_unlocking_cost_mult', '-0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_exhibit_unlocking_cost_mult', 'Exhibit Unlocking Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_galactic_curators', 'ship_anomaly_generation_chance_mult', '0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_anomaly_generation_chance_mult', 'Anomaly Discovery Chance', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_galactic_curators', 'megastructures_grand_archive_cost_mult', '-0.25', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_grand_archive_cost_mult', 'Grand Archive Build Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_galactic_curators', 'add_attunement_the_instrument_of_desire', '60.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_galactic_curators', 'civic', 'forbid', 'civic_galactic_curators', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_beastmasters', 'Space Ranchers', '- Additional Starting Technologies: - - - Available Starbase Buildings: - Home System: Start with a - Starting Military Ships are replaced with Space Amoebas - Starting genetic_material : - Common Space Amoeba - The building Fast Food Chain Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 254);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_beastmasters', 'starbase_shipyard_artificial_build_cost_mult', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_artificial_build_cost_mult', 'Artificial Military Ship Build Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_beastmasters', 'ship_military_artificial_upkeep_mult', '2.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_military_artificial_upkeep_mult', 'Artificial Military Ship Upkeep Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_beastmasters', 'space_fauna_ship_cost_mult', '-0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_cost_mult', 'Space Fauna Ship Cloning Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_beastmasters', 'space_fauna_ship_upkeep_mult', '-0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_upkeep_mult', 'Space Fauna Ship Upkeep', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_beastmasters', 'add_attunement_the_composer_of_strands', '60.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'mod_add_attunement_the_composer_of_strands Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_beastmasters', 'civic', 'forbid', 'civic_beastmasters', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_beastmasters', 'civic', 'forbid', 'civic_privatized_exploration', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_beastmasters', 'civic', 'forbid', 'civic_corporate_galvanic_symbiosis', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_beastmasters', 'origin', 'forbid', 'origin_cosmic_dawn', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_genetic_identification', 'Sequenced Securities', '- The building Private Security Company Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 255);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_genetic_identification', 'planet_bureaucrats_society_research_produces_add', '1.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_society_research_produces_add', 'society_research Produced per 100', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_genetic_identification', 'planet_crime_mult', '-0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_mult', '', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_genetic_identification', 'intel_encryption_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_genetic_identification', 'add_attunement_the_instrument_of_desire', '60.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'mod_add_attunement_the_instrument_of_desire Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_genetic_identification', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_genetic_identification', 'civic', 'forbid', 'civic_genetic_identification', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_crowdsourcing', 'Decentralized R&D', '- Factions produce physics society engineering Research instead of unity Unity - Factions will form in your empire shortly after the game starts, but Faction Output is reduced for the first ten years - The building Private Research Enterprises Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 256);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_crowdsourcing', 'add_attunement_the_cradle_of_souls', '60.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'mod_add_attunement_the_cradle_of_souls Add Attunement with', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_xenophobe', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_xenophile', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_authoritarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_militarist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_pacifist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_spiritualist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_materialist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'civic', 'forbid', 'civic_crowdsourcing', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'civic', 'forbid', 'civic_parliamentary_system', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'civic', 'forbid', 'civic_media_conglomerate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'civic', 'forbid', 'civic_secret_societies', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_crowdsourcing', 'civic', 'forbid', 'civic_secret_societies_corporate', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_entropy_drinkers_corporate', 'Corporate Vampires', '- Enables the following Edicts: - - - - Can construct: building . -Leaders start with the Psychic trait. - The building Executive Retreat Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 257);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_corporate', 'planet_jobs_produces_mult', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from job Jobs', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_corporate', 'all_technology_research_speed', '-0.1', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_corporate', 'logistic_growth_mult', '-0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_corporate', 'planet_pop_assembly_mult', '-0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_corporate', 'leaders_upkeep_mult', '-0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_entropy_drinkers_corporate', 'leader_lifespan_mult', '0.5', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_corporate', 'civic', 'forbid', 'civic_entropy_drinkers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_corporate', 'ethic', 'forbid', 'ethic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_corporate', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_corporate', 'civic', 'forbid', 'civic_memorialist', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_corporate', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_corporate', 'civic', 'forbid', 'civic_augmentation_bazaars', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_corporate', 'origin', 'forbid', 'origin_mindwardens', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_corporate', 'origin', 'forbid', 'origin_cybernetic_creed', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_corporate', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_corporate', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_entropy_drinkers_corporate', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_superstitious_beliefs', 'Fortune Enterprise', 'Replaces: - job_priest Priests with job_superstitious_beliefs_priest_corporate Fortune Tellers - job_high_priest High Priests with job_superstitious_beliefs_high_priest_corporate Fortune Brokers Enables Every 13 years, the changes. Fortune Events will periodically benefit or impair your empire.', 'corporate', NULL, 1, NULL, 258);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_superstitious_beliefs', 'civic', 'forbid', 'civic_superstitious_beliefs', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_superstitious_beliefs', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_superstitious_beliefs', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_superstitious_beliefs', 'origin', 'forbid', 'origin_cybernetic_creed', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_twisted_experimenters_corporate', 'Judicial R&D', 'Starts with Experimental Testing situation, which grants technology insight upon completion. Can construct and starts with: building . Can construct building Experimentation Offices Corporate Building. All non-Machine slaves get access to the Orderlies Slave Job. Access to Slave Army: Abominations', 'corporate', NULL, 1, NULL, 259);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_twisted_experimenters_corporate', 'refugee_attraction', '-0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters_corporate', 'civic', 'forbid', 'civic_twisted_experimenters', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters_corporate', 'ethic', 'require_any', 'ethic_authoritarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters_corporate', 'ethic', 'require_any', 'ethic_fanatic_authoritarian', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters_corporate', 'ethic', 'require_any', 'ethic_xenophobe', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters_corporate', 'ethic', 'require_any', 'ethic_fanatic_xenophobe', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters_corporate', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_secret_societies_corporate', 'Influential Cartel', 'Clandestine Factions will emerge after contacting other empires. Starts with the ability to conduct Proxy Wars. will produce unity Unity per active and successful Proxy War. Starts in First Contact with two neighboring empires. Infiltration Level gained on empires after First Contact: +$@secret_society_infiltration_gain|0$ The building Corporate Embassy Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 260);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_secret_societies_corporate', 'proxy_war_cost_mult', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('proxy_war_cost_mult', 'Proxy War Influence Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_secret_societies_corporate', 'operations_cost_mult', '-0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('operations_cost_mult', 'Operation Cost', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_secret_societies_corporate', 'envoys_add', '1.0', 2);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_secret_societies_corporate', 'intel_encryption_add', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies_corporate', 'civic', 'forbid', 'civic_secret_societies', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies_corporate', 'civic', 'forbid', 'civic_parliamentary_system', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies_corporate', 'civic', 'forbid', 'civic_media_conglomerate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies_corporate', 'civic', 'forbid', 'civic_crowdsourcing', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies_corporate', 'civic', 'forbid', 'civic_corporate_crowdsourcing', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies_corporate', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies_corporate', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies_corporate', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies_corporate', 'origin', 'forbid', 'origin_cybernetic_creed', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_secret_societies_corporate', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_chosen', 'Chosen Executives', '- Starts the game in contact with a Shroud Patron. - Additional Starting Technologies: society - The building Psionic Offices Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 261);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_chosen', 'psionic_aura_intensity_add', '10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_aura_intensity_add', 'Psionic Aura Intensity Gain', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_chosen', 'civic', 'forbid', 'civic_chosen', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_chosen', 'ethic', 'require_any', 'ethic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_chosen', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_chosen', 'civic', 'forbid', 'civic_augmentation_bazaars', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_chosen', 'origin', 'forbid', 'origin_cybernetic_creed', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_chosen', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_chosen', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_chosen', 'origin', 'forbid', 'origin_mindwardens', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_chosen', 'origin', 'forbid', 'origin_endbringers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_chosen', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_tankbound_corporate', 'Corporate Thinktank', 'Adds the trait. , , and are fully Automated. Jobs are pop_cat_specialist Specialists. district Urban Districts have additional job_production_overseer Production Overseers jobs. The building Virtual Entertainment Studios Corporate Building generates additional trade Trade and adds +200 job_trader Trader jobs to our Capital.', 'corporate', NULL, 1, NULL, 262);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_tankbound_corporate', 'planet_automated_jobs_upkeep_mult', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_automated_jobs_upkeep_mult', 'Upkeep for Automated Workforce', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_tankbound_corporate', 'job_farmer_automated_workforce_mult', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_farmer_automated_workforce_mult', 'Automated Workforce', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_tankbound_corporate', 'job_miner_automated_workforce_mult', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_miner_automated_workforce_mult', 'Automated Workforce', 1);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_tankbound_corporate', 'job_technician_automated_workforce_mult', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_technician_automated_workforce_mult', 'Automated Workforce', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'civic', 'forbid', 'civic_corporate_anglers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'civic', 'forbid', 'civic_indentured_assets', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'civic', 'forbid', 'civic_private_military_companies', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'origin', 'forbid', 'origin_payback', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'origin', 'forbid', 'origin_toxic_knights', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'origin', 'forbid', 'origin_clone_army', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'origin', 'forbid', 'origin_primal_calling', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'origin', 'forbid', 'origin_syncretic_evolution', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_world_forgers', NULL, NULL, 'corporate', NULL, 1, NULL, 263);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_world_forgers', 'pc_volcanic_max_districts_add', '3.0', 0);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_world_forgers', 'pc_volcanic_habitability', '0.2', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_world_forgers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_world_forgers', 'civic', 'forbid', 'civic_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_world_forgers', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_world_forgers', 'origin', 'forbid', 'origin_ocean_paradise', 0);
+INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES ('civic_corporate_galvanic_symbiosis', NULL, NULL, 'corporate', NULL, 1, NULL, 264);
+INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('civic_corporate_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_refund_mult', 'Planetary Infrastructure Refund', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_galvanic_symbiosis', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_galvanic_symbiosis', 'civic', 'forbid', 'civic_corporate_beastmasters', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_galvanic_symbiosis', 'origin', 'forbid', 'origin_synthetic_fertility', 0);

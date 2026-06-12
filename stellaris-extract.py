@@ -341,6 +341,49 @@ CREATE TABLE ethic_policy_restriction (
     FOREIGN KEY (ethic_key) REFERENCES ethic(key)
 );
 
+-- Civics: the government civics an empire picks at creation (and can later swap).
+-- `civic_type` is derived from the source file (normal / gestalt / corporate /
+-- special). `selectable` is 0 for civics gated to non-player country types (fallen
+-- empires, etc.). `description` is the cleaned effects tooltip; the numeric effects
+-- live in civic_modifier and the eligibility rules in civic_requirement.
+DROP TABLE IF EXISTS civic_requirement;
+DROP TABLE IF EXISTS civic_modifier;
+DROP TABLE IF EXISTS civic;
+CREATE TABLE civic (
+    key          TEXT PRIMARY KEY,    -- e.g. "civic_technocracy"
+    name         TEXT,                -- localised name
+    description  TEXT,                -- cleaned effects tooltip
+    civic_type   TEXT NOT NULL,       -- 'normal' | 'gestalt' | 'corporate' | 'special'
+    required_dlc TEXT,                -- from playable host_has_dlc; NULL = base game
+    selectable   INTEGER NOT NULL DEFAULT 1,  -- 0 = not player-pickable (fallen empire, …)
+    icon         TEXT,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (required_dlc) REFERENCES dlc(name)
+);
+
+CREATE TABLE civic_modifier (
+    civic_key      TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (civic_key, modifier_key),
+    FOREIGN KEY (civic_key) REFERENCES civic(key)
+);
+
+-- Eligibility rules parsed from a civic's potential/possible blocks. `kind` is what
+-- is being constrained (authority / ethic / civic / origin); `operator` is 'require'
+-- (must have), 'forbid' (must not have), or 'require_any' (must have one of an OR set,
+-- grouped by `group_id`); `value` is the constrained key.
+CREATE TABLE civic_requirement (
+    civic_key  TEXT NOT NULL,
+    kind       TEXT NOT NULL,        -- 'authority' | 'ethic' | 'civic' | 'origin'
+    operator   TEXT NOT NULL,        -- 'require' | 'forbid' | 'require_any'
+    value      TEXT NOT NULL,        -- e.g. 'auth_corporate', 'ethic_materialist'
+    group_id   INTEGER NOT NULL DEFAULT 0,  -- ties 'require_any' values from one OR set together
+    PRIMARY KEY (civic_key, kind, operator, value),
+    FOREIGN KEY (civic_key) REFERENCES civic(key)
+);
+
 -- Precursors: the ancient civilisations whose archaeology chains grant rewards.
 -- The precursor<->reward mapping is spread across event files (no single source
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
@@ -1501,6 +1544,145 @@ def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
                 print(f"  {ethic_key} | tag: {tag}")
 
     w.commit()
+
+
+# ---------------------------------------------------------------------------
+# Extraction: civics
+# ---------------------------------------------------------------------------
+
+# potential/possible sub-keys we turn into eligibility rules → stored `kind`.
+_CIVIC_GATE_KINDS = {'authority': 'authority', 'ethics': 'ethic',
+                     'civics': 'civic', 'origin': 'origin'}
+
+
+def _trigger_values(sub) -> list[tuple[str, list[str]]]:
+    """Parse a civic gating sub-block (ethics / authority / civics / origin) into
+    [(operator, [values])]: a bare `value =` → 'require'; `NOT`/`NOR` → 'forbid';
+    `OR` → 'require_any'."""
+    out: list[tuple[str, list[str]]] = []
+    if not isinstance(sub, dict):
+        return out
+    direct = [v for v in _to_list(sub.get('value')) if isinstance(v, str)]
+    if direct:
+        out.append(('require', direct))
+    for neg in ('NOT', 'NOR'):
+        for nb in _as_blocks(sub.get(neg)):
+            vals = [v for v in _to_list(nb.get('value')) if isinstance(v, str)]
+            if vals:
+                out.append(('forbid', vals))
+    for ob in _as_blocks(sub.get('OR')):
+        vals = [v for v in _to_list(ob.get('value')) if isinstance(v, str)]
+        if vals:
+            out.append(('require_any', vals))
+    return out
+
+
+def _civic_requirements(cdef: dict) -> list[tuple[str, str, str, int]]:
+    """Eligibility rows [(kind, operator, value, group_id)] from the top level of a
+    civic's potential + possible blocks. (Deeply nested OR-of-different-kinds gates —
+    rare — are not unpacked; those civics just carry fewer rules.)"""
+    rows: list[tuple[str, str, str, int]] = []
+    group = 0
+    seen: set[tuple[str, str, str]] = set()
+    for block_name in ('potential', 'possible'):
+        block = cdef.get(block_name)
+        if not isinstance(block, dict):
+            continue
+        for raw_kind, kind in _CIVIC_GATE_KINDS.items():
+            for op, vals in _trigger_values(block.get(raw_kind)):
+                gid = 0
+                if op == 'require_any':
+                    group += 1
+                    gid = group
+                for v in vals:
+                    if (kind, op, v) in seen:
+                        continue
+                    seen.add((kind, op, v))
+                    rows.append((kind, op, v, gid))
+    return rows
+
+
+def extract_civics(data: dict, civic_type: str, loc: dict[str, str],
+                   scripted_vars: dict[str, float], w: Writer, order_start: int,
+                   verbose: bool) -> int:
+    """Extract one civics file; all its civics share `civic_type`. Returns the next
+    sort_order so successive files keep a stable global order."""
+    variables: dict[str, float] = dict(scripted_vars)
+    for k, v in data.items():
+        if k.startswith('@'):
+            f = _resolve_modifier_float(v)
+            if f is not None:
+                variables[k] = f
+
+    order = order_start
+    for key, cdef in data.items():
+        if key.startswith('@') or not isinstance(cdef, dict):
+            continue
+
+        playable = cdef.get('playable')
+        dlc = None
+        if isinstance(playable, dict):
+            d = playable.get('host_has_dlc')
+            if isinstance(d, list):
+                d = d[0] if d else None
+            dlc = str(d).strip('"') if d else None
+
+        # Not player-pickable when gated to a specific country type (fallen empire,
+        # pre-FTL, …) or explicitly playable = no.
+        selectable = 1
+        pot = cdef.get('potential')
+        if isinstance(pot, dict) and 'country_type' in pot:
+            selectable = 0
+        if isinstance(playable, dict) and str(playable.get('always')).strip() == 'no':
+            selectable = 0
+
+        raw_name = loc.get(key)
+        name = _clean_loc(raw_name, loc) if raw_name else None
+        desc_key = cdef.get('description')
+        desc_key = desc_key.strip('"') if isinstance(desc_key, str) else None
+        raw_desc = loc.get(desc_key) if desc_key else None
+        description = _clean_loc(raw_desc, loc) if raw_desc else None
+        icon = cdef.get('icon')
+        icon = icon.strip('"') if isinstance(icon, str) else None
+
+        w.execute(
+            """INSERT OR REPLACE INTO civic
+                   (key, name, description, civic_type, required_dlc, selectable, icon, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, name, description, civic_type, dlc, selectable, icon, order),
+        )
+        if verbose:
+            print(f"  civic [{civic_type}] {key} | {name}"
+                  f"{'' if selectable else ' (not selectable)'}")
+        order += 1
+
+        modifier = cdef.get('modifier')
+        if isinstance(modifier, dict):
+            for m_order, (mk, mv) in enumerate(modifier.items()):
+                s = str(mv).strip()
+                value = variables.get(s) if s.startswith('@') else _resolve_modifier_float(mv)
+                if value is None:
+                    continue
+                w.execute(
+                    """INSERT OR IGNORE INTO civic_modifier
+                           (civic_key, modifier_key, modifier_value, sort_order)
+                       VALUES (?, ?, ?, ?)""",
+                    (key, mk, value, m_order),
+                )
+                _write_modifier_label(w, loc, mk)
+                if verbose:
+                    print(f"      modifier | {mk} = {value:g}")
+
+        for kind, op, val, gid in _civic_requirements(cdef):
+            w.execute(
+                """INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (key, kind, op, val, gid),
+            )
+
+    w.commit()
+    return order
 
 
 # ---------------------------------------------------------------------------
@@ -2780,6 +2962,7 @@ Examples:
     starbase_buildings_dir = install_dir / 'common' / 'starbase_buildings'
     technology_dir = install_dir / 'common' / 'technology'
     inline_scripts_dir = install_dir / 'common' / 'inline_scripts'
+    civics_dir     = install_dir / 'common' / 'governments' / 'civics'
     loc_dir        = install_dir / 'localisation' / 'english'
 
     if not species_dir.exists():
@@ -3043,6 +3226,21 @@ Examples:
         print(f"  WARNING: {sysinit_dir} not found", file=progress)
     print(f"  {len(initializers)} system initializers loaded", file=progress)
     extract_precursor_systems(initializers, static_mods, loc, w, args.verbose)
+
+    # --- civics (after scripted_vars is loaded, for @var resolution in modifiers) ---
+    civic_files = (('00_civics.txt', 'normal'), ('01_special_civics.txt', 'special'),
+                   ('02_gestalt_civics.txt', 'gestalt'), ('03_corporate_civics.txt', 'corporate'))
+    print(f"\n[civics] {civics_dir}", file=progress)
+    civic_order = 0
+    for fn, ctype in civic_files:
+        f = civics_dir / fn
+        if not f.exists():
+            continue
+        try:
+            civic_order = extract_civics(parse_file(f), ctype, loc, scripted_vars, w,
+                                         civic_order, args.verbose)
+        except Exception as e:
+            print(f"  WARNING: failed to parse {fn}: {e}", file=sys.stderr)
 
     w.close()
 

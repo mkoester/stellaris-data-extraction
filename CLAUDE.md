@@ -88,7 +88,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
 
 Drop order matters for FK integrity:
 ```sql
@@ -154,6 +154,38 @@ Recursive. Returns ethics blocked by the valid condition:
 Result stored in `ethic_policy_restriction(policy_key, option_key, option_label, ethic_key)`.
 
 **Known gap:** positive requirements (`has_ethic` outside NOR/NOT = "must have this ethic to use option") are not extracted — only blocks/prohibitions are.
+
+---
+
+## Civics Extraction (`extract_civics`)
+
+Reads `common/governments/civics/*.txt`, once per file, tagging each with a
+`civic_type` derived from the filename: `00_civics`→**normal**, `01_special_civics`→
+**special**, `02_gestalt_civics`→**gestalt**, `03_corporate_civics`→**corporate**.
+Runs late in `main()` (after `scripted_vars` is built, so `@var` modifier values
+resolve), threading a running `sort_order` across files so the global order is stable.
+
+Per civic → `civic(key, name, description, civic_type, required_dlc, selectable,
+icon)`:
+- **name** = loc[key]; **description** = `_clean_loc(loc[description_key])` (the
+  `description = …` field's effects tooltip; cleaned but keeps some `£icon£` tag names).
+- **required_dlc** from `playable.host_has_dlc`.
+- **selectable = 0** when the civic is gated to a non-player country (a
+  `potential.country_type`, or `playable = { always = no }`) — e.g. fallen-empire
+  civics; the planner only loads `selectable = 1`.
+- **`civic_modifier`**: the numeric `modifier { }` block (resolving `@vars`), reusing
+  `_write_modifier_label`.
+- **`civic_requirement`** (`_civic_requirements` + `_trigger_values`): eligibility
+  parsed from the **top level** of `potential`/`possible`, for kinds
+  authority/ethics/civics/origin. Operators: `require` (bare `value`), `forbid`
+  (`NOT`/`NOR`), `require_any` (`OR`, with the set tied by `group_id`). Deeply nested
+  OR-of-different-kinds gates (rare) aren't unpacked.
+
+Counts (last run): ~265 civics (81 normal / 80 gestalt / 52 corporate / 52 special,
+of which most special are non-selectable), 721 modifiers, 1159 requirement rows.
+
+**Next:** origins (`extract_origins`) — same file dir; mostly descriptive (name, DLC,
+restrictions, some `modifier` blocks), effects largely narrative/event-driven.
 
 ---
 
