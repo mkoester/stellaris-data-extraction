@@ -36,8 +36,18 @@ from io import StringIO
 _LOC_INLINE_REF = re.compile(r'\$(\w+)\$')
 _LOC_FMT_CODE   = re.compile(r'§.')          # §X / §! colour codes
 _LOC_ICON       = re.compile(r'£(\w+?)(?:\|\w+)?£')  # £icon£ (or £icon|frame£)
-# Scripted-loc concept tag: ['concept_key'] or ['concept_key', inline display text].
-_LOC_CONCEPT    = re.compile(r"\['(\w+)'(?:,\s*([^\]]*))?\]")
+# Scripted-loc concept tag: ['concept_key'], ['type:key'] (e.g. ['technology:tech_x'],
+# ['building:building_x']), each optionally with ', inline display text'.
+_LOC_CONCEPT    = re.compile(r"\['([\w:]+)'(?:,\s*([^\]]*))?\]")
+
+def _concept_sub(m: re.Match) -> str:
+    """['concept_x'] / ['type:key'] → the inline text if given, else a $key$ ref the
+    expansion loop resolves (['technology:tech_psionic_aura'] → $tech_psionic_aura$)."""
+    token, inline = m.group(1), m.group(2)
+    if inline:
+        return inline
+    key = token.split(':', 1)[1] if ':' in token else token
+    return f'${key}$'
 # Any remaining bracket command, e.g. [This.GetName] — not statically resolvable.
 _LOC_COMMAND    = re.compile(r'\[[^\]]*\]')
 
@@ -47,8 +57,13 @@ _ICON_DROP      = re.compile(r'^(job|mod|trigger|leader|relic|tradition|edict|as
 
 def _render_icon(m: re.Match) -> str:
     """£icon£ → its name as words, unless it's a decoration icon (dropped). Resource
-    icons survive so a label like "£unity£ Produced per 100" keeps the resource."""
+    icons survive so a label like "£unity£ Produced per 100" keeps the resource. A
+    `mod_planet_<stat>_<add|mult>` icon wraps a stat (e.g. mod_planet_stability_add)
+    — render the stat so those labels keep it, rather than dropping the whole icon."""
     name = m.group(1)
+    mp = re.match(r'^mod_planet_(.+?)_(?:add|mult)$', name)
+    if mp:
+        return ' ' + mp.group(1).replace('_', ' ').title() + ' '
     if _ICON_DROP.search(name):
         return ' '
     return ' ' + name.replace('_', ' ').title() + ' '
@@ -92,9 +107,7 @@ def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False) -> str:
     ("£official£ Official Capacity" → "Official Capacity"). With keep_newlines=True
     the loc's \\n line breaks are preserved (tooltip rules stay on separate lines);
     otherwise everything collapses to one space-joined line (names, labels)."""
-    # Concept tags: keep the inline display text when given, else fall back to the
-    # concept's own name ($concept_KEY$, resolved by the loop below).
-    s = _LOC_CONCEPT.sub(lambda m: m.group(2) if m.group(2) else f'${m.group(1)}$', s)
+    s = _LOC_CONCEPT.sub(_concept_sub, s)   # ['concept'] / ['type:key'] tags
     for _ in range(4):
         expanded = _LOC_INLINE_REF.sub(lambda m: loc.get(m.group(1), m.group(0)), s)
         if expanded == s:
@@ -103,16 +116,36 @@ def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False) -> str:
     s = _LOC_COMMAND.sub('', s)        # drop leftover [Command.Chain] tags
     s = _LOC_FMT_CODE.sub('', s)       # strip §X colour codes
     s = _LOC_ICON.sub(_render_icon, s) # £icon£ → word (or dropped, if decoration)
-    s = _dedup_adjacent(s)             # collapse an icon name that repeats its neighbour
-    if keep_newlines:
-        s = re.sub(r'\\n', '\n', s)        # literal \n → real line break (rule separator)
-        s = re.sub(r'\\[tr]', ' ', s)      # \t \r → space
-        s = re.sub(r'[ \t]+', ' ', s)      # collapse runs of spaces within a line
-        s = re.sub(r' *\n *', '\n', s)     # trim around line breaks
-        s = re.sub(r'\n{2,}', '\n', s)     # collapse blank lines
-        return s.strip()
-    s = re.sub(r'\\[nrt]', ' ', s)     # literal \n \t \r escapes -> space
-    return re.sub(r'\s+', ' ', s).strip()
+    # Real newlines BEFORE de-dup so a \n actually separates tokens (otherwise
+    # "Housing§!.\n§YGenerator" glues into one token and the repeated "Housing"
+    # survives). Per line: remember its indentation ($t$ indents sub-items), then
+    # de-dup its content.
+    s = re.sub(r'\\n', '\n', s)        # literal \n → real line break (rule separator)
+    s = re.sub(r'\\[tr]', ' ', s)      # \t \r → space
+    rows: list[tuple[int, str]] = []
+    for raw in s.split('\n'):
+        content = _dedup_adjacent(raw)
+        if content:
+            rows.append((len(raw) - len(raw.lstrip()), content))
+    if not keep_newlines:
+        return re.sub(r'\s+', ' ', ' '.join(c for _, c in rows)).strip()
+    # Tooltip: one rule per line, "- " bullet stripped. A more-indented line is a
+    # sub-item of the line above (e.g. a tech under "Additional Starting
+    # Technologies:") — fold it back up instead of leaving it dangling.
+    out: list[str] = []
+    out_indents: list[int] = []
+    for indent, content in rows:
+        body = re.sub(r'^[-•]\s*', '', content).strip()
+        # More indented than the line it would attach to → it's a sub-item; fold it up.
+        # Compare to that line's indent (not the previous row's) so several siblings at
+        # the same sub-indent all join: "Terms:" + a + b + c. After a colon the first
+        # joins with a space, the rest as a comma list.
+        if out and indent > out_indents[-1]:
+            out[-1] += (' ' if out[-1].rstrip().endswith(':') else ', ') + body
+        else:
+            out.append(body)
+            out_indents.append(indent)
+    return '\n'.join(out)
 
 
 # ---------------------------------------------------------------------------
@@ -2123,9 +2156,22 @@ def _write_modifier_label(w: Writer, loc: dict[str, str], mod_key: str):
             job = inner[: -(len(resource_tok) + 1)]
             if job:
                 label = f"{label} {job.replace('_', ' ').title()}"
+    # Same dropped-job problem for per-job upkeep ("Upkeep for" → "Upkeep for X").
+    keyu = re.match(r'^planet_(.+)_upkeep_(?:add|mult)$', mod_key)
+    if keyu and label.endswith(' for'):
+        label = f"{label} {keyu.group(1).replace('_', ' ').title()}"
+    # Attunement % modifiers (<entity>_attunement_<add|mult>): the target sits in an
+    # unresolvable colour command, leaving "Attunement with" — append the entity.
+    am = re.match(r'^(.+)_attunement_(?:add|mult)$', mod_key)
+    if am and label.rstrip().endswith('with'):
+        label = f"{label.rstrip()} {am.group(1).replace('_', ' ').title()}"
     if '$' in label:
         return
-    pig = 0 if mod_key in INVERTED_MODIFIERS else 1
+    # Lower is better for any cost/upkeep modifier, so a negative value is *good*
+    # (shown green). Covers the curated set plus every `*_cost_*` / `*_upkeep_*` key
+    # (e.g. planet_structures_cost_mult −15% reads as a saving, not a penalty).
+    inverted = mod_key in INVERTED_MODIFIERS or re.search(r'(?:_cost|_upkeep)_(?:mult|add)$', mod_key)
+    pig = 0 if inverted else 1
     w.execute(
         """INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES (?, ?, ?)""",
