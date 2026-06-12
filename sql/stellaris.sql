@@ -275,6 +275,34 @@ CREATE TABLE planet_class (
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 
+-- Prescripted (predefined) empires from prescripted_countries/*.txt — the built-in
+-- empires the game ships, usable as starting points. Scalar setup in
+-- prescripted_empire; the repeated picks (traits/civics/ethics) in
+-- prescripted_empire_item. Same shape as a user_empire_designs.txt entry.
+DROP TABLE IF EXISTS prescripted_empire_item;
+DROP TABLE IF EXISTS prescripted_empire;
+CREATE TABLE prescripted_empire (
+    key               TEXT PRIMARY KEY,   -- e.g. "tzynn", "humans1"
+    name              TEXT,               -- localised display name
+    species_class     TEXT,               -- phenotype, e.g. "REP", "HUM", "MACHINE"
+    species_portrait  TEXT,
+    authority         TEXT,               -- e.g. "auth_imperial"
+    government         TEXT,               -- e.g. "gov_star_empire"
+    origin            TEXT,               -- e.g. "origin_default"
+    planet_class      TEXT,               -- e.g. "pc_desert"
+    graphical_culture TEXT,               -- ship appearance, e.g. "reptilian_01"
+    sort_order        INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE prescripted_empire_item (
+    empire_key TEXT NOT NULL,
+    kind       TEXT NOT NULL,      -- 'trait' | 'civic' | 'ethic'
+    value      TEXT NOT NULL,      -- e.g. "trait_strong", "civic_slaver_guilds", "ethic_authoritarian"
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (empire_key, kind, value),
+    FOREIGN KEY (empire_key) REFERENCES prescripted_empire(key)
+);
+
 -- Precursors: the ancient civilisations whose archaeology chains grant rewards.
 -- The precursor<->reward mapping is spread across event files (no single source
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
@@ -25442,3 +25470,1594 @@ INSERT OR REPLACE INTO planet_class
 INSERT OR REPLACE INTO planet_class
                    (key, name, climate, colonizable, is_standard, sort_order)
                VALUES ('pc_relic', 'Relic World', 'dry', 1, 0, 29);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('humans1', 'United Nations of Earth', 'HUM', 'human', 'auth_democratic', 'gov_representative_democracy', 'origin_default', 'pc_continental', 'mammalian_01', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1', 'trait', 'trait_adaptive', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1', 'trait', 'trait_nomadic', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1', 'trait', 'trait_wasteful', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1', 'civic', 'civic_beacon_of_liberty', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1', 'civic', 'civic_idealistic_foundation', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1', 'ethic', 'ethic_xenophile', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1', 'ethic', 'ethic_fanatic_egalitarian', 7);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('humans2', 'Commonwealth of Man', 'HUM', 'human', 'auth_dictatorial', 'gov_military_dictatorship', 'origin_lost_colony', 'pc_continental', 'mammalian_01', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2', 'trait', 'trait_adaptive', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2', 'trait', 'trait_nomadic', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2', 'trait', 'trait_wasteful', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2', 'civic', 'civic_nationalistic_zeal', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2', 'civic', 'civic_distinguished_admiralty', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2', 'ethic', 'ethic_xenophobe', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2', 'ethic', 'ethic_fanatic_militarist', 7);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('humans1_1', 'United Nations of Earth', 'HUM', 'human', 'auth_democratic', 'gov_representative_democracy', 'origin_default', 'pc_continental', 'humanoid_01', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1_1', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1_1', 'trait', 'trait_adaptive', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1_1', 'trait', 'trait_nomadic', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1_1', 'trait', 'trait_wasteful', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1_1', 'civic', 'civic_beacon_of_liberty', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1_1', 'civic', 'civic_idealistic_foundation', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1_1', 'ethic', 'ethic_xenophile', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans1_1', 'ethic', 'ethic_fanatic_egalitarian', 7);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('humans2_1', 'Commonwealth of Man', 'HUM', 'human', 'auth_dictatorial', 'gov_military_dictatorship', 'origin_lost_colony', 'pc_continental', 'humanoid_01', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2_1', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2_1', 'trait', 'trait_adaptive', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2_1', 'trait', 'trait_nomadic', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2_1', 'trait', 'trait_wasteful', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2_1', 'civic', 'civic_nationalistic_zeal', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2_1', 'civic', 'civic_distinguished_admiralty', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2_1', 'ethic', 'ethic_xenophobe', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('humans2_1', 'ethic', 'ethic_fanatic_militarist', 7);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('lithoid_humans', 'Federated Theian Preservers', 'LITHOID', 'lith_human', 'auth_oligarchic', 'gov_irenic_bureaucracy', 'origin_lithoid', 'pc_desert', 'lithoid_01', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lithoid_humans', 'trait', 'trait_lithoid', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lithoid_humans', 'trait', 'trait_wasteful', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lithoid_humans', 'trait', 'trait_industrious', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lithoid_humans', 'trait', 'trait_lithoid_gaseous_byproducts', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lithoid_humans', 'trait', 'trait_deviants', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lithoid_humans', 'civic', 'civic_mining_guilds', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lithoid_humans', 'civic', 'civic_meritocracy', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lithoid_humans', 'ethic', 'ethic_pacifist', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lithoid_humans', 'ethic', 'ethic_fanatic_materialist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('plantoid_humans', 'Blooms of Gaea', 'PLANT', 'pla17', 'auth_democratic', 'gov_moral_democracy', 'origin_fruitful', 'pc_tropical', 'plantoid_01', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('plantoid_humans', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('plantoid_humans', 'trait', 'trait_plantoid_radiotrophic', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('plantoid_humans', 'trait', 'trait_conservational', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('plantoid_humans', 'trait', 'trait_agrarian', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('plantoid_humans', 'trait', 'trait_slow_learners', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('plantoid_humans', 'trait', 'trait_slow_breeders', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('plantoid_humans', 'civic', 'civic_environmentalist', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('plantoid_humans', 'civic', 'civic_catalytic_processing', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('plantoid_humans', 'ethic', 'ethic_pacifist', 8);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('plantoid_humans', 'ethic', 'ethic_fanatic_egalitarian', 9);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('pyrragthul', 'Pyrrag''Thul Planet Forgers', 'INF', 'inf9', 'auth_imperial', 'gov_despotic_hegemony', 'origin_red_giant', 'pc_volcanic', 'infernal_01', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pyrragthul', 'trait', 'trait_infernal', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pyrragthul', 'trait', 'trait_shell_slag', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pyrragthul', 'trait', 'trait_pyroclastic', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pyrragthul', 'trait', 'trait_sedentary', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pyrragthul', 'civic', 'civic_galvanic_symbiosis', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pyrragthul', 'civic', 'civic_world_forgers', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pyrragthul', 'ethic', 'ethic_authoritarian', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pyrragthul', 'ethic', 'ethic_fanatic_materialist', 7);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('mindwardens', 'Krijdex Wardenship', 'MINDWARDEN', 'mindwarden_01', 'auth_oligarchic', 'gov_executive_committee', 'origin_mindwardens', 'pc_tropical', 'mindwarden_01', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('mindwardens', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('mindwardens', 'trait', 'trait_talented', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('mindwardens', 'trait', 'trait_intelligent', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('mindwardens', 'trait', 'trait_docile', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('mindwardens', 'trait', 'trait_haunting_visions', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('mindwardens', 'trait', 'trait_decadent', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('mindwardens', 'civic', 'civic_twisted_experimenters', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('mindwardens', 'civic', 'civic_police_state', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('mindwardens', 'ethic', 'ethic_authoritarian', 8);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('mindwardens', 'ethic', 'ethic_militarist', 9);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('mindwardens', 'ethic', 'ethic_materialist', 10);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('tankbound', 'Oracularity of Noerm', 'AQUATIC', 'psionic_07', 'auth_democratic', 'gov_theocratic_republic', 'origin_default', 'pc_desert', 'psionic_01', 8);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tankbound', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tankbound', 'trait', 'trait_tankbound', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tankbound', 'trait', 'trait_cranial_hypertrophy', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tankbound', 'trait', 'trait_adaptive', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tankbound', 'trait', 'trait_quick_learners', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tankbound', 'trait', 'trait_slow_breeders', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tankbound', 'trait', 'trait_solitary', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tankbound', 'civic', 'civic_superstitious_beliefs', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tankbound', 'civic', 'civic_tankbound', 8);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tankbound', 'ethic', 'ethic_xenophile', 9);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tankbound', 'ethic', 'ethic_pacifist', 10);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tankbound', 'ethic', 'ethic_spiritualist', 11);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('zrobots', 'Yorphian Extractorate', 'MACHINE', 'psionic_11', 'auth_machine_intelligence', 'gov_machine_empire', 'origin_shroud_forged', 'pc_arctic', 'psionic_01', 9);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots', 'trait', 'trait_machine_unit', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots', 'trait', 'trait_robot_power_drills', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots', 'trait', 'trait_robot_streamlined_protocols', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots', 'trait', 'trait_robot_bulky', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots', 'trait', 'trait_robot_repurposed_hardware', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots', 'trait', 'trait_robot_high_maintenance', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots', 'civic', 'civic_entropy_drinkers_machine', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots', 'civic', 'civic_machine_factory_overclock', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots', 'ethic', 'ethic_gestalt_consciousness', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('zrobots_machine_age', 'Yorphian Extractorate', 'MACHINE', 'psionic_11', 'auth_machine_intelligence', 'gov_machine_empire', 'origin_shroud_forged', 'pc_arctic', 'psionic_01', 10);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots_machine_age', 'trait', 'trait_machine_unit', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots_machine_age', 'trait', 'trait_robot_history_resourcebot', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots_machine_age', 'trait', 'trait_robot_power_drills', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots_machine_age', 'trait', 'trait_robot_streamlined_protocols', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots_machine_age', 'trait', 'trait_robot_bulky', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots_machine_age', 'trait', 'trait_robot_repurposed_hardware', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots_machine_age', 'trait', 'trait_robot_high_maintenance', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots_machine_age', 'civic', 'civic_entropy_drinkers_machine', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots_machine_age', 'civic', 'civic_machine_factory_overclock', 8);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zrobots_machine_age', 'ethic', 'ethic_gestalt_consciousness', 9);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('zhardmehka', 'Bloomwrought Wildscape of Tellon', 'FUN', 'fun4', 'auth_hive_mind', 'gov_wilderness', 'origin_wilderness', 'pc_tropical', 'biogenesis_02', 11);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zhardmehka', 'trait', 'trait_hive_mind', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zhardmehka', 'trait', 'trait_wilderness', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zhardmehka', 'trait', 'trait_organic', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zhardmehka', 'trait', 'trait_repugnant', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zhardmehka', 'trait', 'trait_industrious', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zhardmehka', 'trait', 'trait_talented', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zhardmehka', 'trait', 'trait_resilient', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zhardmehka', 'civic', 'civic_hive_aerospace_adaptation', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zhardmehka', 'civic', 'civic_hive_natural_neural_network', 8);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('zhardmehka', 'ethic', 'ethic_gestalt_consciousness', 9);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('djunnetic', 'Djunnetic Dominion', 'MAM', 'bio10', 'auth_imperial', 'gov_enlightened_monarchy', 'origin_evolutionary_predators', 'pc_ocean', 'biogenesis_01', 12);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('djunnetic', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('djunnetic', 'trait', 'trait_malleable_genes', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('djunnetic', 'trait', 'trait_slow_breeders', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('djunnetic', 'trait', 'trait_repugnant', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('djunnetic', 'trait', 'trait_seasonal_dormancy', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('djunnetic', 'trait', 'trait_unruly', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('djunnetic', 'civic', 'civic_crowdsourcing', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('djunnetic', 'civic', 'civic_philosopher_king', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('djunnetic', 'ethic', 'ethic_authoritarian', 8);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('djunnetic', 'ethic', 'ethic_xenophobe', 9);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('djunnetic', 'ethic', 'ethic_spiritualist', 10);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('oviron_lodge', 'Oviron Lodge', 'AVI', 'avi5', 'auth_oligarchic', 'gov_executive_committee', 'origin_treasure_hunters', 'pc_alpine', 'avian_01', 13);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('oviron_lodge', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('oviron_lodge', 'trait', 'trait_industrious', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('oviron_lodge', 'trait', 'trait_quick_learners', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('oviron_lodge', 'trait', 'trait_traditional', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('oviron_lodge', 'trait', 'trait_slow_breeders', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('oviron_lodge', 'civic', 'civic_galactic_curators', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('oviron_lodge', 'civic', 'civic_mining_guilds', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('oviron_lodge', 'ethic', 'ethic_authoritarian', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('oviron_lodge', 'ethic', 'ethic_fanatic_materialist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('graparx_trophy_hunters', 'Graparx Primal Stalkers', 'MAM', 'mam12', 'auth_oligarchic', 'gov_citizen_stratocracy', 'origin_primal_calling', 'pc_tropical', 'mammalian_01', 14);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('graparx_trophy_hunters', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('graparx_trophy_hunters', 'trait', 'trait_rapid_breeders', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('graparx_trophy_hunters', 'trait', 'trait_strong', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('graparx_trophy_hunters', 'trait', 'trait_resilient', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('graparx_trophy_hunters', 'trait', 'trait_nonadaptive', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('graparx_trophy_hunters', 'civic', 'civic_beastmasters', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('graparx_trophy_hunters', 'civic', 'civic_citizen_service', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('graparx_trophy_hunters', 'ethic', 'ethic_xenophobe', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('graparx_trophy_hunters', 'ethic', 'ethic_fanatic_militarist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('yatunan_radicals', 'Yatunan Radicals', 'HUM', 'humanoid_03', 'auth_oligarchic', 'gov_storm_chasers', 'origin_storm_chasers', 'pc_ocean', 'avian_01', 15);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yatunan_radicals', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yatunan_radicals', 'trait', 'trait_storm_touched', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yatunan_radicals', 'trait', 'trait_deviants', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yatunan_radicals', 'trait', 'trait_fleeting', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yatunan_radicals', 'trait', 'trait_extremely_adaptive', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yatunan_radicals', 'civic', 'civic_astrometeorology', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yatunan_radicals', 'civic', 'civic_storm_callers', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yatunan_radicals', 'ethic', 'ethic_xenophile', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yatunan_radicals', 'ethic', 'ethic_militarist', 8);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yatunan_radicals', 'ethic', 'ethic_spiritualist', 9);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('basidrix_cyber_ecclesia', 'Basidrix Cyber Ecclesia', 'FUN', 'cyb13', 'auth_oligarchic', 'gov_holy_tribunal', 'origin_cybernetic_creed', 'pc_arid', 'cybernetics_01', 16);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('basidrix_cyber_ecclesia', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('basidrix_cyber_ecclesia', 'trait', 'trait_cyborg_ritualistic_implants', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('basidrix_cyber_ecclesia', 'trait', 'trait_intelligent', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('basidrix_cyber_ecclesia', 'trait', 'trait_ingenious', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('basidrix_cyber_ecclesia', 'trait', 'trait_unruly', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('basidrix_cyber_ecclesia', 'civic', 'civic_exalted_priesthood', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('basidrix_cyber_ecclesia', 'civic', 'civic_cutthroat_politics', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('basidrix_cyber_ecclesia', 'ethic', 'ethic_fanatic_spiritualist', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('basidrix_cyber_ecclesia', 'ethic', 'ethic_xenophobe', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('lacertan_techno_protectorate', 'Lacertan Techno-Protectorate', 'MOL', 'synth05', 'auth_democratic', 'gov_rational_consensus', 'origin_synthetic_fertility', 'pc_tropical', 'synthetics_01', 17);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lacertan_techno_protectorate', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lacertan_techno_protectorate', 'trait', 'trait_pathogenic_genes', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lacertan_techno_protectorate', 'trait', 'trait_venerable', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lacertan_techno_protectorate', 'trait', 'trait_slow_learners', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lacertan_techno_protectorate', 'civic', 'civic_technocracy', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lacertan_techno_protectorate', 'civic', 'civic_free_haven', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lacertan_techno_protectorate', 'ethic', 'ethic_xenophile', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lacertan_techno_protectorate', 'ethic', 'ethic_pacifist', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lacertan_techno_protectorate', 'ethic', 'ethic_materialist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('free_sunbuilt_uplifters', 'Sunbuilt Uplifters', 'MACHINE', 'synth_machine_01', 'auth_imperial', 'gov_theocratic_monarchy', 'origin_default', 'pc_desert', 'synthetics_01', 18);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('free_sunbuilt_uplifters', 'trait', 'trait_machine_unit', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('free_sunbuilt_uplifters', 'trait', 'trait_robot_propaganda_machines', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('free_sunbuilt_uplifters', 'trait', 'trait_robot_history_chatbot', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('free_sunbuilt_uplifters', 'trait', 'trait_robot_deviants', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('free_sunbuilt_uplifters', 'trait', 'trait_robot_emotion_emulators', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('free_sunbuilt_uplifters', 'civic', 'civic_guided_sapience', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('free_sunbuilt_uplifters', 'civic', 'civic_functional_architecture', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('free_sunbuilt_uplifters', 'ethic', 'ethic_fanatic_spiritualist', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('free_sunbuilt_uplifters', 'ethic', 'ethic_xenophile', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('certeran_covenant', 'Certeran Covenant', 'HUM', 'humanoid_hp_16', 'auth_democratic', 'gov_dimensional_covenant', 'origin_riftworld', 'pc_alpine', 'arthropoid_01', 19);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('certeran_covenant', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('certeran_covenant', 'trait', 'trait_intelligent', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('certeran_covenant', 'trait', 'trait_natural_physicists', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('certeran_covenant', 'trait', 'trait_weak', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('certeran_covenant', 'civic', 'civic_dimensional_worship', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('certeran_covenant', 'civic', 'civic_ascensionists', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('certeran_covenant', 'ethic', 'ethic_xenophile', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('certeran_covenant', 'ethic', 'ethic_fanatic_spiritualist', 7);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('guardianship_of_nyrr', 'Guardianship of Nyrr', 'REP', 'rep14', 'auth_imperial', 'gov_defensive_union', 'origin_default', 'pc_desert', 'reptilian_01', 20);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('guardianship_of_nyrr', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('guardianship_of_nyrr', 'trait', 'trait_nonadaptive', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('guardianship_of_nyrr', 'trait', 'trait_sedentary', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('guardianship_of_nyrr', 'trait', 'trait_venerable', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('guardianship_of_nyrr', 'trait', 'trait_slow_breeders', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('guardianship_of_nyrr', 'trait', 'trait_very_strong', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('guardianship_of_nyrr', 'civic', 'civic_sovereign_guardianship', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('guardianship_of_nyrr', 'civic', 'civic_warrior_culture', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('guardianship_of_nyrr', 'ethic', 'ethic_authoritarian', 8);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('guardianship_of_nyrr', 'ethic', 'ethic_fanatic_militarist', 9);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('resistance', 'Roccan Resistance', 'AVI', 'avi6', 'auth_democratic', 'gov_military_commissariat', 'origin_payback', 'pc_arid', 'avian_01', 21);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('resistance', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('resistance', 'trait', 'trait_ingenious', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('resistance', 'trait', 'trait_quick_learners', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('resistance', 'trait', 'trait_unruly', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('resistance', 'trait', 'trait_natural_engineers', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('resistance', 'civic', 'civic_nationalistic_zeal', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('resistance', 'civic', 'civic_citizen_service', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('resistance', 'ethic', 'ethic_fanatic_egalitarian', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('resistance', 'ethic', 'ethic_militarist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('broken_shackles', 'Free Peoples of the Fall', 'REP', 'rep3', 'auth_democratic', 'gov_moral_democracy', 'origin_broken_shackles', 'pc_continental', 'reptilian_01', 22);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('broken_shackles', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('broken_shackles', 'trait', 'trait_ingenious', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('broken_shackles', 'trait', 'trait_quick_learners', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('broken_shackles', 'trait', 'trait_unruly', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('broken_shackles', 'trait', 'trait_natural_engineers', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('broken_shackles', 'civic', 'civic_beacon_of_liberty', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('broken_shackles', 'civic', 'civic_free_haven', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('broken_shackles', 'ethic', 'ethic_egalitarian', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('broken_shackles', 'ethic', 'ethic_fanatic_xenophile', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('gorthikan', 'Gorthikan Alliance', 'TOX', 'tox4', 'auth_democratic', 'gov_direct_democracy', 'origin_overtuned', 'pc_alpine', 'toxoid_01', 23);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('gorthikan', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('gorthikan', 'trait', 'trait_incubator', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('gorthikan', 'trait', 'trait_unruly', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('gorthikan', 'trait', 'trait_spliced_adaptability', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('gorthikan', 'trait', 'trait_auto_mod_overtuned', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('gorthikan', 'trait', 'trait_gene_mentorship', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('gorthikan', 'civic', 'civic_scavengers', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('gorthikan', 'civic', 'civic_toxic_baths', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('gorthikan', 'ethic', 'ethic_fanatic_egalitarian', 8);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('gorthikan', 'ethic', 'ethic_materialist', 9);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('knights', 'Rototavuul High Suzerainty', 'TOX', 'tox9', 'auth_imperial', 'gov_feudal_empire', 'origin_toxic_knights', 'pc_desert', 'toxoid_01', 24);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('knights', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('knights', 'trait', 'trait_traditional', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('knights', 'trait', 'trait_strong', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('knights', 'trait', 'trait_resilient', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('knights', 'trait', 'trait_noxious', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('knights', 'trait', 'trait_nonadaptive', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('knights', 'civic', 'civic_feudal_realm', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('knights', 'civic', 'civic_aristocratic_elite', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('knights', 'ethic', 'ethic_authoritarian', 8);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('knights', 'ethic', 'ethic_militarist', 9);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('knights', 'ethic', 'ethic_spiritualist', 10);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('sathyrel', 'Sathyrelian Bliss', 'AQUATIC', 'aqu1', 'auth_dictatorial', 'gov_irenic_dictatorship', 'origin_ocean_paradise', 'pc_ocean', 'aquatic_01', 25);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('sathyrel', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('sathyrel', 'trait', 'trait_aquatic', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('sathyrel', 'trait', 'trait_conservational', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('sathyrel', 'trait', 'trait_sedentary', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('sathyrel', 'trait', 'trait_slow_learners', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('sathyrel', 'civic', 'civic_anglers', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('sathyrel', 'civic', 'civic_environmentalist', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('sathyrel', 'ethic', 'ethic_xenophobe', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('sathyrel', 'ethic', 'ethic_fanatic_pacifist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('pasharti', 'Pasharti Absorbers', 'NECROID', 'nec1', 'auth_dictatorial', 'gov_elective_monarchy', 'origin_necrophage', 'pc_tundra', 'necroid_01', 26);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pasharti', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pasharti', 'trait', 'trait_necrophage', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pasharti', 'trait', 'trait_deviants', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pasharti', 'trait', 'trait_very_strong', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pasharti', 'civic', 'civic_reanimated_armies', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pasharti', 'civic', 'civic_cutthroat_politics', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pasharti', 'ethic', 'ethic_fanatic_xenophobe', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('pasharti', 'ethic', 'ethic_militarist', 7);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('khennet', 'Keepers of Ave''brenn', 'LITHOID', 'lith11', 'auth_imperial', 'gov_theocratic_monarchy', 'origin_default', 'pc_arid', 'lithoid_01', 27);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('khennet', 'trait', 'trait_lithoid', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('khennet', 'trait', 'trait_communal', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('khennet', 'trait', 'trait_industrious', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('khennet', 'trait', 'trait_sedentary', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('khennet', 'civic', 'civic_philosopher_king', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('khennet', 'civic', 'civic_environmentalist', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('khennet', 'ethic', 'ethic_pacifist', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('khennet', 'ethic', 'ethic_fanatic_spiritualist', 7);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('kilik', 'Kilik Cooperative', 'AVI', 'avi11', 'auth_democratic', 'gov_communal_parity', 'origin_default', 'pc_tropical', 'avian_01', 28);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kilik', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kilik', 'trait', 'trait_communal', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kilik', 'trait', 'trait_traditional', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kilik', 'trait', 'trait_quick_learners', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kilik', 'trait', 'trait_fleeting', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kilik', 'civic', 'civic_shared_burden', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kilik', 'civic', 'civic_functional_architecture', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kilik', 'ethic', 'ethic_fanatic_egalitarian', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kilik', 'ethic', 'ethic_materialist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('orbis', 'Orbis Customer Synergies', 'REP', 'rep1', 'auth_corporate', 'gov_megacorporation', 'origin_default', 'pc_ocean', 'reptilian_01', 29);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('orbis', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('orbis', 'trait', 'trait_charismatic', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('orbis', 'trait', 'trait_adaptive', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('orbis', 'trait', 'trait_enduring', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('orbis', 'trait', 'trait_decadent', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('orbis', 'trait', 'trait_slow_breeders', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('orbis', 'civic', 'civic_brand_loyalty', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('orbis', 'civic', 'civic_media_conglomerate', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('orbis', 'ethic', 'ethic_authoritarian', 8);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('orbis', 'ethic', 'ethic_xenophile', 9);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('orbis', 'ethic', 'ethic_materialist', 10);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('chinorr', 'Chinorr Combine', 'MOL', 'mol11', 'auth_corporate', 'gov_megacorporation', 'origin_default', 'pc_arid', 'molluscoid_01', 30);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('chinorr', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('chinorr', 'trait', 'trait_industrious', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('chinorr', 'trait', 'trait_intelligent', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('chinorr', 'trait', 'trait_solitary', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('chinorr', 'trait', 'trait_wasteful', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('chinorr', 'civic', 'civic_private_prospectors', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('chinorr', 'civic', 'civic_ruthless_competition', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('chinorr', 'ethic', 'ethic_militarist', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('chinorr', 'ethic', 'ethic_fanatic_materialist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('hazbuzan', 'Hazbuzan Syndicate', 'REP', 'rep11', 'auth_corporate', 'gov_criminal_syndicate', 'origin_default', 'pc_savannah', 'reptilian_01', 31);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('hazbuzan', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('hazbuzan', 'trait', 'trait_ingenious', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('hazbuzan', 'trait', 'trait_thrifty', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('hazbuzan', 'trait', 'trait_deviants', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('hazbuzan', 'trait', 'trait_quarrelsome', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('hazbuzan', 'civic', 'civic_criminal_heritage', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('hazbuzan', 'civic', 'civic_franchising', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('hazbuzan', 'ethic', 'ethic_fanatic_militarist', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('hazbuzan', 'ethic', 'ethic_spiritualist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('voor', 'Voor Technocracy', 'HUM', 'humanoid_hp_06', 'auth_dictatorial', 'gov_technocratic_dictatorship', 'origin_default', 'pc_arctic', 'humanoid_01', 32);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('voor', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('voor', 'trait', 'trait_quick_learners', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('voor', 'trait', 'trait_talented', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('voor', 'trait', 'trait_adaptive', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('voor', 'trait', 'trait_repugnant', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('voor', 'civic', 'civic_technocracy', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('voor', 'civic', 'civic_environmentalist', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('voor', 'ethic', 'ethic_authoritarian', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('voor', 'ethic', 'ethic_fanatic_materialist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('tebrid', 'Tebrid Homolog', 'MACHINE', 'sd_mol_robot', 'auth_machine_intelligence', 'gov_machine_assimilator', 'origin_default', 'pc_ocean', 'molluscoid_01', 33);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid', 'trait', 'trait_machine_unit', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid', 'trait', 'trait_robot_logic_engines', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid', 'trait', 'trait_robot_learning_algorithms', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid', 'trait', 'trait_robot_luxurious', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid', 'civic', 'civic_machine_assimilator', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid', 'civic', 'civic_machine_predictive_analysis', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid', 'ethic', 'ethic_gestalt_consciousness', 6);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('custodianship', 'Earth Custodianship', 'MACHINE', 'sd_hum_robot', 'auth_machine_intelligence', 'gov_machine_servitor', 'origin_default', 'pc_continental', 'mammalian_01', 34);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship', 'trait', 'trait_machine_unit', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship', 'trait', 'trait_robot_emotion_emulators', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship', 'trait', 'trait_robot_double_jointed', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship', 'trait', 'trait_robot_high_maintenance', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship', 'civic', 'civic_machine_servitor', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship', 'civic', 'civic_machine_delegated_functions', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship', 'ethic', 'ethic_gestalt_consciousness', 6);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('xt489', 'XT-489 Eliminator', 'MACHINE', 'sd_avi_robot', 'auth_machine_intelligence', 'gov_machine_terminator', 'origin_default', 'pc_desert', 'avian_01', 35);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489', 'trait', 'trait_machine_unit', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489', 'trait', 'trait_robot_power_drills', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489', 'trait', 'trait_robot_mass_produced', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489', 'trait', 'trait_robot_uncanny', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489', 'trait', 'trait_robot_bulky', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489', 'civic', 'civic_machine_terminator', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489', 'civic', 'civic_machine_warbots', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489', 'ethic', 'ethic_gestalt_consciousness', 7);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('tebrid_machine_age', 'Tebrid Homolog', 'MACHINE', 'sd_mol_robot', 'auth_machine_intelligence', 'gov_machine_assimilator', 'origin_default', 'pc_ocean', 'molluscoid_01', 36);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid_machine_age', 'trait', 'trait_machine_unit', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid_machine_age', 'trait', 'trait_robot_history_researchbot', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid_machine_age', 'trait', 'trait_robot_logic_engines', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid_machine_age', 'trait', 'trait_robot_learning_algorithms', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid_machine_age', 'trait', 'trait_robot_luxurious', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid_machine_age', 'civic', 'civic_machine_assimilator', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid_machine_age', 'civic', 'civic_machine_predictive_analysis', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tebrid_machine_age', 'ethic', 'ethic_gestalt_consciousness', 7);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('custodianship_machine_age', 'Earth Custodianship', 'MACHINE', 'sd_hum_robot', 'auth_machine_intelligence', 'gov_machine_servitor', 'origin_default', 'pc_continental', 'mammalian_01', 37);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship_machine_age', 'trait', 'trait_machine_unit', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship_machine_age', 'trait', 'trait_robot_history_artbot', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship_machine_age', 'trait', 'trait_robot_emotion_emulators', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship_machine_age', 'trait', 'trait_robot_double_jointed', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship_machine_age', 'trait', 'trait_robot_high_maintenance', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship_machine_age', 'civic', 'civic_machine_servitor', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship_machine_age', 'civic', 'civic_machine_delegated_functions', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('custodianship_machine_age', 'ethic', 'ethic_gestalt_consciousness', 7);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('xt489_machine_age', 'XT-489 Eliminator', 'MACHINE', 'sd_avi_robot', 'auth_machine_intelligence', 'gov_machine_terminator', 'origin_default', 'pc_desert', 'avian_01', 38);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489_machine_age', 'trait', 'trait_machine_unit', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489_machine_age', 'trait', 'trait_robot_history_warbot', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489_machine_age', 'trait', 'trait_robot_power_drills', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489_machine_age', 'trait', 'trait_robot_mass_produced', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489_machine_age', 'trait', 'trait_robot_uncanny', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489_machine_age', 'trait', 'trait_robot_bulky', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489_machine_age', 'civic', 'civic_machine_terminator', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489_machine_age', 'civic', 'civic_machine_warbots', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xt489_machine_age', 'ethic', 'ethic_gestalt_consciousness', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('xanid', 'Xanid Suzerainty', 'ART', 'art10', 'auth_dictatorial', 'gov_constitutional_dictatorship', 'origin_syncretic_evolution', 'pc_arid', 'arthropoid_01', 39);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xanid', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xanid', 'trait', 'trait_talented', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xanid', 'trait', 'trait_intelligent', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xanid', 'trait', 'trait_enduring', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xanid', 'trait', 'trait_nonadaptive', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xanid', 'civic', 'civic_corvee_system', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xanid', 'civic', 'civic_cutthroat_politics', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xanid', 'ethic', 'ethic_fanatic_authoritarian', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('xanid', 'ethic', 'ethic_xenophobe', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('lokken', 'Lokken Mechanists', 'REP', 'rep4', 'auth_democratic', 'gov_rational_consensus', 'origin_mechanists', 'pc_arid', 'reptilian_01', 40);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lokken', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lokken', 'trait', 'trait_natural_engineers', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lokken', 'trait', 'trait_talented', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lokken', 'trait', 'trait_quick_learners', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lokken', 'trait', 'trait_sedentary', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lokken', 'civic', 'civic_technocracy', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lokken', 'civic', 'civic_meritocracy', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lokken', 'ethic', 'ethic_egalitarian', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('lokken', 'ethic', 'ethic_fanatic_materialist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('ixidar', 'Ix''Idar Star Collective', 'ART', 'art12', 'auth_hive_mind', 'gov_hive_mind', 'origin_default', 'pc_arctic', 'arthropoid_01', 41);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('ixidar', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('ixidar', 'trait', 'trait_hive_mind', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('ixidar', 'trait', 'trait_rapid_breeders', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('ixidar', 'trait', 'trait_strong', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('ixidar', 'trait', 'trait_fleeting', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('ixidar', 'civic', 'civic_hive_natural_neural_network', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('ixidar', 'civic', 'civic_hive_pooled_knowledge', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('ixidar', 'ethic', 'ethic_gestalt_consciousness', 7);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('maweer', 'Maweer Caretakers', 'PLANT', 'pla14', 'auth_dictatorial', 'gov_irenic_dictatorship', 'origin_default', 'pc_tropical', 'plantoid_01', 42);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('maweer', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('maweer', 'trait', 'trait_agrarian', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('maweer', 'trait', 'trait_enduring', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('maweer', 'trait', 'trait_conservational', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('maweer', 'trait', 'trait_slow_breeders', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('maweer', 'civic', 'civic_idyllic_bloom', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('maweer', 'civic', 'civic_agrarian_idyll', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('maweer', 'ethic', 'ethic_xenophobe', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('maweer', 'ethic', 'ethic_fanatic_pacifist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('tzynn', 'Tzynn Empire', 'REP', 'rep9', 'auth_imperial', 'gov_star_empire', 'origin_default', 'pc_desert', 'reptilian_01', 43);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tzynn', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tzynn', 'trait', 'trait_strong', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tzynn', 'trait', 'trait_resilient', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tzynn', 'trait', 'trait_rapid_breeders', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tzynn', 'trait', 'trait_decadent', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tzynn', 'trait', 'trait_quarrelsome', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tzynn', 'civic', 'civic_police_state', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tzynn', 'civic', 'civic_slaver_guilds', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tzynn', 'ethic', 'ethic_authoritarian', 8);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('tzynn', 'ethic', 'ethic_fanatic_militarist', 9);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('yondar', 'Kingdom of Yondarim', 'AVI', 'avi10', 'auth_imperial', 'gov_divine_empire', 'origin_default', 'pc_alpine', 'avian_01', 44);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yondar', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yondar', 'trait', 'trait_conformists', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yondar', 'trait', 'trait_natural_physicists', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yondar', 'trait', 'trait_slow_learners', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yondar', 'civic', 'civic_imperial_cult', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yondar', 'civic', 'civic_aristocratic_elite', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yondar', 'ethic', 'ethic_authoritarian', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('yondar', 'ethic', 'ethic_fanatic_spiritualist', 7);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('iferyx', 'Iferyx Amalgamated Fleets', 'MAM', 'mam16', 'auth_oligarchic', 'gov_trade_league', 'origin_default', 'pc_tundra', 'mammalian_01', 45);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('iferyx', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('iferyx', 'trait', 'trait_thrifty', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('iferyx', 'trait', 'trait_communal', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('iferyx', 'trait', 'trait_deviants', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('iferyx', 'civic', 'civic_corporate_dominion', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('iferyx', 'civic', 'civic_shadow_council', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('iferyx', 'ethic', 'ethic_egalitarian', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('iferyx', 'ethic', 'ethic_spiritualist', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('iferyx', 'ethic', 'ethic_pacifist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('glebsig', 'Glebsig Foundation', 'MOL', 'mol7', 'auth_oligarchic', 'gov_holy_tribunal', 'origin_default', 'pc_alpine', 'molluscoid_01', 46);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('glebsig', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('glebsig', 'trait', 'trait_sedentary', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('glebsig', 'trait', 'trait_enduring', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('glebsig', 'trait', 'trait_conservational', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('glebsig', 'trait', 'trait_resilient', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('glebsig', 'civic', 'civic_exalted_priesthood', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('glebsig', 'civic', 'civic_efficient_bureaucracy', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('glebsig', 'ethic', 'ethic_fanatic_xenophile', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('glebsig', 'ethic', 'ethic_spiritualist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('jehetma', 'Jehetma Dominion', 'FUN', 'fun13', 'auth_dictatorial', 'gov_elective_monarchy', 'origin_default', 'pc_tundra', 'fungoid_01', 47);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('jehetma', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('jehetma', 'trait', 'trait_slow_breeders', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('jehetma', 'trait', 'trait_ingenious', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('jehetma', 'trait', 'trait_communal', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('jehetma', 'trait', 'trait_strong', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('jehetma', 'civic', 'civic_environmentalist', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('jehetma', 'civic', 'civic_philosopher_king', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('jehetma', 'ethic', 'ethic_authoritarian', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('jehetma', 'ethic', 'ethic_fanatic_pacifist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('scyldari', 'Scyldari Confederacy', 'MAM', 'mam6', 'auth_democratic', 'gov_theocratic_republic', 'origin_default', 'pc_ocean', 'mammalian_01', 48);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('scyldari', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('scyldari', 'trait', 'trait_charismatic', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('scyldari', 'trait', 'trait_natural_sociologists', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('scyldari', 'trait', 'trait_weak', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('scyldari', 'civic', 'civic_environmentalist', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('scyldari', 'civic', 'civic_free_haven', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('scyldari', 'ethic', 'ethic_spiritualist', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('scyldari', 'ethic', 'ethic_pacifist', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('scyldari', 'ethic', 'ethic_xenophile', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('kel_azaan', 'Kel-Azaan Republic', 'ART', 'art8', 'auth_oligarchic', 'gov_citizen_stratocracy', 'origin_default', 'pc_savannah', 'arthropoid_01', 49);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kel_azaan', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kel_azaan', 'trait', 'trait_very_strong', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kel_azaan', 'trait', 'trait_traditional', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kel_azaan', 'trait', 'trait_deviants', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kel_azaan', 'trait', 'trait_solitary', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kel_azaan', 'civic', 'civic_warrior_culture', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kel_azaan', 'civic', 'civic_citizen_service', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kel_azaan', 'ethic', 'ethic_egalitarian', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('kel_azaan', 'ethic', 'ethic_fanatic_militarist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('blorg', 'Blorg Commonality', 'FUN', 'fun12', 'auth_oligarchic', 'gov_military_junta', 'origin_default', 'pc_tropical', 'fungoid_01', 50);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('blorg', 'trait', 'trait_organic', 0);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('blorg', 'trait', 'trait_repugnant', 1);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('blorg', 'trait', 'trait_solitary', 2);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('blorg', 'trait', 'trait_venerable', 3);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('blorg', 'trait', 'trait_nomadic', 4);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('blorg', 'civic', 'civic_free_haven', 5);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('blorg', 'civic', 'civic_distinguished_admiralty', 6);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('blorg', 'ethic', 'ethic_fanatic_xenophile', 7);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('blorg', 'ethic', 'ethic_militarist', 8);
+INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES ('default', 'default', 'HUM', 'human', 'auth_democratic', 'gov_despotic_empire', 'origin_default', 'pc_continental', 'mammalian_01', 51);
+INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES ('default', 'trait', 'trait_organic', 0);

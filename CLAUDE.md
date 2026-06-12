@@ -88,7 +88,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
 
 Drop order matters for FK integrity:
 ```sql
@@ -221,6 +221,16 @@ entries are read — the Infernals Species Pack file puts entries at column 0, s
 `origin_red_giant`/`origin_cosmic_dawn` names (and other Infernals loc) were being
 dropped. The `l_english:` header still never matches (no `"value"`); `#` comments
 aren't word-initial.
+
+## Prescripted Empires Extraction (`extract_prescripted_empires`)
+
+Reads `prescripted_countries/*.txt` (top-level dir, not under `common/`) → the ~52
+built-in empires usable as starting points. `prescripted_empire` holds the scalar
+setup (species class/portrait, authority, government, origin, planet_class,
+graphical_culture, resolved name); `prescripted_empire_item` holds the repeated picks
+(trait/civic/ethic). Same structure as a `user_empire_designs.txt` entry, so the
+planner parses that user file with the same shape. `name` resolves the loc key
+(prescripted) or is the literal (user files).
 
 ---
 

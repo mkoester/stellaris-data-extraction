@@ -440,6 +440,34 @@ CREATE TABLE planet_class (
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 
+-- Prescripted (predefined) empires from prescripted_countries/*.txt — the built-in
+-- empires the game ships, usable as starting points. Scalar setup in
+-- prescripted_empire; the repeated picks (traits/civics/ethics) in
+-- prescripted_empire_item. Same shape as a user_empire_designs.txt entry.
+DROP TABLE IF EXISTS prescripted_empire_item;
+DROP TABLE IF EXISTS prescripted_empire;
+CREATE TABLE prescripted_empire (
+    key               TEXT PRIMARY KEY,   -- e.g. "tzynn", "humans1"
+    name              TEXT,               -- localised display name
+    species_class     TEXT,               -- phenotype, e.g. "REP", "HUM", "MACHINE"
+    species_portrait  TEXT,
+    authority         TEXT,               -- e.g. "auth_imperial"
+    government         TEXT,               -- e.g. "gov_star_empire"
+    origin            TEXT,               -- e.g. "origin_default"
+    planet_class      TEXT,               -- e.g. "pc_desert"
+    graphical_culture TEXT,               -- ship appearance, e.g. "reptilian_01"
+    sort_order        INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE prescripted_empire_item (
+    empire_key TEXT NOT NULL,
+    kind       TEXT NOT NULL,      -- 'trait' | 'civic' | 'ethic'
+    value      TEXT NOT NULL,      -- e.g. "trait_strong", "civic_slaver_guilds", "ethic_authoritarian"
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (empire_key, kind, value),
+    FOREIGN KEY (empire_key) REFERENCES prescripted_empire(key)
+);
+
 -- Precursors: the ancient civilisations whose archaeology chains grant rewards.
 -- The precursor<->reward mapping is spread across event files (no single source
 -- file joins them), so the spine is the hand-curated PRECURSORS config; the
@@ -1874,6 +1902,65 @@ def extract_planet_classes(data: dict, loc: dict[str, str], w: Writer, verbose: 
 
 
 # ---------------------------------------------------------------------------
+# Extraction: prescripted (predefined) empires
+# ---------------------------------------------------------------------------
+
+def extract_prescripted_empires(data: dict, loc: dict[str, str], w: Writer,
+                                order_start: int, verbose: bool) -> int:
+    """Extract one prescripted_countries file → prescripted_empire (+ _item)."""
+    order = order_start
+    for key, edef in data.items():
+        if key.startswith('@') or not isinstance(edef, dict):
+            continue
+        species = edef.get('species')
+        if not isinstance(species, dict):
+            continue  # not an empire design
+
+        name_raw = edef.get('name')
+        if isinstance(name_raw, dict):  # user files use name = { key = "…" }
+            name_raw = name_raw.get('key') or name_raw.get('name')
+        name = None
+        if isinstance(name_raw, str):
+            name = _clean_loc(loc[name_raw], loc) if name_raw in loc else name_raw
+        name = name or key
+
+        def scalar(v):
+            return v if isinstance(v, str) else None
+
+        civics_raw = edef.get('civics')
+        civics = _to_list(civics_raw) if not isinstance(civics_raw, dict) else []
+
+        w.execute(
+            """INSERT OR REPLACE INTO prescripted_empire
+                   (key, name, species_class, species_portrait, authority, government,
+                    origin, planet_class, graphical_culture, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, name, scalar(species.get('class')), scalar(species.get('portrait')),
+             scalar(edef.get('authority')), scalar(edef.get('government')),
+             scalar(edef.get('origin')), scalar(edef.get('planet_class')),
+             scalar(edef.get('graphical_culture')), order),
+        )
+        if verbose:
+            print(f"  empire {key} | {name} | {scalar(species.get('class'))}")
+        order += 1
+
+        items = ([('trait', t) for t in _to_list(species.get('trait'))]
+                 + [('civic', c) for c in civics]
+                 + [('ethic', e) for e in _to_list(edef.get('ethic'))])
+        for i_order, (kind, value) in enumerate(items):
+            if not isinstance(value, str):
+                continue
+            w.execute(
+                """INSERT OR IGNORE INTO prescripted_empire_item
+                       (empire_key, kind, value, sort_order)
+                   VALUES (?, ?, ?, ?)""",
+                (key, kind, value, i_order),
+            )
+    w.commit()
+    return order
+
+
+# ---------------------------------------------------------------------------
 # Extraction: precursors
 # ---------------------------------------------------------------------------
 #
@@ -3152,6 +3239,7 @@ Examples:
     inline_scripts_dir = install_dir / 'common' / 'inline_scripts'
     civics_dir     = install_dir / 'common' / 'governments' / 'civics'
     planet_class_dir = install_dir / 'common' / 'planet_classes'
+    prescripted_dir = install_dir / 'prescripted_countries'
     loc_dir        = install_dir / 'localisation' / 'english'
 
     if not species_dir.exists():
@@ -3457,6 +3545,19 @@ Examples:
         extract_planet_classes(planet_classes, loc, w, args.verbose)
     else:
         print(f"  WARNING: {planet_class_dir} not found", file=progress)
+
+    # --- prescripted (predefined) empires ---
+    print(f"\n[empires] {prescripted_dir}", file=progress)
+    if prescripted_dir.exists():
+        empire_order = 0
+        for f in sorted(prescripted_dir.glob('*.txt')):
+            try:
+                empire_order = extract_prescripted_empires(parse_file(f), loc, w,
+                                                           empire_order, args.verbose)
+            except Exception as e:
+                print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+    else:
+        print(f"  WARNING: {prescripted_dir} not found", file=progress)
 
     w.close()
 
