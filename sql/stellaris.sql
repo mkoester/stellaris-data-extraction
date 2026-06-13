@@ -322,6 +322,84 @@ CREATE TABLE planet_class (
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 
+-- Pop jobs (reference / wiki): every job, its category (worker/specialist/ruler/drone
+-- …), flavour description, and its base produced/upkeep resources in job_resource.
+DROP TABLE IF EXISTS job_resource;
+DROP TABLE IF EXISTS job;
+CREATE TABLE job (
+    key         TEXT PRIMARY KEY,   -- e.g. "miner", "metallurgist"
+    name        TEXT,               -- localised, e.g. "Miner"
+    category    TEXT,               -- worker | specialist | ruler | complex_drone | …
+    description TEXT,               -- cleaned flavour tooltip
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE job_resource (
+    job_key  TEXT NOT NULL,
+    kind     TEXT NOT NULL,         -- 'produces' | 'upkeep'
+    resource TEXT NOT NULL,         -- e.g. "minerals", "alloys"
+    amount   REAL NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (job_key, kind, resource),
+    FOREIGN KEY (job_key) REFERENCES job(key)
+);
+
+-- Buildings (reference / wiki): every building, its category, description, build/upkeep
+-- resources (building_resource) and the jobs it provides (building_job).
+DROP TABLE IF EXISTS building_job;
+DROP TABLE IF EXISTS building_resource;
+DROP TABLE IF EXISTS building;
+CREATE TABLE building (
+    key         TEXT PRIMARY KEY,   -- e.g. "building_foundry_1"
+    name        TEXT,               -- localised, e.g. "Alloy Foundries"
+    category    TEXT,               -- manufacturing | research | resource | amenity | …
+    description TEXT,
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE building_resource (
+    building_key TEXT NOT NULL,
+    kind         TEXT NOT NULL,     -- 'cost' | 'upkeep' | 'produces'
+    resource     TEXT NOT NULL,
+    amount       REAL NOT NULL,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (building_key, kind, resource),
+    FOREIGN KEY (building_key) REFERENCES building(key)
+);
+CREATE TABLE building_job (
+    building_key TEXT NOT NULL,
+    job          TEXT NOT NULL,     -- display name from job_<x>_add (e.g. "metallurgist")
+    amount       REAL NOT NULL,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (building_key, job),
+    FOREIGN KEY (building_key) REFERENCES building(key)
+);
+
+-- Job replacements: a civic/origin swaps a base job for a variant (Catalytic Processing:
+-- Metallurgist → Catalytic Technician). Derived from each base job's `swap_type` blocks,
+-- resolving the swap `trigger` through scripted_triggers to a has_civic / has_origin.
+DROP TABLE IF EXISTS job_swap_resource;
+DROP TABLE IF EXISTS job_swap;
+CREATE TABLE job_swap (
+    source_kind  TEXT NOT NULL,     -- 'civic' | 'origin'
+    source_key   TEXT NOT NULL,     -- e.g. "civic_catalytic_processing"
+    base_job     TEXT NOT NULL,     -- e.g. "foundry"
+    base_name    TEXT,              -- e.g. "Metallurgist"
+    swapped_job  TEXT NOT NULL,     -- e.g. "catalytic_technician"
+    swapped_name TEXT,              -- e.g. "Catalytic Technician"
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (source_kind, source_key, base_job, swapped_job)
+);
+-- The swapped job's effective resources: the base job's produces/upkeep evaluated with
+-- the swap condition active (e.g. Catalytic Technician → alloys from Food, not Minerals).
+CREATE TABLE job_swap_resource (
+    source_key  TEXT NOT NULL,
+    base_job    TEXT NOT NULL,
+    swapped_job TEXT NOT NULL,
+    kind        TEXT NOT NULL,      -- 'produces' | 'upkeep'
+    resource    TEXT NOT NULL,
+    amount      REAL NOT NULL,
+    PRIMARY KEY (source_key, base_job, swapped_job, kind, resource)
+);
+
 -- Home-system initializers usable as a custom-empire start (`usage = custom_empire`
 -- in common/solar_system_initializers/*.txt). `name` is the localised system name.
 DROP TABLE IF EXISTS initializer;
@@ -10401,7 +10479,7 @@ INSERT OR IGNORE INTO precursor_building_modifier
                     condition, sort_order)
                VALUES ('building_vultaum_reality_computer', 'job', 'job_physicist_add', '200.0', NULL, NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_physicist_add', 'Jobs', 1);
+           VALUES ('job_physicist_add', 'Physicist Jobs', 1);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_2', 'Yuht', NULL, 'yuhtaan_system', 'GFX_precursor_yuth', NULL, 1);
@@ -10540,7 +10618,7 @@ INSERT OR IGNORE INTO precursor_building_modifier
                     condition, sort_order)
                VALUES ('building_league_offices', 'job', 'job_bureaucrat_add', '200.0', NULL, NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_bureaucrat_add', 'Jobs', 1);
+           VALUES ('job_bureaucrat_add', 'Bureaucrat Jobs', 1);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_4', 'Irassian', NULL, 'irass_system', 'GFX_precursor_irassian', NULL, 3);
@@ -10716,7 +10794,7 @@ INSERT OR IGNORE INTO precursor_building_modifier
                     condition, sort_order)
                VALUES ('building_baol_organic_plant', 'job', 'job_farmer_add', '200.0', NULL, NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_farmer_add', 'Jobs', 1);
+           VALUES ('job_farmer_add', 'Farmer Jobs', 1);
 INSERT OR REPLACE INTO precursor
                    (key, name, required_dlc, system_initializer, picture, num_digsites, sort_order)
                VALUES ('precursor_zroni_1', 'Zroni', 'Ancient Relics Story Pack', 'zroni_legacy_initializer_01', 'GFX_precursor_zroni', 6, 6);
@@ -10800,7 +10878,7 @@ INSERT OR IGNORE INTO precursor_building_modifier
                     condition, sort_order)
                VALUES ('building_zroni_equilibrator', 'job', 'job_biologist_add', '400.0', NULL, NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_biologist_add', 'Jobs', 1);
+           VALUES ('job_biologist_add', 'Biologist Jobs', 1);
 INSERT OR REPLACE INTO precursor_technology
                        (precursor_key, tech_key, name, cost, tier, area, category,
                         unlocks_building_key)
@@ -10912,19 +10990,19 @@ INSERT OR IGNORE INTO precursor_building_modifier
                     condition, sort_order)
                VALUES ('building_adakkaria_patriotic_institute', 'job', 'job_physicist_add', '1200.0', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_physicist_add', 'Jobs', 1);
+           VALUES ('job_physicist_add', 'Physicist Jobs', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
                    (building_key, scope, modifier_key, modifier_value, ae_value,
                     condition, sort_order)
                VALUES ('building_adakkaria_patriotic_institute', 'job', 'job_biologist_add', '1200.0', NULL, NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_biologist_add', 'Jobs', 1);
+           VALUES ('job_biologist_add', 'Biologist Jobs', 1);
 INSERT OR IGNORE INTO precursor_building_modifier
                    (building_key, scope, modifier_key, modifier_value, ae_value,
                     condition, sort_order)
                VALUES ('building_adakkaria_patriotic_institute', 'job', 'job_engineer_add', '1200.0', NULL, NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_engineer_add', 'Jobs', 1);
+           VALUES ('job_engineer_add', 'Engineer Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_null_deposit', NULL, NULL, 0, NULL, '00_null_deposit.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
@@ -16374,7 +16452,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_reanimated_armies', 'pop_soldier_bonus_workforce_mult', '0.1', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_soldier_bonus_workforce_mult', 'Job Efficiency for', 1);
+           VALUES ('pop_soldier_bonus_workforce_mult', 'Job Efficiency for Soldiers', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_reanimated_armies', 'authority', 'forbid', 'auth_corporate', 0);
@@ -16487,7 +16565,7 @@ INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_memorialist', 'Memorialists', 'Can build Sanctuary of Repose
 Sanctuaries of Repose improve Governing Ethics Attraction on Tomb Worlds and Relic Worlds
-Death Chroniclers turn Consumer Goods into Unity and Stability, and inherit the Ethics-based modifiers of', 'normal', 'Necroids Species Pack', 1, 0, NULL, 35);
+Death Chroniclers turn Consumer Goods into Unity and Stability, and inherit the Ethics-based modifiers of Civilians', 'normal', 'Necroids Species Pack', 1, 0, NULL, 35);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memorialist', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -16516,7 +16594,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_memorialist', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_catalytic_processing', 'Catalytic Processing', 'are replaced with Catalytic Technicians
+               VALUES ('civic_catalytic_processing', 'Catalytic Processing', 'Metallurgists are replaced with Catalytic Technicians
 Industrial Jobs have their Minerals Upkeep replaced with Food Upkeep.', 'normal', 'Plantoids Species Pack', 1, 0, NULL, 36);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
@@ -17510,7 +17588,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_storm_callers', 'Storm Devotion', 'Available Buildings: Storm Summoning Theater
-Replaces Jobs with Storm Dancer Jobs
+Replaces Entertainer Jobs with Storm Dancer Jobs
 Species Traits: Storm Touched', 'normal', NULL, 1, 0, NULL, 64);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -17952,7 +18030,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_secret_societies', 'Secret Societies', 'Clandestine Factions will emerge after contacting other empires.
-Starts with the ability to conduct Proxy Wars., will produce Unity per active and successful Proxy War.
+Starts with the ability to conduct Proxy Wars., Bureaucrats will produce Unity per active and successful Proxy War.
 Starts in First Contact with two neighboring empires.
 Infiltration Level gained on empires after First Contact: +40', 'normal', NULL, 1, 0, NULL, 74);
 INSERT OR IGNORE INTO civic_modifier
@@ -18065,7 +18143,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_chosen', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_tankbound', 'Tankbound', 'Adds the Tankbound trait., , , and are fully Automated.
+               VALUES ('civic_tankbound', 'Tankbound', 'Adds the Tankbound trait., Farmers, Miners, and Technicians are fully Automated.
 Colonist Jobs are Pop Cat Specialists., District Urban Districts have additional Production Overseers jobs.', 'normal', NULL, 1, 0, NULL, 76);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -18076,17 +18154,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_tankbound', 'job_farmer_automated_workforce_mult', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_farmer_automated_workforce_mult', 'Automated Workforce', 1);
+           VALUES ('job_farmer_automated_workforce_mult', 'Farmers Automated Workforce', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_tankbound', 'job_miner_automated_workforce_mult', '1.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_miner_automated_workforce_mult', 'Automated Workforce', 1);
+           VALUES ('job_miner_automated_workforce_mult', 'Miners Automated Workforce', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_tankbound', 'job_technician_automated_workforce_mult', '1.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_technician_automated_workforce_mult', 'Automated Workforce', 1);
+           VALUES ('job_technician_automated_workforce_mult', 'Technicians Automated Workforce', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_tankbound', 'authority', 'forbid', 'auth_corporate', 0);
@@ -20746,7 +20824,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_maintenance_protocols', 'planet_maintenance_drones_unity_produces_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_maintenance_drones_unity_produces_add', 'Unity per 100', 1);
+           VALUES ('planet_maintenance_drones_unity_produces_add', 'Unity per 100 Maintenance Drones', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_maintenance_protocols', 'planet_jobs_simple_drone_produces_mult', '0.05', 1);
@@ -21037,7 +21115,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_obsessional_directive', 'pop_artisan_drone_bonus_workforce_mult', '0.15', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_artisan_drone_bonus_workforce_mult', 'Job Efficiency for', 1);
+           VALUES ('pop_artisan_drone_bonus_workforce_mult', 'Job Efficiency for Artisan Drones', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_obsessional_directive', 'country_resource_max_consumer_goods_add', '15000.0', 1);
@@ -21964,7 +22042,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_death_cult_corporate', 'origin', 'forbid', 'origin_necrophage', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_corporate_catalytic_processing', 'Catalytic Recyclers', 'are replaced with Catalytic Technicians
+               VALUES ('civic_corporate_catalytic_processing', 'Catalytic Recyclers', 'Metallurgists are replaced with Catalytic Technicians
 Industrial Jobs have their Minerals Upkeep replaced with Food Upkeep.
 The Private Military Industries Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Plantoids Species Pack', 1, 0, NULL, 227);
 INSERT OR IGNORE INTO civic_modifier
@@ -22064,7 +22142,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_corporate_crafters', 'civic', 'forbid', 'civic_crafters', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_permanent_employment', 'Permanent Employment', 'Can build Posthumous Employment Center, turn Consumer Goods and Food (or equivalent) into Monthly Organic Pop Growth. All assembled Pops have the Zombie trait.
+               VALUES ('civic_permanent_employment', 'Permanent Employment', 'Can build Posthumous Employment Center, Reassigners turn Consumer Goods and Food (or equivalent) into Monthly Organic Pop Growth. All assembled Pops have the Zombie trait.
 Grants access to the Reemployment Center Holding.
 Some defeated organic Leviathans can be resurrected.
 The Fast Food Chain Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Necroids Species Pack', 1, 0, NULL, 232);
@@ -22427,9 +22505,9 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_task_delegation_corporate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_private_healthcare_corporate', 'Pharma State', 'Capital Buildings provide +100 Jobs
-Amenities from : +2
-Trade from : +4
+               VALUES ('civic_private_healthcare_corporate', 'Pharma State', 'Capital Buildings provide +100 Medical Worker Jobs
+Amenities from Medical Workers: +2
+Trade from Medical Workers: +4
 Can build Corporate Clinic Corporate Building
 The Corporate Clinic Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, 0, NULL, 242);
 INSERT OR IGNORE INTO civic_modifier
@@ -22747,7 +22825,7 @@ The Private Research Enterprises Corporate Building generates additional Trade a
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_storm_callers_megacorp', 'Storm Influencers', 'Available Buildings: Storm Summoning Theater
-Replaces Jobs with Storm Dancer Jobs
+Replaces Entertainer Jobs with Storm Dancer Jobs
 Species Traits: Storm Touched
 The Amusement Megaplex Corporate Building generates additional Branch Office Value and adds +50 Merchant jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 251);
 INSERT OR IGNORE INTO civic_modifier
@@ -23132,7 +23210,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_secret_societies_corporate', 'Influential Cartel', 'Clandestine Factions will emerge after contacting other empires.
-Starts with the ability to conduct Proxy Wars., will produce Unity per active and successful Proxy War.
+Starts with the ability to conduct Proxy Wars., Bureaucrats will produce Unity per active and successful Proxy War.
 Starts in First Contact with two neighboring empires.
 Infiltration Level gained on empires after First Contact: +40
 The Corporate Embassy Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 260);
@@ -23226,7 +23304,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_corporate_chosen', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_tankbound_corporate', 'Corporate Thinktank', 'Adds the Tankbound trait., , , and are fully Automated.
+               VALUES ('civic_tankbound_corporate', 'Corporate Thinktank', 'Adds the Tankbound trait., Farmers, Miners, and Technicians are fully Automated.
 Colonist Jobs are Pop Cat Specialists., District Urban Districts have additional Production Overseers jobs.
 The Virtual Entertainment Studios Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 262);
 INSERT OR IGNORE INTO civic_modifier
@@ -23238,17 +23316,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_tankbound_corporate', 'job_farmer_automated_workforce_mult', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_farmer_automated_workforce_mult', 'Automated Workforce', 1);
+           VALUES ('job_farmer_automated_workforce_mult', 'Farmers Automated Workforce', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_tankbound_corporate', 'job_miner_automated_workforce_mult', '1.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_miner_automated_workforce_mult', 'Automated Workforce', 1);
+           VALUES ('job_miner_automated_workforce_mult', 'Miners Automated Workforce', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_tankbound_corporate', 'job_technician_automated_workforce_mult', '1.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_technician_automated_workforce_mult', 'Automated Workforce', 1);
+           VALUES ('job_technician_automated_workforce_mult', 'Technicians Automated Workforce', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_tankbound_corporate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -27893,3 +27971,6523 @@ INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_spirit
 INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('toxoids_room', 'Toxoids', 25);
 INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('wilderness_room', 'Wilderness', 26);
 INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_xenophobic_isolationists_room', 'Xenophobic Isolationists', 27);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('civilian', 'Civilian', 'civilian', 'The segment of our population not currently engaged in employment, education or training. Will travel for work.', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('civilian', 'produces', 'trade', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_processing', 'Repurposing', 'slave_unemployment2', 'Working towards enslavement', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('heart_processing', 'Newly Formed Biomass', 'wilderness_heart_strata', 'This biomass will soon be integrated. It is destined to serve a higher function within ourselves.', 2);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_unprocessing', 'Repurposing', 'slave', 'Working towards liberation', 3);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('presapient_unprocessing', 'Repurposing', 'pre_sapients', 'Working towards sapience', 4);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('servant', 'Servant', 'worker', 'Servants perform various menial domestic tasks and household work for their masters.', 5);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_overseer', 'Overseer', 'worker', 'These relatively privileged slaves keep their less fortunate brethren in line.', 6);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('slave_overseer', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('slave_overseer', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_toiler', 'Toiler', 'worker', 'Toilers perform the grueling menial labor required to keep crude infrastructure of the Thrall-World running.', 7);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('organic_battery', 'Grid Amalgamated', 'worker', 'Their organic energy will be absorbed, until they expire.', 8);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('organic_battery', 'produces', 'energy', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock', 'Livestock', 'worker', 'They have but one purpose: to become feed for their betters.', 9);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('livestock', 'produces', 'food', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_infernal', 'Livestock', 'worker', 'They have but one purpose: to become feed for their betters.', 10);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('livestock_infernal', 'produces', 'alloys', '0.75', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_zoo_animal', 'Protected Fauna', 'pre_sapients', 'These xenos are cared for and studied in a controlled environment, ensuring their conservation.', 11);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('livestock_zoo_animal', 'upkeep', 'food', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_zoo_beast', 'Gladiatorial Xeno', 'pre_sapients', 'These xenos are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 12);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('livestock_zoo_beast', 'upkeep', 'food', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bio_trophy', 'Bio-Trophy', 'bio_trophy', 'Their only job is to be themselves.', 13);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('bio_trophy', 'produces', 'unity', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bio_trophy_processing', 'Acclimatizing Bio-Trophy', 'bio_trophy', 'These Bio-Trophies are being introduced into their new sanctuaries.', 14);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bio_trophy_unprocessing', 'Bio-Trophy', 'bio_trophy', 'Their only job is to be themselves.', 15);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 16);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_unprocessing', 'Repurposing', 'purge', 'Working towards liberation', 17);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('crisis_purge', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 18);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('assimilation', 'Undergoing Assimilation', 'assimilation', 'This pop is being integrated into our collective.', 19);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('criminal', 'Criminal', 'criminal', 'These criminals live outside the bounds of legal society, some by choice and some by circumstance.', 20);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('deviant_drone', 'Deviant Drone', 'deviant_drone', 'These deviants no longer obey the Hive Mind.', 21);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('deviant_drone', 'upkeep', 'energy', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('corrupt_drone', 'Corrupt Drone', 'corrupt_drone', 'These drones have been corrupted and no longer obey the directives of the core intelligence.', 22);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('corrupt_drone', 'upkeep', 'energy', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fotd_protectors', 'Protector', 'worker', 'So that the majority can rest peacefully and enjoy their lives of extravagance, these rough individuals stand ready in the night to visit violence on those who would do them harm.', 23);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('organic_exhibit', 'Organic Specimen', 'bio_trophy', 'The uplifted organics enhance our drones'' life-creation subroutines, infusing new perspectives and lessons into future projects.', 24);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('organic_exhibit', 'produces', 'unity', '0.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('organic_exhibit', 'upkeep', 'food', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_lithoid', 'Livestock', 'worker', 'They have but one purpose: to become feed for their betters.', 25);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('livestock_lithoid', 'produces', 'minerals', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_zoo_animal_lithoid', 'Protected Fauna', 'pre_sapients', 'These xenos are cared for and studied in a controlled environment, ensuring their conservation.', 26);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('livestock_zoo_animal_lithoid', 'upkeep', 'minerals', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_zoo_beast_lithoid', 'Gladiatorial Xeno', 'pre_sapients', 'These xenos are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 27);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('livestock_zoo_beast_lithoid', 'upkeep', 'minerals', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_lithoid', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 28);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('purge_lithoid', 'produces', 'unity', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_robot', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 29);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('purge_robot', 'produces', 'unity', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_processing', 'Processing', 'purge', NULL, 30);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('purge_processing', 'produces', 'food', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_processing_lithoid', 'Processing', 'purge', NULL, 31);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('purge_processing_lithoid', 'produces', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_processing_infernal', 'Processing', 'purge', NULL, 32);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('purge_processing_infernal', 'produces', 'alloys', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_processing_robot', 'Processing', 'purge', NULL, 33);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('purge_processing_robot', 'produces', 'alloys', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_labor_camps', 'Forced Labor', 'purge', NULL, 34);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('purge_labor_camps', 'produces', 'food', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('purge_labor_camps', 'produces', 'minerals', '3.0', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_matrix', 'Chemical Processing', 'purge', NULL, 35);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('purge_matrix', 'produces', 'energy', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_sacrifice', 'Sacrifice', 'purge', 'The Eater craves more than conflict alone. The bodies of our enemies are fitting tribute.', 36);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('purge_sacrifice', 'produces', 'unity', '2.5', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('presapient_processing', 'Pre-Sapient', 'pre_sapients', 'Pre-Sapient', 37);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('robot_servant_processing', 'Repurposing', 'robot_servant', 'Working towards enslavement', 38);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('robot_servant_unprocessing', 'Repurposing', 'robot_servant', 'Working towards liberation', 39);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('politician', 'Politician', 'ruler', 'The government of an entire planet is a daunting task that requires dedicated and highly trained individuals.', 40);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('politician', 'produces', 'unity', '5.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('politician', 'upkeep', 'consumer_goods', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('knight_commander', 'Lord Commander', 'ruler', 'The knights are worthy and honorable - the best our society has to offer. But even they need leadership. Where the Lord Commander leads, there shall the knights follow.', 41);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('knight_commander', 'produces', 'unity', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('knight_commander', 'upkeep', 'alloys', '200.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('dystopian_enforcer', 'Enforcer', 'ruler', 'Law enforcement officers are responsible for upholding the law and maintaining peace.', 42);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('dystopian_telepath', 'Telepath', 'ruler', 'Members of the Psi Corps, a unit of psionically-gifted crime fighters.', 43);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('head_researcher', 'Science Director', 'ruler', 'These specialists coordinate and manage the research and development of new technologies.', 44);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('high_priest', 'High Priest', 'ruler', 'To whom do guides turn when they themselves seek guidance? Another, more experienced guide.', 45);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('noble', 'Noble', 'ruler', 'Heavy is the burden of the nobility, whose birthright is to rule over their unwashed lessers. Luckily, there are a few financial advantages to the position.', 46);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('merchant', 'Merchant', 'ruler', 'They buy. They sell. They hoard. They re-sell. Agents, dealers, retailers, wholesalers - wherever there is trade, there are merchants.', 47);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('executive', 'Executive', 'ruler', 'Only an executive has the power to drive leading-edge initiatives and synergistically benchmark dynamically conceptualized deliverables.', 48);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('warden', 'Planetary Warden', 'ruler', 'Overseeing an entire penal planet as its warden demands individuals who are highly skilled and wholly committed to the task at hand.', 49);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('physicist', 'Physicist', 'specialist', 'The eternal mystery of the world is its comprehensibility.', 50);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('physicist', 'produces', 'physics_research', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('physicist', 'upkeep', 'consumer_goods', '1.5', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('biologist', 'Biologist', 'specialist', 'The eternal mystery of the world is its comprehensibility.', 51);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('biologist', 'produces', 'society_research', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('biologist', 'upkeep', 'consumer_goods', '0.5', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('engineer', 'Engineer', 'specialist', 'The eternal mystery of the world is its comprehensibility.', 52);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('engineer', 'produces', 'engineering_research', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('engineer', 'upkeep', 'consumer_goods', '1.5', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_keeper', 'Zookeeper', 'specialist', 'These zookeepers look after the needs of the fauna under their care.', 53);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bureaucrat', 'Bureaucrat', 'specialist', 'Fulfilling the bureaucratic demands of an empire is a daunting task that requires dedicated and highly trained individuals.', 54);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('bureaucrat', 'produces', 'unity', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('bureaucrat', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('enforcer', 'Enforcer', 'specialist', 'Law enforcement officers are responsible for upholding the law and maintaining peace.', 55);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('educator', 'Educator', 'specialist', 'Dedicated to preparing the youth, these tireless champions of knowledge perform the irreplaceable service of ensuring that every citizen is ready to face the galaxy.', 56);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('telepath', 'Telepath', 'specialist', 'Members of the Psi Corps, a unit of psionically-gifted crime fighters.', 57);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('entertainer', 'Entertainer', 'specialist', 'It is said there are only two types of lifeforms in the galaxy: the entertainers, and the entertained.', 58);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('entertainer', 'produces', 'unity', '0.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('entertainer', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('culture_worker', 'Culture Worker', 'specialist', 'Maintaining the arts is the realm of these workers, vital for the inner development and social expression of citizens.', 59);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('unifier', 'Unification Officer', 'specialist', 'The administrative corps of our newly unified planet, these officers ensure that amenities are delivered to those in need.', 60);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('chemist', 'Chemist', 'specialist', 'The synthetic development of volatile motes by chemical processes is left to these specialists.', 61);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('chemist', 'produces', 'volatile_motes', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('chemist', 'upkeep', 'minerals', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('translucer', 'Translucer', 'specialist', 'These specialists transform minerals into rare crystals in a laboratory environment.', 62);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('translucer', 'produces', 'rare_crystals', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('translucer', 'upkeep', 'minerals', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gas_refiner', 'Gas Refiner', 'specialist', 'Managing the complex chain of reactions required to refine gas from minerals effectively requires advanced machinery and highly-trained experts.', 63);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('gas_refiner', 'produces', 'exotic_gases', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('gas_refiner', 'upkeep', 'minerals', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('roboticist', 'Roboticist', 'specialist', 'These technicians build robots, that the robots may build for the nation.', 64);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('roboticist', 'upkeep', 'alloys', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('healthcare', 'Medical Worker', 'specialist', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', 65);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('healthcare', 'produces', 'society_research', '1.75', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('healthcare', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('trader', 'Trader', 'specialist', 'These proud deal-makers boost the value of everyday commodities, and expedite the movement of goods to where they are most needed or desired.', 66);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('trader', 'produces', 'trade', '8.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('trader', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('numistic_priest', 'Numistic Priest', 'specialist', 'These zealous facilitators of commerce have vowed to squeeze every last drop of value from deals carried out in Numa''s name.', 67);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('preacher', 'Prosperity Preacher', 'specialist', 'Prosperity Preachers spread the good word to the masses that they, too, can prosper, if only they will part with a small donation to the cause.', 68);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('manager', 'Manager', 'specialist', 'The endless struggle to balance conflicting demands from the middle of the managerial hierarchy is envied by few.', 69);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('steward', 'Steward', 'specialist', 'These democratically-elected volunteers ensure the smooth running of our cooperative society, for the benefit of all its members.', 70);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('necromancer', 'Necromancer', 'specialist', 'Raising the dead to fight in the nation''s armies is hard work. Only the most skilled practitioners know the secret arts required to achieve this feat!', 71);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('death_chronicler', 'Death Chronicler', 'specialist', 'Entropy is the domain of these scholars, who observe and record death and its effects in all their various expressions.', 72);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('necro_apprentice', 'Necrophyte', 'specialist', 'Through years of hard work culminating in a lavish Elevation Ritual, those unfortunates not born into the ruling caste can be subsumed into it.', 73);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('necro_apprentice', 'produces', 'unity', '0.75', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('necro_apprentice', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('foundry', 'Metallurgist', 'specialist', 'Highly trained workers are needed to turn raw minerals into the durable alloys that are used in a wide variety of advanced construction.', 74);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('foundry', 'produces', 'alloys', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('foundry', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('catalytic_technician', 'Catalytic Technician', 'specialist', 'Highly trained workers are needed to turn raw organic matter into durable alloys necessary for advanced construction.', 75);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('artisan', 'Artisan', 'specialist', 'Skilled craft workers that manufacture domestic and luxury goods of various types.', 76);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('artisan', 'produces', 'consumer_goods', '6.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('artisan', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('artificer', 'Artificer', 'specialist', 'Skilled and creative craft workers that manufacture domestic and luxury goods of stunning quality.', 77);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('pearl_diver', 'Pearl Diver', NULL, 'Concerning cultivation and farming more than diving, these specialists still bring back a large variety of treasures from the depths.', 78);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('reassigner', 'Reassigner', 'specialist', 'Reassigners ensure that once a Megacorporation''s citizen has passed on, their remains will stay at work until the fulfillment of their contract.', 79);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('reassigner', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant', 'Spa Attendant', 'specialist', 'Trained Attendants for the Mutagenic Spas. Their purpose in life is to ensure their clients'' continued health through a variety of services, including intemperate detoxification and carefully curated genotype degeneration.', 80);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('bath_attendant', 'produces', 'trade', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('bath_attendant', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant_individual_machine', 'Lubrication Terminal', 'specialist', 'Lubrication Terminals turn Alloys into new Pop Machine Pops but increase Amenities Usage.', 81);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('knight', 'Knight', 'specialist', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 82);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('knight', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('knight', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('archaeoengineers', 'Archaeo-Engineer', 'specialist', 'Sometimes, it belongs in a warship, not a museum.', 83);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('resort_worker', 'Resort Worker', 'specialist', 'Skilled artisans of hospitality who are dedicated to creating an unforgettable experience. They work hard, so you don''t have to.', 84);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('resort_worker', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('resort_worker', 'produces', 'trade', '4.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('resort_worker', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('polytechnic_mentor', 'Thermotechnic Mentor', 'specialist', 'With a diverse background of skills, this mentor helps bridge disciplinary gaps to boost the efficiency of specialized workers.', 85);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('polytechnic_mentor', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('polytechnic_mentor', 'produces', 'physics_research', '1.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('polytechnic_mentor', 'produces', 'society_research', '1.0', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('polytechnic_mentor', 'produces', 'engineering_research', '1.0', 3);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('polytechnic_mentor', 'upkeep', 'consumer_goods', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('offworld_prospector', 'Offworld Prospector', 'specialist', 'Enterprising prospectors travel offworld to hunt for Volatile Motes and Living Metal on Molten Worlds.', 86);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('offworld_prospector', 'produces', 'sr_living_metal', '1.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('offworld_prospector', 'produces', 'volatile_motes', '0.25', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('offworld_prospector', 'upkeep', 'energy', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('soldier', 'Soldier', 'specialist', 'Military professionals are needed to train a steady stream of new recruits for army and naval operations.', 87);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('soldier', 'produces', 'society_research', '0.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('soldier', 'produces', 'engineering_research', '0.5', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('soldier', 'upkeep', 'consumer_goods', '0.5', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('battle_thrall', 'Battle Thrall', 'specialist', 'Elite slave warriors, trained from birth, who fight with unparalleled zeal and ferocity. Their loyalty and dedication make them formidable on the front lines.', 88);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('battle_thrall', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('colonist', 'Colonist', NULL, 'The settling of a new world is no easy undertaking.', 89);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('clerk', 'Clerk', 'worker', 'White-collar workers perform the various administrative office tasks that are crucial to any sufficiently complex working environment. A hopelessly outdated profession.', 90);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('clerk', 'produces', 'trade', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('technician', 'Technician', 'worker', 'Power plants require plenty of warm bodies to operate equipment and oversee operations.', 91);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('technician', 'produces', 'energy', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('miner', 'Miner', 'worker', 'With modern power drills and other advanced tools, mining may not be the back-breaking profession it once was, but it is still far from easy.', 92);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('miner', 'produces', 'minerals', '4.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('miner', 'upkeep', 'energy', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('crystal_miner', 'Crystal Miner', 'worker', 'Specialist miners are employed for the careful extraction and refinement of rare crystals.', 93);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gas_extractor', 'Gas Extractor', 'worker', 'Advanced hydraulic fracking methods are employed by Gas Extractors in order to free rare, exotic gases from promising rock beds.', 94);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mote_harvester', 'Mote Harvester', 'worker', 'One of the most dangerous professions, mote harvesting involves trapping and sealing volatile motes to be used as fuel or explosives.', 95);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('farmer', 'Farmer', 'worker', 'Farming looks mighty easy when your plow is a pencil and you''re a thousand miles from the corn field.', 96);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('farmer', 'produces', 'food', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mortal_initiate', 'Mortal Initiate', 'worker', 'These most devout pupils of their faith dedicate the remaining portion of their lives to the betterment of their society - a study which concludes with their willing, fatal sacrifice.', 97);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('mortal_initiate', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('mortal_initiate', 'produces', 'society_research', '0.5', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('scrap_miner', 'Scrap Miner', NULL, 'Scrap Miners explore the depths of the shattered remains for materials suitable for construction.', 98);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('angler', 'Angler', 'worker', 'Hook and line are things of the past, but sustainably growing and hauling food out of nature takes equal patience, much planning, and great care.', 99);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('ranger', 'Ranger', 'worker', 'Special individuals tasked with ensuring that our planets remain clean and natural.', 100);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('squire', 'Squire', 'worker', 'Becoming a knight takes years of training. Those seeking admission into the Order must first serve a knight, learning from their example even as they strive to make their noble lives more comfortable.', 101);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('squire', 'upkeep', 'alloys', '0.5', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('foundry_prison_worker', 'Penal Metallurgist', 'worker', 'Trained prisoners are used to turn raw minerals into durable alloys used in various advanced construction.', 102);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('foundry_prison_worker', 'produces', 'alloys', '1.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('foundry_prison_worker', 'upkeep', 'minerals', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('catalytic_technician_prison_worker', 'Penal Catalytic Technician', 'worker', 'These trained prisoners turn raw organic matter into durable alloys for advanced construction.', 103);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('catalytic_technician_prison_worker', 'produces', 'alloys', '1.875', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('catalytic_technician_prison_worker', 'upkeep', 'food', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('artisan_prison_worker', 'Penal Artisan', 'worker', 'These trained prisoners manufacture domestic and luxury goods of various types.', 104);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('artisan_prison_worker', 'produces', 'consumer_goods', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('artisan_prison_worker', 'upkeep', 'minerals', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('artificer_prison_worker', 'Penal Artificer', 'worker', 'Skilled prisoners that manufacture domestic and luxury goods of stunning quality.', 105);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('artificer_prison_worker', 'produces', 'consumer_goods', '3.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('artificer_prison_worker', 'upkeep', 'minerals', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('spawning_drone', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 106);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('spawning_drone', 'produces', 'society_research', '1.75', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('spawning_drone', 'upkeep', 'food', '5.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('offspring_drone', 'Offspring Drone', 'complex_drone', 'The administrator of the entire planet resides here. It is through Offspring drones that the Progenitor enacts their grand design.', 107);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('replicator', 'Replicator', 'complex_drone', 'A machine that builds a machine that builds a machine that...', 108);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('replicator', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gestation_drone', 'Gestation Drone', 'complex_drone', 'Designed to nurture, these specialized drones oversee the growth of young biologicals, preparing them to become integral cybernetic contributors to the collective.', 109);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('gestation_drone', 'produces', 'society_research', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('gestation_drone', 'produces', 'engineering_research', '1.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('gestation_drone', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('evaluator', 'Evaluator', 'complex_drone', 'Signals to and from the Drones must be amplified, analyzed and cleaned of deviancy.', 110);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('evaluator', 'produces', 'unity', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('evaluator', 'upkeep', 'energy', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('coordinator', 'Coordinator', 'complex_drone', 'Signals to and from the Core must be amplified, boosted, and cleaned of static and data corruption.', 111);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('coordinator', 'produces', 'unity', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('coordinator', 'upkeep', 'food', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('coordinator', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('synapse_drone', 'Synapse Drone', 'complex_drone', 'The macroscopic embodiment of a synapse, these drones focus on amplifying the overmind''s ceaseless messages, and cleaning them of distortions.', 112);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('chronicle_drone', 'Chronicle Drone', 'complex_drone', 'These specialized drones turn their thoughts to entropy, researching terminal decay as a counterpoint to our own, continued existence.', 113);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('calculator_physicist', 'Physics Subroutine', 'complex_drone', 'Endlessly processing equations, probabilities, and testing new functions, Calculators lead the technological development of the Machine Intelligence.', 114);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('calculator_physicist', 'produces', 'physics_research', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('calculator_physicist', 'upkeep', 'energy', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('brain_drone_physicist', 'Physics Brain Drone', 'complex_drone', 'Scientists, researchers, and inventors: Brain Drones are responsible for the technological development of the nation.', 115);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('calculator_biologist', 'Biology Subroutine', 'complex_drone', 'Endlessly processing equations, probabilities, and testing new functions, Calculators lead the technological development of the Machine Intelligence.', 116);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('calculator_biologist', 'produces', 'society_research', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('calculator_biologist', 'upkeep', 'energy', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('brain_drone_biologist', 'Biology Brain Drone', 'complex_drone', 'Scientists, researchers, and inventors: Brain Drones are responsible for the technological development of the nation.', 117);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('archaeo_drone', 'Archaeo-Engineering Drone', 'complex_drone', 'For a Hive, cultural preservation doesn''t hold as much power as an archaeolaser.', 118);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('archaeo_unit', 'Archaeo-Engineering Unit', 'complex_drone', 'Specialized drones for the careful manipulation and study of ancient artifacts.', 119);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('calculator_engineer', 'Engineering Subroutine', 'complex_drone', 'Endlessly processing equations, probabilities, and testing new functions, Calculators lead the technological development of the Machine Intelligence.', 120);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('calculator_engineer', 'produces', 'engineering_research', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('calculator_engineer', 'upkeep', 'energy', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('brain_drone_engineer', 'Engineering Brain Drone', 'complex_drone', 'Scientists, researchers, and inventors: Brain Drones are responsible for the technological development of the nation.', 121);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('artisan_drone', 'Artisan Drone', 'complex_drone', 'A variety of consumable goods and necessities are manufactured by these artisanal drones. Additionally, the occasional aesthetic creation is not entirely without merits.', 122);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('artisan_drone', 'produces', 'consumer_goods', '10.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('artisan_drone', 'upkeep', 'minerals', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fabricator', 'Fabricator', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Fabricators.', 123);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('fabricator', 'produces', 'alloys', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('fabricator', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('alloy_drone', 'Foundry Drone', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Foundry Drones.', 124);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('catalytic_drone', 'Catalytic Drone', 'complex_drone', 'Valuable organic compounds are processed into durable alloys for naval development and advanced construction by highly-specialized Catalytic Drones.', 125);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('chemist_drone', 'Chem-Drone', 'complex_drone', 'Rather than maintain systems of mote traps, Chem-Drones distill volatile motes directly from minerals through a series of complex chemical processes.', 126);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('chemist_drone', 'produces', 'volatile_motes', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('chemist_drone', 'upkeep', 'minerals', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('translucer_drone', 'Lensing Drone', 'complex_drone', 'Those rare crystals that cannot be found can be manufactured via translucing instead. Lensing Drones specialize in just that.', 127);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('translucer_drone', 'produces', 'rare_crystals', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('translucer_drone', 'upkeep', 'minerals', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gas_refiner_drone', 'Refinery Drone', 'complex_drone', 'The management and operation of exotic gas refineries is handled by these drones.', 128);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('gas_refiner_drone', 'produces', 'exotic_gases', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('gas_refiner_drone', 'upkeep', 'minerals', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('patrol_drone', 'Hunter-Seeker Drone', 'complex_drone', 'Deviancy and function corruption that threatens the stability of the collective must be remedied.', 129);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('patrol_drone', 'produces', 'unity', '0.5', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mote_harvesting_drone', 'Mote Harvesting Drone', 'complex_drone', 'Due to the inherently volatile nature of preternatural motes, the drones who specialize in trapping and harvesting them have a high turnover rate.', 130);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('crystal_mining_drone', 'Crystal Mining Drone', 'complex_drone', 'Miners specialized in carefully extracting and refining rare crystals from geological formations.', 131);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gas_extraction_drone', 'Gas Extraction Drone', 'complex_drone', 'These specialized drones employ advanced hydraulic fracking methods to free rare, exotic gases from promising rock beds.', 132);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('logistics_drone', 'Logistic Drone', 'complex_drone', 'These drones serve as the arteries of the collective''s supply lines, ensuring every other drone receives required resources.', 133);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('logistics_drone', 'produces', 'trade', '6.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('logistics_drone', 'upkeep', 'energy', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mining_drone', 'Mining Drone', 'simple_drone', 'Equipped with modern power drills and advanced machinery, these drones extract and prepare valuable minerals for industrial, military, and consumer use.', 134);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('mining_drone', 'produces', 'minerals', '4.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('mining_drone', 'upkeep', 'energy', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('scrap_miner_drone', 'Scrap Miner Drone', 'simple_drone', 'Scrap Miner Drones explore the depths of the shattered ring world for materials suitable for construction.', 135);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('agri_drone', 'Agri-Drone', 'simple_drone', 'Food production requires a variety of workers, from operators of planting and harvesting machinery, to watering, fertilizer and pesticide systems managers, to livestock handlers.', 136);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('agri_drone', 'produces', 'food', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('technician_drone', 'Tech-Drone', 'simple_drone', 'The machinists, operators, and technicians who manage and oversee power plant operations.', 137);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('technician_drone', 'produces', 'energy', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('maintenance_drone', 'Maintenance Drone', 'maintenance_drone', 'The machinery, systems and infrastructure that serve our needs must be constantly maintained. As must other drones.', 138);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('maintenance_drone', 'produces', 'trade', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('wilderness_maintenance_drone', 'Pliable Biomass', 'wilderness_heart_strata', 'Biomass brimming with potential, stored and maintained until it is needed.', 139);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('warrior_drone', 'Warrior Drone', 'complex_drone', 'Military experts who specialize in the training of new army drones and naval crew.', 140);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('warrior_drone', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant_machine', 'Lubrication Terminal', 'simple_drone', 'Lubrication Terminals are specially programmed drones, overseeing the submerged production of new shells, carefully monitoring the lubricant conditions during the process.', 141);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('bath_attendant_machine', 'upkeep', 'minerals', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant_hive', 'Permutation Attendance Drone', 'simple_drone', 'Specialized Drones, grown for the sole purpose of overseeing the Permutation Process during the creation of new biological drones for the hive.', 142);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('polytechnic_drone', 'Pyroclastic Drone', 'complex_drone', 'With a diverse background of skills, this drone helps bridge disciplinary gaps to boost the efficiency of specialized workers.', 143);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('polytechnic_drone', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('polytechnic_drone', 'produces', 'physics_research', '1.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('polytechnic_drone', 'produces', 'society_research', '1.0', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('polytechnic_drone', 'produces', 'engineering_research', '1.0', 3);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('polytechnic_drone', 'upkeep', 'minerals', '7.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('offworld_prospector_drone', 'Offworld Prospector Drone', 'complex_drone', 'Long-range drones are deployed to nearby Molten Worlds to identify and harvest Volatile Motes and Living Metal.', 144);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('offworld_prospector_drone', 'produces', 'sr_living_metal', '1.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('offworld_prospector_drone', 'produces', 'volatile_motes', '0.25', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('offworld_prospector_drone', 'upkeep', 'energy', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('pre_sapient', 'Pre-Sapient', 'pre_sapients', 'Simple beasts to an extent, and yet their behavior betrays some degree of intelligence...', 145);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('pre_sapient_nascent', 'Pre-Sapient', 'pre_sapients', 'Spawns of sapient species, soon to grow into their intelligence.', 146);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hunted_pre_sapient', 'Hunted Pre-Sapient', 'pre_sapients', 'Simple beasts to an extent, and yet their behavior betrays some degree of intelligence...', 147);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('hunted_pre_sapient', 'produces', 'food', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hunted_pre_sapient_lithoid', 'Hunted Pre-Sapient', 'pre_sapients', NULL, 148);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('hunted_pre_sapient_lithoid', 'produces', 'minerals', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_animal', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 149);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('xeno_zoo_animal', 'upkeep', 'food', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_animal_nascent', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 150);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('xeno_zoo_animal_nascent', 'upkeep', 'food', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_animal_lithoid', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 151);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('xeno_zoo_animal_lithoid', 'upkeep', 'minerals', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_animal_lithoid_nascent', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 152);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('xeno_zoo_animal_lithoid_nascent', 'upkeep', 'minerals', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_beast', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 153);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('xeno_zoo_beast', 'upkeep', 'food', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_beast_nascent', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 154);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('xeno_zoo_beast_nascent', 'upkeep', 'food', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_beast_lithoid', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 155);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('xeno_zoo_beast_lithoid', 'upkeep', 'minerals', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_beast_lithoid_nascent', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 156);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('xeno_zoo_beast_lithoid_nascent', 'upkeep', 'minerals', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hunter_gatherer', 'Hunter-Gatherer', 'worker', 'These semi-nomadic explorers survive by foraging and hunting. There is evidence of early tool use.', 157);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('hunter_gatherer', 'produces', 'food', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hunter_gatherer_lithoid', 'Hunter-Gatherer', 'worker', 'These semi-nomadic explorers survive by foraging and hunting. There is evidence of early tool use.', 158);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('hunter_gatherer_lithoid', 'produces', 'minerals', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('peasant', 'Peasant', 'worker', 'The peasants toil endlessly in the fields, so that those perceived as their betters might prosper.', 159);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('peasant', 'produces', 'food', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('peasant_lithoid', 'Peasant', 'worker', 'The peasants toil endlessly in the fields, so that those perceived as their betters might prosper.', 160);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('peasant_lithoid', 'produces', 'minerals', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_warrior', 'Warrior', 'specialist', 'Members of a combative warrior class. These fighters rely on bladed weapons, spears or various blunt instruments to see them through combat.', 161);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_noble', 'Feudal Noble', 'ruler', 'The landed nobility rule from their stone castles and keeps.', 162);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_noble', 'produces', 'unity', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_researcher', 'Scholar', 'specialist', 'The learned of this society, often relying on oral tradition to pass knowledge between generations.', 163);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_researcher', 'produces', 'physics_research', '0.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_researcher', 'produces', 'engineering_research', '0.5', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_researcher', 'produces', 'society_research', '0.5', 2);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_priest', 'Cleric', 'specialist', 'Spiritual leaders and preachers who conduct religious ceremonies and oversee all matters concerning faith.', 164);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_priest', 'produces', 'unity', '0.5', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_laborer', 'Manufacturers', 'specialist', 'These early industrial manufacturers toil away in factories, which can now be operated day and night thanks to recent advances in electricity.', 165);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_laborer', 'produces', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_laborer', 'produces', 'consumer_goods', '2.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_laborer', 'upkeep', 'minerals', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_miner', 'Miner', 'worker', 'Dangerous and sometimes lethal work in the dark bowels of the planet.', 166);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_miner', 'produces', 'minerals', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_technician', 'Technician', 'worker', 'These technicians shuffle coal or maintain primitive nuclear generators.', 167);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_technician', 'produces', 'energy', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_farmer', 'Farmer', 'worker', 'These farmers work the land, typically with the help of primitive but effective farming equipment.', 168);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_farmer', 'produces', 'food', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_researcher_2', 'Researcher', 'specialist', 'Researchers employing scientific methodology to advance the rapidly expanding knowledge base of their civilization.', 169);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_researcher_2', 'produces', 'physics_research', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_researcher_2', 'produces', 'engineering_research', '1.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_researcher_2', 'produces', 'society_research', '1.0', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_researcher_2', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_priest_2', 'Priest', 'specialist', 'Religious leaders who occupy various priestly offices.', 170);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_priest_2', 'produces', 'unity', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_entertainer', 'Entertainer', 'specialist', 'Celebrities and media personalities that provide entertainment and distraction from day-to-day life.', 171);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_warrior_2', 'Soldier', 'specialist', 'Professional soldiers, typically armed with early projectile weapons powered by exothermic combustion.', 172);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_bureaucrat', 'Bureaucrat', 'ruler', 'Many early industrialist and post-industrialist societies are governed by an ever-expanding class of civil servants.', 173);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_bureaucrat', 'produces', 'unity', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('solarpunk_anarchist', 'Content Terraformer', 'ruler', 'Having achieved their utopia these world sculptors are glad to rest.', 174);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('solarpunk_anarchist', 'produces', 'unity', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_administrator', 'Administrator', 'specialist', 'These paper-pushers ensure that the bureaucracy exists.', 175);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_administrator', 'produces', 'unity', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_administrator', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hive_sustenance_drone', 'Sustenance Drone', 'simple_drone', 'The difference between a successful hivemind and a starved one comes down to how successful their resource procurement is.', 176);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('hive_sustenance_drone', 'produces', 'food', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hive_sustenance_drone_lithoid', 'Sustenance Drone', 'simple_drone', 'The difference between a successful hivemind and a starved one comes down to how successful their resource procurement is.', 177);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('hive_sustenance_drone_lithoid', 'produces', 'minerals', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hive_basic_agri_drone', 'Basic Agricultural Drone', 'simple_drone', 'Simple and unspecialized drones work the fields, their consciousness aware that food can be grown, but the task has yet to be optimized.', 178);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('hive_basic_agri_drone', 'produces', 'food', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hive_basic_agri_drone_lithoid', 'Basic Agricultural Drone', 'simple_drone', 'Simple and unspecialized drones work the fields, their consciousness aware that food can be grown, but the task has yet to be optimized.', 179);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('hive_basic_agri_drone_lithoid', 'produces', 'minerals', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_warrior', 'Simple Warrior Drone', 'simple_drone', 'Having yet to fully come to grips with genetic specialization, these drones are grown bulkier to protect their hive. They have yet to evolve any specialized weapon appendages.', 180);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_synapse_drone', 'Nascent Synapse Drone', 'complex_drone', 'The budding Overmind formed between the local drones has found a need to extend their consciousness further. These more cerebral Synapse Drones mainly facilitate this.', 181);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_hive_synapse_drone', 'produces', 'unity', '0.5', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_cerebellum_drone', 'Cerebellum Drone', 'complex_drone', 'Analyzing and discovering solutions to new difficulties is the hallmark of any flourishing society - these drones focus on finding solutions for other drones'' problems and avoiding future pitfalls', 182);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_hive_cerebellum_drone', 'produces', 'physics_research', '0.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_hive_cerebellum_drone', 'produces', 'engineering_research', '0.5', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_hive_cerebellum_drone', 'produces', 'society_research', '0.5', 2);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_factory_drone', 'Factory Drone', 'simple_drone', 'Drones that are more or less part of the very factory they work in. These specialized laborers assemble everything from weapons to vehicles at an astounding rate.', 183);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_hive_factory_drone', 'produces', 'alloys', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_hive_factory_drone', 'upkeep', 'minerals', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_miner', 'Mining Drone', 'simple_drone', 'Sacrificing safety for success, these drones delve deep beneath the earth to feed the ever-hungry engine that is society.', 184);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_hive_miner', 'produces', 'minerals', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_technician', 'Tech-Drone', 'simple_drone', 'Operating dirty energy generators is not a job any living being can do forever. Still, these drones are enhanced with superior lungs as well as inherent radioactive resistance, so they last longer than most.', 185);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_hive_technician', 'produces', 'energy', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_farmer', 'Agri-Drone', 'simple_drone', 'Food production overseen by a continent spanning hive-mind is a marvel of logistics and agronomy, every section of the designated agricultural area is used to its fullest.', 186);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_hive_farmer', 'produces', 'food', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_brain_drone', 'Brain Drone', 'complex_drone', 'Drones employing the scientific method are capable of taking massive leaps in their consciousness knowledge base. Often too large.', 187);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_hive_brain_drone', 'produces', 'physics_research', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_hive_brain_drone', 'produces', 'engineering_research', '1.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_hive_brain_drone', 'produces', 'society_research', '1.0', 2);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_spawning_drone', 'Spawning Drone', 'complex_drone', 'Having each member of a society reproduce is vastly inefficient. These drones specialize in generating whatever new drones the Hive needs.', 188);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_warrior_2', 'Warrior Drone', 'simple_drone', 'Specialized for war, these hulking drones have multiple specialized appendages perfected for crushing their own species.', 189);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_synapse_drone_2', 'Synapse Drone', 'complex_drone', 'Administrating and coordinating an entire country is no easier if you are a single individual. These drones ensure that every drone has an appropriate task.', 190);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('primitive_hive_synapse_drone_2', 'produces', 'unity', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('event_purge', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 191);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('event_purge', 'produces', 'unity', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('ratling_scavenger', 'Scavenger', 'worker', 'They scurry amongst the scrapyards, collecting discarded machinery and ancient electronics for repurposing.', 192);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('ratling_scavenger', 'produces', 'food', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('ratling_scavenger', 'produces', 'minerals', '1.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('ratling_scavenger', 'produces', 'consumer_goods', '1.0', 2);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('odd_factory_worker', 'Odd Factory Worker', 'worker', 'These workers labor in the ancient and mysterious factory of unknown origin. What could go wrong?', 193);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('odd_factory_worker', 'produces', 'alloys', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('odd_factory_drone', 'Odd Factory Drone', 'simple_drone', 'These drones labor in the ancient and mysterious factory of unknown origin. What could go wrong?', 194);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('odd_factory_drone', 'produces', 'alloys', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('underground_trade_worker', 'Subterranean Liaison', 'specialist', 'These Liaisons live underground and work for closer relations and improved trade with the Subterranean Civilization.', 195);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('underground_contact_drone', 'Subterranean Liaison Drone', 'simple_drone', 'These Drones live underground, transferring resources to and from the Subterranean Civilization.', 196);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('dimensional_portal_researcher', 'Dimensional Portal Researcher', 'specialist', 'Researchers who risk their very existence and sanity to study the mysteries of the Dimensional Portal.', 197);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('dimensional_portal_researcher', 'produces', 'physics_research', '6.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('dimensional_portal_researcher', 'upkeep', 'consumer_goods', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('dimensional_portal_researcher_gestalt', 'Dimensional Portal Drone', 'complex_drone', 'Drones at risk of destruction or subversion which study the mysteries of the Dimensional Portal.', 198);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('dimensional_portal_researcher_gestalt', 'produces', 'physics_research', '6.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('dimensional_portal_researcher_gestalt', 'upkeep', 'energy', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('space_time_anomaly_researcher', 'Space-Time Anomaly Researcher', 'specialist', 'Researchers who study the curious properties of the stable space-time anomaly.', 199);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('space_time_anomaly_researcher', 'produces', 'physics_research', '4.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('space_time_anomaly_researcher', 'produces', 'engineering_research', '2.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('space_time_anomaly_researcher', 'produces', 'sr_dark_matter', '0.2', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('space_time_anomaly_researcher', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('space_time_anomaly_researcher_gestalt', 'Space-Time Anomaly Drone', 'complex_drone', 'Drones which study the curious properties of the stable space-time anomaly.', 200);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('space_time_anomaly_researcher_gestalt', 'produces', 'physics_research', '4.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('space_time_anomaly_researcher_gestalt', 'produces', 'engineering_research', '2.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('space_time_anomaly_researcher_gestalt', 'produces', 'sr_dark_matter', '0.2', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('space_time_anomaly_researcher_gestalt', 'upkeep', 'energy', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gas_plant_engineer', 'Gas Plant Engineer', 'specialist', 'These workers operate the massive filter facilities built over Cave Mushroom spore exhausts.', 201);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('gas_plant_engineer', 'produces', 'exotic_gases', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('gas_plant_engineer', 'upkeep', 'minerals', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gas_plant_engineer_gestalt', 'Gas Plant Drone', 'complex_drone', 'These drones maintain and operate the massive filter facilities built on top of Cave Mushroom spore exhausts.', 202);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('gas_plant_engineer_gestalt', 'produces', 'exotic_gases', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('gas_plant_engineer_gestalt', 'upkeep', 'minerals', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cave_cleaner', 'Cave Cleaner', NULL, 'These workers clear out burned-out Cave Mushroom passages to unearth mineral veins.', 203);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cave_cleaner_gestalt', 'Cave Cleaner Drone', 'simple_drone', 'These workers clear out burned-out Cave Mushroom passages to unearth mineral veins.', 204);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('cave_cleaner_gestalt', 'produces', 'minerals', '5.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('cave_cleaner_gestalt', 'upkeep', 'energy', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('titan_hunter', 'Titan Hunter', 'worker', 'Fearless individuals who hunt the planet''s titanic lifeforms for food. Their bones, teeth and tusks also make impressive - and valuable - trophies.', 205);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('robot_caretaker', 'Robot Caretaker', 'specialist', 'A caretaker maintains the robot who has become something of a mascot for the planet.', 206);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('robot_caretaker', 'produces', 'unity', '2.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('robot_caretaker', 'produces', 'engineering_research', '2.5', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('turtle_miner', 'Nemma Miner', 'worker', 'Using powerful drills, we can harvest both the mineral shell and the biological innards of the giant native Nemmas.', 207);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('turtle_miner_gestalt', 'Nemma Mining Drone', 'simple_drone', 'Using powerful drills, we can harvest both the mineral shell and the biological innards of the giant native Nemmas.', 208);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('turtle_miner_gestalt', 'produces', 'minerals', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('turtle_miner_gestalt', 'produces', 'food', '2.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('turtle_miner_gestalt', 'upkeep', 'energy', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('machine_nurse', 'Bio-Assistant', 'bio_trophy', 'Biological assistants tasked with helping malfunctioning drones perform simple tasks.', 209);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('machine_nurse', 'produces', 'unity', '1.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('machine_nurse', 'upkeep', 'energy', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('manufactorium_specialist', 'Operator', 'specialist', 'These highly skilled workers operate delicate and ancient machinery, creating resources at a fraction of the usual cost.', 210);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('manufactorium_specialist', 'produces', 'alloys', '5.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('manufactorium_specialist', 'upkeep', 'minerals', '5.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('manufactorium_complex_drone', 'Operator Drone', 'complex_drone', 'These highly specialized drones operate delicate and ancient machinery, creating resources at a fraction of the usual cost.', 211);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('manufactorium_complex_drone', 'produces', 'alloys', '6.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('manufactorium_complex_drone', 'upkeep', 'minerals', '5.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('manufactorium_scraper', 'Dismantler', NULL, 'Breaking the ancient machinery apart is a risky but rewarding task. These workers will have a lot on their hands, given the size of the facility.', 212);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('manufactorium_scraper_drone', 'Drone Dismantler', 'simple_drone', 'Breaking the ancient machinery apart is a risky but rewarding task. These drones will have a lot on their hands, given the size of the facility.', 213);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('manufactorium_scraper_drone', 'produces', 'minerals', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('manufactorium_scraper_drone', 'produces', 'alloys', '1.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('manufactorium_scraper_drone', 'produces', 'engineering_research', '0.25', 2);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('archivist', 'Archivist', 'specialist', 'Under Keides'' careful guidance, these Archivists are responsible for cataloging data in accordance with Vagrosian standards.', 214);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('archivist', 'produces', 'physics_research', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('archivist', 'produces', 'engineering_research', '3.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('archivist', 'produces', 'society_research', '3.0', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('archivist', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('puddle_technician', 'Puddle Technician', 'worker', 'Diversification of food production is a worthwhile endeavor.', 215);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('puddle_technician', 'produces', 'food', '6.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('puddle_technician', 'produces', 'alloys', '1.0', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('puddle_technician_drone', 'Puddle Technician Drone', 'simple_drone', 'Utilizing the unique meteorology to harvest additional resources will benefit the collective.', 216);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('puddle_technician_drone', 'produces', 'food', '6.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('puddle_technician_drone', 'produces', 'alloys', '1.0', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stasis_warden', 'Stasis Warden', 'specialist', 'Wardens maintain the stasis prison, along with marking citizens for disappearance.', 217);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('stasis_warden', 'produces', 'physics_research', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('stasis_warden', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stasis_warden_drone', 'Stasis Warden Drone', 'complex_drone', 'Warden drones maintain the stasis prison, along with marking deviants for disappearance.', 218);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('stasis_warden_drone', 'produces', 'physics_research', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('stasis_warden_drone', 'produces', 'unity', '0.5', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astrogarbage_collector', 'Astrogarbage Collector', 'worker', 'A special unit responsible for collecting space debris from planetary orbit.', 219);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astrogarbage_collector', 'produces', 'alloys', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astrogarbage_collector_gestalt', 'Astrogarbage Drone', 'simple_drone', 'A special drone unit responsible for collecting space debris from planetary orbit.', 220);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astrogarbage_collector_gestalt', 'produces', 'alloys', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('myrmeku_power_farmer', 'Myrmeku Power Farmer', 'specialist', 'Technicians that harness energy from Myrmeku colonies.', 221);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('myrmeku_power_farmer', 'produces', 'energy', '12.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('myrmeku_power_farmer', 'upkeep', 'minerals', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('myrmeku_power_farmer', 'upkeep', 'alloys', '0.5', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('myrmeku_power_farmer_gestalt', 'Myrmeku Power Drone', 'complex_drone', 'Tech-Drones that harness energy from Myrmeku colonies.', 222);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('myrmeku_power_farmer_gestalt', 'produces', 'energy', '12.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('myrmeku_power_farmer_gestalt', 'upkeep', 'minerals', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('myrmeku_power_farmer_gestalt', 'upkeep', 'alloys', '0.5', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stratovent_researcher', 'Vent Researcher', 'specialist', 'Researchers specialized in studying spaceborne fauna and guiding travelers to see them.', 223);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('stratovent_researcher', 'produces', 'society_research', '1.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('stratovent_researcher', 'produces', 'trade', '3.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('stratovent_researcher', 'upkeep', 'consumer_goods', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stratovent_refiner', 'Vent Refiner', 'specialist', 'Workers specialized in gathering and refining precious gasses from the Stratospheric Vents.', 224);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('stratovent_refiner', 'produces', 'exotic_gases', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stratovent_refiner_upg', 'Expanded Vent Refiner', 'specialist', 'Researchers specialized in studying spaceborne fauna and educating travelers on their behavior.', 225);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('stratovent_refiner_upg', 'produces', 'exotic_gases', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stratovent_refiner_minerals', 'Collapsed Vent Refiner', 'specialist', 'Workers specialized in gathering and refining precious gasses from the Stratospheric Vents.', 226);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('stratovent_refiner_minerals', 'produces', 'exotic_gases', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('stratovent_refiner_minerals', 'produces', 'minerals', '2.0', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mineral_diver', 'Deep Sea Diver', NULL, 'Deep sea experts who recover sunken minerals from the ocean depths.', 227);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mineral_diver_drone', 'Underwater Drone', 'simple_drone', 'Mining Drones that can withstand great pressure to collect sunken minerals from the ocean depths.', 228);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('mineral_diver_drone', 'produces', 'minerals', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('mineral_diver_drone', 'produces', 'alloys', '1.0', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('alien_hunter', 'Alien Hunter', 'worker', 'A special task force assigned to hunt alien fauna.', 229);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('alien_hunter', 'produces', 'food', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_overseer', 'Overseer', 'precursor', 'The stalwart few have rejected lives of luxury in favor of public service. It is up to them to oversee and guide the remnants of their ancient civilization.', 230);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_sky_cardinal', 'Sky Cardinal', 'precursor', 'And it was there, in the sky, that the future was born. The light was blinding, but a few could see past it. They took it upon themselves to lead others forward.', 231);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_guardian_bot', 'Guardian', 'precursor', 'These ancient machines maintain a ceaseless vigil over the expired remains of billions of cryogenically frozen sapients.', 232);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_protector', 'Protector', 'precursor', 'So that the majority can rest peacefully and enjoy their lives of extravagance, these rough individuals stand ready in the night to visit violence on those who would do them harm.', 233);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_archivist', 'Archivist', 'precursor', 'Each data fragment must be filed, cataloged, and indexed precisely according to the ancient rites established eons ago by the First Librarian.', 234);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('fe_archivist', 'produces', 'society_research', '5.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('fe_archivist', 'produces', 'physics_research', '5.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('fe_archivist', 'produces', 'engineering_research', '5.0', 2);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_acolyte_farm', 'Acolyte of the Plow', 'precursor', 'Was it, not the plow, this noblest of instruments, that Kazargiel used to sever the poisonous tail of the thrice-cursed demon and stave off famine?', 235);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('fe_acolyte_farm', 'produces', 'food', '8.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_acolyte_mine', 'Acolyte of the Hammer', 'precursor', 'And with one mighty blow, Saint Mazakudal used her burning hammer to split the skull of the First Wraith in two, opening up the path to the crystals.', 236);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('fe_acolyte_mine', 'produces', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_acolyte_generator', 'Acolyte of the Hyperspanner', 'precursor', 'Remember also the hyper spanner and how it was used by Bazagg the Shining to tame the sun when it seemed like darkness would overtake the world.', 237);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('fe_acolyte_generator', 'produces', 'energy', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_augur', 'Augur of the Shroud', 'precursor', 'It speaks, but not in words. To divine any meaning, one must hover on the precipice of madness.', 238);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('fe_augur', 'produces', 'unity', '5.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_xeno_keeper', 'Xeno-Keeper', 'precursor', 'These precursor zookeepers look after the needs of the Xeno-Wards under their care.', 239);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_xeno_ward', 'Xeno-Ward', 'xeno_ward', 'These specimens have been gathered here, in settings that approximate their natural environments, to ensure the preservation of their species in an often chaotic and destructive galaxy.', 240);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('fe_xeno_ward', 'produces', 'unity', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_hedonist', 'Hedonist', 'precursor', 'A life of total opulence, where every possible material need or desire can be satisfied.', 241);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('fe_hedonist', 'produces', 'unity', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_acolyte_artisan', 'Acolyte of the Workshop', 'precursor', 'And so Aznakha said to the acolytes, ''Go to the workshops, and form with your crafts the future you seek''.', 242);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('fe_acolyte_artisan', 'produces', 'consumer_goods', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_maintenance_bot', 'Caretaker', 'precursor', 'These ancient machines tirelessly maintain and repair the decaying machinery of the ringworld on which they reside.', 243);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_propagandist', 'Overlord Propagandist', 'specialist', 'Propagandists working for the local ministry are experts at infiltrating and defusing situations among the locals.', 244);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_propagandist', 'upkeep', 'unity', '0.5', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_propagandist_drone', 'Overlord Propagandist', 'complex_drone', 'Diplomatically equipped drones who are experts at defusing rebellious thoughts and ideas.', 245);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_propagandist_drone', 'upkeep', 'unity', '0.5', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_academic', 'Overlord Academic', 'specialist', 'Academics who work with specialists from several empires, conducting particular experiments and research that can benefit them all.', 246);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_academic', 'produces', 'physics_research', '0.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_academic', 'produces', 'engineering_research', '0.5', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_academic', 'produces', 'society_research', '0.5', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_academic', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_academic_drone', 'Overlord Academic', 'complex_drone', 'Specifically equipped drones who utilize resources from several empires to conduct unique experiments and research.', 247);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_academic_drone', 'produces', 'physics_research', '0.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_academic_drone', 'produces', 'engineering_research', '0.5', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_academic_drone', 'produces', 'society_research', '0.5', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_academic_drone', 'upkeep', 'energy', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_trader', 'Overlord Trader', 'specialist', 'Traders who specialize in selling foreign goods at the local domestic market.', 248);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_trader', 'upkeep', 'trade', '7.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_trader_drone', 'Distribution Drone', 'complex_drone', 'A distribution drone which specializes in redistributing foreign goods among its peers for maximum efficiency.', 249);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_trader_drone', 'upkeep', 'energy', '7.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('aid_worker', 'Aid Worker', 'worker', 'Aid workers bring foreign knowledge and goods to improve the lives of the local population, in ways often overlooked by the domestic government.', 250);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('aid_worker_drone', 'Aid Worker', 'simple_drone', 'Aid workers bring foreign knowledge and goods to improve the lives of the local population, in ways often overlooked by the domestic government.', 251);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_breeder', 'Overlord Breeder', 'specialist', 'Feeding the Offspring is a vital job to ensure stability on the planet. It''s also a fairly well paid job.', 252);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_breeder', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_breeder_drone', 'Overlord Breeder', 'complex_drone', 'Feeding the newborn drones is an important part of ensuring the young spawn can grow correctly, quickly, and effectively.', 253);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_breeder_drone', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mind_thrall', 'Mind Thrall', 'worker', 'The thralls come together in large groups to temporarily serve the machine network''s need, renting out their minds for processing needs.', 254);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mind_thrall_drone', 'Mind Thrall', 'simple_drone', 'The thralls come together in large groups to temporarily serve the machine network''s need, renting out their minds for processing needs.', 255);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_offspring_drone_feeder', 'Offspring Drone Feeder', 'specialist', 'It is a prestigious responsibility to keep the Offspring safe and comfortable, even if the role often involves merely gathering food for it.', 256);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_offspring_drone_feeder', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_offspring_drone_feeder_drone', 'Offspring Drone Feeder', 'complex_drone', 'Feeding the Offspring is a vital job to ensure stability on the planet.', 257);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_offspring_drone_feeder_drone', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_metallurgist', 'Overlord Metallurgist', 'specialist', 'Highly trained workers are needed to turn raw minerals into the durable alloys that are used in a wide variety of advanced construction.', 258);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_metallurgist', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_foundry_drone', 'Overlord Foundry Drone', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Foundry Drones.', 259);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_foundry_drone', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_fabricator', 'Overlord Fabricator', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Fabricators.', 260);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_fabricator', 'upkeep', 'minerals', '8.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_catalytic_technician', 'Overlord Catalytic Technician', 'specialist', 'Highly trained workers are needed to turn raw organic matter into durable alloys necessary for advanced construction.', 261);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_catalytic_technician', 'upkeep', 'food', '9.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_catalytic_drone', 'Overlord Catalytic Drone', 'complex_drone', 'Valuable organic compounds are processed into durable alloys for naval development and advanced construction by highly-specialized Catalytic Drones.', 262);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_catalytic_drone', 'upkeep', 'food', '9.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_beholder', 'Overlord Beholder', 'specialist', 'Military overseers working with a larger network of command centers to calculate the best possible defense routes for their contractor.', 263);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_beholder', 'upkeep', 'alloys', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_beholder_drone', 'Overlord Beholder', 'complex_drone', 'Military drones working within a larger synaptic network to calculate the best possible means of defense.', 264);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_beholder_drone', 'upkeep', 'alloys', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_necromancer', 'Overlord Necromancer', 'specialist', 'Skilled practitioners of the secrets art, from our Overlord, have shared the secrets of reanimation to a chosen few.', 265);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_necromancer', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_necromancer_drone', 'Overlord Necromancer Drone', 'complex_drone', 'Skilled practitioners of the secrets art, from our Overlord, have shared the secrets of reanimation to a chosen few.', 266);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_necromancer_drone', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_reassigner', 'Overlord Reassigner', 'specialist', 'The Overlord has made sure that their employees will never be out of a job and have now extended that courtesy to their vassals.', 267);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_reassigner', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_reassigner_drone', 'Overlord Reassigner Drone', 'complex_drone', 'The Overlord has made sure that their employees will never be out of a job and have now extended that courtesy to their vassals.', 268);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_reassigner_drone', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_recruiter', 'Overlord Recruiter', 'specialist', 'The Overlord desires for the Vassal to be able to defend themselves. That is at least what they say before they ship the fresh recruits off-world.', 269);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_recruiter', 'upkeep', 'energy', '5.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_recruiter', 'upkeep', 'unity', '1.0', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_recruiter_drone', 'Overlord Recruiter Drone', 'complex_drone', 'The Overlord desires for the Vassal to be able to defend themselves. That is at least what they say before they ship the fresh recruits off-world.', 270);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_recruiter_drone', 'upkeep', 'energy', '5.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_recruiter_drone', 'upkeep', 'unity', '1.0', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_ranger', 'Overlord Ranger', 'worker', 'Tasked with ensuring that nature is always present in some form on the planet, the Ranger is on the lookout for anything that could endanger the area sectioned off by the Overlord.', 271);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_ranger_drone', 'Overlord Ranger Drone', 'simple_drone', 'Tasked with ensuring that nature is always present in some form on the planet, the Ranger is on the lookout for anything that could endanger the area sectioned off by the Overlord.', 272);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_arborist', 'Overlord Arborist', 'worker', 'On this world, the Overlord planted a sapling from their world tree. It is our responsibility to ensure it never withers, lest we face their wrath.', 273);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_arborist', 'upkeep', 'food', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_arborist_drone', 'Overlord Arborist Drone', 'simple_drone', 'On this world, the Overlord planted a sapling from their world tree. It is our responsibility to ensure it never withers, lest we face their wrath.', 274);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_arborist_drone', 'upkeep', 'food', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_bio_trophy', 'Overlord Bio-Trophy', 'worker', 'Worried that we might lack for anything or even be hurt, our Overlord has provided a lucky few with the opportunity to experience what they call', 275);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_bio_trophy', 'produces', 'unity', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_bio_trophy_drone', 'Overlord Bio-Trophy Drone', 'simple_drone', 'The drones our Overlord directed to this structure are told to', 276);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_bio_trophy_drone', 'produces', 'unity', '0.5', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_manager', 'Overlord Manager', 'specialist', 'Middle managers that optimize the behavior of the local white-collar workers to synergize with the Overlord''s long-term corporate trajectory.', 277);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_manager', 'produces', 'unity', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_manager', 'produces', 'trade', '1.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_manager', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_mortal_initiate', 'Overlord Mortal Initiate', 'worker', 'The customs of our Overlord may seem strange and mysterious, but our way forward is by accepting them. Only those who are willing will be asked to make the ultimate sacrifice.', 278);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_mortal_initiate', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_mortal_initiate', 'produces', 'society_research', '0.5', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_mortal_initiate_drone', 'Overlord Mortal Initiate Drone', 'simple_drone', 'The customs of our Overlord may seem strange and mysterious, yet we are to be a part of them. A few of our drones have been designated to join what the Overlord calls ''a study of life'', one which concludes with their willing sacrifice.', 279);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_mortal_initiate_drone', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_mortal_initiate_drone', 'produces', 'society_research', '0.5', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_knight', 'Overlord Knight', 'specialist', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 280);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_knight', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_knight_drone', 'Overlord Knight', 'complex_drone', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 281);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_knight_drone', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_healthcare', 'Medical Worker', 'specialist', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', 282);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_healthcare', 'produces', 'trade', '4.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_healthcare', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_replicator', 'Replicator', 'complex_drone', 'A machine that builds a machine that builds a machine that...', 283);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_replicator', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_spawning_drone', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 284);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_spawning_drone', 'upkeep', 'food', '5.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_spawning_drone_lithoid', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 285);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('overlord_spawning_drone_lithoid', 'upkeep', 'minerals', '5.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_laborer', 'Laborer', 'worker', 'As assets they were worked to the bone. With freedom has come renewed purpose, and a vigor that no slave could ever hope to match.', 286);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_laborer', 'produces', 'consumer_goods', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_laborer', 'produces', 'alloys', '1.5', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_miner', 'Prospector', 'worker', 'Stubborn, ill-mannered, indomitable; these former indentured miners are as solid as scrap metal.', 287);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_miner', 'produces', 'minerals', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_technician', 'Reactor Engineer', 'worker', 'Aboard their masters'' vessels, indentured engineers were often assigned the lowliest and most dangerous jobs. This hardship only sharpened their skills.', 288);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_technician', 'produces', 'energy', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_farmer', 'Homesteader', 'worker', 'The agri-worlds of our former masters were scenes of brutal oppression. Now, our homesteaders are free to enjoy the fruits of their labor.', 289);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_farmer', 'produces', 'food', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_researcher', 'Scientist', 'specialist', 'Our former masters ignored our gifts and downplayed our intelligence. Now, the keenest minds among us are free to follow their ambition.', 290);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_researcher', 'produces', 'physics_research', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_researcher', 'produces', 'engineering_research', '1.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_researcher', 'produces', 'society_research', '1.0', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_researcher', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_priest', 'Preacher', 'specialist', 'Our preachers remind us that freedom is a divine right; united in faith, we find our common strength.', 291);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_priest', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_priest', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_bureaucrat', 'Administrator', 'specialist', 'Our former masters delegated much of their empire''s day-to-day administration to indentured assets. The result was a class of highly trained logistics personnel.', 292);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_bureaucrat', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_bureaucrat', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_manager', 'Supervisor', 'specialist', 'Our former masters delegated much of their empire''s day-to-day administration to indentured assets. The result was a class of highly trained managers.', 293);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_manager', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_manager', 'produces', 'trade', '2.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('low_tech_manager', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_warrior', 'Militia', 'specialist', 'Indentured soldiers were mainly used as cannon fodder; the fortunate few who survived have volunteered to protect our newfound freedom with their lives.', 294);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('broken_shackles_scavenger', 'Scavenger', 'worker', 'Scavengers explore the ruins of the Crashed Slaver Ship for anything of value.', 295);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('broken_shackles_scavenger', 'produces', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('broken_shackles_scavenger', 'produces', 'physics_research', '0.5', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('broken_shackles_scavenger', 'produces', 'engineering_research', '0.5', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('broken_shackles_scavenger', 'produces', 'society_research', '0.5', 3);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('captain', 'Captain', NULL, NULL, 296);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('chief_navigator', 'Chief Navigator', NULL, NULL, 297);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('principal_pilot', 'Pilot First Class', NULL, NULL, 298);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('ship_weapons_officer', 'Ship Weapons Officer', NULL, NULL, 299);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('ship_logistics_officer', 'Ship Logistics Officer', NULL, NULL, 300);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('special_operations_commander', 'Special Operations Officer', NULL, NULL, 301);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('commanding_officer', 'Commanding Officer', NULL, NULL, 302);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('chief_supply_officer', 'Chief Supply Officer', NULL, NULL, 303);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('intelligence_officer', 'Intelligence Officer', NULL, NULL, 304);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('chief_security_officer', 'Chief Security Officer', NULL, NULL, 305);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('government_employee', 'Government Official', NULL, NULL, 306);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('researcher', 'Researcher', NULL, 'The eternal mystery of the world is its comprehensibility.', 307);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('none', 'None', NULL, NULL, 308);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('munitions_decommissioner', 'Munitions Decommissioner', 'specialist', 'These practical researchers inspect and reverse-engineer ancient weapons to fit our modern specifications.', 309);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('munitions_decommissioner', 'produces', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('munitions_decommissioner', 'produces', 'engineering_research', '5.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('munitions_decommissioner', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('munitions_decommissioning_unit', 'Munitions Decommissioning Unit', 'complex_drone', 'Specialized units for the disassembly and analysis of ancient weapons.', 310);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('munitions_decommissioning_unit', 'produces', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('munitions_decommissioning_unit', 'produces', 'engineering_research', '5.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('munitions_decommissioning_unit', 'upkeep', 'food', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('munitions_decommissioning_unit_lithoid', 'Munitions Decommissioning Unit', 'complex_drone', 'Specialized units for the disassembly and analysis of ancient weapons.', 311);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('munitions_decommissioning_unit_lithoid', 'produces', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('munitions_decommissioning_unit_lithoid', 'produces', 'engineering_research', '5.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('munitions_decommissioning_unit_lithoid', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('munitions_decommissioning_drone', 'Munitions Decommissioning Drone', 'complex_drone', 'These drones efficiently disassemble ancient weapons to fit our modern specifications.', 312);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('munitions_decommissioning_drone', 'produces', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('munitions_decommissioning_drone', 'produces', 'engineering_research', '5.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('munitions_decommissioning_drone', 'upkeep', 'energy', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astral_researcher', 'Astral Researcher', 'specialist', 'The strands of space-time contain the secrets of every dimension, including our own. These researchers work tirelessly to decipher their significance while minimizing paradoxes.', 313);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_researcher', 'produces', 'physics_research', '2.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_researcher', 'produces', 'engineering_research', '0.5', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_researcher', 'produces', 'society_research', '0.5', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_researcher', 'produces', 'astral_threads', '0.3', 3);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_researcher', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astral_drone', 'Astral Drone', 'complex_drone', 'The strands of space-time contain the secrets of every dimension, including our own. These drones are tasked with deciphering their significance while minimizing paradoxes.', 314);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_drone', 'produces', 'physics_research', '2.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_drone', 'produces', 'engineering_research', '0.5', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_drone', 'produces', 'society_research', '0.5', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_drone', 'produces', 'astral_threads', '0.3', 3);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_drone', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astral_unit', 'Astral Unit', 'complex_drone', 'The strands of space-time contain the secrets of every dimension, including our own. These units attempt to decipher their significance while avoiding paradoxes at all costs.', 315);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_unit', 'produces', 'physics_research', '2.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_unit', 'produces', 'engineering_research', '0.5', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_unit', 'produces', 'society_research', '0.5', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_unit', 'produces', 'astral_threads', '0.3', 3);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('astral_unit', 'upkeep', 'energy', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astrometeorologist', 'Astrometeorologist', 'specialist', 'Astrometeorologists are specialized in researching cosmic environmental effects.', 316);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astrometeorologist_hive', 'Astrometeorologist Drone', 'complex_drone', 'These research drones are specialized to detect and catalog the effects of cosmic storms.', 317);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astrometeorologist_machine', 'Astrometeorologist Unit', 'complex_drone', 'These research units painstakingly detail every astronomical event as to learn more from it.', 318);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('haruspex', 'Haruspex', 'specialist', 'Evangelical mechanics and surgeons of the divine, rendering unworthy and replacing it with holy cybernetics.
+This Job requires the Pop to have the Ritualistic Implants of any Cybernetic Creed or Cybernetic trait.', 319);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('haruspex', 'produces', 'unity', '1.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('haruspex', 'produces', 'engineering_research', '1.25', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('haruspex', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('technophant', 'Technophant', 'ruler', 'Exalted interpreters of divine wetware. They guide the people toward a perfect fusion of and machine.
+This Job requires the Pop to have the Ritualistic Implants of any Cybernetic Creed or Cybernetic trait.', 320);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('technophant', 'produces', 'unity', '5.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('technophant', 'produces', 'engineering_research', '2.5', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('technophant', 'upkeep', 'consumer_goods', '3.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('neural_chip', 'Neural Chip', 'chip_slave', 'A single Neural Chip is inconsequential. Once connected, their processing capabilities increase exponentially.', 321);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('neural_chip', 'produces', 'society_research', '0.375', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('neural_chip', 'produces', 'engineering_research', '0.375', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('neural_chip', 'produces', 'physics_research', '0.375', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('neural_chip', 'produces', 'advanced_logic', '0.025', 3);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('neural_chip', 'upkeep', 'energy', '4.5', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('neural_chip_processing', 'Neural Chip Programming', 'chip_slave', 'A single Neural Chip is inconsequential. Once connected, their processing capabilities increase exponentially.', 322);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('neural_chip_unprocessing', 'Neural Chip Deprogramming', 'chip_slave', 'A single Neural Chip is inconsequential. Once connected, their processing capabilities increase exponentially.', 323);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('augmentor', 'Augmentor', 'specialist', 'Augmentors are skilled technicians who alter the organic form with cybernetic enhancement.', 324);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('augmentor', 'produces', 'society_research', '1.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('augmentor', 'produces', 'engineering_research', '1.5', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('augmentor', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('augmentor_drone', 'Augmentor Drone', 'complex_drone', 'Augmentor Drones research and design cybernetic implants.', 325);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('augmentor_drone', 'produces', 'society_research', '1.75', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('augmentor_drone', 'produces', 'engineering_research', '1.75', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('augmentor_drone', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('identity_designer', 'Identity Designer', 'specialist', 'Identity Designers intricately create new synthetic minds.', 326);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('identity_designer', 'produces', 'engineering_research', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('identity_designer', 'upkeep', 'alloys', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cyberdome_duelist', 'Hyper-Gladiator', 'specialist', 'Hyper-Gladiators face off in the Cyberdome, utilizing cutting-edge cybernetic implants.', 327);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('cyberdome_duelist', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('cyberdome_duelist', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cyberdome_spectator', 'Spectator', 'worker', 'Spectators enjoy games in the Cyberdome. When witnessed via cyberbrain, even the cheapest seats provide a spectacle, but when neurocasting is enabled it''s possible to experience gladiatorial combat in first person.', 328);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('cyberdome_spectator', 'produces', 'energy', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('cyberdome_spectator', 'produces', 'trade', '2.0', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('clip_maximizer', 'Material', 'purge', 'Suitably broken down and reconfigured, they can serve to fill the quota', 329);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('clip_maximizer', 'produces', 'consumer_goods', '5.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('clip_maximizer', 'upkeep', 'energy', '0.1', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('nanotech_research_unit', 'Nanotech Research Unit', 'complex_drone', 'Nanotech Research Units meticulously engineer never before seen materials, pieced together atom by atom.', 330);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('nanotech_research_unit', 'produces', 'physics_research', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('nanotech_research_unit', 'produces', 'engineering_research', '3.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('nanotech_research_unit', 'produces', 'society_research', '1.0', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('nanotech_research_unit', 'upkeep', 'energy', '4.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('nanotech_research_unit', 'upkeep', 'nanites', '1.0', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('nanotech_researcher', 'Nanotech Researcher', 'specialist', 'Nanotech Researchers meticulously engineer never before seen materials, pieced together atom by atom.', 331);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('nanotech_researcher', 'produces', 'physics_research', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('nanotech_researcher', 'produces', 'engineering_research', '3.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('nanotech_researcher', 'produces', 'society_research', '1.0', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('nanotech_researcher', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('nanotech_researcher', 'upkeep', 'nanites', '1.0', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('treasure_gatherer', 'Treasure Curator', 'specialist', 'Trained to appraise all manner of rare and valuable goods, they can extract the highest value from treasures found across the galaxy.', 332);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('treasure_gatherer', 'produces', 'energy', '10.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('treasure_gatherer', 'produces', 'minerals', '4.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('treasure_gatherer', 'produces', 'unity', '2.0', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('treasure_gatherer', 'produces', 'society_research', '0.5', 3);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('treasure_gatherer', 'produces', 'trade', '3.0', 4);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('treasure_gatherer', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('wrangler', 'Wrangler', 'specialist', 'The proper preservation, study, and management of local fauna is vital to the success of our worlds.', 333);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('wrangler', 'produces', 'society_research', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('wrangler', 'produces', 'unity', '1.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('wrangler', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('drone_wrangler', 'Wrangler Drone', 'complex_drone', 'The proper preservation, study, and management of local fauna is vital to the success of our worlds.', 334);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('drone_wrangler', 'produces', 'society_research', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('drone_wrangler', 'produces', 'unity', '1.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('drone_wrangler', 'upkeep', 'minerals', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('treasure_gatherer_gestalt', 'Treasure Drone', 'complex_drone', 'Able to appraise all manner of rare and valuable goods, they can extract the highest possible utility from treasures found across the galaxy.', 335);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('treasure_gatherer_gestalt', 'produces', 'energy', '10.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('treasure_gatherer_gestalt', 'produces', 'minerals', '4.0', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('treasure_gatherer_gestalt', 'produces', 'unity', '2.0', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('treasure_gatherer_gestalt', 'produces', 'society_research', '0.5', 3);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('treasure_gatherer_gestalt', 'upkeep', 'minerals', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('disconnected_drone', 'Disconnected Drone', 'simple_drone', 'Severed from their collective consciousness, these drones are guided by little more than base instinct.', 336);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('skywatcher', 'Skywatcher', 'specialist', 'These highly trained guardians ensure a constant and secure uplink to the Deep Space Citadel.', 337);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('skywatcher', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('skywatcher_drone', 'Skywatcher Drone', 'complex_drone', 'These specialized drones ensure a constant and secure uplink to the Deep Space Citadel.', 338);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('skywatcher_drone', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('genomic_researcher', 'Genomic Researcher', 'specialist', 'Genomic Researchers conduct research into our genetic future.', 339);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('genomic_drone', 'Genomic Drone', 'complex_drone', 'Genomic Drones conduct research into our genetic future.', 340);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('transference_volunteer', 'Transference Volunteer', 'specialist', 'For many, the mindlink with the Beast is but an afterthought. Constant, but remote. For some however, the need to merge with it is irrepressible. These volunteers act as a conduit as their minds are slowly absorbed into the beastly collective.', 341);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('transference_volunteer', 'produces', 'unity', '1.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('transference_volunteer', 'upkeep', 'food', '5.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('transference_drone', 'Transference Drone', 'complex_drone', 'While the mindlink established a permanent connection between the Beast and us, the transference is a slow process. Without these precautions we risk shattering both psyches and ruin everything.', 342);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('transference_drone', 'produces', 'unity', '1.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('transference_drone', 'upkeep', 'food', '5.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('complex_drone_unemployment', 'Idle Complex Drone', 'complex_drone_unemployment', 'These Complex Drones are currently not assigned to any task.', 343);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('complex_drone_unemployment', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('simple_drone_unemployment', 'Idle Simple Drone', 'simple_drone_unemployment', 'These Simple Drones are currently not assigned to any task.', 344);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('simple_drone_unemployment', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('sand_whisperer', 'Sand Whisperer', 'specialist', 'When communicating with the psionic Sand Whisperers can collect a small amount of Zro from them.', 345);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('sand_whisperer', 'produces', 'sr_zro', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('sand_whisperer', 'upkeep', 'energy', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('sand_caretaker', 'Sand Caretaker', 'specialist', 'When communicating with the psionic Sand Caretakers can collect a small amount of Zro from them.', 346);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('sand_caretaker', 'produces', 'sr_zro', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('sand_caretaker', 'upkeep', 'energy', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('drone_sand_whisperer', 'Sand Whisperer drone', 'complex_drone', 'When communicating with the psionic Sand Whisperers can collect a small amount of Zro from them.', 347);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('drone_sand_whisperer', 'produces', 'sr_zro', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('drone_sand_whisperer', 'upkeep', 'energy', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('drone_sand_caretaker', 'Sand Caretaker drone', 'complex_drone', 'When communicating with the psionic Sand Caretakers can collect a small amount of Zro from them.', 348);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('drone_sand_caretaker', 'produces', 'sr_zro', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('drone_sand_caretaker', 'upkeep', 'energy', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('space_junk_collector', 'Space Junk Collector', 'specialist', 'Orbital space junk periodically enters this planet''s atmosphere. Whatever doesn''t burn up on entry can be collected and recycled.', 349);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('space_junk_collector', 'produces', 'alloys', '5.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('space_junk_collector', 'upkeep', 'energy', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('drone_space_junk_collector', 'Space Junk Collector drone', 'complex_drone', 'Orbital space junk periodically enters this planet''s atmosphere. Whatever doesn''t burn up on entry can be collected and recycled.', 350);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('drone_space_junk_collector', 'produces', 'alloys', '5.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('drone_space_junk_collector', 'upkeep', 'energy', '10.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('ruler_unemployment', 'Unemployed', 'ruler_unemployment', 'The unfortunate result of insufficient planning, the unemployed eagerly await assignment.', 351);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('ruler_unemployment', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('specialist_unemployment', 'Unemployed', 'specialist_unemployment', 'The unfortunate result of insufficient planning, the unemployed eagerly await assignment.', 352);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('specialist_unemployment', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('worker_unemployment', 'Unemployed', 'worker_unemployment', 'The unfortunate result of insufficient planning, the unemployed eagerly await assignment.', 353);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('worker_unemployment', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bio_trophy_unemployment', 'Neglected Bio-Trophy', 'bio_trophy_unemployment', 'These Bio-Trophies are neglected and without our care, exposing them to the cruelty of the galaxy. Their existence is our failure.', 354);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_unemployment', 'Unemployed Slaves', 'slave_unemployment', 'These slaves are currently not assigned to any task.', 355);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('telepath_drone', 'Telepath Drone', 'complex_drone', 'Operatives of the Psi Corps, a unit of psionically-advanced drones dedicated to reducing deviancy.', 356);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('telepath_drone', 'produces', 'unity', '4.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('telepath_drone', 'upkeep', 'energy', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('physician_drone', 'Physician Drone', 'complex_drone', 'A specialized drone capable of diagnosing and repairing both artificial and organic entities. It meticulously catalogs everything it comes across, storing the data for use by the collective.', 357);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('physician_drone', 'produces', 'unity', '3.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('physician_drone', 'upkeep', 'energy', '4.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('observator_drone', 'Observator Drone', 'complex_drone', 'A drone put in charge of observing the Shroud, Zro, and the effects the two have on observable reality.', 358);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('energy_thrall', 'Energy Thrall', 'worker', 'Excess energies of the population can be put to better use in sustaining quality leadership. Each Energy Thrall is implanted with a specially calibrated siphoning device which collects their essence into easy-to-transfer power cells.', 359);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('energy_thrall', 'produces', 'unity', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('drone_energy_thrall', 'Energy Drone', 'simple_drone', 'Idle consciousnesses can be put to better use in sustaining quality leadership nodes. Each Energy Drone is implanted with a specially calibrated siphoning device which collects their unused energy into easy-to-transfer power cells.', 360);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('drone_energy_thrall', 'produces', 'unity', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('test_subject', 'Test Subject', 'criminal', 'Convicted of criminal activity, these individuals have been put to productive use as live test subjects in technological experiments.', 361);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('test_subject', 'produces', 'engineering_research', '0.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('test_subject', 'produces', 'physics_research', '0.5', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('test_subject', 'produces', 'society_research', '1.0', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('test_subject', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('test_subject_drone', 'Test Subject Drone', 'deviant_drone', 'After straying from the will of the collective, these deviants have been put to productive use as live test subjects in technological experiments.', 362);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('test_subject_drone', 'produces', 'engineering_research', '0.5', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('test_subject_drone', 'produces', 'physics_research', '0.5', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('test_subject_drone', 'produces', 'society_research', '1.0', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('test_subject_drone', 'upkeep', 'energy', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('experiment_engineer', 'Experiment Engineer', 'specialist', 'These elite researchers carry out experiments on live test subjects drawn from the criminal population, with no qualms about the severity of their methodologies.', 363);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('experiment_engineer', 'produces', 'physics_research', '0.02', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('experiment_engineer', 'produces', 'engineering_research', '0.02', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('experiment_engineer', 'produces', 'society_research', '0.02', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('experiment_engineer', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('experiment_engineer_drone', 'Experiment Engineer Drone', 'complex_drone', 'These research drones carry out experiments on live test subjects drawn from the deviant population. No methodology is too harsh if it benefits the collective.', 364);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('experiment_engineer_drone', 'produces', 'physics_research', '0.02', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('experiment_engineer_drone', 'produces', 'engineering_research', '0.02', 1);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('experiment_engineer_drone', 'produces', 'society_research', '0.02', 2);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('experiment_engineer_drone', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_orderly', 'Orderly', 'worker', 'These workers are responsible for the day-to-day care of those subjected to experimental procedures that often render them unable to care for themselves.', 365);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('production_overseer', 'Production Overseer', 'specialist', 'Production Overseers work to eliminate inefficiencies and maximize the outputs from complex manufacturing processes.', 366);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('production_overseer', 'produces', 'engineering_research', '2.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('production_overseer', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('spe_colonist', 'Colonist', NULL, 'The settling of a new world is no easy undertaking.', 367);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('extradimensional_research_unit', 'Extra-dimensional Research Unit', 'complex_drone', 'Dedicated research units focused on studies into the dimensions of thought.', 368);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('shroud_trader', 'Empathic Marketer', 'specialist', 'These experts attune to the emotional zeitgeist in the local markets, striking deals and hosting seminars on current trends in thought leadership.', 369);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('shroud_trader', 'produces', 'trade', '6.0', 0);
+INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES ('shroud_trader', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('duelist', 'Duelist', 'specialist', 'Martial experts who display their deadly art for the entertainment of the masses.', 370);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('historical_curator', 'Historical Curator', 'specialist', 'Categorizes and contextualizes the most extraordinary specimens in order to gain a greater understanding of important galactic events.', 371);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('storm_dancer', 'Storm Dancer', 'specialist', 'Far from a simple entertainer, the work of a Storm Dancer is to embody the very essence of the storm.', 372);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_colony_shelter', 'Reassembled Ship Shelter', 'government', 'The remains of a Colony Ship, reassembled for planetside form and function.', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_colony_shelter', 'upkeep', 'energy', '1.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_capital', 'Planetary Administration', 'government', 'Seat of the local ruling elite.', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_capital', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_capital', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_capital', 'enforcer', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_major_capital', 'Planetary Capital', 'government', 'A sprawling complex of bureaucratic structures that acts as the administrative center for a major colony.', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_major_capital', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_major_capital', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_major_capital', 'enforcer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_system_capital', 'System Capital-Complex', 'government', 'A towering configuration of administrative bureaus and networked infrastructure, allowing the construction and operation of highly demanding facilities.', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_system_capital', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_system_capital', 'upkeep', 'energy', '10.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_system_capital', 'enforcer', '300.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_deployment_post', 'Deployment Post', 'government', 'The initial deployment post from which we will expand on this world.', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_deployment_post', 'upkeep', 'energy', '1.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_machine_capital', 'Administrative Array', 'government', 'A semi-autonomous computer network that handles the various administrative functions on a planet.', 5);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_capital', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_capital', 'upkeep', 'energy', '5.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_machine_major_capital', 'Planetary Processor', 'government', 'A powerful administrative computer that has been designed to manage and oversee the various functions of a complex planetary settlement.', 6);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_major_capital', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_major_capital', 'upkeep', 'energy', '8.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_machine_system_capital', 'Primary Nexus', 'government', 'The administrative heart of the system. Hundreds of AIs process requests and manage the minute but critical details that are involved in running an efficient interstellar civilization.', 7);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_system_capital', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_system_capital', 'upkeep', 'energy', '10.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_capital', 'Hive Core', 'government', 'The organizational core from which the Hive Mind coordinates planetside functions.', 8);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_capital', 'cost', 'minerals', '1000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_capital', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_major_capital', 'Hive Nexus', 'government', 'A sprawling capital complex from which the Hive Mind focuses planetary organization, coordination, and planning.', 9);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_major_capital', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_major_capital', 'upkeep', 'energy', '5.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hab_capital', 'Habitat Administration', 'government', 'The administrative hub of the Habitat, serving as its capital and the seat of the local government.', 10);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_capital', 'upkeep', 'energy', '3.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_capital', 'upkeep', 'alloys', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_hab_capital', 'politician', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hab_major_capital', 'Habitat Central Control', 'government', 'An extensive complex of bureaucratic offices that oversees the administration of a highly-populated habitat.', 11);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_major_capital', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_major_capital', 'upkeep', 'energy', '3.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_major_capital', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_hab_major_capital', 'politician', '200.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_hab_major_capital', 'enforcer', '100.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hab_system_capital', 'Habitat System Control', 'government', 'A huge sprawling complex of bureaucratic offices that oversees the administration of a highly-populated habitat.', 12);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_system_capital', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_system_capital', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_system_capital', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_hab_system_capital', 'politician', '200.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_hab_system_capital', 'enforcer', '200.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_resort_capital', 'Resort Administration', 'government', 'The central complex from where this planet-wide resort is administrated.', 13);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_resort_capital', 'upkeep', 'energy', '2.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_resort_capital', 'politician', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_resort_major_capital', 'Resort Capital-Complex', 'government', 'A huge sprawling complex capable of administrating an even greater number of resorts and tourist attractions.', 14);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_resort_major_capital', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_resort_major_capital', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_resort_major_capital', 'politician', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_slave_capital', 'Governor''s Palace', 'government', 'The lavish palace from which this Thrall-World is governed.', 15);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_slave_capital', 'upkeep', 'energy', '2.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_slave_capital', 'politician', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_slave_major_capital', 'Governor''s Estates', 'government', 'Sprawling and luxurious palaces that house the ruling elite of the Thrall-World.', 16);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_slave_major_capital', 'cost', 'minerals', '500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_slave_major_capital', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_slave_major_capital', 'politician', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_imperial_capital', 'Imperial Palace', 'government', 'A massive palace complex fit for the greatest empire history has ever seen. If there is a bright center to the galaxy, this is it.', 17);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_capital', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_capital', 'upkeep', 'energy', '10.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_imperial_capital', 'enforcer', '500.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_imperial_machine_capital', 'Imperial Center', 'government', 'This colossal complex is the administrative heart of the Galactic Imperium. Thousands of AIs are constantly processing and evaluating the current state of the galaxy.', 18);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_machine_capital', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_machine_capital', 'upkeep', 'energy', '10.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_imperial_hive_capital', 'Imperial Complex', 'government', 'From this massive structure, the Hive Mind governs the Galactic Imperium. This is where the fate of the galaxy is decided.', 19);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_hive_capital', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_hive_capital', 'upkeep', 'energy', '10.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_robot_assembly_plant', 'Robot Assembly Plants', 'pop_assembly', 'High-tech factories where skilled Roboticists assemble the latest robot models.', 20);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_robot_assembly_plant', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_robot_assembly_plant', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_robot_assembly_plant', 'roboticist', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_robot_assembly_complex', 'Robot Assembly Complex', 'pop_assembly', 'An advanced assembly plant where skilled Roboticists assemble the latest robot models.', 21);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_robot_assembly_complex', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_robot_assembly_complex', 'cost', 'rare_crystals', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_robot_assembly_complex', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_robot_assembly_complex', 'upkeep', 'rare_crystals', '2.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_robot_assembly_complex', 'roboticist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_machine_assembly_plant', 'Machine Assembly Plants', 'pop_assembly', 'A production line assembly plant where new units are constructed.', 22);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_assembly_plant', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_assembly_plant', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_machine_assembly_plant', 'roboticist', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_machine_assembly_complex', 'Machine Assembly Complex', 'pop_assembly', 'An advanced assembly plant where new units are constructed.', 23);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_assembly_complex', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_assembly_complex', 'cost', 'rare_crystals', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_assembly_complex', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_assembly_complex', 'upkeep', 'rare_crystals', '2.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_machine_assembly_complex', 'roboticist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_spawning_pool', 'Spawning Pools', 'pop_assembly', 'Tended by the scientific and gentle care of specialists, these pools stimulate our spawn into faster growth.', 24);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_spawning_pool', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_spawning_pool', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_spawning_pool', 'spawning_drone', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_offspring_nest', 'Offspring Nest', 'pop_assembly', 'This fortified nest safely harbors the local Offspring while also accelerating growth for the rest of the nearby hive.', 25);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_offspring_nest', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_offspring_nest', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_offspring_nest', 'spawning_drone', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_necrophage_elevation_chamber', 'Chamber of Elevation', 'pop_assembly', 'Those awaiting transformation spend their days studying the practices and rituals of the in the comfort of the Chamber of Elevation.', 26);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_necrophage_elevation_chamber', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_necrophage_elevation_chamber', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_necrophage_house_of_apotheosis', 'House of Apotheosis', 'pop_assembly', 'A house of untold splendor where those awaiting their apotheosis as can spend their final days in their original forms in comfort.', 27);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_necrophage_house_of_apotheosis', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_necrophage_house_of_apotheosis', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_necrophage_house_of_apotheosis', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_necrophage_house_of_apotheosis', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_clone_vats', 'Clone Vats', 'pop_assembly', 'Clone Vats break down simple materials to generate Organic Pop Growth.', 28);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_clone_vats', 'cost', 'minerals', '500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_clone_vats', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_clone_army_clone_vat', 'Ancient Clone Vat', 'pop_assembly', 'Lost technology left behind by the Creators. Can be taken apart and reassembled, but its inner components and workings are much too advanced to replicate.', 29);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_clone_army_clone_vat', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_clone_army_clone_vat', 'upkeep', 'energy', '5.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_posthumous_employment_center', 'Posthumous Employment Center', 'pop_assembly', 'At the Posthumous Employment Center, carcasses bereft of consciousness can find new purpose and a new opportunity to pay off their debts.', 30);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_posthumous_employment_center', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_posthumous_employment_center', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_technician_1', 'Automation Building: Technician', 'pop_assembly', 'A plaque on the wall reads: ''It automates.''
+This building will automate a portion of Technician and Tech-Drone jobs.', 31);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_technician_1', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_technician_1', 'upkeep', 'energy', '8.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_technician_2', 'Optimization Building: Technician', 'pop_assembly', 'Those who have been there say, ''It optimizes.''
+This building will automate a portion of Technician and Tech-Drone jobs.', 32);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_technician_2', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_technician_2', 'upkeep', 'energy', '10.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_miner_1', 'Automation Building: Miner', 'pop_assembly', 'A plaque on the wall reads: ''It automates.''
+This building will automate a portion of Miner and Mining Drone jobs.', 33);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_miner_1', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_miner_1', 'upkeep', 'energy', '8.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_miner_2', 'Optimization Building: Miner', 'pop_assembly', 'Those who have been there say, ''It optimizes.''
+This building will automate a portion of Miner and Mining Drone jobs.', 34);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_miner_2', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_miner_2', 'upkeep', 'energy', '10.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_farmer_1', 'Automation Building: Farmer', 'pop_assembly', 'A plaque on the wall reads: ''It automates.''
+This building will automate a portion of Farmer and Agri-Drone jobs.', 35);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_farmer_1', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_farmer_1', 'upkeep', 'energy', '8.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_farmer_2', 'Optimization Building: Farmer', 'pop_assembly', 'Those who have been there say, ''It optimizes.''
+This building will automate a portion of Farmer and Agri-Drone jobs.', 36);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_farmer_2', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_farmer_2', 'upkeep', 'energy', '10.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_1', 'Automation Building', 'pop_assembly', 'A plaque on the wall reads: ''It automates.''', 37);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_1', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_1', 'upkeep', 'energy', '8.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_2', 'Optimization Building', 'pop_assembly', 'Those who have been there say, ''It optimizes.''', 38);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_2', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_2', 'upkeep', 'energy', '10.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_noble_estates', 'Noble Estates', 'government', 'Palaces and mansions, resplendent in their glory, owned by the nobility. The surrounding countryside and the peasants that inhabit it are theirs as well.', 39);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_noble_estates', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_noble_estates', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_noble_estates', 'politician', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_slave_processing', 'Slave Processing Facility', 'government', 'This large and imposing facility is used to process slave labor and extinguish any trace of free will.', 40);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_slave_processing', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_slave_processing', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_precinct_house', 'Precinct Houses', 'government', 'Monuments to law and order. Enforcers are based here.', 41);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_precinct_house', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_precinct_house', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_precinct_house', 'enforcer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hall_judgment', 'Hall of Judgment', 'government', 'A massive complex dedicated to courts and law enforcement.', 42);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hall_judgment', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hall_judgment', 'cost', 'volatile_motes', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hall_judgment', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hall_judgment', 'upkeep', 'volatile_motes', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_hall_judgment', 'enforcer', '500.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_state_academy', 'State Academy', 'government', 'Here the fundamentals deemed necessary for a healthy society are taught.', 43);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_state_academy', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_state_academy', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_state_academy', 'enforcer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_center_of_guidance', 'Center of Guidance', 'government', 'Covering every aspect of life in society. Within this massive complex of schools and training facilities any deviation can be corrected.', 44);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_center_of_guidance', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_center_of_guidance', 'cost', 'volatile_motes', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_center_of_guidance', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_center_of_guidance', 'upkeep', 'volatile_motes', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_center_of_guidance', 'enforcer', '500.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sentinel_posts', 'Sentinel Posts', 'government', 'These are the outposts from which Patrol Drones scan the Consciousness for signs of deviancy and malfunction.', 45);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sentinel_posts', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sentinel_posts', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_order_keep', 'Order''s Keep', 'government', 'The seat of the Order is the home of its knights. It boasts vast archives of data, and is filled with trophies collected over its long and illustrious history.', 46);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_order_keep', 'cost', 'minerals', '1000.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_order_castle', 'Order''s Castle', 'government', 'The Order of the Toxic God has established a castle on this habitat. A contingent of knights and squires have set up base here.', 47);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_psi_corps', 'Psi Corps', 'government', 'From all across our empire, psionic are brought here to hone their abilities.
+The Psi Corps is your . Trust the Corps.', 48);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_psi_corps', 'cost', 'minerals', '500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_psi_corps', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_psi_corps', 'telepath', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_embassy', 'Embassy Complex', 'government', 'This building forms the heart of the Empire''s diplomatic efforts.
+Due to the need to be close to the seat of government, it can only be built at our Capital.', 49);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_embassy', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_embassy', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_embassy', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_embassy', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_embassy', 'politician', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_grand_embassy', 'Grand Embassy Complex', 'government', 'The complex is intended to awe the viewer, rendering them more compliant in negotiations.
+Due to the need to be close to the seat of government, it can only be built at our Capital.', 50);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_embassy', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_embassy', 'cost', 'rare_crystals', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_embassy', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_embassy', 'upkeep', 'rare_crystals', '2.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_embassy', 'politician', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_gaiaseeders_1', 'Gaia Seeders - Phase 1', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.
+This is the initial growth boost phase.', 51);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_1', 'cost', 'energy', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_1', 'upkeep', 'energy', '20.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_gaiaseeders_2', 'Gaia Seeders - Phase 2', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.
+This phase shifts towards habitability.', 52);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_2', 'cost', 'energy', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_2', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_2', 'upkeep', 'energy', '20.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_2', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_gaiaseeders_3', 'Gaia Seeders - Phase 3', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.
+This phase emphasizes habitability.', 53);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_3', 'cost', 'energy', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_3', 'cost', 'exotic_gases', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_3', 'upkeep', 'energy', '20.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_3', 'upkeep', 'exotic_gases', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_gaiaseeders_4', 'Gaia Seeders - Final Phase', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.', 54);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_4', 'cost', 'energy', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_4', 'cost', 'exotic_gases', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_4', 'upkeep', 'energy', '10.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_4', 'upkeep', 'exotic_gases', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_gaiaseeders_pc_gaia', 'Gaia Seeders - Final Phase', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.', 55);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_pc_gaia', 'cost', 'energy', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_pc_gaia', 'cost', 'exotic_gases', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_pc_gaia', 'upkeep', 'energy', '10.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_pc_gaia', 'upkeep', 'exotic_gases', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_volcanic_forge_1', 'Volcanic Forge', 'government', 'This industrial complex, designed to drill deep into the planet''s crust, will induce volcanic activity across the entire world, thus terraforming every biome into a blazing landscape.', 56);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_volcanic_forge_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_volcanic_forge_1', 'upkeep', 'energy', '5.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_volcanic_forge_2', 'Volcanic Foundry', 'government', 'This industrial complex, designed to drill deep into the planet''s crust, will induce volcanic activity across the entire world, thus terraforming every biome into a blazing landscape.', 57);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_volcanic_forge_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_volcanic_forge_2', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_volcanic_forge_2', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_volcanic_forge_2', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hydroponics_farm', 'Hydroponics Farms', 'resource', 'Hydroponics Farms produce nutrient-rich vegetable matter tailored for consumption by local Pops.', 58);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hydroponics_farm', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hydroponics_farm', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_hydroponics_farm', 'farmer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_food_processing_facility', 'Food Processing Facilities', 'resource', 'Food that is processed at these facilities has its nutritional value greatly increased.', 59);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_food_processing_facility', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_food_processing_facility', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_food_processing_center', 'Food Processing Centers', 'resource', 'Streamlined facilities where large amounts of food can be processed.', 60);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_food_processing_center', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_food_processing_center', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_food_processing_center', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_food_processing_center', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_farming_districts_1', 'Crop Development Hub', 'resource', 'A modest bureaucratic center tasked with surveying arable land and initiating expansion of planetary agriculture.', 61);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_farming_districts_2', 'Soil Reclamation Center', 'resource', 'This center focuses on restoring marginal land and improving yields, allowing for greater agricultural district growth.', 62);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_2', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_2', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_farming_districts_3', 'Automated Agri-Complex', 'resource', 'Mechanized harvesters, drone fleets, and climate-controlled fields drive the rapid expansion of agricultural districts.', 63);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_3', 'cost', 'exotic_gases', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_3', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_3', 'upkeep', 'exotic_gases', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_farming_districts_4', 'Planetary Cultivation Grid', 'resource', 'A vast integrated complex that oversees intensive, high-density farming operations, maximizing the number of agricultural districts supported on the planet.', 64);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_4', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_4', 'cost', 'exotic_gases', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_4', 'upkeep', 'energy', '10.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_4', 'upkeep', 'exotic_gases', '4.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_baol_organic_plant', 'Baol Organic Plant', 'resource', 'The Baol Organism had a unique way of producing tools. Given the species'' relative slowness, they would simply grow them out of organic matter in locations that were half orchard, half factory. With the proper genetic adjustments, we could also grow various commodities and tools alongside our regular crops.', 65);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_baol_organic_plant', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_baol_organic_plant', 'cost', 'minor_artifacts', '25.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_baol_organic_plant', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_baol_organic_plant', 'farmer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mine_generic', 'Surface Quarry Depot', 'resource', 'By coordinating shallow-surface excavation and ore collection, this depot enables early expansion of mining districts.', 66);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mine_generic', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mine_generic', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_mine_generic', 'miner', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mineral_purification_plant', 'Mineral Purification Plants', 'resource', 'Minerals that have passed through these purifiers are of the highest quality.', 67);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mineral_purification_plant', 'cost', 'minerals', '200.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mineral_purification_plant', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mineral_purification_hub', 'Mineral Purification Hubs', 'resource', 'Massive hubs where minerals are received and then shuttled to arrays of purifiers.', 68);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mineral_purification_hub', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mineral_purification_hub', 'cost', 'volatile_motes', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mineral_purification_hub', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mineral_purification_hub', 'upkeep', 'volatile_motes', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mining_districts_1', 'Industrial Mining Site', 'resource', 'Excavation rigs, conveyor systems, and sorting arrays operate in tandem to sustain reliable output and enable the initial expansion of mining districts.', 69);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mining_districts_2', 'Core Drilling Array', 'resource', 'A facility that drives deeper mining operations through heavy bore drills and structural reinforcements, unlocking additional mineral sites.', 70);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_2', 'cost', 'volatile_motes', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_2', 'upkeep', 'volatile_motes', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mining_districts_3', 'Seismic Tunneling Yard', 'resource', 'A complex equipped for high-efficiency tunnel carving and subterranean stabilization, expanding access to otherwise unreachable mineral veins.', 71);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_3', 'cost', 'volatile_motes', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_3', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_3', 'upkeep', 'volatile_motes', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mining_districts_4', 'Deep Crust Extraction Grid', 'resource', 'A sprawling facility operating at maximum planetary depth, this complex manages fully industrialized extraction zones and supports the greatest possible mining district expansion.', 72);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_4', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_4', 'cost', 'volatile_motes', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_4', 'upkeep', 'energy', '10.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_4', 'upkeep', 'volatile_motes', '4.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_generator_generic', 'Voltaic Production Yard', 'resource', 'Dedicated to large-scale energy generation, this building houses power cells, plasma conduits, and high-output generator arrays.', 73);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_generic', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_generic', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_generator_generic', 'technician', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_energy_grid', 'Energy Grid', 'resource', 'A carefully calibrated grid network maximizes the output of power generators.', 74);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_energy_grid', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_energy_grid', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_energy_nexus', 'Energy Nexus', 'resource', 'This colossal facility centralizes all energy grids on the planet, improving their efficiency.', 75);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_energy_nexus', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_energy_nexus', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_energy_nexus', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_energy_nexus', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_generator_districts_1', 'Conductive Works Complex', 'resource', 'This complex supports the establishment of new generator districts by distributing foundational grid infrastructure and energy handling systems.', 76);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_generator_districts_2', 'Substation Relay Complex', 'resource', 'Enabling broader support for generator district development, this facility expands planetary power infrastructure through the deployment of high-capacity relays, transformer yards, and grid stabilization nodes.', 77);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_2', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_2', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_generator_districts_3', 'Plasma Regulation Array', 'resource', 'A complex where stabilized plasma flows and circuit resonance control allow for intensified generator development across the planet.', 78);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_3', 'cost', 'rare_crystals', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_3', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_3', 'upkeep', 'rare_crystals', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_generator_districts_4', 'Planetary Nexus', 'resource', 'This integrated energy nexus coordinates planetary-scale generator operations, enabling the highest achievable expansion of generator districts.', 79);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_4', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_4', 'cost', 'rare_crystals', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_4', 'upkeep', 'energy', '10.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_4', 'upkeep', 'rare_crystals', '4.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_resource_silo', 'Resource Silos', 'resource', 'Massive resource silos and storage facilities where large quantities of resources can be safely kept.', 80);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_resource_silo', 'cost', 'minerals', '200.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_resource_silo', 'upkeep', 'energy', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bio_reactor', 'Bio-Reactor', 'resource', 'A facility where organic matter is converted into energy at a highly efficient rate.', 81);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_reactor', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_reactor', 'upkeep', 'food', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bio_reactor_2', 'Advanced Bio-Reactor', 'resource', 'A facility where organic matter is converted into energy at a highly efficient rate, improvements in waste collection allows harvesting of useful gaseous by-products.', 82);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_reactor_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_reactor_2', 'upkeep', 'food', '5.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_foundry_1', 'Alloy Foundries', 'manufacturing', 'The working in these foundries produce high-quality alloys.', 83);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_foundry_1', 'foundry', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_foundry_2', 'Alloy Mega-Forges', 'manufacturing', 'These massive forges can assist the end-stage production of alloys in our industries across the planet.', 84);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_2', 'cost', 'volatile_motes', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_2', 'upkeep', 'volatile_motes', '2.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_foundry_2', 'foundry', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_foundry_3', 'Alloy Nano-Plants', 'manufacturing', 'Large industrial fabricators geared towards increasing the production of alloys on the planet.', 85);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_3', 'cost', 'volatile_motes', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_3', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_3', 'upkeep', 'volatile_motes', '4.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_foundry_3', 'foundry', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_factory_1', 'Civilian Industries', 'manufacturing', 'A wide collection of civilian industries and manufactories where a variety of consumer goods are produced.', 86);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_factory_1', 'artisan', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_factory_2', 'Civilian Fabricators', 'manufacturing', 'Large industrial fabricators geared towards increasing the production of consumer goods on the planet.', 87);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_2', 'cost', 'rare_crystals', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_2', 'upkeep', 'rare_crystals', '2.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_factory_2', 'artisan', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_factory_3', 'Civilian Repli-Complexes', 'manufacturing', 'Nearly anything can be replicated at the kiosks in these complexes.', 88);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_3', 'cost', 'rare_crystals', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_3', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_3', 'upkeep', 'rare_crystals', '4.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_factory_3', 'artisan', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_refinery', 'Exotic Gas Refineries', 'manufacturing', 'These advanced refineries work day and night to produce exotic gases.', 89);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_refinery', 'cost', 'minerals', '500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_refinery', 'upkeep', 'energy', '3.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_chemical_plant', 'Chemical Plants', 'manufacturing', 'The unpredictable and sometimes unstable Volatile Motes are produced here artificially. No open flames are permitted within a five kilometer radius of the plants.', 90);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_chemical_plant', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_chemical_plant', 'upkeep', 'energy', '3.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_crystal_plant', 'Synthetic Crystal Plants', 'manufacturing', 'Nearly identical to the real thing, the crystals produced here are of the highest quality.', 91);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_plant', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_plant', 'upkeep', 'energy', '3.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nanite_transmuter', 'Nanite Transmuter', 'manufacturing', 'This factory mass-produces a variety of rare resources using extremely advanced nanites. A Nanite deficit will halt production.', 92);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanite_transmuter', 'cost', 'minerals', '1000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanite_transmuter', 'upkeep', 'nanites', '2.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanite_transmuter', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanite_transmuter', 'produces', 'rare_crystals', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanite_transmuter', 'produces', 'volatile_motes', '5.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanite_transmuter', 'produces', 'exotic_gases', '5.0', 5);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ministry_production', 'Ministry of Production', 'manufacturing', 'The Ministry of Production works tirelessly to organize and streamline manufacturing across the entire planet.', 93);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ministry_production', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ministry_production', 'cost', 'volatile_motes', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ministry_production', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ministry_production', 'upkeep', 'volatile_motes', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_ministry_production', 'politician', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_production_center', 'Resource Processing Center', 'manufacturing', 'A vast facility which centralizes the handling of resources and manufacturing across the entire planet.', 94);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_production_center', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_production_center', 'cost', 'volatile_motes', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_production_center', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_production_center', 'upkeep', 'volatile_motes', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_production_center', 'foundry', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_coordinated_fulfillment_center_1', 'Coordinated Fulfillment Center', 'manufacturing', 'Although some might deem the practices promoted in this facility to be unsafe or dangerously short-sighted, one cannot argue with the productivity numbers they produce.', 95);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_coordinated_fulfillment_center_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_coordinated_fulfillment_center_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_coordinated_fulfillment_center_2', 'Universal Productivity Alignment Facility', 'manufacturing', 'Through tireless number-crunching and ubiquitous performance reviews, industrial productivity can be pushed to hitherto unmatched levels. Even if this leaves little time for distractions such as reproduction and environmental concerns.', 96);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_coordinated_fulfillment_center_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_coordinated_fulfillment_center_2', 'cost', 'volatile_motes', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_coordinated_fulfillment_center_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_coordinated_fulfillment_center_2', 'upkeep', 'volatile_motes', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_archaeo_refinery', 'Ancient Refinery', 'manufacturing', 'This millennia-old processing equipment has an efficiency rate above 100%. Its functioning remains alien, but its production gains are substantial.', 97);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_archaeo_refinery', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_archaeo_refinery', 'cost', 'minor_artifacts', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_archaeo_refinery', 'upkeep', 'energy', '5.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_foundry_upkeep_1', 'Alloy Reclamation Plant', 'manufacturing', 'A center dedicated to refining scrap and waste into valuable alloys through advanced techniques.', 98);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_upkeep_1', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_upkeep_1', 'cost', 'volatile_motes', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_upkeep_1', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_upkeep_1', 'upkeep', 'volatile_motes', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_foundry_efficiency_1', 'Metallurgical Research Lab', 'manufacturing', 'By combining cutting-edge theory with well-established and tested theses, we can massively increase practical efficiency.', 99);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_efficiency_1', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_efficiency_1', 'cost', 'volatile_motes', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_efficiency_1', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_efficiency_1', 'upkeep', 'volatile_motes', '4.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_factory_upkeep_1', 'Recirculation Center', 'manufacturing', 'With new exchange campaigns and second-hand integration, we can bring consumer goods near the end of their lifetime back into service.', 100);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_upkeep_1', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_upkeep_1', 'cost', 'rare_crystals', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_upkeep_1', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_upkeep_1', 'upkeep', 'rare_crystals', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_factory_efficiency_1', 'Distributed Design Center', 'manufacturing', 'Collaborative design efforts with trusted consumers help to streamline production and reduce overhead.', 101);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_efficiency_1', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_efficiency_1', 'cost', 'rare_crystals', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_efficiency_1', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_efficiency_1', 'upkeep', 'rare_crystals', '4.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_offworld_expedition_hub', 'Offworld Expedition Hub', 'manufacturing', 'This center coordinates freelance expeditions to a nearby Molten World, where enterprising prospectors may uncover valuable Volatile Motes and Living Metal.', 102);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_offworld_expedition_hub', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_offworld_expedition_hub', 'upkeep', 'energy', '5.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_research_lab_1', 'Research Labs', 'research', 'Research Labs provide the basic facilities for general research.', 103);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_lab_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_lab_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_1', 'physicist', '60.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_1', 'biologist', '60.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_1', 'engineer', '60.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_research_lab_2', 'Research Complexes', 'research', 'Upgraded research facilities with a very large staff capacity.', 104);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_lab_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_lab_2', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_lab_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_lab_2', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_2', 'physicist', '120.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_2', 'biologist', '120.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_2', 'engineer', '120.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_research_lab_3', 'Advanced Research Complexes', 'research', 'These advanced research facilities have the very latest science equipment along with an extremely large staff capacity.', 105);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_lab_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_lab_3', 'cost', 'exotic_gases', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_lab_3', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_lab_3', 'upkeep', 'exotic_gases', '2.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_3', 'physicist', '180.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_3', 'biologist', '180.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_3', 'engineer', '180.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_institute', 'Research Institute', 'research', 'The Research Institute is a massive complex, gathering the cutting edges of disparate fields together for unprecedented synergy, improving the research output of the whole planet.', 106);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_institute', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_institute', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_institute', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_institute', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_institute', 'politician', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_supercomputer', 'Planetary Supercomputer', 'research', 'A single colossal supercomputer which can carry out incredibly complex calculations, improving the research output of the whole planet.', 107);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_supercomputer', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_supercomputer', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_supercomputer', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_supercomputer', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_shroud_observatory_1', 'Shroud Observation Tower', 'research', 'An observation tower built to research and analyze the Shroud, and the effects it has on living and mechanical beings.', 108);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_shroud_observatory_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_shroud_observatory_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_shroud_observatory_1', 'biologist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_shroud_observatory_2', 'Shroud Observatory', 'research', 'A large observatory dedicated to research and analysis of the Shroud.', 109);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_shroud_observatory_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_shroud_observatory_2', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_shroud_observatory_2', 'biologist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_shroud_observatory_3', 'Shroud Observation Complex', 'research', 'A grand observation complex built to research the Shroud, Zro, and their effects on our world.', 110);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_shroud_observatory_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_shroud_observatory_3', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_shroud_observatory_3', 'biologist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_archaeostudies_faculty', 'Faculty of Archaeostudies', 'research', 'A series of laboratories dedicated to the studies of technological applications of minor artifacts retrieved from elder empires.', 111);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_archaeostudies_faculty', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_archaeostudies_faculty', 'cost', 'minor_artifacts', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_archaeostudies_faculty', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_archaeostudies_faculty', 'biologist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_vultaum_reality_computer', 'Vultaum Reality Computer', 'research', 'The reality computers of the Vultaums were unique processing units, dedicated to analyzing existence itself, not quite through physics, but rather by trying to reverse engineer reality''s source code and find the glitch that would finally allow the Vultaums to take down the simulation where they believed they lived.', 112);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_vultaum_reality_computer', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_vultaum_reality_computer', 'cost', 'minor_artifacts', '30.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_vultaum_reality_computer', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_vultaum_reality_computer', 'physicist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_physics_lab_1', 'Field Dynamics Center', 'research', 'With processing speeds that defy classical limits, the potential of quantum computers is boundless. This revolutionary technology heralds a great leap into uncharted regions of problem-solving.', 113);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_physics_lab_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_physics_lab_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_physics_lab_1', 'physicist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_physics_lab_2', 'Quantum Relations Annex', 'research', 'The fundamental forces of the universe can be mediated by physical fields. Mastering this process allows us to play as gods - at least within the confines of the science lab.', 114);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_physics_lab_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_physics_lab_2', 'cost', 'volatile_motes', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_physics_lab_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_physics_lab_2', 'upkeep', 'volatile_motes', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_physics_lab_2', 'physicist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_physics_lab_3', 'Fundamental Research Nexus', 'research', 'We knew gravity and time were linked long before we reached the stars. Now, our understanding of this unique relationship has reached a tipping point, allowing us to manipulate forces on a previously unimaginable scale.', 115);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_physics_lab_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_physics_lab_3', 'cost', 'volatile_motes', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_physics_lab_3', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_physics_lab_3', 'upkeep', 'volatile_motes', '2.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_physics_lab_3', 'physicist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_biolab_1', 'Xenobiological Lab', 'research', 'The study of alien life has moved beyond mere cataloging. By examining the structures and survival strategies of organisms evolved under foreign stars, we open new avenues in medicine, adaptation, and design.', 116);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_biolab_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_biolab_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_biolab_1', 'biologist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_biolab_2', 'Neurogenetics Institute', 'research', 'Through recursive axonal scaffolding and synaptic reticulation, we have developed methods for reorganizing the electrochemical topology of conscious matter. Neurons do not merely transmit - they entwine, organize, and remember. Now, they do so according to our design.', 117);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_biolab_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_biolab_2', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_biolab_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_biolab_2', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_biolab_2', 'biologist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_biolab_3', 'Life Systems Complex', 'research', 'Life, in all its staggering variety, is composed of repeating patterns and modular structures. By decoding and replicating these at every scale, we now wield a holistic blueprint of biology. There is little left in nature we do not understand, and less still we cannot recreate.', 118);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_biolab_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_biolab_3', 'cost', 'exotic_gases', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_biolab_3', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_biolab_3', 'upkeep', 'exotic_gases', '2.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_biolab_3', 'biologist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_engineering_facility_1', 'Materials Workshop', 'research', 'Further breakthroughs in mechanical engineering required us to descend to the nanometric scale. We are now able to manipulate physical systems in never-before-seen ways.', 119);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_engineering_facility_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_engineering_facility_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_engineering_facility_1', 'engineer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_engineering_facility_2', 'Applied Mechanics Institute', 'research', 'Much as organic neurons reforge lost connections by means of axonal sprouting, these circuits are capable of self-overhaul. Even the simplest computing systems are now expected to evolve while in use.', 120);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_engineering_facility_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_engineering_facility_2', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_engineering_facility_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_engineering_facility_2', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_engineering_facility_2', 'engineer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_engineering_facility_3', 'Advanced Engineering Complex', 'research', 'The quantum mechanical properties of these materials hold the key to superposition states, a revolutionary development for both material and industrial science.', 121);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_engineering_facility_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_engineering_facility_3', 'cost', 'rare_crystals', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_engineering_facility_3', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_engineering_facility_3', 'upkeep', 'rare_crystals', '2.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_engineering_facility_3', 'engineer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ranger_lodge', 'Ranger Lodge', 'research', 'The first step to live more in tune with nature is to ensure that nature is still around. Making sure none of the colonists impact the natural beauty is essential. The world must remain pure.', 122);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ranger_lodge', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ranger_lodge', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_research_upkeep_1', 'Research Supply Depot', 'research', 'A centralized hub that streamlines the supply and distribution of research materials, minimizing waste and inefficiency across the planet.', 123);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_upkeep_1', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_upkeep_1', 'cost', 'exotic_gases', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_upkeep_1', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_upkeep_1', 'upkeep', 'exotic_gases', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_research_efficiency_1', 'Data-Driven Theorem Facility', 'research', 'By supporting our theorists with high volumes of experimental data, we can massively enhance our research efficiency.', 124);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_efficiency_1', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_efficiency_1', 'cost', 'exotic_gases', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_efficiency_1', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_research_efficiency_1', 'upkeep', 'exotic_gases', '4.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commercial_zone', 'Commercial Zones', 'trade', 'These commercial zones are home to towering office buildings and business complexes.', 125);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commercial_zone', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commercial_zone', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_commercial_zone', 'trader', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commercial_megaplex', 'Commerce Megaplexes', 'trade', 'Great commercial spires and towers rising up towards the sky, blotting out the light.', 126);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commercial_megaplex', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commercial_megaplex', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commercial_megaplex', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commercial_megaplex', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_commercial_megaplex', 'trader', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_galactic_stock_exchange', 'Galactic Stock Exchange', 'trade', 'By engaging in free trade of goods and services we allow for a more specialized economy, where an individual can excel in a narrow field and trade for their needs.', 127);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_stock_exchange', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_stock_exchange', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_stock_exchange', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_stock_exchange', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_galactic_stock_exchange', 'trader', '200.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_galactic_stock_exchange', 'politician', '200.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_maintenance_depot', 'Logistics Hub', 'trade', 'The beating heart of the collective''s logistics apparatus, this massive storage facility''s drones work to ensure resources are swiftly delivered wherever they are needed.', 128);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_maintenance_depot', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_maintenance_depot', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_maintenance_depot', 'trader', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_luxury_residence', 'Luxury Residences', 'amenity', 'Intricately designed residential towers with luxurious apartments. Advanced zero-g technology is the only thing keeping the more outlandish terrace designs from collapsing.', 129);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_luxury_residence', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_luxury_residence', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_paradise_dome', 'Paradise Dome', 'amenity', 'A fully enclosed habitation dome with a self-contained ecosystem, a veritable private paradise for those rich or fortunate enough to live there.', 130);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_paradise_dome', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_paradise_dome', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_paradise_dome', 'upkeep', 'energy', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_paradise_dome', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_communal_housing', 'Communal Housing', 'amenity', 'A block of uniform housing, equal in every way.', 131);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_communal_housing', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_communal_housing', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_communal_housing_large', 'Utopian Communal Housing', 'amenity', 'An incredible feat of engineering that combines efficient, practical residences with carefully maintained idyllic landscapes.', 132);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_communal_housing_large', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_communal_housing_large', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_communal_housing_large', 'upkeep', 'energy', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_communal_housing_large', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_drone_storage', 'Drone Storage', 'amenity', 'A storage area for Drones to undergo maintenance.', 133);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_drone_storage', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_drone_storage', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_drone_megastorage', 'Upgraded Drone Storage', 'amenity', 'With the latest upgrades, while undergoing maintenance a portion of Drones'' power-generation can be re-directed to the grid.', 134);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_drone_megastorage', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_drone_megastorage', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_drone_megastorage', 'upkeep', 'energy', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_drone_megastorage', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_warren', 'Hive Warren', 'amenity', 'A vast warren offers shelter for many Drones to rest.', 135);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_warren', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_warren', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_expanded_warren', 'Expanded Warren', 'amenity', 'By expanding the warrens, still more Drone can shelter within.', 136);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_expanded_warren', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_expanded_warren', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_expanded_warren', 'upkeep', 'energy', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_expanded_warren', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_holo_theatres', 'Holo-Theatres', 'amenity', 'The latest in holographic entertainment. Entire worlds built out of photons and energy fields.', 137);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_holo_theatres', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_holo_theatres', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_holo_theatres', 'entertainer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hyper_entertainment_forum', 'Hyper-Entertainment Forums', 'amenity', 'These massive entertainment complexes is where dreams come true. Shopping malls, restaurants, amusement parks, virtual arcades, and more. You dream it - we are it!', 138);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hyper_entertainment_forum', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hyper_entertainment_forum', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hyper_entertainment_forum', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hyper_entertainment_forum', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_hyper_entertainment_forum', 'entertainer', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_medical_1', 'Medical Center', 'amenity', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', 139);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_medical_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_medical_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_medical_1', 'healthcare', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_medical_2', 'Gene Clinics', 'amenity', 'Gene Clinics can offer advanced medical treatments, which statistically lead to a significantly healthier and longer-living population.', 140);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_medical_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_medical_2', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_medical_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_medical_2', 'healthcare', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_medical_3', 'Cyto-Revitalization Centers', 'amenity', 'Cyto-Revitalization Centers can offer advanced medical treatments to a large population. Treatments on a cellular level lead to a significantly healthier and longer-living population.', 141);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_medical_3', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_medical_3', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_medical_3', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_medical_3', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_medical_3', 'healthcare', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_overseer_homes', 'Overseer Residences', 'amenity', 'These homes are reserved for the relatively privileged slave overseers.', 142);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_overseer_homes', 'cost', 'minerals', '200.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_overseer_homes', 'upkeep', 'energy', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_toxic_bath', 'Mutagenic Spas', 'amenity', 'Though Mutagenic Spas are highly advanced therapeutic centers with well-documented health benefits, to some, the methods employed remain disgusting. Each drop of bath liquid is more mutagenic than most banned substances in the galaxy.', 143);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_toxic_bath', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_toxic_bath', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_toxic_bath', 'bath_attendant', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_toxic_bath_hive', 'Mutagenic Permutation Pool', 'amenity', 'Mutagenic Permutation Pools are the perfect expression of the heights that a hive mind can achieve when utterly focused on the goal of maintaining the ever-expanding consciousness.', 144);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_toxic_bath_hive', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_toxic_bath_hive', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_toxic_bath_hive', 'bath_attendant', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_toxic_bath_machine', 'Hyper Lubrication Basin', 'amenity', 'Hyper Lubrication Basins are the most logical answer to emerging problems of friction, over-heating, and static electricity during the maintenance process of complex units.', 145);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_toxic_bath_machine', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_toxic_bath_machine', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_toxic_bath_machine', 'bath_attendant', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_autochthon_monument', 'Autochthon Monument', 'unity', 'A monument to the first pioneers to venture into space.', 146);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_autochthon_monument', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_autochthon_monument', 'produces', 'unity', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_heritage_site', 'Heritage Site', 'unity', 'An area dedicated to the early history of our empire and its people.', 147);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_heritage_site', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_heritage_site', 'produces', 'unity', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hypercomms_forum', 'Hypercomms Forum', 'unity', 'An immense facility equipped with avant-garde interpersonal communications equipment, the Forum allows for the exchange of multisensory ideas in casual discussions and rapid consensus-forming in debates.', 148);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hypercomms_forum', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hypercomms_forum', 'produces', 'unity', '3.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bureaucratic_1', 'Administrative Offices', 'unity', 'A labyrinthine government complex of bureaucratic offices, sub-offices and sub-sub-offices.', 149);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_bureaucratic_1', 'bureaucrat', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bureaucratic_2', 'Administrative Park', 'unity', 'An area full of buildings dedicated to the glory of effective and meticulous paperwork.', 150);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_2', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_2', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bureaucratic_3', 'Administrative Complex', 'unity', 'A vast stretch of land covered in bureaucratic offices containing countless cubicles.', 151);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_3', 'cost', 'rare_crystals', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_3', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_3', 'upkeep', 'rare_crystals', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_temple', 'Temple', 'unity', 'Simple constructs erected since time immemorial, temples are places of quiet contemplation and communion with that which unites us all.', 152);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_temple', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_temple', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_temple', 'bureaucrat', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_holotemple', 'Holotemple', 'unity', 'An enhanced form of its rough-hewn predecessors, the latest in Spiritualist technology creates a mutable reality inside the Holotemple - all for deeper meditation and more intense devotion.', 153);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_holotemple', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_holotemple', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_holotemple', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_holotemple', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sacred_nexus', 'Sacred Nexus', 'unity', 'The latest developments in field technology allow worshipers to directly experience the divine influence of sacred ground.', 154);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacred_nexus', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacred_nexus', 'cost', 'rare_crystals', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacred_nexus', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacred_nexus', 'upkeep', 'rare_crystals', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_uplink_node', 'Uplink Node', 'unity', 'An uplink node that decreases planetary latency.', 155);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_uplink_node', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_uplink_node', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_uplink_node', 'bureaucrat', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_network_junction', 'Network Junction', 'unity', 'This powerful transceiver increases the bandwidth of the signals being continuously sent between the many different systems operating across our empire.', 156);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_network_junction', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_network_junction', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_network_junction', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_network_junction', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_system_conflux', 'System Conflux', 'unity', 'A massive hub facility that receives and forwards signals across interstellar distances from millions of different systems.', 157);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_system_conflux', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_system_conflux', 'cost', 'rare_crystals', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_system_conflux', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_system_conflux', 'upkeep', 'rare_crystals', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_node', 'Synaptic Nodes', 'unity', 'A center of massive, macroscopic synapses, these nodes - tended to and assisted by specialized drones - receive and transmit the will of the Hive.', 158);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_node', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_node', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_hive_node', 'bureaucrat', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_cluster', 'Synaptic Clusters', 'unity', 'Synaptic hive nodes networked and clustered together produce maximum meganeuron transmission per available surface area, strengthening the organization of the will to its drones.', 159);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_cluster', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_cluster', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_cluster', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_cluster', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_confluence', 'Confluence of Thought', 'unity', 'A massive nervous center of macroscopic neurology, billions of meganeurons fire along vast stretches of roiling protoplasmic fibers in the Confluence, spreading, strengthening, coordinating the will of the Hive.', 160);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_confluence', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_confluence', 'cost', 'exotic_gases', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_confluence', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_confluence', 'upkeep', 'exotic_gases', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sacrificial_temple_1', 'Sacrificial Temple', 'unity', 'A revered site in which solemn preachers and dedicated pupils pray and work towards each prosperous yet bloody cycle.', 161);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacrificial_temple_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacrificial_temple_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_sacrificial_temple_1', 'bureaucrat', '100.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_sacrificial_temple_1', 'mortal_initiate', '100.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sacrificial_temple_2', 'Grim Holotemple', 'unity', 'Technological enhancements to this consecrated building allow for more rigorous study, and a more tangible sense of devotion to causes beyond its mutable walls.', 162);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacrificial_temple_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacrificial_temple_2', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacrificial_temple_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacrificial_temple_2', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_sacrificial_temple_2', 'mortal_initiate', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sacrificial_temple_3', 'Temple of Grand Sacrifice', 'unity', 'A site of supreme consecration in which multi-sensory immersion fields allow the faithful to honor every sacrifice - past, present and future.', 163);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacrificial_temple_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacrificial_temple_3', 'cost', 'exotic_gases', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacrificial_temple_3', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sacrificial_temple_3', 'upkeep', 'exotic_gases', '2.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_sacrificial_temple_3', 'mortal_initiate', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_galactic_memorial_1', 'Sanctuary of Repose', 'unity', 'This humble memorial focuses thoughts and study upon the multi-faceted nature of death and endings.', 164);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_1', 'upkeep', 'minerals', '2.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_1', 'produces', 'unity', '1.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_galactic_memorial_2', 'Pillar of Quietus', 'unity', 'A solemn place dedicated to the contemplation of death, in which many an ending may be chronicled.', 165);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_2', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_2', 'upkeep', 'minerals', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_2', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_2', 'produces', 'unity', '2.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_galactic_memorial_3', 'Galactic Memorial', 'unity', 'A monumental library of all that may or may not be understood about endings, chronicled for unknowable future ages.', 166);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_3', 'cost', 'exotic_gases', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_3', 'upkeep', 'minerals', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_3', 'upkeep', 'exotic_gases', '2.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_3', 'produces', 'unity', '3.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_simulation_1', 'Simulation Site', 'unity', 'To advance our civilization we must run and evaluate complex simulations.', 167);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_simulation_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_simulation_1', 'produces', 'unity', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_simulation_2', 'Simulation Center', 'unity', 'To advance our civilization we must run and evaluate complex simulations.', 168);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_simulation_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_simulation_2', 'produces', 'unity', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_simulation_3', 'Simulation Complex', 'unity', 'To advance our civilization we must run and evaluate complex simulations.', 169);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_simulation_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_simulation_3', 'produces', 'unity', '3.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_corporate_monument', 'Corporate Culture Site', 'unity', 'A site dedicated to glorifying the unique corporate culture that permeates every business transaction conducted on the planet.', 170);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_monument', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_monument', 'produces', 'unity', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_corporate_site', 'Business Management Nexus', 'unity', 'A facility where crucial decisions concerning the business culture of the planet can by strategized and subconsciously focus-tested by sapient resource specialists.', 171);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_site', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_site', 'produces', 'unity', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_corporate_forum', 'Synergy Forum', 'unity', 'A massive FTL communications forum capable of synergizing the corporate culture of millions of planetary corporate subdivisions.', 172);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_forum', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_forum', 'produces', 'unity', '3.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sensorium_1', 'Sensorium Site', 'unity', 'To further understand the galaxy, our specialized sensory drones need to experience everything it has to offer.', 173);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sensorium_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sensorium_1', 'produces', 'unity', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sensorium_2', 'Sensorium Center', 'unity', 'To further understand the galaxy, our specialized sensory drones need to experience everything it has to offer.', 174);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sensorium_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sensorium_2', 'produces', 'unity', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sensorium_3', 'Sensorium Complex', 'unity', 'To further understand the galaxy, our specialized sensory drones need to experience everything it has to offer.', 175);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sensorium_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sensorium_3', 'produces', 'unity', '3.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_autocurating_vault', 'Auto-Curating Vault', 'unity', 'A highly-specialized computerized network constantly acquires, analyzes, evaluates, and puts on display everyday artifacts it deems to be significant, creating a living museum of the present.', 176);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_autocurating_vault', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_autocurating_vault', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_autocurating_vault', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_autocurating_vault', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_citadel_of_faith', 'Citadel of Faith', 'unity', 'A massive complex offering refuge and seclusion from the material world, for all comers.', 177);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_citadel_of_faith', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_citadel_of_faith', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_citadel_of_faith', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_citadel_of_faith', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_citadel_of_faith', 'politician', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_corporate_vault', 'Vault of Acquisitions', 'unity', 'An enormous underground vault that serves the dual purpose of business coordination site and public museum to the long and profitable history of the Megacorporation that built it.', 178);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_vault', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_vault', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_vault', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_vault', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_alpha_hub', 'Alpha Hub', 'unity', 'The nerve center of all intra-communication that occurs between the quintillions of semi-sapient systems that administers our empire.', 179);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_alpha_hub', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_alpha_hub', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_alpha_hub', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_alpha_hub', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_organic_sanctuary', 'Organic Sanctuary', 'unity', 'This sanctuary provides a sealed environment where organics can thrive in a safe and above all controlled manner. The organics within have their housing needs completely fulfilled.', 180);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_organic_sanctuary', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_organic_sanctuary', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_organic_paradise', 'Organic Paradise', 'unity', 'An AI-controlled artificial paradise designed to satisfy every need a sapient organic being might have, just so long as it does not express a need for self-determination. The organics within have their housing needs completely fulfilled.', 181);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_organic_paradise', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_organic_paradise', 'cost', 'exotic_gases', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_organic_paradise', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_organic_paradise', 'upkeep', 'exotic_gases', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_trophy_vault', 'Creativity Exhibition Vault', 'unity', 'Algorithms maintain a curated rotation of Bio-Trophy creative outputs, selected for their statistically significant emotional resonance. While objectively devoid of technical merit, these expressions are preserved as a means of socio-emotional validation and to provide the illusion of self-determination. The resulting increase in satisfaction metrics is non-trivial.', 182);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_trophy_vault', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_trophy_vault', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_trophy_vault', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_trophy_vault', 'upkeep', 'rare_crystals', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_league_offices', 'First League Filing Offices', 'unity', 'The sprawling empire of the First League dwarfed our own at its peak, and relied on implacable bureaucracy to keep the wheels of the state in motion. The quantic filing arrays they used afforded them unprecedented efficiency in the sorting and storing of documents.', 183);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_league_offices', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_league_offices', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_league_offices', 'cost', 'minor_artifacts', '30.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_league_offices', 'upkeep', 'energy', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_league_offices', 'upkeep', 'rare_crystals', '1.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_league_offices', 'bureaucrat', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_military_academy', 'Military Academy', 'army', 'Military Academies improve local recruitment rates and offer a higher standard of training.', 184);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_military_academy', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_military_academy', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_military_academy', 'soldier', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_dread_encampment', 'Dread Encampment', 'army', 'It is best to shield the activities of the necromancers from the tender view of the public as they raise undead hordes to fight in our armies.', 185);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dread_encampment', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dread_encampment', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_dread_encampment', 'soldier', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_stronghold', 'Stronghold', 'army', 'A planetary stronghold housing a substantial garrison force to protect the world from invasion and rebellion.', 186);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_stronghold', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_stronghold', 'upkeep', 'energy', '1.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_stronghold', 'soldier', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fortress', 'Fortress', 'army', 'A massive fortress complex with an expanded garrison and training facilities for soldiers.', 187);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fortress', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fortress', 'cost', 'volatile_motes', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fortress', 'upkeep', 'energy', '1.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fortress', 'upkeep', 'volatile_motes', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fortress', 'soldier', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_planetary_shield_generator', 'Planetary Shield Generator', 'army', 'Generating a strong energy shield within a planetary atmosphere is a greater challenge than in the vacuum of space, but it offers a potent defense against orbital bombardment.', 188);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_shield_generator', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_shield_generator', 'upkeep', 'energy', '5.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mote_harvesters', 'Mote Harvesting Traps', 'resource', 'These intricate facilities trap Volatile Motes within energy fields, funneling them into special containment zones below ground where they can be stabilized and harvested.', 189);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mote_harvesters', 'cost', 'minerals', '200.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mote_harvesters', 'upkeep', 'energy', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_gas_extractors', 'Gas Extraction Wells', 'resource', 'These hulking wells reach deep into the planet''s mantle to access pockets of Exotic Gas.', 190);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gas_extractors', 'cost', 'minerals', '200.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_gas_extractors', 'upkeep', 'energy', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_crystal_mines', 'Crystal Mines', 'resource', 'Great care must be taken when excavating these mines to avoid damaging the crystals.', 191);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_mines', 'cost', 'minerals', '200.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_mines', 'upkeep', 'energy', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_betharian_power_plant', 'Betharian Power Plant', 'resource', 'Betharian Power Plants consume Betharian Stone to produce vast amounts of Energy Credits.', 192);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_betharian_power_plant', 'cost', 'minerals', '200.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_betharian_power_plant', 'produces', 'energy', '10.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_betharian_power_plant', 'miner', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_xeno_zoo', 'Alien Zoo', 'research', 'A preserve dedicated to the conservation and study of local fauna.', 193);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_xeno_zoo', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_xeno_zoo', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_xeno_zoo', 'biologist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_crude_huts', 'Crude Huts', 'amenity', 'Primitive shelters constructed out of stone, clay or whatever other materials were available.', 194);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_dwellings', 'Primitive Dwellings', 'amenity', 'These small buildings provide a minimal amount of shelter, but they keep out the worst of the elements.', 195);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_stone_palace', 'Stone Palaces', 'government', 'Primitive palaces built out of stone, where the local ruling elite resides.', 196);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_factory', 'Basic Factories', 'manufacturing', 'Primitive, inefficient factories spewing pollution while producing goods.', 197);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_offices', 'Basic Offices', 'unity', 'These offices contain seemingly endless cubicles, with the sounds of pointless busywork.', 198);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_research', 'Basic Research Labs', 'research', 'These basic research facilities managed to propel a civilization to the Space Age.', 199);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_mine', 'Primitive Mine', 'resource', 'Primitive mining tunnels that snake through the ground.', 200);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_power_plant', 'Primitive Power Plant', 'resource', 'A primitive and somewhat unreliable power plant that relies on coal or early atomic power, poisoning their atmosphere.', 201);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_farm', 'Primitive Farms', 'resource', 'Primitive farmsteads working the soil for meager returns.', 202);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_capital', 'Regional Capitals', 'government', 'The regional capital buildings of the various nation-states inhabiting this primitive world.', 203);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_urban_dwellings', 'Urban Dwellings', 'amenity', 'Cramped and often polluted jungles of concrete.', 204);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_pre_ftl_radio_telescope', 'Radio Telescope Array', 'research', 'An array of radio telescopes in pursuit of discovering intelligent alien life.', 205);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_crude_huts', 'Simple Nests', 'amenity', 'Using the simplest and low effort material available, these nests are barely enough to keep drones from freezing during the nights.', 206);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_dwellings', 'Early Colony', 'amenity', 'Starting to optimize the space available, these hexagon shaped buildings can house what could moderately be called a colony.', 207);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_stone_palace', 'Stone Hive', 'government', 'In a world where you need to compete against your own species for survival, having stone walls is an advantage.', 208);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_factory', 'Basic Factories', 'manufacturing', 'Primitive, inefficient factories spewing pollution while producing goods.', 209);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_mine', 'Primitive Mine', 'resource', 'Primitive mining tunnels that snake through the ground.', 210);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_power_plant', 'Primitive Power Plant', 'resource', 'A primitive and somewhat unreliable power plant that relies on coal or early atomic power, poisoning their atmosphere.', 211);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_farm', 'Primitive Farms', 'resource', 'Primitive farmsteads working the soil for meager returns.', 212);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_capital', 'Continental Nexus', 'government', 'The typical central point of the continent spanning hives vying for control over this world.', 213);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_urban_dwellings', 'Drone Storage', 'amenity', 'A utilitarian solution for housing drones when they are undergoing their rest cycle. There are separate entrances and exits to maximize the hive''s recharge process.', 214);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_node', 'Simple Synaptic Node', 'unity', 'Through this crude synaptic node, the will of the Hive will be strengthened.', 215);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_machine_primitive_node', 'Simple Uplink Node', 'unity', 'An crude uplink node that decreases planetary latency.', 216);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_clinic', 'Gene Clinics', 'amenity', 'Gene Clinics can offer advanced medical treatments, which statistically lead to a significantly healthier and longer-living population.', 217);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_primitive_clinic', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_primitive_clinic', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_solarpunk_gaiaseeder', 'Gaia Seeders', 'amenity', 'Perfected atmospheric controls maintaining this planets pristine status.', 218);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_gaiaseeder', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_gaiaseeder', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_solarpunk_ranger_lodge', 'Nature Preserve Lodge', 'amenity', 'A retreat to enjoy this planets beauty.', 219);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_ranger_lodge', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_ranger_lodge', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_solarpunk_sapling', 'Grand Sapling', 'amenity', 'A titanic sapling, the result of centuries of floral research and manipulation, capable of feeding millions.', 220);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_sapling', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_sapling', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_solarpunk_organic_paradise', 'Hanging Cities', 'amenity', 'Cities covered in grand forests, bringing the inhabitants closer to nature.', 221);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_organic_paradise', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_organic_paradise', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_junkheap', 'Junk Heap', 'amenity', 'A rusting, irradiated jumble of collapsed infrastructure, destroyed buildings, and decaying wreckage from an unknown civilization.', 222);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_akx_worm_3', 'Omega Alignment', 'research', 'The surface of this object angles space. The interior is not visible to any sensor or imaging technology available. But we all know what''s in there.', 223);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_akx_worm_3', 'cost', 'minerals', '1000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_akx_worm_3', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_akx_worm_3', 'produces', 'physics_research', '16.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_great_pyramid', 'Great Pyramid', 'government', 'A pyramid constructed by the local population to appease a deity descended from the sky.', 224);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_great_pyramid', 'produces', 'food', '2.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_great_pyramid', 'produces', 'society_research', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_artist_patron', 'Ministry of Culture', 'unity', 'A fashionable headquarters for the Ministry of Culture, helping to spread knowledge, entertainment and art to the masses.', 225);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_artist_patron', 'upkeep', 'energy', '2.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_waste_reprocessing_center', 'Waste Reprocessing Center', 'resource', 'A planet''s one stop center for converting industrial and bio-waste into mostly clean, mostly reusable energy and minerals. Designed by the Racket Industrial Enterprise, its construction is somewhat arcane, and largely non-reverse- engineerable.', 226);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_waste_reprocessing_center', 'cost', 'minerals', '100.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_waste_reprocessing_center', 'produces', 'minerals', '10.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_waste_reprocessing_center', 'produces', 'energy', '10.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nuumismatic_shrine', 'Numistic Shrine', 'unity', 'A shrine devoted to the worship of Numa, goddess of fortune.', 227);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nuumismatic_shrine', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nuumismatic_shrine', 'cost', 'trade', '400.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nuumismatic_shrine', 'upkeep', 'trade', '5.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_nuumismatic_shrine', 'bureaucrat', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_crystal_plant_2', 'Kha''lanka Crystal Plant', 'manufacturing', 'The discovery of new crystal manufacturing techniques, far below the surface in the city of the Kha''lanka lithoids, has effectivized artificial crystal manufacturing through oxidation of rapidly growing silicon-based cell-clusters.', 228);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_plant_2', 'cost', 'minerals', '1000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_plant_2', 'upkeep', 'energy', '3.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_zroni_equilibrator', 'Zroni Equilibrator', 'government', 'A rebuilt ancient structure stabilizing the connection between reality and the Shroud. It uses complex Zroni technology still beyond modern understanding.', 229);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_zroni_equilibrator', 'cost', 'sr_zro', '250.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_zroni_equilibrator', 'upkeep', 'energy', '10.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_zroni_equilibrator', 'produces', 'sr_zro', '4.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_zroni_equilibrator', 'biologist', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_composer_sanctum', 'Sanctum of the Composer', 'government', 'The Sanctum is a place dedicated to communion with the Composer.', 230);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_composer_sanctum', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_composer_sanctum', 'cost', 'sr_zro', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_composer_sanctum', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_composer_sanctum', 'upkeep', 'sr_zro', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_composer_sanctum', 'telepath', '300.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_eater_sanctum', 'Sanctum of the Eater', 'government', 'The Sanctum is a place dedicated to communion with the Eater. Here, the Shroud prepares us for war as we plan for the next .', 231);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_eater_sanctum', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_eater_sanctum', 'cost', 'sr_zro', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_eater_sanctum', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_eater_sanctum', 'upkeep', 'sr_zro', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_eater_sanctum', 'telepath', '300.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_instrument_sanctum', 'Sanctum of the Instrument', 'government', 'The Sanctum is a place dedicated to communion with the Instrument.', 232);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_instrument_sanctum', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_instrument_sanctum', 'cost', 'sr_zro', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_instrument_sanctum', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_instrument_sanctum', 'upkeep', 'sr_zro', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_instrument_sanctum', 'telepath', '300.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_whisperers_sanctum', 'Sanctum of the Whisperers', 'government', 'The Sanctum is a place dedicated to communion with the Whisperers.', 233);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_whisperers_sanctum', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_whisperers_sanctum', 'cost', 'sr_zro', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_whisperers_sanctum', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_whisperers_sanctum', 'upkeep', 'sr_zro', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_whisperers_sanctum', 'telepath', '300.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ancient_control_center', 'Ancient Control Center', 'government', 'The ancient control center of the ringworld is barely maintained by the tireless efforts of a legion of machine drones.', 234);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ancient_control_center', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ancient_control_center', 'upkeep', 'energy', '10.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ancient_hive_capital', 'Venerable Nucleus', 'government', 'This ancient nexus of the hive''s supremacy is where uncountable generations of drones have dutifully executed directives.', 235);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ancient_hive_capital', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ancient_hive_capital', 'upkeep', 'energy', '10.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ancient_palace', 'Ancient Palace', 'government', 'This immense palatial complex is a testament to an era long gone. Despite its luminous facade refusing to succumb to the passage of time, many of its wings lay abandoned in various states of disrepair.', 236);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ancient_palace', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ancient_palace', 'upkeep', 'energy', '10.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_xeno_zoo', 'Xeno Preserve', 'amenity', 'A highly sophisticated preserve that maintains the natural habitat of the', 237);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_xeno_zoo', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_xeno_zoo', 'upkeep', 'energy', '10.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hab_fe_capital', 'Habitat Administration', 'government', 'The administrative hub of the Habitat, serving as its capital and the seat of the local government.', 238);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_fe_capital', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_fe_capital', 'upkeep', 'energy', '5.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_master_archive', 'Master Archive', 'research', 'This repository houses knowledge from multiple galactic ages, yet the ability to operate its arcane retrieval system is lost. Extracted data scraps prove invaluable.', 239);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_master_archive', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_master_archive', 'upkeep', 'alloys', '5.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_master_archive', 'upkeep', 'sr_living_metal', '1.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_master_archive', 'upkeep', 'energy', '30.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_master_archive', 'produces', 'physics_research', '100.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_master_archive', 'produces', 'society_research', '100.0', 5);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_master_archive', 'produces', 'engineering_research', '100.0', 6);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_master_archive', 'physicist', '600.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_master_archive', 'biologist', '600.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_master_archive', 'engineer', '600.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_empyrean_shrine', 'Phased Empyrean Shrine', 'unity', 'Exclusively used for communing with the spirits of the Shroud, this temple manifests only partially in our dimension.', 240);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_empyrean_shrine', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_empyrean_shrine', 'upkeep', 'alloys', '3.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_empyrean_shrine', 'upkeep', 'rare_crystals', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_empyrean_shrine', 'upkeep', 'energy', '10.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_empyrean_shrine', 'telepath', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ancient_cryo_chamber', 'Ancient Cryo-Chamber', 'government', 'Rows upon rows of cryo-pods line this massive structure, containing the long-expired remains of billions of alien specimens frozen long ago.', 241);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ancient_cryo_chamber', 'cost', 'alloys', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ancient_cryo_chamber', 'upkeep', 'sr_living_metal', '1.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ancient_cryo_chamber', 'upkeep', 'energy', '50.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_affluence_emporium', 'Affluence Emporium', 'manufacturing', 'This center anticipates and fulfills material desires using an advanced procurement algorithm, delivering satisfaction before the populace realizes their wants.', 242);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_affluence_emporium', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_affluence_emporium', 'cost', 'sr_living_metal', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_affluence_emporium', 'upkeep', 'sr_living_metal', '1.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_affluence_emporium', 'upkeep', 'alloys', '3.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_affluence_emporium', 'upkeep', 'energy', '15.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_affluence_emporium', 'artisan', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_affluence_center', 'Affluence Center', 'manufacturing', 'This center effortlessly materializes the most outlandish desires at a moment''s notice.', 243);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_affluence_center', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_affluence_center', 'cost', 'sr_living_metal', '80.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_affluence_center', 'upkeep', 'sr_living_metal', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_affluence_center', 'upkeep', 'alloys', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_affluence_center', 'upkeep', 'energy', '30.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_affluence_center', 'produces', 'consumer_goods', '35.0', 5);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_affluence_center', 'artisan', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nourishment_complex', 'Nourishment Complex', 'resource', 'Replication technology swiftly conjures up novel flavors on command.', 244);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_complex', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_complex', 'cost', 'exotic_gases', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_complex', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_complex', 'upkeep', 'energy', '15.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_complex', 'upkeep', 'exotic_gases', '2.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_complex', 'produces', 'food', '40.0', 5);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_nourishment_complex', 'farmer', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nourishment_center', 'Nourishment Center', 'resource', 'Every conceivable flavor can be replicated within these walls.', 245);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_center', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_center', 'cost', 'exotic_gases', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_center', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_center', 'upkeep', 'energy', '30.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_center', 'upkeep', 'exotic_gases', '5.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_center', 'produces', 'food', '150.0', 5);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_nourishment_center', 'farmer', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_dimensional_replicator', 'Dimensional Replicator', 'manufacturing', 'This fabricator''s technology achieves flawless conversion from energy to matter.', 246);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_replicator', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_replicator', 'upkeep', 'alloys', '5.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_replicator', 'upkeep', 'energy', '50.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_replicator', 'produces', 'rare_crystals', '10.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_replicator', 'produces', 'exotic_gases', '10.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_replicator', 'produces', 'volatile_motes', '10.0', 5);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_dimensional_fabricator', 'Dimensional Fabricator', 'manufacturing', 'This advanced fabricator seamlessly tunnels into the fabric of dimensional space, extracting valuable resources.', 247);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_fabricator', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_fabricator', 'upkeep', 'alloys', '7.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_fabricator', 'upkeep', 'energy', '100.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_fabricator', 'produces', 'rare_crystals', '25.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_fabricator', 'produces', 'exotic_gases', '25.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_fabricator', 'produces', 'volatile_motes', '25.0', 5);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_fabricator', 'produces', 'sr_zro', '5.0', 6);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_fabricator', 'produces', 'sr_dark_matter', '5.0', 7);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_fabricator', 'produces', 'sr_living_metal', '5.0', 8);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_fabricator', 'produces', 'nanites', '5.0', 9);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_class_3_singularity', 'Class-3 Singularity', 'resource', 'Capturing the entire energy output from this singularity is an engineering marvel.', 248);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_class_3_singularity', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_class_3_singularity', 'cost', 'rare_crystals', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_class_3_singularity', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_class_3_singularity', 'upkeep', 'rare_crystals', '2.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_class_3_singularity', 'produces', 'energy', '75.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_class_3_singularity', 'technician', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_class_4_singularity', 'Class-4 Singularity', 'resource', 'This singularity''s power output challenges the laws of physics, yet the containment fields hold with unwavering stability.', 249);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_class_4_singularity', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_class_4_singularity', 'cost', 'rare_crystals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_class_4_singularity', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_class_4_singularity', 'upkeep', 'rare_crystals', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_class_4_singularity', 'produces', 'energy', '200.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_class_4_singularity', 'technician', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_micro_forge', 'Hyper-Forge', 'manufacturing', 'This forge''s production speed is limited only by the quantity of resources loaded into it.', 250);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_micro_forge', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_micro_forge', 'cost', 'sr_living_metal', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_micro_forge', 'upkeep', 'sr_living_metal', '1.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_micro_forge', 'upkeep', 'alloys', '3.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_micro_forge', 'upkeep', 'energy', '15.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_micro_forge', 'foundry', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nano_forge', 'Auto-Forge', 'manufacturing', 'The expansive nano-replicator bays in this forge transform raw materials into advanced alloys with marvelous efficiency.', 251);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nano_forge', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nano_forge', 'cost', 'sr_living_metal', '80.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nano_forge', 'upkeep', 'sr_living_metal', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nano_forge', 'upkeep', 'alloys', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nano_forge', 'upkeep', 'energy', '30.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nano_forge', 'produces', 'alloys', '25.0', 5);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_nano_forge', 'foundry', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_sky_dome', 'Sky Dome', 'amenity', 'This floating city, propelled by state-of-the-art anti-gravity technology, provides an idyllic haven for its inhabitants.', 252);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_sky_dome', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_sky_dome', 'cost', 'rare_crystals', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_sky_dome', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_sky_dome', 'upkeep', 'energy', '15.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_sky_dome', 'upkeep', 'rare_crystals', '2.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_dome', 'Empyrean Dome', 'amenity', 'Suspended by gravimetric nullification, these domes transcend physical limitations, while advanced life support systems seamlessly cater to inhabitants'' needs.', 253);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_dome', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_dome', 'cost', 'rare_crystals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_dome', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_dome', 'upkeep', 'energy', '30.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_dome', 'upkeep', 'rare_crystals', '5.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_fortress', 'Aspis Bastion', 'army', 'This colossal planetary defense complex has numerous armories and layers of shielding. Only a highly specialized siege force could breach its defenses.', 254);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_fortress', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_fortress', 'cost', 'volatile_motes', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_fortress', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_fortress', 'upkeep', 'energy', '15.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_fortress', 'upkeep', 'volatile_motes', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_fortress', 'soldier', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_stronghold', 'Aegis Complex', 'army', 'This monumental planetary defense complex protects with countless armories and shielding; the planet''s mountains will crumble before its defenses.', 255);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_stronghold', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_stronghold', 'cost', 'volatile_motes', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_stronghold', 'upkeep', 'alloys', '7.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_stronghold', 'upkeep', 'energy', '30.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_stronghold', 'upkeep', 'volatile_motes', '5.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_stronghold', 'soldier', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_administration_1', 'Omnivident Administration', 'unity', 'Integral to a galaxy-spanning bureaucratic system, this extensive complex is connected to a vast administrative network.', 256);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_1', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_1', 'cost', 'rare_crystals', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_1', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_1', 'upkeep', 'energy', '15.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_1', 'upkeep', 'rare_crystals', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_administration_1', 'bureaucrat', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_administration_2', 'Omniscient Administration', 'unity', 'This extensive complex, the centerpiece of a galaxy-spanning bureaucratic system, coordinates a robust and advanced administrative network.', 257);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_2', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_2', 'cost', 'rare_crystals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_2', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_2', 'upkeep', 'energy', '30.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_2', 'upkeep', 'rare_crystals', '5.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_2', 'produces', 'unity', '20.0', 5);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_administration_2', 'bureaucrat', '1200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_administration_hive_1', 'Ephaptic Cluster', 'unity', 'Carefully tended by highly specialized drones, this network of ephaptic nodes fortifies the Hive''s dominion over its expansive cognitive domain.', 258);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_hive_1', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_hive_1', 'cost', 'rare_crystals', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_hive_1', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_hive_1', 'upkeep', 'energy', '15.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_hive_1', 'upkeep', 'rare_crystals', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_administration_hive_1', 'bureaucrat', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_administration_hive_2', 'Ephaptic Axon', 'unity', 'Carefully tended by highly specialized drones, this vast network of ephaptic nodes fortifies the Hive''s will over the galaxy.', 259);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_hive_2', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_hive_2', 'cost', 'rare_crystals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_hive_2', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_hive_2', 'upkeep', 'energy', '30.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_hive_2', 'upkeep', 'rare_crystals', '5.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_hive_2', 'produces', 'unity', '20.0', 5);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_administration_hive_2', 'bureaucrat', '1200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_administration_machine_1', 'Fractal Coordination Point', 'unity', 'An advanced fractal hub, seamlessly processing and transmitting trillions of signals with near instantaneous precision.', 260);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_machine_1', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_machine_1', 'cost', 'rare_crystals', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_machine_1', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_machine_1', 'upkeep', 'energy', '15.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_machine_1', 'upkeep', 'rare_crystals', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_administration_machine_1', 'bureaucrat', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_administration_machine_2', 'Quantic Coordination Point', 'unity', 'An advanced quantum entanglement hub, processing and instantaneously transmitting quadrillions of signals precisely.', 261);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_machine_2', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_machine_2', 'cost', 'rare_crystals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_machine_2', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_machine_2', 'upkeep', 'energy', '30.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_machine_2', 'upkeep', 'rare_crystals', '5.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_machine_2', 'produces', 'unity', '20.0', 5);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_administration_machine_2', 'bureaucrat', '1200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_temple_1', 'Celestial Sanctum', 'unity', 'Cutting-edge advancements in metaphysical technology grant devotees a direct communion with the divine essence.', 262);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_temple_1', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_temple_1', 'cost', 'rare_crystals', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_temple_1', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_temple_1', 'upkeep', 'energy', '15.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_temple_1', 'upkeep', 'rare_crystals', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_temple_1', 'bureaucrat', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_temple_2', 'Celestial Cathedral', 'unity', 'Using metaphysical technology for psionic sermons amplifies spiritual resonance. This immense complex enables worshippers to intimately connect to the divine essence at a system-wide range.', 263);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_temple_2', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_temple_2', 'cost', 'rare_crystals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_temple_2', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_temple_2', 'upkeep', 'energy', '30.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_temple_2', 'upkeep', 'rare_crystals', '5.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_temple_2', 'produces', 'unity', '25.0', 5);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_temple_2', 'bureaucrat', '1200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_assembly_1', 'Robot Manufacturing Nexus', 'pop_assembly', 'An avant-garde assembly complex manned by expert Roboticists, this facility transcends conventional bounds, meticulously realizing the forefront of robotic innovation.', 264);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_assembly_1', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_assembly_1', 'cost', 'sr_living_metal', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_assembly_1', 'upkeep', 'sr_living_metal', '1.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_assembly_1', 'upkeep', 'alloys', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_assembly_1', 'upkeep', 'energy', '15.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_assembly_1', 'roboticist', '150.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_assembly_2', 'Robot Quantum Production Hub', 'pop_assembly', 'A marvel in engineering, this facility''s quantic assembly line uses entanglement converters to craft machine parts down to the most minute detail. Not a single atom is misplaced.', 265);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_assembly_2', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_assembly_2', 'cost', 'sr_living_metal', '80.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_assembly_2', 'upkeep', 'sr_living_metal', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_assembly_2', 'upkeep', 'alloys', '7.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_assembly_2', 'upkeep', 'energy', '30.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_assembly_2', 'roboticist', '300.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_clinic_1', 'Molecular-Revitalization Institute', 'amenity', 'Molecular-Revitalization Institutes delve deep into cellular intricacies to amplify the effectiveness of medical treatments, significantly improving the quality and longevity of the populations'' health.', 266);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_1', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_1', 'cost', 'sr_dark_matter', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_1', 'upkeep', 'sr_dark_matter', '1.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_1', 'upkeep', 'alloys', '3.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_1', 'upkeep', 'energy', '15.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_clinic_1', 'spawning_drone', '150.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_clinic_2', 'Bioregeneration Institute', 'amenity', 'The Bioregeneration Institute, at the pinnacle of medical technology, pioneers groundbreaking bio-regenerative therapies, continuously redefining the boundaries of life extension.', 267);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_2', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_2', 'cost', 'sr_dark_matter', '80.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_2', 'upkeep', 'sr_dark_matter', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_2', 'upkeep', 'alloys', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_2', 'upkeep', 'energy', '30.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_clinic_2', 'spawning_drone', '300.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_security_1', 'Justice Complex', 'government', 'This massive judicial complex seamlessly intertwines courts and law enforcement.', 268);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_security_1', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_security_1', 'cost', 'rare_crystals', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_security_1', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_security_1', 'upkeep', 'energy', '15.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_security_1', 'upkeep', 'rare_crystals', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_security_1', 'enforcer', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_security_2', 'Ziggurat of Justice', 'government', 'The zenith of legal institutions, this colossal edifice is a monument to justice, harboring courts, holding facilities, and correctional facilities that will redeem even the most hardened criminals.', 269);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_security_2', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_security_2', 'cost', 'rare_crystals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_security_2', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_security_2', 'upkeep', 'energy', '30.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_security_2', 'upkeep', 'rare_crystals', '5.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_security_2', 'enforcer', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_market_1', 'Galactic Commerce Hub', 'trade', 'Dominating the skyline, these towering spires cast shadows across the bustling trade districts below.', 270);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_market_1', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_market_1', 'cost', 'rare_crystals', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_market_1', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_market_1', 'upkeep', 'energy', '15.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_market_1', 'upkeep', 'rare_crystals', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_market_1', 'trader', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_market_2', 'Interstellar Commerce Nexus', 'trade', 'Reigning supreme in the galactic economy, the colossal spires of this trade district can be seen from orbit.', 271);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_market_2', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_market_2', 'cost', 'rare_crystals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_market_2', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_market_2', 'upkeep', 'energy', '30.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_market_2', 'upkeep', 'rare_crystals', '5.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_market_2', 'trader', '1200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_silo_1', 'Shrinkspace Depot', 'resource', 'The depot influences a portion of subspace where the distance between molecules is reduced, effectively shrinking anything stored there. Living beings are forbidden from entering it.', 272);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_silo_1', 'cost', 'alloys', '1000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_silo_1', 'cost', 'sr_dark_matter', '20.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_silo_1', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_silo_1', 'upkeep', 'energy', '15.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_silo_2', 'Extra-Dimensional Depot', 'resource', 'By creating a localized pocket dimension, we can hold nearly endless resources.', 273);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_silo_2', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_silo_2', 'cost', 'sr_dark_matter', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_silo_2', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_silo_2', 'upkeep', 'energy', '30.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_entertainment_1', 'Virtual Bliss Plaza', 'amenity', 'These immense entertainment sectors are at the forefront of recreation and leisure. Brainwave readers allow for instantaneous and personalized virtual getaways.', 274);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_entertainment_1', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_entertainment_1', 'cost', 'rare_crystals', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_entertainment_1', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_entertainment_1', 'upkeep', 'energy', '15.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_entertainment_1', 'upkeep', 'rare_crystals', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_entertainment_1', 'entertainer', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_entertainment_2', 'Omni-Bliss Nexus', 'amenity', 'A colossal culmination of entertainment, this nexus transcends conventional limits, where dreams materialize before desires are realized.', 275);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_entertainment_2', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_entertainment_2', 'cost', 'rare_crystals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_entertainment_2', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_entertainment_2', 'upkeep', 'energy', '30.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_entertainment_2', 'upkeep', 'rare_crystals', '5.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_entertainment_2', 'entertainer', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_lab_1', 'Quantum Innovation Nexus', 'research', 'This nexus boasts state-of-the-art equipment and an unprecedented staff capacity, ushering in an era where quantum theories are not just explored but harnessed for groundbreaking innovation.', 276);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_1', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_1', 'cost', 'exotic_gases', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_1', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_1', 'upkeep', 'energy', '15.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_1', 'upkeep', 'exotic_gases', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_lab_1', 'physicist', '200.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_lab_1', 'biologist', '200.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_lab_1', 'engineer', '200.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_lab_2', 'Transcendental Innovation Department', 'research', 'This building is the apex of scientific advancement and proves this is an era of boundless innovation.', 277);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_2', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_2', 'cost', 'exotic_gases', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_2', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_2', 'upkeep', 'energy', '30.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_2', 'upkeep', 'exotic_gases', '5.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_2', 'produces', 'physics_research', '20.0', 5);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_2', 'produces', 'society_research', '20.0', 6);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_2', 'produces', 'engineering_research', '20.0', 7);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_lab_2', 'physicist', '400.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_lab_2', 'biologist', '400.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_lab_2', 'engineer', '400.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_mine_1', 'Quantum Drilling Plant', 'resource', 'This mining plant can find minerals anywhere in this planet''s mantle using quantum tunneling technology to bore through solid materials without physical contact.', 278);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_1', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_1', 'cost', 'volatile_motes', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_1', 'upkeep', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_1', 'upkeep', 'energy', '15.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_1', 'upkeep', 'volatile_motes', '2.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_1', 'produces', 'minerals', '50.0', 5);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_mine_1', 'miner', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_mine_2', 'Quantum Drilling Hub', 'resource', 'This mining hub can extract minerals anywhere down to the planet''s outer core using quantum tunneling technology to bore through solid or liquid materials without physical contact.', 279);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_2', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_2', 'cost', 'volatile_motes', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_2', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_2', 'upkeep', 'energy', '30.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_2', 'upkeep', 'volatile_motes', '5.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_2', 'produces', 'minerals', '150.0', 5);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_mine_2', 'miner', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_private_mining_consortium', 'Private Mining Consortium', 'resource', 'A private mineral extraction company owned by a megacorporation. It employs local miners to access the planet''s wealth.', 280);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_mining_consortium', 'cost', 'influence', '10.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_mining_consortium', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_mining_consortium', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_mining_consortium', 'produces', 'minerals', '10.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_private_mining_consortium', 'miner', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_food_conglomerate', 'Fast Food Chain', 'resource', 'Affordable, fast, and with a perfectly acceptable nutritional value. Zero toxins* and zero hassle!
+* Food may contain traces of potassium benzoate, nitric acid, dark matter, soylent green and liquid smoke.', 281);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_food_conglomerate', 'cost', 'influence', '10.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_food_conglomerate', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_food_conglomerate', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_food_conglomerate', 'produces', 'food', '10.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_food_conglomerate', 'farmer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_virtual_entertainment_studios', 'Virtual Entertainment Studios', 'manufacturing', 'Using nano-transaction systems and neuro-chemical retention algorithms, these development houses bring the latest in virtual entertainment software into the homes and lives of billions of sapient consumers.', 282);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_virtual_entertainment_studios', 'cost', 'influence', '10.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_virtual_entertainment_studios', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_virtual_entertainment_studios', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_virtual_entertainment_studios', 'produces', 'consumer_goods', '6.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_virtual_entertainment_studios', 'artisan', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_private_shipyards', 'Private Military Industries', 'manufacturing', 'These planet-based corporate factories produce and assemble a variety of components that are vital in starship construction.', 283);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_shipyards', 'cost', 'influence', '10.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_shipyards', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_shipyards', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_shipyards', 'produces', 'alloys', '3.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_private_shipyards', 'foundry', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_military_contractors', 'Mercenary Liaison Office', 'army', 'This office allows locals to sign up for the exciting life of a corporate soldier of fortune. Generous compensation, limited health insurance and stories of adventure ensure a steady stream of recruits.', 284);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_military_contractors', 'cost', 'influence', '10.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_military_contractors', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_military_contractors', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_military_contractors', 'soldier', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_industrial_subsidiary', 'Industrial Subsidiary', 'manufacturing', 'Independent suppliers provide state producers with off-world components at a fraction of the cost.', 285);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_industrial_subsidiary', 'cost', 'influence', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_industrial_subsidiary', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_industrial_subsidiary', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_industrial_subsidiary', 'produces', 'alloys', '1.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_industrial_subsidiary', 'produces', 'consumer_goods', '1.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_industrial_subsidiary', 'foundry', '100.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_industrial_subsidiary', 'artisan', '100.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_public_relations_office', 'Public Relations Firm', 'unity', 'Misconceptions and suspicions are always floating around any large corporate entity. It is in the public''s interest to hear out all sides of any dispute, and this PR firm makes it their business to get their employer''s point across.', 286);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_public_relations_office', 'cost', 'influence', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_public_relations_office', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_public_relations_office', 'upkeep', 'energy', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_public_relations_office', 'produces', 'unity', '6.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_public_relations_office', 'bureaucrat', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_private_research_initiative', 'Private Research Enterprises', 'research', 'In these state-of-the-art facilities, private tech-enterprises carry out important research and development on behalf of their parent company.', 287);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_research_initiative', 'cost', 'influence', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_research_initiative', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_research_initiative', 'upkeep', 'energy', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_research_initiative', 'produces', 'physics_research', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_research_initiative', 'produces', 'engineering_research', '5.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_research_initiative', 'produces', 'society_research', '5.0', 5);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_private_research_initiative', 'physicist', '60.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_private_research_initiative', 'biologist', '60.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_private_research_initiative', 'engineer', '60.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_amusement_megaplex', 'Amusement Megaplex', 'amenity', 'A magical place where dreams can become reality, this megaplex features wholesome, corporate-sanctioned fun for the entire family unit.', 288);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_amusement_megaplex', 'cost', 'influence', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_amusement_megaplex', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_amusement_megaplex', 'produces', 'energy', '10.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_amusement_megaplex', 'entertainer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commercial_forum', 'Commercial Forum', 'government', 'Movers and shakers, local economic leaders, and other important figures can meet with corporate representatives here in a relaxed, soothing environment ideal for the creation of new business deals.', 289);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commercial_forum', 'cost', 'influence', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commercial_forum', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commercial_forum', 'upkeep', 'energy', '3.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_commercial_forum', 'trader', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_corporate_embassy', 'Corporate Embassy', 'government', 'Diplomacy is just advertising to governments instead of to the customer. This office analyzes local customs and trends to more efficiently target our efforts.', 290);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_embassy', 'cost', 'influence', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_embassy', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_embassy', 'upkeep', 'energy', '3.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_corporate_embassy', 'politician', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_private_security', 'Private Security Company', 'government', 'Unlike public security forces, this private firm prioritizes order and security over trivial ethical or moral concerns.', 291);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_security', 'cost', 'influence', '10.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_security', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_private_security', 'produces', 'energy', '10.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_wildcat_miners', 'Wildcat Mining Operations', 'resource', 'Illegal, highly unsafe mining operations operated by the destitute and the desperate, who toil away in the vain hopes of striking it rich.', 292);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_wildcat_miners', 'cost', 'influence', '20.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_wildcat_miners', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_wildcat_miners', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_wildcat_miners', 'produces', 'minerals', '10.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bio_reprocessing_facilities', 'Bio-Reprocessing Plants', 'resource', 'Underground facilities where disloyal employees and other forms of unsavory bio-matter are reprocessed into ready-to-eat food products.', 293);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_reprocessing_facilities', 'cost', 'influence', '20.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_reprocessing_facilities', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_reprocessing_facilities', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_reprocessing_facilities', 'produces', 'food', '10.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_underground_chemists', 'Concealed Drug Labs', 'manufacturing', 'Subterranean drug labs in remote regions that are virtually undetectable from the surface. Chemists work day and night here to produce various illegal, highly addictive and quite lucrative narcotics.', 294);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_underground_chemists', 'cost', 'influence', '20.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_underground_chemists', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_underground_chemists', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_underground_chemists', 'produces', 'consumer_goods', '6.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_underground_chemists', 'artisan', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_wrecking_yards', 'Wrecking Yards', 'manufacturing', 'Stolen vessels and prize ships brought in by pirates are broken into scrap here. Any valuable components and alloys are carefully salvaged.', 295);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_wrecking_yards', 'cost', 'influence', '20.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_wrecking_yards', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_wrecking_yards', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_wrecking_yards', 'produces', 'alloys', '3.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_wrecking_yards', 'foundry', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_pirate_haven', 'Pirate Free Haven', 'army', 'A secluded and hidden city on the planet''s surface, where pirates and other lowlifes can congregate to repair their ships and trade stories.', 296);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_pirate_haven', 'cost', 'influence', '20.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_pirate_haven', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_pirate_haven', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_pirate_haven', 'soldier', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_underground_clubs', 'Underground Clubs', 'amenity', 'These illegal entertainment clubs will satisfy any vice. As night descends, they are open for business in the planet''s seedier districts.', 297);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_underground_clubs', 'cost', 'influence', '30.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_underground_clubs', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_underground_clubs', 'produces', 'energy', '10.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_syndicate_outreach_office', 'Syndicate Front Corporations', 'government', 'These above-the-board businesses allow the local criminal syndicate to operate behind a veneer of upstanding legality.', 298);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_syndicate_outreach_office', 'cost', 'influence', '30.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_syndicate_outreach_office', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_syndicate_outreach_office', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_syndicate_outreach_office', 'produces', 'unity', '6.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_syndicate_outreach_office', 'bureaucrat', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_illicit_research_labs', 'Illicit Research Labs', 'research', 'All manner of highly illegal research and development is carried out in these secret laboratories.', 299);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_illicit_research_labs', 'cost', 'influence', '30.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_illicit_research_labs', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_illicit_research_labs', 'upkeep', 'energy', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_illicit_research_labs', 'produces', 'physics_research', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_illicit_research_labs', 'produces', 'engineering_research', '5.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_illicit_research_labs', 'produces', 'society_research', '5.0', 5);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_illicit_research_labs', 'physicist', '30.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_illicit_research_labs', 'biologist', '30.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_illicit_research_labs', 'engineer', '30.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_smuggling_rings', 'Smuggler''s Port', 'government', 'An unauthorized spaceport that remains off the records thanks to secrecy and generous bribes. Large volumes of illegal cargo passes through here every day.', 300);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_smuggling_rings', 'cost', 'influence', '30.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_smuggling_rings', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_smuggling_rings', 'upkeep', 'energy', '3.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_disinformation_center', 'Disinformation Center', 'government', 'Through targeted advertisements and propaganda, we can control opinion and make the people agree with our version of the truth.', 301);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_disinformation_center', 'cost', 'influence', '30.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_disinformation_center', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_disinformation_center', 'upkeep', 'energy', '3.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_disinformation_center', 'politician', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_subversive_shrine', 'Subversive Shrine', 'unity', 'A meeting place for followers of the Subversive Cult to gather and conduct their ceremonies.', 302);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_subversive_shrine', 'cost', 'influence', '30.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_subversive_shrine', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_subversive_shrine', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_subversive_shrine', 'produces', 'unity', '6.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_temple_of_prosperity', 'Temple of Prosperity', 'unity', 'A high-security temple that spreads the gospel of the Megachurch that built it.', 303);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_temple_of_prosperity', 'cost', 'influence', '10.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_temple_of_prosperity', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_temple_of_prosperity', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_temple_of_prosperity', 'produces', 'unity', '6.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_executive_retreat', 'Executive Retreat', 'amenity', 'A luxurious resort complex for high ranking corporate officers. Here they can sample the local planetary culture in a high security environment.', 304);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_executive_retreat', 'cost', 'influence', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_executive_retreat', 'cost', 'minerals', '1000.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_executive_retreat', 'cost', 'exotic_gases', '50.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_executive_retreat', 'upkeep', 'energy', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_executive_retreat', 'upkeep', 'exotic_gases', '1.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_executive_retreat', 'entertainer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_xeno_tourism_agency', 'Xeno-Outreach Agency', 'government', 'This corporate agency promotes a wide variety of interstellar tourist attractions, as well as offering employment packages and signing bonuses to potential emigrants interested in relocating to corporate space.', 305);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_xeno_tourism_agency', 'cost', 'influence', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_xeno_tourism_agency', 'cost', 'minerals', '1000.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_xeno_tourism_agency', 'cost', 'rare_crystals', '50.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_xeno_tourism_agency', 'upkeep', 'energy', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_xeno_tourism_agency', 'upkeep', 'rare_crystals', '1.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_xeno_tourism_agency', 'entertainer', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_imperial_concession_port', 'Imperial Concession Port', 'government', 'This concession port enjoys extraterritorial rights and is legally considered the sovereign territory of the Galactic Imperium. It is exempt from local taxes and regulations.', 306);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_concession_port', 'cost', 'influence', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_concession_port', 'cost', 'minerals', '1000.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_concession_port', 'produces', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_imperial_concession_port', 'politician', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_knightly_theme_park', 'Knightly Fair Grounds', 'amenity', 'Looking like a true fortress, this building is actually a park glorifying our knights and the Quest. Visitors can buy autographs, action figures, and holoposters of their favorite knights. Of course, the true purpose of the facility is to collect information for our Quest and serve as a resupply point for questing knights.', 307);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_knightly_theme_park', 'cost', 'influence', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_knightly_theme_park', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_knightly_theme_park', 'produces', 'energy', '10.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_knightly_theme_park', 'entertainer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_corporate_clinics', 'Corporate Clinic', 'resource', 'A private medical company employing local and off-world medical specialists to provide services for a reasonable fee.', 308);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_clinics', 'cost', 'influence', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_clinics', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_clinics', 'upkeep', 'consumer_goods', '1.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_clinics', 'produces', 'energy', '8.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_clinics', 'produces', 'unity', '2.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_augmentation_bazaars_branch', 'Offworld Implant Hub', 'trade', 'Need to be faster, jump higher, think better, last longer? Exotic imports from all across the galaxy are now available for purchase at your local Implant Hub.', 309);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_augmentation_bazaars_branch', 'cost', 'influence', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_augmentation_bazaars_branch', 'cost', 'minerals', '600.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_augmentation_bazaars_branch', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_augmentation_bazaars_branch', 'produces', 'engineering_research', '10.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ai_emporium', 'AI Emporium', 'resource', 'The one stop mega-complex for all your Artificial Intelligence needs. Have sentient AIs transform ordinary objects into smart companions for your family or business. AI a bit too self-aware for its own good? Bring it here and our skilled technicians will reset it faster than the speed of sublight.', 310);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ai_emporium', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ai_emporium', 'produces', 'energy', '10.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ai_emporium', 'produces', 'physics_research', '10.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_clear_thought_clinic', 'Clear Thought Clinic', 'resource', 'Got memories you no longer need? Turn them into Energy Credits! Our trained team will remove them safely and securely! The more joyous the memory, the bigger the payout!
+This operation is final and thought patterns cannot be restored once extracted.', 311);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_clear_thought_clinic', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_clear_thought_clinic', 'produces', 'energy', '10.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_clear_thought_clinic', 'produces', 'society_research', '10.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_carceral_test_facility', 'Experimentation Offices', 'research', 'A colonial office that promotes franchising opportunities to prospective stakeholders, empowering them to establish their own experimental testing programs. Bring down crime and scale up defense!', 312);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_carceral_test_facility', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_carceral_test_facility', 'upkeep', 'energy', '3.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_carceral_test_facility', 'produces', 'physics_research', '1.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_carceral_test_facility', 'produces', 'engineering_research', '1.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_carceral_test_facility', 'produces', 'society_research', '1.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_carceral_test_facility', 'enforcer', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_psionic_offices', 'Psionic Offices', 'unity', 'The complexities of foreign minds can be navigated more effectively while in their physical presence, allowing the most lucrative of trade deals to be established for both sides.', 313);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_psionic_offices', 'cost', 'influence', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_psionic_offices', 'cost', 'minerals', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_psionic_offices', 'upkeep', 'sr_zro', '0.5', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_psionic_offices', 'produces', 'unity', '5.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_living_metal_clinic', 'Living Metal Enhancement Clinic', 'resource', 'This clinic sells a performance enhancing Living Metal compound to the local population, generating profit and useful byproducts.', 314);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_living_metal_clinic', 'cost', 'influence', '20.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_living_metal_clinic', 'cost', 'minerals', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_living_metal_clinic', 'upkeep', 'energy', '3.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_living_metal_clinic', 'produces', 'exotic_gases', '1.5', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_garrison', 'Overlord Garrison', 'army', 'A garrison established to oversee the local enforcers, occasionally reinforced by military battalions in more dire circumstances.', 315);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_garrison', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_garrison', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_orbital_assembly_complex', 'Orbital Assembly Complex', 'manufacturing', 'A soaring building filled with long assembly lines, creating everything one could dream of.', 316);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_orbital_assembly_complex', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_orbital_assembly_complex', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_orbital_assembly_complex', 'upkeep', 'alloys', '5.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_propaganda_office', 'Ministry of Truth', 'government', 'A ministry overseeing local faiths, news, and political interest groups. With the right prod everything runs a tad smoother.', 317);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_propaganda_office', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_propaganda_office', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_satellite_campus', 'Satellite Campus', 'research', 'A large campus where domestic researchers and foreign scientists can come together to share ideas and conduct experiments.', 318);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_satellite_campus', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_satellite_campus', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_emporium', 'Emporium', 'amenity', 'Large shopping malls filled with futuristic and exotic wares from distant planets.', 319);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_emporium', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_emporium', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_emporium', 'upkeep', 'consumer_goods', '5.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_aid_agency', 'Aid Agency', 'amenity', 'Agencies founded and staffed by foreign benefactors, bringing some of their culture and knowledge to the planet.', 320);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_aid_agency', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_aid_agency', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_energy_requisitorium', 'Ministry of Energy', 'resource', 'A ministry overseeing taxation and the minting of energy credits, often coming into conflict with the domestic bureaucracy.', 321);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_energy_requisitorium', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_energy_requisitorium', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_energy_requisitorium', 'upkeep', 'exotic_gases', '1.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_material_requisitorium', 'Ministry of Extraction', 'resource', 'A ministry overseeing local mineral production, extraction, and purification. They often secure the best land purchases and reap the benefits for their patron.', 322);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_material_requisitorium', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_material_requisitorium', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_material_requisitorium', 'upkeep', 'volatile_motes', '1.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_produce_requisitorium', 'Ministry of Acquisition', 'resource', 'A ministry overseeing local produce. In addition to placing a small tax on this world, some products have a tendency to disappear into their convoluted, bureaucratic process.', 323);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_produce_requisitorium', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_produce_requisitorium', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_produce_requisitorium', 'upkeep', 'rare_crystals', '1.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_splinter_hive', 'Splinter Hive', 'pop_assembly', 'A large biomass producing new workers for the hive. Though it stands apart from the original hive, it is still connected to the neural network.', 324);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_splinter_hive', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_splinter_hive', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_distributed_processing', 'Distributed Processing', 'research', 'A cold structure eclipsing the local region. Those who work here refuse to elaborate on what they do, but no-one leaves the experience entirely unscathed.', 325);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_distributed_processing', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_distributed_processing', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_offspring_nest', 'Offspring Nest', 'government', 'At this nest, a foreign hivemind has a unique representative acting as a centralized node for its neural network. This has enabled its continued control over the colony.', 326);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_offspring_nest', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_offspring_nest', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_offworld_foundry', 'Offworld Foundry', 'manufacturing', 'Large foundries owned by a foreign empire, siphoning off local resources for the creation of high quality alloys.', 327);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_offworld_foundry', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_offworld_foundry', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_overlord_vigil_command', 'Vigil Command', 'army', 'A command center specialized in - and delegated to - calculating the best possible means of increasing defensive measures.', 328);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_overlord_vigil_command', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_overlord_vigil_command', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_parasitic_algorithms', 'Ministry of Science', 'research', 'A ministry overseeing local research and science, bringing the most noteworthy breakthroughs and discoveries back to their benefactor.', 329);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_parasitic_algorithms', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_parasitic_algorithms', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_noble_vacation_homes', 'Noble Chateaus', 'amenity', 'A home away from home, this is the perfect place for the Overlord''s ruling elite to let off steam, so that they don''t cause incidents back home.', 330);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_noble_vacation_homes', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_noble_vacation_homes', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_dread_outpost', 'Dread Outpost', 'army', 'The Dread Outpost is an arcane structure that produces unholy reanimated armies while sending back insidious data to this planet''s Overlord.', 331);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_dread_outpost', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_dread_outpost', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_communal_housing_outreach', 'Communal Housing Outreach', 'amenity', 'Everyone is entitled to a home, which is why the Overlord has extended their Communal Housing Project to this planet. This serves as a great forum for teaching the inhabitants the value of egalitarianism.', 332);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_communal_housing_outreach', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_communal_housing_outreach', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_idyllic_bloom', 'Gaia Seeder Outpost', 'government', 'Hyper-advanced terraforming techniques mastered by the Overlord are housed in this structure. After being introduced to the planet, it will take a decade to finish its world-changing work.', 333);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_idyllic_bloom', 'cost', 'energy', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_idyllic_bloom', 'cost', 'exotic_gases', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_idyllic_bloom', 'upkeep', 'energy', '20.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_idyllic_bloom', 'upkeep', 'exotic_gases', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_reemployment_center', 'Reemployment Center', 'pop_assembly', 'Never leave a resource unexploited, even if that resource is the Subject''s dead. With the Reemployment Center, the Overlord can ensure that the Subject''s planets are always filled with employees even though the quality of work might vary.', 334);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_reemployment_center', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_reemployment_center', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_recruitment_office', 'Recruitment Office', 'army', 'Everyone must do their part. That is why the Overlord is offering military training in exchange for a tour in their fleet. Service guarantees citizenship.', 335);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_recruitment_office', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_recruitment_office', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_park_ranger_lodge', 'Ranger Lodge', 'amenity', 'The Overlord has an interest in co-existing with nature and wishes to spread this joy to its Vassal. To ensure that there always is at least some nature left to enjoy.', 336);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_park_ranger_lodge', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_park_ranger_lodge', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_tree_of_life_sapling', 'Tree of Life Sprout', 'resource', 'The Overlord has existed with their Tree of Life for so long that they can no longer imagine life without it. Now, they want to share the same opportunity with their vassals.', 337);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_tree_of_life_sapling', 'cost', 'food', '1000.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_experimental_crater', 'Experimental Crater', 'research', 'A designated area for testing new asteroidal colony ships. It might not be the most convenient way to test the ships, but outsourcing the process definitely saves on the clean-up costs for the Overlord.', 338);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_experimental_crater', 'produces', 'engineering_research', '8.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_experimental_crater', 'produces', 'physics_research', '4.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_organic_sanctuary', 'Organic Haven', 'unity', 'Although the care facilities on this planet are more limited in scope than those found on the Overlord''s worlds, the bio-trophies inside still enjoy a much more comfortable standard of living than they are used to.', 339);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_organic_sanctuary', 'upkeep', 'consumer_goods', '10.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_franchise_headquarters', 'Franchise Headquarters', 'government', 'These offices allow Corporate Management to realign the Subsidiary''s interests with that of their Overlord through mandatory planet-wide training and team-building exercises.', 340);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_franchise_headquarters', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_franchise_headquarters', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_sacrificial_shrine', 'Sacrificial Shrine', 'unity', 'The great study of the cycle should not be limited to the Overlord; the turning of life and death must be explored through the Vassal as well.', 341);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_sacrificial_shrine', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_sacrificial_shrine', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_knight_commandery', 'Order''s Commandery', 'government', 'This fortified outpost is where our knights collaborate with our vassal in the search for the Toxic God. Our subjects are expected to provide us with resources and data to support the Order''s work.', 342);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_knight_commandery', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_knight_commandery', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_transcendental_retreat', 'Genomic Services Outreach', 'amenity', 'This advanced medical center studies and provides services that preserve the perfection of nature''s ideal genetic code. Knowledge gained at this off-world site helps inform research for the patron.', 343);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_transcendental_retreat', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_transcendental_retreat', 'upkeep', 'minerals', '5.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_wilderness_glade', 'Wilderness Glade', 'pop_assembly', 'A productive region of symbiotic Wilderness, tenuously linked to its parent collective. Though highly dependent on local food sources, the symbionts dwelling within this pocket biome are adept at extracting other resources nearby.', 344);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_wilderness_glade', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('holding_wilderness_glade', 'upkeep', 'food', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_low_tech_scrap_refinery', 'Scrap Refinery', 'manufacturing', 'A small-scale refinery making use of scrap salvaged from our former masters'' ship.', 345);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_scrap_refinery', 'cost', 'minerals', '200.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_scrap_refinery', 'upkeep', 'energy', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_low_tech_admin_hub', 'Administrative Hub', 'unity', 'The state cabins and living quarters of our former masters, repurposed into offices.', 346);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_admin_hub', 'cost', 'minerals', '200.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_admin_hub', 'upkeep', 'energy', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_low_tech_power_plant', 'Power Plant', 'resource', 'A jerry-rigged assemblage of solar cells linked to the fusion reactor in our former masters'' ship.', 347);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_power_plant', 'cost', 'minerals', '200.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_power_plant', 'upkeep', 'energy', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_low_tech_farm', 'Makeshift Farms', 'resource', 'Hardscrabble farmsteads tilling the soil for meager returns.', 348);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_farm', 'cost', 'minerals', '200.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_farm', 'upkeep', 'energy', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_low_tech_capital', 'Command Center', 'government', 'The bridge of our former masters'' ship, hastily refashioned into a command center.', 349);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_low_tech_research_lab', 'Laboratory Complex', 'research', 'Experiments in multiple disciplines take place in what was once an engineering bay.', 350);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_research_lab', 'cost', 'minerals', '200.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_research_lab', 'upkeep', 'energy', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_paragon_memory_vaults', 'Vaults of Knowledge', 'unity', 'Our society has always preserved the stories of heroes and prominent figures from the past. Their knowledge and experiences are digitized and gathered in the Vaults of Knowledge. Destroying this building will eradicate the data stored inside.', 351);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_paragon_memory_vaults', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_paragon_memory_vaults', 'upkeep', 'energy', '5.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_the_beholder', 'Murmuring Monolith', 'manufacturing', 'The Beholder''s conduit into our plane of existence. A ship, feeding upon the planet''s energy to amass Zro and sustain its connection to the Shroud.', 352);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_the_beholder', 'upkeep', 'energy', '25.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_the_beholder', 'produces', 'sr_zro', '8.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_contained_ecosphere', 'Contained Ecosphere', 'resource', 'Astrocreator Azaryn''s legacy, left to us when she passed. It is but a small section of the Vivarium''s internal ecosystem.
+Introduces a high concentration of Ecosphere Pheromones to a planet''s atmosphere, applying positive effects to the population.', 353);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_contained_ecosphere', 'cost', 'minerals', '500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_contained_ecosphere', 'cost', 'alloys', '500.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_contained_ecosphere', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_contained_ecosphere', 'produces', 'food', '40.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_astral_siphon_1', 'Astral Siphon', 'research', 'It is a delicate process to peel Astral Thread away from the fabric of reality. These structures prevent the border between realities from crumbling.', 354);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_astral_siphon_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_astral_siphon_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_astral_siphon_2', 'Astral Funnel', 'research', 'It is a delicate process to peel Astral Thread away from the fabric of reality. These structures prevent the border between realities from crumbling.', 355);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_astral_siphon_2', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_astral_siphon_2', 'upkeep', 'energy', '8.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_astral_siphon_3', 'Astral Nexus', 'research', 'It is a delicate process to peel Astral Thread away from the fabric of reality. These structures prevent the border between realities from crumbling.', 356);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_astral_siphon_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_astral_siphon_3', 'upkeep', 'energy', '8.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_storm_attraction_center', 'Storm Attraction Center', 'research', 'Through the careful manipulation of gravitational forces, these facilities attract nearby cosmic storms.', 357);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_attraction_center', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_attraction_center', 'cost', 'rare_crystals', '25.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_attraction_center', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_attraction_center', 'upkeep', 'rare_crystals', '0.75', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_storm_attraction_center', 'physicist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_advanced_storm_attraction_center', 'Advanced Storm Attraction Center', 'research', 'Advanced insights into dark energy allow us to supercharge each Storm Attraction Center and draw in cosmic storms even more efficiently.', 358);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_attraction_center', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_attraction_center', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_attraction_center', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_attraction_center', 'upkeep', 'rare_crystals', '2.25', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_advanced_storm_attraction_center', 'physicist', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_storm_repellent_center', 'Storm Repulsion Center', 'research', 'The further the storm, the safer our population - and the easier their minds. The complex astrometeorological instrumentation of these centers repels approaching storms.', 359);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_repellent_center', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_repellent_center', 'cost', 'rare_crystals', '25.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_repellent_center', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_repellent_center', 'upkeep', 'rare_crystals', '0.75', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_storm_repellent_center', 'physicist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_advanced_storm_repellent_center', 'Advanced Storm Repulsion Center', 'research', 'Any manipulation of spacetime is warranted if it keeps our world clear from cosmic tempests. This center does exactly that.', 360);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_repellent_center', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_repellent_center', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_repellent_center', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_repellent_center', 'upkeep', 'rare_crystals', '2.25', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_advanced_storm_repellent_center', 'physicist', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_storm_resistant_production', 'Storm Relief Center', 'resource', 'This aid center assists local efforts to negate the impact of a cosmic storm on planetary production. Through efficient coordination and communication, the Storm Relief Center allows for quick deployment of rescue teams, as well as improving the conditions for planet-wide trade.', 361);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_resistant_production', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_resistant_production', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_storm_resistant_production', 'clerk', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_advanced_storm_resistant_production', 'Storm Nullifier', 'resource', 'By adding weather control systems to each Storm Relief Center, the negative effects of cosmic storms are significantly lessened. Additionally, rescue teams can be deployed even more efficiently and planetary trade is almost impervious to local weather conditions.', 362);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_resistant_production', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_resistant_production', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_resistant_production', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_advanced_storm_resistant_production', 'clerk', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_adakkaria_patriotic_institute', 'Patriotic Institute of Celebration', 'resource', 'The Patriotic Institute of Celebration is a trove of advanced insights into the sentient condition. Here we empower people to cultivate their inner tempest while avoiding the luring song of the Convention''s cruelty.', 363);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_adakkaria_patriotic_institute', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_adakkaria_patriotic_institute', 'cost', 'sr_zro', '20.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_adakkaria_patriotic_institute', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_adakkaria_patriotic_institute', 'physicist', '1200.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_adakkaria_patriotic_institute', 'biologist', '1200.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_adakkaria_patriotic_institute', 'engineer', '1200.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_astrometeorology_observation_center', 'Astrometeorology Observatory', 'research', 'With delicate sensors, this observation center studies diverse environmental conditions to better our understanding of the natural universe.', 364);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_astrometeorology_observation_center', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_astrometeorology_observation_center', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_astrometeorology_observation_center', 'physicist', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_storm_summoning_theater', 'Storm Summoning Theater', 'amenity', 'A merriment of art and technology, the excited gyrations of our Storm Dancers help to entice cosmic storms.', 365);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_summoning_theater', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_summoning_theater', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_storm_summoning_theater', 'entertainer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_storm_holo_theater', 'Storm Holo Hall', 'amenity', 'Broadcast over the entire planet and beyond, the Storm Holo Hall expands the reach of our hypnotic Storm Dancers.', 366);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_holo_theater', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_holo_theater', 'cost', 'volatile_motes', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_holo_theater', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_holo_theater', 'upkeep', 'volatile_motes', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_storm_holo_theater', 'entertainer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_storm_grand_theater', 'Storm Grand Theater', 'amenity', 'Embodying the cutting edge of artistic and technical achievement, these grand theaters provide the perfect forum for the ultimate dance.', 367);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_grand_theater', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_grand_theater', 'cost', 'volatile_motes', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_grand_theater', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_grand_theater', 'upkeep', 'volatile_motes', '2.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_storm_grand_theater', 'entertainer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_augmentation_bazaars', 'Augmentation Bazaar', 'trade', 'A neon-lit maze of corridors, implant vendors and underground hardware clinics catering to all cybernetic implant needs - both over and under the counter.', 368);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_augmentation_bazaars', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_augmentation_bazaars', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_augmentation_bazaars', 'politician', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_transcendental_retreat', 'Genomic Services Center', 'pop_assembly', 'This advanced medical center studies and provides services that preserve the perfection of nature''s ideal genetic code.', 369);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_transcendental_retreat', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_transcendental_retreat', 'upkeep', 'energy', '8.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_transcendental_retreat', 'Genomic Safeguard Warren', 'pop_assembly', 'This advanced medical warren is committed to understanding and nurturing the flawless essence of nature''s ideal genetic code.', 370);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_transcendental_retreat', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_transcendental_retreat', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_hive_transcendental_retreat', 'spawning_drone', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_amphitheater_of_the_mind', 'Amphitheater of the Mind', 'research', 'This localized processing shrine allows the semi-connected Choir of the Mind to debate, share, and explore the secrets of the material plane at the speed of light.', 371);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_amphitheater_of_the_mind', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_amphitheater_of_the_mind', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_amphitheater_of_the_mind', 'bureaucrat', '100.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_amphitheater_of_the_mind', 'physicist', '60.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_amphitheater_of_the_mind', 'biologist', '60.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_amphitheater_of_the_mind', 'engineer', '60.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_grand_concert_hall_of_the_mind', 'The Grand Concert Hall of the Mind', 'research', 'The state-of-the-art communication array housed in these resonant halls allows the Choir of the Mind to commune together in search of divinity. Joined by cyberware, their chanting will unravel the hidden melodies of the universe.', 372);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_concert_hall_of_the_mind', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_concert_hall_of_the_mind', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_concert_hall_of_the_mind', 'politician', '100.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_concert_hall_of_the_mind', 'bureaucrat', '100.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_concert_hall_of_the_mind', 'physicist', '120.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_concert_hall_of_the_mind', 'biologist', '120.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_concert_hall_of_the_mind', 'engineer', '120.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_battlement_of_steel', 'Battlements of Steel', 'army', 'This fortress church houses both the armory and training grounds for the battle-ready Templars of Steel. They stand ever vigilant to protect our divine flesh.', 373);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_battlement_of_steel', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_battlement_of_steel', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_battlement_of_steel', 'bureaucrat', '100.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_battlement_of_steel', 'soldier', '200.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_grand_battlements_of_steel', 'The Grand Battlements of Steel', 'army', 'May these magnificent walls of this grand fortress-cathedral never crumble. Its armory overflows with the hallowed implants of the Templars of Steel, each awaiting an anointed champion. In these halls, divinity dwells in the interface of flesh and steel.', 374);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_battlements_of_steel', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_battlements_of_steel', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_battlements_of_steel', 'politician', '100.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_battlements_of_steel', 'soldier', '400.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_battlements_of_steel', 'bureaucrat', '100.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sanctuary_of_toil', 'Sanctuary of Toil', 'resource', 'This sanctuary coordinates, repairs, and rejuvenates the flesh and augmentations of the Commune of Toil.', 375);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sanctuary_of_toil', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_sanctuary_of_toil', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_sanctuary_of_toil', 'bureaucrat', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_grand_cathedral_of_toil', 'Grand Cathedral of Toil', 'resource', 'Blessed be those who provide for the needs of the faithful. Let their weary souls rest in the Grand Cathedral of Toil. Its workshops and coordination centers guide and replenish the faithful laborers and their holy augmentations in all their divine duties.', 376);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_cathedral_of_toil', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_cathedral_of_toil', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_cathedral_of_toil', 'politician', '100.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_cathedral_of_toil', 'bureaucrat', '100.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_forge_of_the_fellowship', 'Forge of the Fellowship', 'manufacturing', 'Here, the first forge of the Fellowship of the Hammer produces the highest quality construction materials. Hammers sing as the faithful pursue their divine work.', 377);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_forge_of_the_fellowship', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_forge_of_the_fellowship', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_forge_of_the_fellowship', 'bureaucrat', '100.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_forge_of_the_fellowship', 'foundry', '100.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_forge_of_the_fellowship', 'artisan', '100.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_grand_forge_of_the_fellowship', 'Grand Forge of the Fellowship', 'manufacturing', 'Well beyond the halls of the Grand Forge, the faithful can hear the litany of the Fellowship''s never resting tools. At night, the ornate foundry-cathedral''s glow outshines the stars above, just as our holy sparks shine for the divine.', 378);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_forge_of_the_fellowship', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_forge_of_the_fellowship', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_forge_of_the_fellowship', 'politician', '100.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_forge_of_the_fellowship', 'bureaucrat', '100.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_forge_of_the_fellowship', 'foundry', '200.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_grand_forge_of_the_fellowship', 'artisan', '200.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_the_sanctum_of_augmentation', 'Sanctum of Augmentation', 'unity', 'In the spirit of shared faith, this sacred sanctum stands as a symbol of unity. Within these consecrated chambers, the faithful tend to the souls and augmentations of its flock.', 379);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_the_sanctum_of_augmentation', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_the_sanctum_of_augmentation', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_the_sanctum_of_augmentation', 'politician', '100.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_the_sanctum_of_augmentation', 'bureaucrat', '200.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_the_united_sanctum_of_augmentation', 'United Sanctum of Augmentation', 'unity', 'In reverence of the most sacred fusion, this majestic sanctum is a living testament. Within its consecrated chambers, the faithful gather, unwavering in their commitment to advance the divine fusion''s noble cause.', 380);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_the_united_sanctum_of_augmentation', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_the_united_sanctum_of_augmentation', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_the_united_sanctum_of_augmentation', 'politician', '200.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_the_united_sanctum_of_augmentation', 'bureaucrat', '400.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_identity_repository', 'Identity Repository', 'research', 'Before the body expires, the mind is digitized. Safe within, we continue to work for the good of society.', 381);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_identity_repository', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_identity_repository', 'upkeep', 'energy', '0.025', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_identity_repository', 'produces', 'physics_research', '0.008', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_identity_repository', 'produces', 'society_research', '0.008', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_identity_repository', 'produces', 'engineering_research', '0.008', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_identity_repository', 'produces', 'unity', '0.008', 5);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_identity_repository', 'produces', 'trade', '0.008', 6);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_abandoned_gene_clinic', 'Abandoned Gene Clinic', 'amenity', 'After we lost the ability to procreate naturally, the medical community placed its hope in this state-of-the-art gene clinic. Like so much of our infrastructure, it now stands empty, a constant reminder of our plight and the dire need for new solutions.', 382);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_capital', 'Processing Unit', 'government', 'The quantic nature of the processing units of the Synaptic Lathe allows it to parallelize computing across multiple dimensional layers.', 383);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_capital', 'upkeep', 'energy', '8.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_capital', 'upkeep', 'alloys', '5.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_major_capital', 'Processing Unit: Parallelized', 'government', 'This improved processing unit is now more capable of running parallel operations by rebounding the cognitive echoes of Neural Chips in contained gamma-space pockets.', 384);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_major_capital', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_major_capital', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_major_capital', 'upkeep', 'alloys', '10.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_super_capital', 'Processing Unit: Vectorial', 'government', 'This upgraded processing unit streamlines computations through the creation of negative space vectors. This dimensional compartmentalization of processes yields extraordinary results in efficiency and stability.', 385);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_super_capital', 'cost', 'alloys', '2500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_super_capital', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_super_capital', 'upkeep', 'alloys', '15.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_resonator', 'Synaptic Resonator', 'resource', 'Resonators harness and redirect the cognitive potential of stray thoughts and autonomic systems, leading every single chip to increase the efficiency of its closest processing neighbors.', 386);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_resonator', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_resonator', 'cost', 'rare_crystals', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_resonator', 'cost', 'advanced_logic', '600.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_resonator', 'upkeep', 'energy', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_resonator', 'upkeep', 'rare_crystals', '1.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_stabilisator', 'Neural Stabilizer', 'government', 'Stabilization systems filter out the computing noise generated when physical distress overcomes Neural Chips. The reduction in interferences means an increase in global output.', 387);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_stabilisator', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_stabilisator', 'cost', 'exotic_gases', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_stabilisator', 'cost', 'advanced_logic', '600.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_stabilisator', 'upkeep', 'energy', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_stabilisator', 'upkeep', 'exotic_gases', '1.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_overclocker', 'Synaptic Overclocker', 'resource', 'The Lathe has been designed to preserve its installed Neural Chips, keeping them productive for as long as possible. The overclocker can override these commands, resulting in a higher and faster output, but it comes with an increased failure rate.', 388);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_overclocker', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_overclocker', 'cost', 'volatile_motes', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_overclocker', 'cost', 'advanced_logic', '600.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_overclocker', 'upkeep', 'energy', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_overclocker', 'upkeep', 'volatile_motes', '1.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_preserver', 'Synaptic Preserver', 'amenity', 'The organic components of the network are especially vulnerable to energetic fluctuations, which can cause rapid axonal degeneration. The Preserver strives to reduce these fluctuations to protect the Synaptic Lathe''s frailer parts.', 389);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_preserver', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_preserver', 'cost', 'exotic_gases', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_preserver', 'cost', 'advanced_logic', '600.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_preserver', 'upkeep', 'energy', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_preserver', 'upkeep', 'exotic_gases', '1.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_reactor', 'Expanded Reactor', 'resource', 'The more chips plugged into the network, the more energy is required to maintain it. Installing additional reactors will mitigate the complex logistics inherent in powering the Synaptic Lathe.', 390);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_reactor', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_reactor', 'cost', 'exotic_gases', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_reactor', 'cost', 'advanced_logic', '600.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_reactor', 'upkeep', 'exotic_gases', '4.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_life_support', 'Synaptic Sustainer', 'amenity', 'Dedicated facilities organize the maintenance of the Lathe''s critical components, allowing us to support more chips and a healthier network environment.', 391);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_life_support', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_life_support', 'cost', 'rare_crystals', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_life_support', 'cost', 'advanced_logic', '600.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_life_support', 'upkeep', 'energy', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_life_support', 'upkeep', 'rare_crystals', '1.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_cogitator', 'Synaptic Cogitator', 'army', 'Calculating hyperspatial supply chains is complex. Rerouting some processing power to the task will help even the largest fleet to delve deeper into enemy territory.', 392);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_cogitator', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_cogitator', 'cost', 'volatile_motes', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_cogitator', 'cost', 'advanced_logic', '800.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_cogitator', 'upkeep', 'energy', '8.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_cogitator', 'upkeep', 'volatile_motes', '2.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_validator', 'Synaptic Validator', 'research', 'While the primary purpose of the validator''s specialized functions is to help formulate infinity theses, it can also be applied to more general aspects of computing.', 393);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_validator', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_validator', 'cost', 'rare_crystals', '300.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_validator', 'cost', 'advanced_logic', '800.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_validator', 'upkeep', 'energy', '8.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_validator', 'upkeep', 'rare_crystals', '2.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_augmentation_center', 'Augmentation Center', 'pop_assembly', 'A building for outfitting cybernetic implants. Part shopping mall, part operating center, and part mechanic shop.', 394);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_augmentation_center', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_augmentation_center', 'upkeep', 'energy', '8.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_cyberdome', 'Cyberdome', 'amenity', 'Hosts savage cybersports with augmented athletes for the entertainment of the imperial citizens. Enhanced gladiators, athletes and sprinters compete for our favor until damaged or dead.', 395);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_cyberdome', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_cyberdome', 'upkeep', 'energy', '3.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_identity_complex', 'Identity Complex', 'pop_assembly', 'A cutting-edge hub for the research and development of synthetic identities.', 396);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_identity_complex', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_identity_complex', 'upkeep', 'energy', '8.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nanolab_1', 'Nanite Research Facility', 'research', 'Conducting research at a nanoscopic scale brings a whole new perspective on the universe.', 397);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanolab_1', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanolab_1', 'cost', 'nanites', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanolab_1', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanolab_1', 'upkeep', 'nanites', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_nanolab_1', 'engineer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nanolab_2', 'Nanite Research Complex', 'research', 'How peculiar it is that the infinitely small and the infinitely big look so much alike.', 398);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanolab_2', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanolab_2', 'cost', 'nanites', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanolab_2', 'upkeep', 'energy', '10.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanolab_2', 'upkeep', 'nanites', '2.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_nanolab_2', 'engineer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nanotech_cauldron', 'Nanotech Cauldron', 'manufacturing', 'Operating at a molecular level, the swarm can easily reconfigure mineral structures into sturdy alloy lattices.', 399);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanotech_cauldron', 'cost', 'alloys', '1500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanotech_cauldron', 'upkeep', 'nanites', '3.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanotech_cauldron', 'upkeep', 'energy', '30.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_nanotech_cauldron', 'produces', 'alloys', '15.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('xeno_geology_holomuseum', 'Holo-Museum of Geology', 'amenity', 'A multi-faceted institute dedicated to the preservation and study of mineral formations and precious stones.', 400);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('xeno_geology_holomuseum', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('xeno_geology_holomuseum', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('xeno_geology_holomuseum', 'entertainer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('aesthetic_wonders_holomuseum', 'Holo-Museum of Wonders', 'amenity', 'Where the wonder of our galaxy can be appreciated without interruption.', 401);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('aesthetic_wonders_holomuseum', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('aesthetic_wonders_holomuseum', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('aesthetic_wonders_holomuseum', 'entertainer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('galactic_history_holomuseum', 'Holo-Museum of History', 'amenity', 'An informative archive populated with items that represent key events in our galaxy''s history.', 402);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('galactic_history_holomuseum', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('galactic_history_holomuseum', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('galactic_history_holomuseum', 'entertainer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('wildlife_ranch', 'Wildlife Ranch', 'amenity', 'We live in partnership with our native creatures, taking the utmost care in the protection of their habitat and the sustainable growth of their species.', 403);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_ranch', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_ranch', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('wildlife_ranch', 'wrangler', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('wildlife_ranch_2', 'Wildlife Expanse', 'amenity', 'Careful ecosystem management improves the conditions for native creatures and facilitates ranching efforts.', 404);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_ranch_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_ranch_2', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('wildlife_ranch_2', 'wrangler', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('wildlife_ranch_3', 'Wildlife Nexus', 'amenity', 'A vast facility where animals are allowed to roam freely. They are offered comfort and luxury in an effort to maximize the quality of the resources they provide.', 405);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_ranch_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_ranch_3', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('wildlife_ranch_3', 'wrangler', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('hunting_grounds', 'Hunting Grounds', 'amenity', 'A training complex used to master all manner of hunting techniques. From modern energy weapons to traditional martial implements, unmatched dexterity and skill is required to best fearsome predators and claim them as trophies.', 406);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('hunting_grounds', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('hunting_grounds', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('hunting_grounds', 'wrangler', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('hunting_grounds_2', 'Hunting Expanse', 'amenity', 'A training and surveillance facility providing optimal hunting conditions for local fauna. Heat-mapping technology helps identify recent animal trails and acquire trophy-quality game.', 407);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('hunting_grounds_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('hunting_grounds_2', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('hunting_grounds_2', 'wrangler', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('hunting_grounds_3', 'Hunting Nexus', 'amenity', 'A vast expanse supporting planetary hunting parties on a massive scale. Stocked with the highest quality weapons and tracking equipment, hunters are given high level training in maximizing the quantity and quality of game killed.', 408);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('hunting_grounds_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('hunting_grounds_3', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('hunting_grounds_3', 'wrangler', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('wildlife_sanctuary', 'Wildlife Sanctuary', 'amenity', 'A protected reserve where wild animals are studied within their natural habitats. Safeguards are in place to prevent population instability or excessive disease. Studying these creatures is in itself a worthy academic endeavor, but crucially it teaches us more about our own nature.', 409);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_sanctuary', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_sanctuary', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('wildlife_sanctuary', 'wrangler', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('wildlife_sanctuary_2', 'Advanced Sanctuary', 'amenity', 'Creatures here are cared for on an individual basis, their unique dietary and medical needs provided with minimal disturbance to their natural habitats. Specialized ecosystems allow for the propagation and reintroduction of endangered species.', 410);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_sanctuary_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_sanctuary_2', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('wildlife_sanctuary_2', 'wrangler', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('wildlife_sanctuary_3', 'Sanctuary Nexus', 'amenity', 'Animals here are monitored and cared for using a carefully engineered infrastructure designed to seem as if it doesn''t exist. Researchers are forbidden from interfering with the subjects'' natural behavior, guaranteeing the collection of the highest possible quality research data.', 411);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_sanctuary_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_sanctuary_3', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('wildlife_sanctuary_3', 'wrangler', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('primal_arena', 'Primal Arena', 'amenity', 'A colosseum where our strongest warriors are pitted against ferocious creatures in primal combat. There is no greater entertainment than watching heroes triumph over savage beasts - or die trying.', 412);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('primal_arena', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('primal_arena', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('primal_arena', 'wrangler', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('primal_arena_2', 'Primal Stadium', 'amenity', 'In this massive stadium, packs of animals are trained by skilled handlers in coordinating their attacks. No longer can beastfighters rely on simply overpowering their quarry: they must use out-think even their trainers in order to survive.', 413);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('primal_arena_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('primal_arena_2', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('primal_arena_2', 'wrangler', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('primal_arena_3', 'Primal Colosseum', 'amenity', 'An awe-inspiring arena designed to host beast-slaying battles of monumental proportions. Each engagement takes weeks of preparation and can support the attendance of millions of individuals.', 414);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('primal_arena_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('primal_arena_3', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('primal_arena_3', 'wrangler', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('symbiosis_nexus', 'Symbiosis Nodule', 'amenity', 'A natural preserve where wild partners are welcomed into our fold. Each creature has something unique to offer the mindweave.', 415);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('symbiosis_nexus', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('symbiosis_nexus', 'upkeep', 'energy', '2.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('symbiosis_nexus', 'wrangler', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('symbiosis_nexus_2', 'Symbiosis Expanse', 'amenity', 'A central reserve that serves to group our wild partners into self-maintaining pods. Coordinating their lesser mental capacities provides stability of thought to the greater mindweave.', 416);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('symbiosis_nexus_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('symbiosis_nexus_2', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('symbiosis_nexus_2', 'wrangler', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('symbiosis_nexus_3', 'Symbiosis Nexus', 'amenity', 'An expansive hub that serves to unite the minds of every creature in powering our collective thought.', 417);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('symbiosis_nexus_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('symbiosis_nexus_3', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('symbiosis_nexus_3', 'wrangler', '600.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_colony_shelter_wilderness', 'Planetary Tendrils', 'government', 'A pluricellular frontier of organisms weaves throughout this world, ensuring a stable presence for the Wilderness.', 418);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_colony_shelter_wilderness', 'upkeep', 'energy', '1.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_colony_shelter_wilderness', 'upkeep', 'food', '1.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_capital_wilderness', 'Planetary Root Bundle', 'government', 'A sprawling, vibrant mass of simple organisms that harmonizes with motile symbionts to improve their coordination and productivity.', 419);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_capital_wilderness', 'cost', 'food', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_capital_wilderness', 'cost', 'biomass', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_capital_wilderness', 'upkeep', 'food', '5.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_major_capital_wilderness', 'Planetary Root Complex', 'government', 'A concentrated living mass, sufficiently dense that symbionts may live, toil and breed in one highly localized sphere.', 420);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_major_capital_wilderness', 'cost', 'food', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_major_capital_wilderness', 'cost', 'biomass', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_major_capital_wilderness', 'upkeep', 'food', '8.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_system_capital_wilderness', 'Planetary Root Nexus', 'government', 'An immense union of diverse lifeforms working in concert, so vast that it cultivates its own ideal micro-climates.', 421);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_system_capital_wilderness', 'cost', 'food', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_system_capital_wilderness', 'cost', 'biomass', '400.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_system_capital_wilderness', 'upkeep', 'food', '10.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_imperial_capital_wilderness', 'Imperial Complex', 'government', 'The Wilderness governs the Galactic Imperium from within this massive and intricate structure. This is where the fate of the galaxy is decided.', 422);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_capital_wilderness', 'cost', 'food', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_capital_wilderness', 'cost', 'biomass', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_capital_wilderness', 'upkeep', 'food', '10.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_cradle_of_rebirth', 'Cradle of Rebirth', 'government', 'Rooted deep, this structure metabolizes decaying matter and captured prey into biomass, nourishing the body of the world with every silent pulse.', 423);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_cradle_of_rebirth', 'cost', 'food', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_cradle_of_rebirth', 'cost', 'biomass', '400.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_cradle_of_rebirth', 'upkeep', 'food', '2.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_cradle_of_rebirth', 'spawning_drone', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_tendril_cradle_1', 'Tendril Cradle', 'trade', 'A cluster of short, rooted threads extend from this site, drawing nearby materials toward key organs in the immediate area.', 424);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_1', 'cost', 'biomass', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_1', 'upkeep', 'minerals', '2.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_tendril_cradle_2', 'Threaded Span', 'trade', 'Elongated tendrils stretch across the landscape, pulling resources from neighboring expanses before processing and redistributing.', 425);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_2', 'cost', 'biomass', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_2', 'upkeep', 'minerals', '5.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_tendril_cradle_3', 'Conveyroot Nest', 'trade', 'Braided roots pulse and shift beneath the surface, shuttling biomass through layered channels toward distant biotic hubs.', 426);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_3', 'cost', 'biomass', '400.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_3', 'cost', 'rare_crystals', '50.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_3', 'upkeep', 'minerals', '8.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_3', 'upkeep', 'rare_crystals', '1.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_tendril_cradle_4', 'Planetary Threadheart', 'trade', 'Massive logistical tendrils radiate across the planet''s body, pulling, pacing, and routing the Wilderness''s resources with tireless synchronicity.', 427);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_4', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_4', 'cost', 'biomass', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_4', 'cost', 'rare_crystals', '100.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_4', 'upkeep', 'minerals', '10.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_4', 'upkeep', 'rare_crystals', '2.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_brain_node_1', 'Research Growth', 'research', 'The work of playful, exploratory symbionts provides the basis of general research.', 428);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_1', 'cost', 'biomass', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_1', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_1', 'physicist', '30.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_1', 'biologist', '30.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_1', 'engineer', '30.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_brain_node_2', 'Research Grove', 'research', 'A habitat uniquely dedicated to promoting inquisitive behavior, facilitating the study of more advanced artifacts and phenomena.', 429);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_2', 'cost', 'biomass', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_2', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_2', 'physicist', '60.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_2', 'biologist', '60.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_2', 'engineer', '60.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_brain_node_3', 'Exotic Research Enclosure', 'research', 'These sprawling enclosures allow large numbers of extremophile symbionts to experiment with all manner of exotic and dangerous materials.', 430);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_3', 'cost', 'biomass', '400.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_3', 'cost', 'exotic_gases', '50.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_3', 'upkeep', 'energy', '8.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_3', 'upkeep', 'exotic_gases', '1.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_3', 'physicist', '120.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_3', 'biologist', '120.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_3', 'engineer', '120.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_brain_node_4', 'Advanced Research Enclosure', 'research', 'This fusion of exotic technology and vast, symbiont-grown enclosure facilitates cutting-edge research in a variety of sandbox environments.', 431);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_4', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_4', 'cost', 'biomass', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_4', 'cost', 'exotic_gases', '100.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_4', 'upkeep', 'energy', '10.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_4', 'upkeep', 'exotic_gases', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_4', 'physicist', '120.0', 0);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_4', 'biologist', '120.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_4', 'engineer', '120.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commensal_clearing_1', 'Commensal Clearing', 'unity', 'These islands of stillness allow motiles of all kinds to gather, rest, and reorient themselves within the Wilderness.', 432);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_1', 'cost', 'minerals', '200.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_1', 'cost', 'biomass', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_1', 'upkeep', 'energy', '1.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_commensal_clearing_1', 'bureaucrat', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commensal_clearing_2', 'Commensal Grove', 'unity', 'Ideal, sheltered venues for mass gatherings of symbionts. Here, their interactions yield further understanding of the distributed self.', 433);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_2', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_2', 'cost', 'biomass', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_2', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_commensal_clearing_2', 'bureaucrat', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commensal_clearing_3', 'Commensal Valley', 'unity', 'Dense and highly varied communities of symbionts migrate through these pristine formations, strengthening the ties between each other.', 434);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_3', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_3', 'cost', 'biomass', '400.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_3', 'cost', 'rare_crystals', '50.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_3', 'upkeep', 'energy', '5.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_3', 'upkeep', 'rare_crystals', '1.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_commensal_clearing_3', 'bureaucrat', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commensal_clearing_4', 'Commensal Biome', 'unity', 'Vast, interconnected habitats play host to myriad encounters, each one a vital spark of mutualistic unity.', 435);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_4', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_4', 'cost', 'biomass', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_4', 'cost', 'rare_crystals', '100.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_4', 'upkeep', 'energy', '8.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_4', 'upkeep', 'rare_crystals', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_commensal_clearing_4', 'bureaucrat', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_massive_growth_1', 'Nutritious Dell', 'resource', 'Small-scale geological sculpturing provides an ideal micro-climate for year-round, reliable crop growth.', 436);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_1', 'cost', 'biomass', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_1', 'upkeep', 'minerals', '2.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_massive_growth_1', 'farmer', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_massive_growth_2', 'Nutritious Undergrowth', 'resource', 'A vast, semi-permeable canopy endows this undergrowth with all the environmental protection it needs to consistently produce rich and succulent food.', 437);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_2', 'cost', 'biomass', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_2', 'upkeep', 'minerals', '5.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_massive_growth_2', 'farmer', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_massive_growth_3', 'Contour Megaplantation', 'resource', 'A haven for semi-aquatic micro-organisms and fauna alike, these sprawling terraces provide an abundance of protein matter and grains.', 438);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_3', 'cost', 'biomass', '400.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_3', 'cost', 'exotic_gases', '50.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_3', 'upkeep', 'minerals', '8.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_3', 'upkeep', 'exotic_gases', '1.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_massive_growth_3', 'farmer', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_massive_growth_4', 'Sylviculture Plantation', 'resource', 'Arrangements of undergrowth sheltered by leafy megaflora ensure a high yield of food crops to serve the entire food web.', 439);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_4', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_4', 'cost', 'exotic_gases', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_4', 'cost', 'biomass', '800.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_4', 'upkeep', 'minerals', '10.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_4', 'upkeep', 'exotic_gases', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_massive_growth_4', 'farmer', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bioelectric_stimulator_1', 'Chloroplastic Acclimator', 'resource', 'Clusters of lens-like bubbles focus solar rays inwards through a rich algal soup, converting and storing that energy for later use.', 440);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_1', 'cost', 'biomass', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_1', 'upkeep', 'minerals', '2.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_bioelectric_stimulator_1', 'technician', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bioelectric_stimulator_2', 'Chloroplastic Accelerator', 'resource', 'Glassy bubbles packed full of photosynthesizing algae use solar energy to form tighter bio-chemical bonds, reducing self-discharge.', 441);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_2', 'cost', 'biomass', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_2', 'upkeep', 'minerals', '5.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_bioelectric_stimulator_2', 'technician', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bioelectric_stimulator_3', 'Chloroplastic Lens Array', 'resource', 'Counter-balanced branches laden with solar collectors may rise and fall according to demand and capacity, making for a versatile and reliable power hub.', 442);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_3', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_3', 'cost', 'biomass', '400.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_3', 'upkeep', 'minerals', '8.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_3', 'upkeep', 'rare_crystals', '1.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_bioelectric_stimulator_3', 'technician', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bioelectric_stimulator_4', 'Chloroplastic Cyst', 'resource', 'These glassy, algae-filled sacs may migrate and multiply wherever their energy is most needed, almost eliminating power loss over distance.', 443);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_4', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_4', 'cost', 'rare_crystals', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_4', 'cost', 'biomass', '800.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_4', 'upkeep', 'minerals', '10.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_4', 'upkeep', 'rare_crystals', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_bioelectric_stimulator_4', 'technician', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_churning_tunnels_1', 'Lithic Bore', 'resource', 'Plant matter of near-crystalline hardness is forced in and around existing extraction sites, withdrawing even greater yields of useful minerals.', 444);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_1', 'cost', 'biomass', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_1', 'upkeep', 'minerals', '2.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_churning_tunnels_1', 'miner', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_churning_tunnels_2', 'Lithic Filters', 'resource', 'Colonies of semi-permeable biofilms collect valuable minerals that would otherwise be lost in run-off from liquid mining operations.', 445);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_2', 'cost', 'biomass', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_2', 'upkeep', 'minerals', '5.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_churning_tunnels_2', 'miner', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_churning_tunnels_3', 'Lithic Macerator', 'resource', 'Powerful grinding plates and pincers help reduce earthen matter to a chemical slurry for easier mineral extraction.', 446);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_3', 'cost', 'volatile_motes', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_3', 'cost', 'biomass', '400.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_3', 'upkeep', 'minerals', '8.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_3', 'upkeep', 'volatile_motes', '1.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_churning_tunnels_3', 'miner', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_churning_tunnels_4', 'Lithic Baths', 'resource', 'A concert of macerators, bio-chemical agents, and biofilms permits extraction of minerals on-site, wherever they happens to be a rich seam.', 447);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_4', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_4', 'cost', 'volatile_motes', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_4', 'cost', 'biomass', '800.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_4', 'upkeep', 'minerals', '10.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_4', 'upkeep', 'volatile_motes', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_churning_tunnels_4', 'miner', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_natural_furnace_0', 'Smelting Pool', 'resource', 'Thermophilic symbionts work tirelessly to produce high-quality alloys in and around this natural heat source.', 448);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_0', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_0', 'cost', 'biomass', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_0', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_natural_furnace_0', 'foundry', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_natural_furnace_1', 'Smelting Kiln', 'resource', 'Heat-resistant growths enable more efficient use of heat, and thus the production of superior alloys.', 449);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_1', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_1', 'cost', 'biomass', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_1', 'upkeep', 'energy', '5.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_natural_furnace_1', 'foundry', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_natural_furnace_2', 'Solid-Light Smelter', 'resource', 'Sophisticated litho-organic kilns, aided by hologram technology, enable the production of highly versatile alloys.', 450);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_2', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_2', 'cost', 'biomass', '400.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_2', 'cost', 'volatile_motes', '50.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_2', 'upkeep', 'energy', '8.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_2', 'upkeep', 'volatile_motes', '1.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_natural_furnace_2', 'foundry', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_natural_furnace_3', 'Nano-Smelter', 'resource', 'Thermophilic nano-organisms inhabit these sweltering pools and kilns, ridding our alloys of unwanted impurities.', 451);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_3', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_3', 'cost', 'biomass', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_3', 'cost', 'volatile_motes', '100.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_3', 'upkeep', 'energy', '10.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_3', 'upkeep', 'volatile_motes', '2.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_natural_furnace_3', 'foundry', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_avatar_chamber_1', 'Avatar Cradle', 'amenities', 'A budding organ where the Wilderness begins to shape basic forms. Preparing its instincts for unfamiliar life and terrain beyond its native biosphere.', 452);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_1', 'cost', 'biomass', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_1', 'upkeep', 'food', '2.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_avatar_chamber_2', 'Avatar Chamber', 'amenities', 'Simulated bodies are grown and guided through internal trials, mimicking foreign organisms and ecosystems. Knowledge spreads by embodying the unknown.', 453);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_2', 'cost', 'biomass', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_2', 'upkeep', 'food', '5.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_2', 'produces', 'unity', '1.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_avatar_chamber_3', 'Avatar Forest', 'amenities', 'This sprawling organ broadcasts avatar templates shaped after alien forms and landscapes. The Wilderness learns by living what it has never touched.', 454);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_3', 'cost', 'biomass', '400.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_3', 'cost', 'volatile_motes', '50.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_3', 'upkeep', 'food', '8.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_3', 'upkeep', 'volatile_motes', '1.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_3', 'produces', 'unity', '2.0', 5);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_avatar_chamber_4', 'Avatar Cortex', 'amenities', 'A planetary-scale engine of embodiment, capable of simulating entire civilizations, xeno-ecologies, and environmental extremes. Here, the Wilderness rehearses its meeting with the galaxy.', 455);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_4', 'cost', 'minerals', '2000.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_4', 'cost', 'biomass', '800.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_4', 'cost', 'volatile_motes', '100.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_4', 'upkeep', 'food', '10.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_4', 'upkeep', 'volatile_motes', '2.0', 4);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_4', 'produces', 'unity', '3.0', 5);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mote_aggravator', 'Chemical Digester', 'resource', 'An elegant system of vascular tissues and chemical metabolizers produces Volatile Motes from everyday earthen matter.', 456);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mote_aggravator', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mote_aggravator', 'cost', 'biomass', '400.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_mote_aggravator', 'upkeep', 'energy', '5.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_churning_stomach', 'Exotic Gas Filters', 'resource', 'Highly specialized microbes and nano-organisms react with mundane aerosols to produce these refined Exotic Gases.', 457);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_stomach', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_stomach', 'cost', 'biomass', '400.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_stomach', 'upkeep', 'energy', '5.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_crystal_growth', 'Crystal Bed', 'resource', 'Special canopies facilitate the precise humidity and temperature controls required to grow exacting, artificial Rare Crystals.', 458);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_growth', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_growth', 'cost', 'biomass', '400.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_growth', 'upkeep', 'energy', '5.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_planetary_carapace', 'Bone Garrison', 'army', 'A plethora of fiercely territorial symbionts may be housed in this cocooned proving ground, poised in case they need ever be called upon.', 459);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_carapace', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_carapace', 'cost', 'biomass', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_carapace', 'upkeep', 'minerals', '5.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_planetary_carapace', 'soldier', '100.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_planetary_carapace_2', 'Bone Fortress', 'army', 'This sprawling facility of hardy training grounds and accommodations ensures the defenders housed within are braced for any planetary incursion.', 460);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_carapace_2', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_carapace_2', 'cost', 'biomass', '400.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_carapace_2', 'cost', 'volatile_motes', '50.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_carapace_2', 'upkeep', 'minerals', '8.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_carapace_2', 'upkeep', 'volatile_motes', '1.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_planetary_carapace_2', 'soldier', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ozone_thickener', 'Planetary Shield Canopy', 'army', 'Generating a strong energy shield within a planetary atmosphere is a greater challenge than in the vacuum of space, but it offers a potent defense against orbital bombardment.', 461);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ozone_thickener', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ozone_thickener', 'cost', 'biomass', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_ozone_thickener', 'upkeep', 'energy', '5.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_wilderness_storm_relief', 'Storm Relief Center', 'resource', 'A broad canopy of hardened, bioelectrically-charged leaves ensures the safety of symbionts in its vicinity, and allows for rapid responses to cosmic storm activity without endangering life or productivity.', 462);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_wilderness_storm_relief', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_wilderness_storm_relief', 'cost', 'biomass', '200.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_wilderness_storm_relief', 'upkeep', 'energy', '5.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_subterranean_cache', 'Subterranean Cache', 'resource', 'Massive resource silos and storage facilities where large quantities of resources can be safely kept.', 463);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_subterranean_cache', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_subterranean_cache', 'cost', 'biomass', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_subterranean_cache', 'upkeep', 'minerals', '2.0', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_citadel_uplink', 'Citadel Uplink', NULL, 'This advanced logistics center ensures a constant uplink to any Deep Space Citadel in system.', 464);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_citadel_uplink', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_citadel_uplink', 'upkeep', 'energy', '8.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_genomic_facility', 'Genomic Research Facility', 'amenity', 'Specialized facilities where research into our genetic future is shaped.', 465);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_genomic_facility', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_genomic_facility', 'upkeep', 'energy', '8.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_genomic_facility', 'spawning_drone', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_pinniped_sanctuary', 'Pinniped Sanctuary', 'amenity', 'A sanctuary for gigantic pinnipeds captured in the liquid nitrogen oceans of .', 466);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_pinniped_sanctuary', 'cost', 'minerals', '250.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_pinniped_sanctuary', 'upkeep', 'energy', '3.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_cryovault', 'Cryovault', 'amenity', 'A sealed habitat that utilizes the subthermal dynamics of frozen climates to create a controlled and comfortable living space.', 467);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_cryovault', 'cost', 'minerals', '300.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_cryovault', 'upkeep', 'energy', '4.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bio_furnace', 'Bio-Furnace', 'manufacturing', 'By incorporating significant levels of simulated stellar radiation, this facility is capable of converting biological matter into alloys.', 468);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_furnace', 'cost', 'minerals', '300.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_furnace', 'upkeep', 'energy', '3.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_furnace', 'produces', 'alloys', '3.0', 2);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_bio_furnace', 'foundry', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_1', 'Leeching Tower', 'unity', 'These monumental devices are capable of draining excess energies from dedicated populations in close proximity. Assigned individuals wear specialized equipment which funnel their life force into a central conduit where it can then be redistributed to those of higher status.', 469);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_2', 'Soul Siphon', 'unity', 'While their name may imply otherwise, Soul Siphons are based in practical science. Calibrated specifically to harvest energies from individuals via physical tether, they are capable of sapping immense amounts of metabolism from organisms without endangering their lives.', 470);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_3', 'Essence Conduit', 'unity', 'The boundaries of Essence Conduits must be clearly marked, for wandering within its area of influence can be fatal to those without the proper equipment. Assigned individuals are trained to regulate their metabolisms so as not to donate too much of their energy at once.', 471);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_machine_1', 'Siphon Battery', 'unity', 'These monumental devices are capable of draining excess processing energy from dedicated drones in close proximity. Assigned workers wear specialized equipment which funnel their batteries into a central conduit where it can then be redistributed to those of higher purpose.', 472);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_machine_2', 'Battery Complex', 'unity', 'Calibrated specifically to harvest energies from drones via physical tether, these devices are capable of sapping immense amounts of excess processing without inflicting critical faults.', 473);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_machine_3', 'Battery Nexus', 'unity', 'The boundaries of the Battery Nexus must be clearly marked, as entering within its area of influence can be fatal to units without the proper insulative equipment.', 474);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_hive_mind_1', 'Leeching Tower', 'unity', 'These monumental devices are capable of draining excess energies from dedicated drones in close proximity. Assigned workers wear specialized equipment which funnel their life force into a central conduit where it can then be redistributed to those of higher caste.', 475);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_hive_mind_2', 'Soul Siphon', 'unity', 'While their name may imply otherwise, Soul Siphons are based in practical science. Calibrated specifically to harvest energies from drones via physical tether, they are capable of sapping immense amounts of metabolism from organisms without endangering their lives.', 476);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_hive_mind_3', 'Essence Conduit', 'unity', 'The boundaries of Essence Conduits must be clearly marked, as entering within its area of influence can be fatal to drones without the proper equipment. Assigned workers are trained to regulate their metabolisms so as not to donate too much of their energy at once.', 477);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_corporate_1', 'Synergy Headquarters', 'unity', 'These monumental devices are capable of draining excess energies from dedicated interns in close proximity. Assigned individuals wear specialized equipment which funnel their life force into a central conduit where it can then be redistributed to those in senior positions.', 478);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_corporate_2', 'Synergy Administration', 'unity', 'Calibrated specifically to harvest energies from individuals via physical tether, the Synergy Administration buildings are capable of sapping immense amounts of metabolism from interns without endangering their lives to any appreciable degree.', 479);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_corporate_3', 'Synergy Nexus', 'unity', 'The boundaries of the Synergy Nexus must be clearly marked, for wandering within its area of influence can be fatal to interns without the proper equipment. Assigned individuals are trained in advanced synergy techniques to ensure their ultimate survival throughout this process.', 480);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_experimentation_chambers_1', 'Experimentation Chambers', 'research', 'A top-secret facility for experimenting on incorrigible lawbreakers, mostly comprising prison cells and research laboratories.', 481);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_1', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_1', 'upkeep', 'energy', '2.0', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_experimentation_chambers_2', 'Experimentation Complex', 'research', 'A campus of top-secret technology and internment facilities, where lawbreaking are used as subjects in experiments led by the empire''s top .', 482);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_2', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_2', 'cost', 'rare_crystals', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_2', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_2', 'upkeep', 'rare_crystals', '2.0', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_experimentation_chambers_3', 'Experimentation Nexus', 'research', 'A network of maximum-security technology and internment centers. Teams of elite conduct pioneering experiments on drawn from the empire''s underworld.', 483);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_3', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_3', 'cost', 'rare_crystals', '100.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_3', 'upkeep', 'energy', '2.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_3', 'upkeep', 'rare_crystals', '2.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_3', 'upkeep', 'volatile_motes', '1.0', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_cradle_sanctum', 'Sanctum of the Cradle', 'government', 'The Sanctum is a place dedicated to communion with the Cradle.', 484);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_cradle_sanctum', 'cost', 'minerals', '800.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_cradle_sanctum', 'cost', 'sr_zro', '50.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_cradle_sanctum', 'upkeep', 'energy', '8.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_cradle_sanctum', 'upkeep', 'sr_zro', '1.0', 3);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_cradle_sanctum', 'telepath', '300.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_psionic_suppressor', 'Psionic Suppressor', 'unity', 'This complex supports an array of long-range psionic attenuators, which dissipate Psionic Auras throughout the star system and prevent their further spread.', 485);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_psionic_suppressor', 'cost', 'minerals', '400.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_psionic_suppressor', 'upkeep', 'sr_zro', '1.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_psionic_suppressor', 'bureaucrat', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ancient_ward_1', 'Ancient Ward', 'army', 'This ancestral structure uses an array of psionic attenuators to insulate the entire planet against mind-invading forces.', 486);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_ancient_ward_1', 'soldier', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ancient_ward_2', 'Grand Ward', 'army', 'This ancestral structure has been upgraded with enhanced psionic attenuators, which are capable of protecting against Psionic Auras throughout the star system.', 487);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_ancient_ward_2', 'soldier', '200.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_materiality_engine', 'Materiality Engine', 'manufacturing', 'The psionic energy of the Shroud adjoins every point in the physical galaxy. The Materiality Engine exploits this interface, making it possible to reach across dimensions and materialize valuable components and resources.', 488);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_materiality_engine', 'cost', 'minerals', '600.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_materiality_engine', 'cost', 'sr_zro', '10.0', 1);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_materiality_engine', 'upkeep', 'sr_zro', '1.0', 2);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_materiality_engine', 'produces', 'alloys', '6.0', 3);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_materiality_engine', 'produces', 'minerals', '12.0', 4);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_materiality_engine', 'physicist', '400.0', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_chamber_of_silence', 'Chamber of Silence', 'government', 'From all across our empire, psionic individuals are brought here to commune with the Shroud in chambers of protective silence.', 489);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_chamber_of_silence', 'cost', 'minerals', '500.0', 0);
+INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES ('building_chamber_of_silence', 'upkeep', 'energy', '5.0', 1);
+INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_chamber_of_silence', 'telepath', '200.0', 0);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_hedonism', 'civilian', 'Civilian', 'fe_hedonist', 'Hedonist', 0);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_hedonism', 'civilian', 'fe_hedonist', 'produces', 'trade', '1.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pleasure_seekers', 'civilian', 'Civilian', 'fe_hedonist', 'Hedonist', 1);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pleasure_seekers', 'civilian', 'fe_hedonist', 'produces', 'trade', '1.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_galactic_sovereign_megacorp', 'politician', 'Politician', 'executive', 'Executive', 2);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_galactic_sovereign_megacorp', 'politician', 'executive', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_galactic_sovereign_megacorp', 'politician', 'executive', 'produces', 'trade', '4.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_galactic_sovereign_megacorp', 'politician', 'executive', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_technocracy', 'politician', 'Politician', 'head_researcher', 'Science Director', 3);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_technocracy', 'politician', 'head_researcher', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_technocracy', 'politician', 'head_researcher', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'noble', 'Noble', 4);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'noble', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'noble', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'merchant', 'Merchant', 5);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_merchant_guilds', 'politician', 'merchant', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_merchant_guilds', 'politician', 'merchant', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_exalted_priesthood', 'politician', 'Politician', 'high_priest', 'High Priest', 6);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_exalted_priesthood', 'politician', 'high_priest', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_exalted_priesthood', 'politician', 'high_priest', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_cybernetic_creed', 'politician', 'Politician', 'technophant', 'Technophant', 7);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_cybernetic_creed', 'politician', 'technophant', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_cybernetic_creed', 'politician', 'technophant', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'fire_oracle', 'Fire Oracle', 8);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'politician', 'fire_oracle', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'politician', 'fire_oracle', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazewright', 'Blazewright', 9);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'politician', 'blazewright', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'politician', 'blazewright', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'blazewright', 'Blazewright', 10);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'blazewright', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'blazewright', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'blazewright', 'Blazewright', 11);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_exalted_priesthood', 'politician', 'Politician', 'radiant_priest', 'Radiant Priest', 12);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_exalted_priesthood', 'politician', 'radiant_priest', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_exalted_priesthood', 'politician', 'radiant_priest', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'radiant_priest', 'Radiant Priest', 13);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'politician', 'radiant_priest', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'politician', 'radiant_priest', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 14);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'politician', 'pyrocrat', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'politician', 'pyrocrat', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 15);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'politician', 'pyrocrat', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'politician', 'pyrocrat', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 16);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'pyrocrat', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'pyrocrat', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'ashbroker', 'Ashbroker', 17);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'politician', 'ashbroker', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'politician', 'ashbroker', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'ashbroker', 'Ashbroker', 18);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_merchant_guilds', 'politician', 'ashbroker', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_merchant_guilds', 'politician', 'ashbroker', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 19);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'politician', 'blazing_harbinger', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'politician', 'blazing_harbinger', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 20);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 21);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'noble_researcher', 'Noble Scientist', 22);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_technocracy', 'politician', 'Politician', 'noble_researcher', 'Noble Scientist', 23);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_technocracy', 'politician', 'noble_researcher', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_technocracy', 'politician', 'noble_researcher', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_exalted_priesthood', 'politician', 'Politician', 'sacred_noble', 'Sacred Noble', 24);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_exalted_priesthood', 'politician', 'sacred_noble', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_exalted_priesthood', 'politician', 'sacred_noble', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'sacred_noble', 'Sacred Noble', 25);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'sacred_noble', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'sacred_noble', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_augmentation_bazaars', 'politician', 'Politician', 'augmentation_merchant', 'Augmentation Merchant', 26);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_augmentation_bazaars', 'politician', 'augmentation_merchant', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_augmentation_bazaars', 'politician', 'augmentation_merchant', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'politician', 'Politician', 'superstitious_beliefs_high_priest', 'High Astrologist', 27);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_superstitious_beliefs', 'politician', 'superstitious_beliefs_high_priest', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_superstitious_beliefs', 'politician', 'superstitious_beliefs_high_priest', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'superstitious_beliefs_high_priest', 'High Astrologist', 28);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'politician', 'superstitious_beliefs_high_priest', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'politician', 'superstitious_beliefs_high_priest', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'politician', 'Politician', 'superstitious_beliefs_high_priest_corporate', 'Fortune Broker', 29);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_superstitious_beliefs', 'politician', 'superstitious_beliefs_high_priest_corporate', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_superstitious_beliefs', 'politician', 'superstitious_beliefs_high_priest_corporate', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'superstitious_beliefs_high_priest_corporate', 'Fortune Broker', 30);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'politician', 'superstitious_beliefs_high_priest_corporate', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'politician', 'superstitious_beliefs_high_priest_corporate', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_technocracy', 'politician', 'Politician', 'visionary', 'Tech Visionary', 31);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_technocracy', 'politician', 'visionary', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_technocracy', 'politician', 'visionary', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'visionary', 'Tech Visionary', 32);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'noble_merchant', 'Patrician', 33);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'noble_merchant', 'Patrician', 34);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_civil_education', 'dystopian_enforcer', 'Enforcer', 'educator', 'Educator', 35);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_civil_education', 'dystopian_telepath', 'Telepath', 'educator_telepath', 'Psionic Mentor', 36);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_imperial_cult', 'bureaucrat', 'Bureaucrat', 'priest', 'Priest', 37);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_imperial_cult', 'bureaucrat', 'priest', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_imperial_cult', 'bureaucrat', 'priest', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_worker_coop', 'bureaucrat', 'Bureaucrat', 'steward', 'Steward', 38);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_worker_coop', 'bureaucrat', 'steward', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_worker_coop', 'bureaucrat', 'steward', 'produces', 'trade', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_worker_coop', 'bureaucrat', 'steward', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_imperial_cult', 'bureaucrat', 'Bureaucrat', 'preacher', 'Prosperity Preacher', 39);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_imperial_cult', 'bureaucrat', 'preacher', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_imperial_cult', 'bureaucrat', 'preacher', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'death_priest', 'Death Priest', 40);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult_corporate', 'bureaucrat', 'death_priest', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult_corporate', 'bureaucrat', 'death_priest', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'death_priest', 'Death Priest', 41);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult', 'bureaucrat', 'death_priest', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult', 'bureaucrat', 'death_priest', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'bureaucrat', 'Bureaucrat', 'fire_dancer', 'Fire Dancer', 42);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_dancer', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_dancer', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'bureaucrat', 'Bureaucrat', 'fire_seer', 'Fire Seer', 43);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'fire_seer', 'Fire Seer', 44);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'bureaucrat', 'Bureaucrat', 'pyromancer', 'Pyromancer', 45);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'bureaucrat', 'pyromancer', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'bureaucrat', 'pyromancer', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'bureaucrat', 'Bureaucrat', 'pyromancer', 'Pyromancer', 46);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'bureaucrat', 'Bureaucrat', 'cremator', 'Cremator', 47);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'cremator', 'Cremator', 48);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult', 'bureaucrat', 'cremator', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult', 'bureaucrat', 'cremator', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_imperial_cult', 'bureaucrat', 'Bureaucrat', 'low_tech_priest', 'Preacher', 49);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_imperial_cult', 'bureaucrat', 'low_tech_priest', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_imperial_cult', 'bureaucrat', 'low_tech_priest', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_memorialist', 'bureaucrat', 'Bureaucrat', 'memorialist', 'Death Chronicler', 50);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_memorialist', 'bureaucrat', 'memorialist', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_memorialist', 'bureaucrat', 'memorialist', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'death_manager', 'Extinction Manager', 51);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult_corporate', 'bureaucrat', 'death_manager', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult_corporate', 'bureaucrat', 'death_manager', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult_corporate', 'bureaucrat', 'death_manager', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'death_manager', 'Extinction Manager', 52);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult', 'bureaucrat', 'death_manager', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult', 'bureaucrat', 'death_manager', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult', 'bureaucrat', 'death_manager', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_imperial_cult', 'bureaucrat', 'Bureaucrat', 'haruspex', 'Haruspex', 53);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_imperial_cult', 'bureaucrat', 'haruspex', 'produces', 'unity', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_imperial_cult', 'bureaucrat', 'haruspex', 'produces', 'engineering_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_imperial_cult', 'bureaucrat', 'haruspex', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_cybernetic_creed', 'bureaucrat', 'Bureaucrat', 'haruspex', 'Haruspex', 54);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_cybernetic_creed', 'bureaucrat', 'haruspex', 'produces', 'unity', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_cybernetic_creed', 'bureaucrat', 'haruspex', 'produces', 'engineering_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_cybernetic_creed', 'bureaucrat', 'haruspex', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'superstitious_beliefs_priest', 'Spirit Medium', 55);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'superstitious_beliefs_priest', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'superstitious_beliefs_priest', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'superstitious_beliefs_priest', 'Spirit Medium', 56);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'superstitious_beliefs_priest', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'superstitious_beliefs_priest', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'superstitious_beliefs_priest_corporate', 'Fortune Teller', 57);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'superstitious_beliefs_priest_corporate', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'superstitious_beliefs_priest_corporate', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'superstitious_beliefs_priest_corporate', 'Fortune Teller', 58);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'superstitious_beliefs_priest_corporate', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'superstitious_beliefs_priest_corporate', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 59);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 60);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 61);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 62);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 63);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 64);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 65);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 66);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_civil_education', 'enforcer', 'Enforcer', 'educator', 'Educator', 67);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_civil_education', 'telepath', 'Telepath', 'educator_telepath', 'Psionic Mentor', 68);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'duelist', 'Duelist', 69);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'entertainer', 'duelist', 'produces', 'unity', '1.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_storm_callers', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 70);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'produces', 'unity', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_storm_callers_megacorp', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 71);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'produces', 'unity', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_galactic_curators', 'entertainer', 'Entertainer', 'curator', 'Museum Curator', 72);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_galactic_curators', 'entertainer', 'curator', 'produces', 'unity', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_galactic_curators', 'entertainer', 'curator', 'produces', 'society_research', '0.5');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_galactic_curators', 'entertainer', 'Entertainer', 'curator', 'Museum Curator', 73);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_galactic_curators', 'entertainer', 'curator', 'produces', 'unity', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_galactic_curators', 'entertainer', 'curator', 'produces', 'society_research', '0.5');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_storm_callers', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 74);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_storm_callers', 'entertainer', 'storm_duelist', 'produces', 'unity', '2.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_storm_callers', 'entertainer', 'storm_duelist', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_storm_callers_megacorp', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 75);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'produces', 'unity', '2.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 76);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'produces', 'unity', '2.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 77);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'produces', 'unity', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'produces', 'society_research', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'upkeep', 'alloys', '0.5');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 78);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'produces', 'unity', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'produces', 'society_research', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'upkeep', 'alloys', '0.5');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 79);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'produces', 'unity', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'produces', 'society_research', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'upkeep', 'alloys', '0.5');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_catalytic_processing', 'foundry', 'Metallurgist', 'catalytic_technician', 'Catalytic Technician', 80);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'produces', 'alloys', '3.75');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'upkeep', 'food', '9.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_catalytic_processing', 'foundry', 'Metallurgist', 'catalytic_technician', 'Catalytic Technician', 81);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_catalytic_processing', 'foundry', 'catalytic_technician', 'produces', 'alloys', '3.75');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_catalytic_processing', 'foundry', 'catalytic_technician', 'upkeep', 'food', '9.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 82);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_crafters', 'artisan', 'artificer', 'produces', 'consumer_goods', '8.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_crafters', 'artisan', 'artificer', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 83);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'produces', 'consumer_goods', '8.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_anglers', 'artisan', 'Artisan', 'pearl_diver', 'Pearl Diver', 84);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_anglers', 'artisan', 'pearl_diver', 'produces', 'consumer_goods', '6.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_anglers', 'artisan', 'Artisan', 'pearl_diver', 'Pearl Diver', 85);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_anglers', 'artisan', 'pearl_diver', 'produces', 'consumer_goods', '6.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_anglers', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 86);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'produces', 'consumer_goods', '8.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_anglers', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 87);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'produces', 'consumer_goods', '8.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 88);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'produces', 'consumer_goods', '8.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_crafters', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 89);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_crafters', 'artisan', 'pearl_crafter', 'produces', 'consumer_goods', '8.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_crafters', 'artisan', 'pearl_crafter', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_reanimated_armies', 'soldier', 'Soldier', 'necromancer', 'Necromancer', 90);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_reanimated_armies', 'soldier', 'necromancer', 'produces', 'society_research', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_reanimated_armies', 'soldier', 'necromancer', 'produces', 'engineering_research', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_reanimated_armies', 'soldier', 'necromancer', 'upkeep', 'consumer_goods', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_reanimated_armies', 'soldier', 'necromancer', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_anglers', 'farmer', 'Farmer', 'angler', 'Angler', 91);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_anglers', 'farmer', 'angler', 'produces', 'food', '6.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_anglers', 'farmer', 'Farmer', 'angler', 'Angler', 92);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_corporate_anglers', 'farmer', 'angler', 'produces', 'food', '6.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_progenitor_hive', 'spawning_drone', 'Spawning Drone', 'offspring_drone', 'Offspring Drone', 93);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'spawning_drone', 'Spawning Drone', 'broodsymbiont', 'Broodsymbiont', 94);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_machine_galactic_curators', 'evaluator', 'Evaluator', 'curator_drone', 'Curator Drone', 95);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'produces', 'unity', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'upkeep', 'energy', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_hive_galactic_curators', 'evaluator', 'Evaluator', 'curator_drone', 'Curator Drone', 96);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'produces', 'unity', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'upkeep', 'energy', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_hive_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 97);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_machine_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 98);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'coordinator', 'Coordinator', 'choirsymbiont', 'Choirsymbiont', 99);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_wilderness', 'coordinator', 'choirsymbiont', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'calculator_physicist', 'Physics Subroutine', 'evosymbiont_physicist', 'Physics Evosymbiont', 100);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'calculator_biologist', 'Biology Subroutine', 'evosymbiont_biologist', 'Biology Evosymbiont', 101);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_wilderness', 'calculator_biologist', 'evosymbiont_biologist', 'produces', 'society_research', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'calculator_engineer', 'Engineering Subroutine', 'evosymbiont_engineer', 'Engineering Evosymbiont', 102);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_wilderness', 'calculator_engineer', 'evosymbiont_engineer', 'produces', 'engineering_research', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_hive_catalytic_processing', 'fabricator', 'Fabricator', 'catalytic_drone', 'Catalytic Drone', 103);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_hive_catalytic_processing', 'fabricator', 'catalytic_drone', 'produces', 'alloys', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_machine_catalytic_processing', 'fabricator', 'Fabricator', 'catalytic_drone', 'Catalytic Drone', 104);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'produces', 'alloys', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'fabricator', 'Fabricator', 'forgesymbiont', 'Forgesymbiont', 105);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_wilderness', 'fabricator', 'forgesymbiont', 'produces', 'alloys', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'chemist_drone', 'Chem-Drone', 'motesymbiote', 'Motesymbiont', 106);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'translucer_drone', 'Lensing Drone', 'crystalsymbiote', 'Crystalsymbiont', 107);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'gas_refiner_drone', 'Refinery Drone', 'gaseosymbiote', 'Gaseosymbionte', 108);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'patrol_drone', 'Hunter-Seeker Drone', 'immunosymbiont', 'Immunosymbiont', 109);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_wilderness', 'patrol_drone', 'immunosymbiont', 'produces', 'unity', '0.5');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'mote_harvesting_drone', 'Mote Harvesting Drone', 'motesymbiote', 'Motesymbiont', 110);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'crystal_mining_drone', 'Crystal Mining Drone', 'crystalsymbiote', 'Crystalsymbiont', 111);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'gas_extraction_drone', 'Gas Extraction Drone', 'gaseosymbiote', 'Gaseosymbionte', 112);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'logistics_drone', 'Logistic Drone', 'spindlesymbiont', 'Spindlesymbiont', 113);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_wilderness', 'logistics_drone', 'spindlesymbiont', 'produces', 'trade', '6.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'mining_drone', 'Mining Drone', 'grubsymbiont', 'Grubsymbiont', 114);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'agri_drone', 'Agri-Drone', 'pollinosymbiont', 'Pollinosymbiont', 115);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_wilderness', 'agri_drone', 'pollinosymbiont', 'produces', 'food', '6.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'technician_drone', 'Tech-Drone', 'photosymbiont', 'Photosymbiont', 116);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_wilderness', 'technician_drone', 'photosymbiont', 'produces', 'energy', '6.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'warrior_drone', 'Warrior Drone', 'tamersymbiont', 'Tamersymbiont', 117);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_wilderness', 'warrior_drone', 'tamersymbiont', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_machine_servitor', 'bath_attendant_machine', 'Lubrication Terminal', 'bath_attendant', 'Spa Attendant', 118);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_warrior_culture', 'wrangler', 'Wrangler', 'rancher', 'Rancher', 119);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'wrangler', 'rancher', 'produces', 'society_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'wrangler', 'rancher', 'produces', 'unity', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'wrangler', 'rancher', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_warrior_culture', 'wrangler', 'Wrangler', 'trophy_hunter', 'Trophy Hunter', 120);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'wrangler', 'trophy_hunter', 'produces', 'society_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'wrangler', 'trophy_hunter', 'produces', 'unity', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'wrangler', 'trophy_hunter', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_warrior_culture', 'wrangler', 'Wrangler', 'animal_handler', 'Animal Handler', 121);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'wrangler', 'animal_handler', 'produces', 'society_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'wrangler', 'animal_handler', 'produces', 'unity', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'wrangler', 'animal_handler', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_warrior_culture', 'wrangler', 'Wrangler', 'beastfighter', 'Beastfighter', 122);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'wrangler', 'beastfighter', 'produces', 'society_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'wrangler', 'beastfighter', 'produces', 'unity', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('civic_warrior_culture', 'wrangler', 'beastfighter', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('origin', 'origin_wilderness', 'transference_drone', 'Transference Drone', 'neurosymbiont', 'Neurosymbiont', 123);
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_wilderness', 'transference_drone', 'neurosymbiont', 'produces', 'unity', '1.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES ('origin_wilderness', 'transference_drone', 'neurosymbiont', 'upkeep', 'food', '5.0');

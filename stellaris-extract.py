@@ -48,6 +48,9 @@ def _concept_sub(m: re.Match) -> str:
         return inline
     key = token.split(':', 1)[1] if ':' in token else token
     return f'${key}$'
+# A job-scope name command, e.g. [foundry.GetNamePlural] — resolvable to the job's loc
+# name ("Metallurgists"). Used in swap tooltips ("X are replaced with Y").
+_LOC_SCOPE_NAME = re.compile(r'\[(\w+)\.GetName(Plural)?(?:WithIcon)?\]')
 # Any remaining bracket command, e.g. [This.GetName] — not statically resolvable.
 _LOC_COMMAND    = re.compile(r'\[[^\]]*\]')
 
@@ -143,6 +146,10 @@ def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False,
         s = _SCRIPTED_VAR_REF.sub(
             lambda m: _fmt_scripted(variables[m.group(1)], m.group(2))
             if m.group(1) in variables else m.group(0), s)
+    # [foundry.GetNamePlural] → the job's loc name ("Metallurgists") before the generic
+    # [command] strip would drop it. Non-job scopes fall through and are stripped.
+    s = _LOC_SCOPE_NAME.sub(
+        lambda m: loc.get('job_' + m.group(1) + ('_plural' if m.group(2) else ''), ''), s)
     s = _LOC_COMMAND.sub('', s)        # drop leftover [Command.Chain] tags
     s = _LOC_FMT_CODE.sub('', s)       # strip §X colour codes
     s = _LOC_ICON.sub(_render_icon, s) # £icon£ → word (or dropped, if decoration)
@@ -603,6 +610,84 @@ CREATE TABLE planet_class (
     colonizable INTEGER NOT NULL DEFAULT 0,
     is_standard INTEGER NOT NULL DEFAULT 0,  -- initial = yes (default startable climate)
     sort_order  INTEGER NOT NULL DEFAULT 0
+);
+
+-- Pop jobs (reference / wiki): every job, its category (worker/specialist/ruler/drone
+-- …), flavour description, and its base produced/upkeep resources in job_resource.
+DROP TABLE IF EXISTS job_resource;
+DROP TABLE IF EXISTS job;
+CREATE TABLE job (
+    key         TEXT PRIMARY KEY,   -- e.g. "miner", "metallurgist"
+    name        TEXT,               -- localised, e.g. "Miner"
+    category    TEXT,               -- worker | specialist | ruler | complex_drone | …
+    description TEXT,               -- cleaned flavour tooltip
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE job_resource (
+    job_key  TEXT NOT NULL,
+    kind     TEXT NOT NULL,         -- 'produces' | 'upkeep'
+    resource TEXT NOT NULL,         -- e.g. "minerals", "alloys"
+    amount   REAL NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (job_key, kind, resource),
+    FOREIGN KEY (job_key) REFERENCES job(key)
+);
+
+-- Buildings (reference / wiki): every building, its category, description, build/upkeep
+-- resources (building_resource) and the jobs it provides (building_job).
+DROP TABLE IF EXISTS building_job;
+DROP TABLE IF EXISTS building_resource;
+DROP TABLE IF EXISTS building;
+CREATE TABLE building (
+    key         TEXT PRIMARY KEY,   -- e.g. "building_foundry_1"
+    name        TEXT,               -- localised, e.g. "Alloy Foundries"
+    category    TEXT,               -- manufacturing | research | resource | amenity | …
+    description TEXT,
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE building_resource (
+    building_key TEXT NOT NULL,
+    kind         TEXT NOT NULL,     -- 'cost' | 'upkeep' | 'produces'
+    resource     TEXT NOT NULL,
+    amount       REAL NOT NULL,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (building_key, kind, resource),
+    FOREIGN KEY (building_key) REFERENCES building(key)
+);
+CREATE TABLE building_job (
+    building_key TEXT NOT NULL,
+    job          TEXT NOT NULL,     -- display name from job_<x>_add (e.g. "metallurgist")
+    amount       REAL NOT NULL,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (building_key, job),
+    FOREIGN KEY (building_key) REFERENCES building(key)
+);
+
+-- Job replacements: a civic/origin swaps a base job for a variant (Catalytic Processing:
+-- Metallurgist → Catalytic Technician). Derived from each base job's `swap_type` blocks,
+-- resolving the swap `trigger` through scripted_triggers to a has_civic / has_origin.
+DROP TABLE IF EXISTS job_swap_resource;
+DROP TABLE IF EXISTS job_swap;
+CREATE TABLE job_swap (
+    source_kind  TEXT NOT NULL,     -- 'civic' | 'origin'
+    source_key   TEXT NOT NULL,     -- e.g. "civic_catalytic_processing"
+    base_job     TEXT NOT NULL,     -- e.g. "foundry"
+    base_name    TEXT,              -- e.g. "Metallurgist"
+    swapped_job  TEXT NOT NULL,     -- e.g. "catalytic_technician"
+    swapped_name TEXT,              -- e.g. "Catalytic Technician"
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (source_kind, source_key, base_job, swapped_job)
+);
+-- The swapped job's effective resources: the base job's produces/upkeep evaluated with
+-- the swap condition active (e.g. Catalytic Technician → alloys from Food, not Minerals).
+CREATE TABLE job_swap_resource (
+    source_key  TEXT NOT NULL,
+    base_job    TEXT NOT NULL,
+    swapped_job TEXT NOT NULL,
+    kind        TEXT NOT NULL,      -- 'produces' | 'upkeep'
+    resource    TEXT NOT NULL,
+    amount      REAL NOT NULL,
+    PRIMARY KEY (source_key, base_job, swapped_job, kind, resource)
 );
 
 -- Home-system initializers usable as a custom-empire start (`usage = custom_empire`
@@ -1988,6 +2073,343 @@ def _authority_requirements(adef: dict) -> list[tuple[str, str, str, int]]:
             for v in vals:
                 rows.append((kind, op, v, gid))
     return rows
+
+
+# Sub-keys inside a job produces/upkeep block that are not resources (skip them).
+_JOB_RES_SKIP = {'trigger', 'modifier', 'mult', 'category', 'pop_amount_change_category',
+                 'pop_resources', 'desc', 'multiplier'}
+
+
+def _job_resources(block, variables: dict[str, float]) -> list[tuple[str, float]]:
+    """[(resource, amount)] from a produces/upkeep block. The block may repeat (parser
+    yields a list) for conditional bonuses — take the first block and only its direct
+    numeric resource entries (resolving @variables), skipping trigger/modifier sub-blocks."""
+    if isinstance(block, list):
+        block = next((b for b in block if isinstance(b, dict)), None)
+    if not isinstance(block, dict):
+        return []
+    out: list[tuple[str, float]] = []
+    for k, v in block.items():
+        if k in _JOB_RES_SKIP or isinstance(v, (dict, list)):
+            continue
+        s = str(v).strip()
+        val = variables.get(s) if s.startswith('@') else _resolve_modifier_float(v)
+        if val is not None and val != 0:
+            out.append((k, val))
+    return out
+
+
+def extract_jobs(install_dir: Path, loc: dict[str, str],
+                 scripted_vars: dict[str, float], inline_scripts_dir: Path,
+                 w: Writer, verbose: bool) -> None:
+    """Extract common/pop_jobs → job (+ job_resource): every job's category, flavour
+    description and base produced/upkeep resources. Many jobs put their resources in an
+    `output/*` inline script (foundry/researcher/bureaucrat/…) — those are expanded; the
+    figures are the base (conditional bonuses and job swaps are not unrolled)."""
+    jobs_dir = install_dir / 'common' / 'pop_jobs'
+    if not jobs_dir.is_dir():
+        print(f"  WARNING: {jobs_dir} not found", file=sys.stderr)
+        return
+
+    script_cache: dict[str, dict] = {}
+
+    def load_script(name: str) -> dict:
+        if name not in script_cache:
+            p = inline_scripts_dir / (name + '.txt')
+            try:
+                script_cache[name] = parse_file(p) if p.exists() else {}
+            except Exception:
+                script_cache[name] = {}
+        return script_cache[name]
+
+    order = 0
+    for f in sorted(jobs_dir.glob('*.txt')):
+        try:
+            data = parse_file(f)
+        except Exception as e:
+            print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+            continue
+        variables = dict(scripted_vars)
+        for k, v in data.items():
+            if k.startswith('@'):
+                fv = _resolve_modifier_float(v)
+                if fv is not None:
+                    variables[k] = fv
+        for key, jdef in data.items():
+            if key.startswith('@') or not isinstance(jdef, dict):
+                continue
+            category = jdef.get('category')
+            category = category if isinstance(category, str) else None
+            raw_name = loc.get('job_' + key)
+            name = _clean_loc(raw_name, loc) if raw_name else None
+            raw_desc = loc.get('job_' + key + '_desc')
+            desc = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
+            w.execute(
+                "INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES (?, ?, ?, ?, ?)",
+                (key, name, category, desc, order))
+            order += 1
+            res = jdef.get('resources')
+            if isinstance(res, dict):
+                blocks = {'produces': res.get('produces'), 'upkeep': res.get('upkeep')}
+                # Resources often live in an `output/*` inline script instead.
+                isc = res.get('inline_script')
+                for sn in (isc if isinstance(isc, list) else [isc]):
+                    if not isinstance(sn, str):
+                        continue
+                    sdata = load_script(sn)
+                    for kind in ('produces', 'upkeep'):
+                        if blocks[kind] is None:
+                            blocks[kind] = sdata.get(kind)
+                for kind in ('produces', 'upkeep'):
+                    for r_order, (rk, rv) in enumerate(_job_resources(blocks[kind], variables)):
+                        w.execute(
+                            """INSERT OR IGNORE INTO job_resource
+                                   (job_key, kind, resource, amount, sort_order)
+                               VALUES (?, ?, ?, ?, ?)""",
+                            (key, kind, rk, rv, r_order))
+    w.commit()
+    if verbose:
+        print(f"  jobs: {order}")
+
+
+def extract_buildings_ref(install_dir: Path, loc: dict[str, str],
+                          scripted_vars: dict[str, float], inline_scripts_dir: Path,
+                          w: Writer, verbose: bool) -> None:
+    """Extract common/buildings → building (+ building_resource, building_job): each
+    building's category, description, build/upkeep resources and the jobs it provides.
+    Reuses the precursor building helpers (`_building_resources`, `_building_inline_jobs`)."""
+    bdir = install_dir / 'common' / 'buildings'
+    if not bdir.is_dir():
+        print(f"  WARNING: {bdir} not found", file=sys.stderr)
+        return
+    order = 0
+    for f in sorted(bdir.glob('*.txt')):
+        try:
+            data = parse_file(f)
+        except Exception as e:
+            print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+            continue
+        variables = dict(scripted_vars)
+        for k, v in data.items():
+            if k.startswith('@'):
+                fv = _resolve_modifier_float(v)
+                if fv is not None:
+                    variables[k] = fv
+        for key, bdef in data.items():
+            if key.startswith('@') or not isinstance(bdef, dict):
+                continue
+            raw_name = loc.get(key)
+            if not raw_name:
+                continue  # skip un-named/internal building entries
+            name = _clean_loc(raw_name, loc)
+            raw_desc = loc.get(key + '_desc')
+            desc = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
+            category = bdef.get('category')
+            category = category if isinstance(category, str) else None
+            w.execute(
+                "INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES (?, ?, ?, ?, ?)",
+                (key, name, category, desc, order))
+            order += 1
+            for r_order, (kind, resource, amt) in enumerate(_building_resources(bdef, variables)):
+                w.execute(
+                    """INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES (?, ?, ?, ?, ?)""",
+                    (key, kind, resource, amt, r_order))
+            for j_order, (jk, amt) in enumerate(_building_inline_jobs(bdef, variables, inline_scripts_dir)):
+                job = re.sub(r'^job_', '', re.sub(r'_add$', '', jk))
+                w.execute(
+                    "INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES (?, ?, ?, ?)",
+                    (key, job, amt, j_order))
+    w.commit()
+    if verbose:
+        print(f"  buildings: {order}")
+
+
+def _scripted_trigger_index(install_dir: Path) -> dict[str, dict]:
+    """name → parsed block for every common/scripted_triggers definition."""
+    idx: dict[str, dict] = {}
+    sdir = install_dir / 'common' / 'scripted_triggers'
+    if not sdir.is_dir():
+        return idx
+    for f in sorted(sdir.glob('*.txt')):
+        try:
+            data = parse_file(f)
+        except Exception:
+            continue
+        for k, v in data.items():
+            if isinstance(v, dict):
+                idx[k] = v
+    return idx
+
+
+def _collect_swap_sources(trigger, idx: dict[str, dict]) -> set[tuple[str, str]]:
+    """Recursively collect ('civic'|'origin', key) referenced by a swap trigger, expanding
+    nested scripted-trigger calls (`some_trigger = yes`). Best-effort: NOT/NOR negations
+    aren't distinguished and building-gated swaps (has_active_building) aren't followed."""
+    out: set[tuple[str, str]] = set()
+    seen: set[str] = set()
+
+    def vals(v):
+        return [x for x in (v if isinstance(v, list) else [v]) if isinstance(x, str)]
+
+    civic_keys = ('has_civic', 'has_valid_civic', 'has_country_civic')
+    origin_keys = ('has_origin', 'has_valid_origin')
+
+    def walk(node):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k in civic_keys:
+                    for x in vals(v):
+                        out.add(('civic', x))
+                elif k in origin_keys:
+                    for x in vals(v):
+                        out.add(('origin', x))
+                elif isinstance(v, (dict, list)):
+                    walk(v)
+                elif str(v).strip() == 'yes' and k in idx and k not in seen:
+                    seen.add(k)
+                    walk(idx[k])
+        elif isinstance(node, list):
+            for x in node:
+                walk(x)
+
+    walk(trigger)
+    return out
+
+
+def _block_matches_swap(bt, swap_pos: set[str]) -> bool:
+    """A produces/upkeep block applies to the swapped job iff its trigger consists only
+    of the swap's positive conditions (k = yes for k in swap_pos) — so the swap=no and
+    empire-specific (is_robot_empire …) variants are excluded."""
+    if not isinstance(bt, dict):
+        return False
+    for k, v in bt.items():
+        if not (k in swap_pos and str(v).strip() == 'yes'):
+            return False
+    return True
+
+
+def _swapped_job_resources(res, swap_pos: set[str],
+                           variables: dict[str, float]) -> list[tuple[str, str, float]]:
+    """The base job's produces/upkeep summed over the blocks that apply once the swap
+    condition holds (unconditional blocks + blocks whose trigger is the swap's)."""
+    out: dict[tuple[str, str], float] = {}
+    if not isinstance(res, dict):
+        return []
+    for kind in ('produces', 'upkeep'):
+        for block in _as_blocks(res.get(kind)):
+            if not isinstance(block, dict):
+                continue
+            bt = block.get('trigger')
+            if bt is not None and not _block_matches_swap(bt, swap_pos):
+                continue
+            for k, v in block.items():
+                if k == 'trigger' or isinstance(v, (dict, list)):
+                    continue
+                s = str(v).strip()
+                val = variables.get(s) if s.startswith('@') else _resolve_modifier_float(v)
+                if val is not None and val != 0:
+                    out[(kind, k)] = round(out.get((kind, k), 0.0) + val, 4)
+    return [(kind, resource, amt) for (kind, resource), amt in out.items() if amt != 0]
+
+
+def extract_job_swaps(install_dir: Path, loc: dict[str, str], scripted_vars: dict[str, float],
+                      inline_scripts_dir: Path, w: Writer, verbose: bool) -> None:
+    """Per base job, each `swap_type` variant + its trigger → which civic/origin forces
+    the swap (resolved through scripted_triggers) → job_swap, plus the swapped job's
+    effective resources (base resources under the swap condition) → job_swap_resource."""
+    jobs_dir = install_dir / 'common' / 'pop_jobs'
+    if not jobs_dir.is_dir():
+        return
+    idx = _scripted_trigger_index(install_dir)
+    script_cache: dict[str, dict] = {}
+
+    def load_script(name: str) -> dict:
+        if name not in script_cache:
+            p = inline_scripts_dir / (name + '.txt')
+            try:
+                script_cache[name] = parse_file(p) if p.exists() else {}
+            except Exception:
+                script_cache[name] = {}
+        return script_cache[name]
+
+    def job_name(jkey: str):
+        raw = loc.get('job_' + jkey)
+        return _clean_loc(raw, loc) if raw else None
+
+    order = 0
+    for f in sorted(jobs_dir.glob('*.txt')):
+        try:
+            data = parse_file(f)
+        except Exception:
+            continue
+        variables = dict(scripted_vars)
+        for k, v in data.items():
+            if k.startswith('@'):
+                fv = _resolve_modifier_float(v)
+                if fv is not None:
+                    variables[k] = fv
+        for key, jdef in data.items():
+            if key.startswith('@') or not isinstance(jdef, dict):
+                continue
+            sd = jdef.get('swappable_data')
+            swaps = _as_blocks(sd.get('swap_type')) if isinstance(sd, dict) else []
+            swaps += _as_blocks(jdef.get('swap_type'))
+            if not swaps:
+                continue
+            # A drone (gestalt) base job. The catalytic-style OR triggers list all four
+            # civic variants, so without this a regular civic would also pick up the
+            # machine/hive drone swaps — keep only gestalt-matching civic attributions.
+            cat = jdef.get('category')
+            job_gestalt = isinstance(cat, str) and 'drone' in cat
+
+            def attribute_ok(source_kind: str, source_key: str) -> bool:
+                if source_kind != 'civic':
+                    return True
+                civic_gestalt = 'machine' in source_key or 'hive' in source_key
+                return civic_gestalt == job_gestalt
+            # The base job's resources block, with any `output/*` inline script merged in.
+            res = jdef.get('resources') if isinstance(jdef.get('resources'), dict) else {}
+            merged = dict(res)
+            isc = res.get('inline_script') if isinstance(res, dict) else None
+            for sn in (isc if isinstance(isc, list) else [isc]):
+                if isinstance(sn, str):
+                    sdata = load_script(sn)
+                    for kind in ('produces', 'upkeep'):
+                        if merged.get(kind) is None and sdata.get(kind) is not None:
+                            merged[kind] = sdata.get(kind)
+            for st in swaps:
+                if not isinstance(st, dict):
+                    continue
+                swapped = st.get('name')
+                if not isinstance(swapped, str):
+                    continue
+                trig = st.get('trigger')
+                sources = _collect_swap_sources(trig, idx)
+                if not sources:
+                    continue
+                swap_pos = {k for k, v in trig.items() if str(v).strip() == 'yes'} \
+                    if isinstance(trig, dict) else set()
+                swap_res = _swapped_job_resources(merged, swap_pos, variables)
+                for kind, skey in sources:
+                    if not attribute_ok(kind, skey):
+                        continue
+                    w.execute(
+                        """INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (kind, skey, key, job_name(key), swapped, job_name(swapped), order))
+                    order += 1
+                    for rk, resource, amt in swap_res:
+                        w.execute(
+                            """INSERT OR IGNORE INTO job_swap_resource
+                                   (source_key, base_job, swapped_job, kind, resource, amount)
+                               VALUES (?, ?, ?, ?, ?, ?)""",
+                            (skey, key, swapped, rk, resource, amt))
+    w.commit()
+    if verbose:
+        print(f"  job swaps: {order}")
 
 
 def extract_authorities(data: dict, loc: dict[str, str],
@@ -4120,6 +4542,12 @@ Examples:
     extract_flag_assets(install_dir, w, args.verbose)
     print(f"\n[rooms] {prescripted_dir}", file=progress)
     extract_rooms(install_dir, w, args.verbose)
+    print(f"\n[jobs] {install_dir / 'common' / 'pop_jobs'}", file=progress)
+    extract_jobs(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
+    print(f"\n[buildings-ref] {install_dir / 'common' / 'buildings'}", file=progress)
+    extract_buildings_ref(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
+    print(f"\n[job-swaps] {install_dir / 'common' / 'pop_jobs'}", file=progress)
+    extract_job_swaps(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
 
     w.close()
 
