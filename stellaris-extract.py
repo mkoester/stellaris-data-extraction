@@ -619,6 +619,11 @@ CREATE TABLE prescripted_empire (
     species_name       TEXT,              -- species (singular) name
     species_plural     TEXT,              -- species plural
     species_adjective  TEXT,              -- species adjective
+    secondary_class    TEXT,              -- second founding species (Syncretic/Necrophage/…); NULL if none
+    secondary_portrait TEXT,
+    secondary_name     TEXT,
+    secondary_plural   TEXT,
+    secondary_adjective TEXT,
     ruler_name         TEXT,              -- starting leader's name
     planet_name        TEXT,              -- homeworld name
     system_name        TEXT,              -- home system / star name
@@ -632,7 +637,7 @@ CREATE TABLE prescripted_empire (
 
 CREATE TABLE prescripted_empire_item (
     empire_key TEXT NOT NULL,
-    kind       TEXT NOT NULL,      -- 'trait' | 'civic' | 'ethic'
+    kind       TEXT NOT NULL,      -- 'trait' | 'secondary_trait' | 'civic' | 'ethic'
     value      TEXT NOT NULL,      -- e.g. "trait_strong", "civic_slaver_guilds", "ethic_authoritarian"
     sort_order INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (empire_key, kind, value),
@@ -2267,6 +2272,10 @@ def extract_prescripted_empires(data: dict, loc: dict[str, str], w: Writer,
         name = loc_name(edef.get('name')) or key
         ruler = edef.get('ruler')
         ruler_name = loc_name(ruler.get('name')) if isinstance(ruler, dict) else None
+        # Second founding species (Syncretic Evolution / Necrophage / Tebrid …) — same
+        # block shape as `species`; absent for most empires.
+        sec = edef.get('secondary_species')
+        sec = sec if isinstance(sec, dict) else {}
 
         def scalar(v):
             return v if isinstance(v, str) else None
@@ -2277,14 +2286,19 @@ def extract_prescripted_empires(data: dict, loc: dict[str, str], w: Writer,
         w.execute(
             """INSERT OR REPLACE INTO prescripted_empire
                    (key, name, adjective, ship_prefix, species_class, species_portrait,
-                    species_name, species_plural, species_adjective, ruler_name,
+                    species_name, species_plural, species_adjective,
+                    secondary_class, secondary_portrait, secondary_name,
+                    secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (key, name, loc_name(edef.get('adjective')), loc_name(edef.get('ship_prefix')),
              scalar(species.get('class')), scalar(species.get('portrait')),
              loc_name(species.get('name')), loc_name(species.get('plural')),
-             loc_name(species.get('adjective')), ruler_name,
+             loc_name(species.get('adjective')),
+             scalar(sec.get('class')), scalar(sec.get('portrait')),
+             loc_name(sec.get('name')), loc_name(sec.get('plural')),
+             loc_name(sec.get('adjective')), ruler_name,
              loc_name(edef.get('planet_name')), loc_name(edef.get('system_name')),
              scalar(edef.get('authority')), scalar(edef.get('government')),
              scalar(edef.get('origin')), scalar(edef.get('planet_class')),
@@ -2295,6 +2309,7 @@ def extract_prescripted_empires(data: dict, loc: dict[str, str], w: Writer,
         order += 1
 
         items = ([('trait', t) for t in _to_list(species.get('trait'))]
+                 + [('secondary_trait', t) for t in _to_list(sec.get('trait'))]
                  + [('civic', c) for c in civics]
                  + [('ethic', e) for e in _to_list(edef.get('ethic'))])
         for i_order, (kind, value) in enumerate(items):
