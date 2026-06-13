@@ -473,6 +473,48 @@ CREATE TABLE civic_requirement (
     FOREIGN KEY (civic_key) REFERENCES civic(key)
 );
 
+-- Authorities (the empire's government type: Democratic, Imperial, Hive Mind, …).
+-- One per empire, picked at creation. `country_modifier` numeric effects live in
+-- authority_modifier; the ethics/archetype eligibility rules in authority_requirement.
+-- `selectable` is 0 for authorities gated to a specific non-player country_type
+-- (e.g. auth_ancient_machine_intelligence → ai_empire). `required_dlc` from a
+-- playable `has_*` flag (corporate → MegaCorp).
+DROP TABLE IF EXISTS authority_requirement;
+DROP TABLE IF EXISTS authority_modifier;
+DROP TABLE IF EXISTS authority;
+CREATE TABLE authority (
+    key          TEXT PRIMARY KEY,    -- e.g. "auth_imperial"
+    name         TEXT,                -- localised name
+    description  TEXT,                -- cleaned description tooltip
+    required_dlc TEXT,                -- e.g. "MegaCorp"; NULL = base game
+    selectable   INTEGER NOT NULL DEFAULT 1,  -- 0 = not player-pickable
+    icon         TEXT,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (required_dlc) REFERENCES dlc(name)
+);
+
+CREATE TABLE authority_modifier (
+    authority_key  TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (authority_key, modifier_key),
+    FOREIGN KEY (authority_key) REFERENCES authority(key)
+);
+
+-- Eligibility rules parsed from an authority's `possible` block: kind 'ethic' (e.g.
+-- forbids Gestalt) or 'archetype' (Machine Intelligence needs MACHINE, Hive Mind
+-- forbids it) × operator require/forbid/require_any.
+CREATE TABLE authority_requirement (
+    authority_key TEXT NOT NULL,
+    kind          TEXT NOT NULL,      -- 'ethic' | 'archetype'
+    operator      TEXT NOT NULL,      -- 'require' | 'forbid' | 'require_any'
+    value         TEXT NOT NULL,      -- e.g. 'ethic_gestalt_consciousness', 'MACHINE'
+    group_id      INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (authority_key, kind, operator, value),
+    FOREIGN KEY (authority_key) REFERENCES authority(key)
+);
+
 -- Origins: the empire's starting scenario (one per empire). Like civics, the numeric
 -- effects (where present — most origins are narrative/event-driven) live in
 -- origin_modifier and the eligibility rules in origin_requirement. `selectable` is 0
@@ -1847,6 +1889,113 @@ def extract_civics(data: dict, civic_type: str, loc: dict[str, str],
 
     w.commit()
     return order
+
+
+# ---------------------------------------------------------------------------
+# Extraction: authorities (government types)
+# ---------------------------------------------------------------------------
+
+# A playable `has_*` flag → the DLC it gates (only the ones used by authorities).
+_AUTH_DLC = {'has_megacorp': 'MegaCorp'}
+
+
+def _authority_requirements(adef: dict) -> list[tuple[str, str, str, int]]:
+    """Eligibility rows [(kind, operator, value, group_id)] from an authority's
+    `possible` block — only the meaningful `ethics` and `species_archetype` gates
+    (the `origin` NOR lists are just Legendary-Leader gov-swap plumbing). Reuses the
+    civic trigger parser for value/NOR/OR handling."""
+    rows: list[tuple[str, str, str, int]] = []
+    group = 0
+    poss = adef.get('possible')
+    if not isinstance(poss, dict):
+        return rows
+    for raw_kind, kind in (('ethics', 'ethic'), ('species_archetype', 'archetype')):
+        for op, vals in _trigger_values(poss.get(raw_kind)):
+            gid = 0
+            if op == 'require_any':
+                group += 1
+                gid = group
+            for v in vals:
+                rows.append((kind, op, v, gid))
+    return rows
+
+
+def extract_authorities(data: dict, loc: dict[str, str],
+                        scripted_vars: dict[str, float], w: Writer, verbose: bool) -> None:
+    """Extract common/governments/authorities → authority (+ _modifier, _requirement)."""
+    variables: dict[str, float] = dict(scripted_vars)
+    for k, v in data.items():
+        if k.startswith('@'):
+            f = _resolve_modifier_float(v)
+            if f is not None:
+                variables[k] = f
+
+    order = 0
+    for key, adef in data.items():
+        if key.startswith('@') or not isinstance(adef, dict):
+            continue
+
+        # Not player-pickable when gated TO a specific country type (a positive
+        # `country_type = { value = … }`, e.g. ai_empire). A `NOT/NOR` country_type
+        # (corporate excludes primitives) is just an exclusion → still selectable.
+        selectable = 1
+        pot = adef.get('potential')
+        if isinstance(pot, dict):
+            ct = pot.get('country_type')
+            if isinstance(ct, dict) and any(isinstance(x, str) for x in _to_list(ct.get('value'))):
+                selectable = 0
+
+        playable = adef.get('playable')
+        dlc = None
+        if isinstance(playable, dict):
+            if str(playable.get('always')).strip() == 'no':
+                selectable = 0
+            for flag, name in _AUTH_DLC.items():
+                if str(playable.get(flag)).strip() == 'yes':
+                    dlc = name
+
+        raw_name = loc.get(key)
+        name = _clean_loc(raw_name, loc) if raw_name else None
+        raw_desc = loc.get(key + '_desc')
+        description = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
+        icon = adef.get('icon')
+        icon = icon.strip('"') if isinstance(icon, str) else None
+
+        w.execute(
+            """INSERT OR REPLACE INTO authority
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (key, name, description, dlc, selectable, icon, order),
+        )
+        if verbose:
+            print(f"  authority {key} | {name}"
+                  f"{'' if selectable else ' (not selectable)'}")
+        order += 1
+
+        modifier = adef.get('country_modifier')
+        if isinstance(modifier, dict):
+            for m_order, (mk, mv) in enumerate(modifier.items()):
+                s = str(mv).strip()
+                value = variables.get(s) if s.startswith('@') else _resolve_modifier_float(mv)
+                if value is None:
+                    continue
+                w.execute(
+                    """INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES (?, ?, ?, ?)""",
+                    (key, mk, value, m_order),
+                )
+                _write_modifier_label(w, loc, mk)
+
+        for kind, op, val, gid in _authority_requirements(adef):
+            w.execute(
+                """INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (key, kind, op, val, gid),
+            )
+
+    w.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -3719,6 +3868,18 @@ Examples:
                                          civic_order, args.verbose)
         except Exception as e:
             print(f"  WARNING: failed to parse {fn}: {e}", file=sys.stderr)
+
+    # --- authorities (government types) ---
+    authorities_dir = install_dir / 'common' / 'governments' / 'authorities'
+    print(f"\n[authorities] {authorities_dir}", file=progress)
+    if authorities_dir.exists():
+        for f in sorted(authorities_dir.glob('*.txt')):
+            try:
+                extract_authorities(parse_file(f), loc, scripted_vars, w, args.verbose)
+            except Exception as e:
+                print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+    else:
+        print(f"  WARNING: {authorities_dir} not found", file=progress)
 
     # --- origins (same dir; 00 = playable, 01 = non-playable) ---
     origin_files = (('00_origins.txt', False), ('01_origins_non_playable.txt', True))

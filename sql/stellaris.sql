@@ -220,6 +220,48 @@ CREATE TABLE civic_requirement (
     FOREIGN KEY (civic_key) REFERENCES civic(key)
 );
 
+-- Authorities (the empire's government type: Democratic, Imperial, Hive Mind, …).
+-- One per empire, picked at creation. `country_modifier` numeric effects live in
+-- authority_modifier; the ethics/archetype eligibility rules in authority_requirement.
+-- `selectable` is 0 for authorities gated to a specific non-player country_type
+-- (e.g. auth_ancient_machine_intelligence → ai_empire). `required_dlc` from a
+-- playable `has_*` flag (corporate → MegaCorp).
+DROP TABLE IF EXISTS authority_requirement;
+DROP TABLE IF EXISTS authority_modifier;
+DROP TABLE IF EXISTS authority;
+CREATE TABLE authority (
+    key          TEXT PRIMARY KEY,    -- e.g. "auth_imperial"
+    name         TEXT,                -- localised name
+    description  TEXT,                -- cleaned description tooltip
+    required_dlc TEXT,                -- e.g. "MegaCorp"; NULL = base game
+    selectable   INTEGER NOT NULL DEFAULT 1,  -- 0 = not player-pickable
+    icon         TEXT,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (required_dlc) REFERENCES dlc(name)
+);
+
+CREATE TABLE authority_modifier (
+    authority_key  TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (authority_key, modifier_key),
+    FOREIGN KEY (authority_key) REFERENCES authority(key)
+);
+
+-- Eligibility rules parsed from an authority's `possible` block: kind 'ethic' (e.g.
+-- forbids Gestalt) or 'archetype' (Machine Intelligence needs MACHINE, Hive Mind
+-- forbids it) × operator require/forbid/require_any.
+CREATE TABLE authority_requirement (
+    authority_key TEXT NOT NULL,
+    kind          TEXT NOT NULL,      -- 'ethic' | 'archetype'
+    operator      TEXT NOT NULL,      -- 'require' | 'forbid' | 'require_any'
+    value         TEXT NOT NULL,      -- e.g. 'ethic_gestalt_consciousness', 'MACHINE'
+    group_id      INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (authority_key, kind, operator, value),
+    FOREIGN KEY (authority_key) REFERENCES authority(key)
+);
+
 -- Origins: the empire's starting scenario (one per empire). Like civics, the numeric
 -- effects (where present — most origins are narrative/event-driven) live in
 -- origin_modifier and the eligibility rules in origin_requirement. `selectable` is 0
@@ -23259,6 +23301,161 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_galvanic_symbiosis', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR REPLACE INTO authority
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('auth_democratic', 'Democratic', 'Democratic governments have regular elections where all citizens can vote on who should represent them.', NULL, 1, NULL, 0);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_democratic', 'faction_approval', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('faction_approval', 'Faction Approval', 1);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_democratic', 'country_leader_pool_size', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_leader_pool_size', 'Recruitable Leaders per Class', 1);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_democratic', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_democratic', 'ethic', 'forbid', 'ethic_authoritarian', 0);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_democratic', 'ethic', 'forbid', 'ethic_fanatic_authoritarian', 0);
+INSERT OR REPLACE INTO authority
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('auth_oligarchic', 'Oligarchic', 'Oligarchic governments are ruled by a small group of individuals that hold all political power.', NULL, 1, NULL, 1);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_oligarchic', 'councilor_skill_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_oligarchic', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_oligarchic', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_oligarchic', 'ethic', 'forbid', 'ethic_fanatic_authoritarian', 0);
+INSERT OR REPLACE INTO authority
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('auth_dictatorial', 'Dictatorial', 'Dictatorial governments are ruled by a single individual for life that wields absolute control over the state.', NULL, 1, NULL, 2);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_dictatorial', 'councilor_ruler_dictatorial_exp_gain', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_ruler_dictatorial_exp_gain', 'Ruler Experience Gain', 1);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_dictatorial', 'country_leader_pool_size', '-1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_leader_pool_size', 'Recruitable Leaders per Class', 1);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_dictatorial', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_dictatorial', 'ethic', 'forbid', 'ethic_egalitarian', 0);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_dictatorial', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR REPLACE INTO authority
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('auth_imperial', 'Imperial', 'Imperial governments are similar to dictatorial ones, except that the throne is always inherited by a designated successor upon the ruler''s death.', NULL, 1, NULL, 3);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_imperial', 'country_leader_pool_size', '-1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_leader_pool_size', 'Recruitable Leaders per Class', 1);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_imperial', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_imperial', 'ethic', 'forbid', 'ethic_egalitarian', 0);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_imperial', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR REPLACE INTO authority
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('auth_hive_mind', 'Hive Mind', 'Hive Minds operate as a single organism more than as a state. The population has no free will, and act as an extension of the Hive Mind itself - much like the limbs of a body.
+When cut off from the Mind, these drones become comatose and eventually wither and die. Any free individuals on planets owned by the Mind are driven away, killed, or simply treated as prey to feed the collective.', NULL, 1, NULL, 4);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_hive_mind', 'logistic_growth_mult', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_hive_mind', 'empire_size_penalty_mult', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 1);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_hive_mind', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_hive_mind', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR REPLACE INTO authority
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('auth_machine_intelligence', 'Machine Intelligence', 'Machine Intelligences are immense artificial group minds that have been networked into a single conscious entity. Most of the actual', NULL, 1, NULL, 5);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_machine_intelligence', 'colony_start_urban_districts_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('colony_start_urban_districts_add', 'Urban Districts when establishing Colonies', 1);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_machine_intelligence', 'planet_colony_development_speed_mult', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_colony_development_speed_mult', 'Colony Development Speed', 1);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_machine_intelligence', 'planet_pop_assembly_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_add', 'Monthly Mechanical Pop Assembly', 1);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_machine_intelligence', 'station_gatherers_produces_mult', '0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('station_gatherers_produces_mult', 'Resources Produced from Mining Stations', 1);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_machine_intelligence', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_machine_intelligence', 'archetype', 'require', 'MACHINE', 0);
+INSERT OR REPLACE INTO authority
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('auth_ancient_machine_intelligence', 'Ancient Machine Intelligence', NULL, NULL, 0, 'gfx/interface/icons/governments/authorities/auth_hive_mind.dds', 6);
+INSERT OR REPLACE INTO authority
+                   (key, name, description, required_dlc, selectable, icon, sort_order)
+               VALUES ('auth_corporate', 'Corporate', 'Corporate governments are organized as a massive commercial enterprise that has completely supplanted the role of the state.', 'MegaCorp', 1, NULL, 7);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_corporate', 'planet_jobs_trade_produces_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_corporate', 'empire_size_colonies_mult', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Planets', 1);
+INSERT OR IGNORE INTO authority_modifier
+                           (authority_key, modifier_key, modifier_value, sort_order)
+                       VALUES ('auth_corporate', 'envoys_add', '1.0', 2);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_corporate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_corporate', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
+INSERT OR IGNORE INTO authority_requirement
+                       (authority_key, kind, operator, value, group_id)
+                   VALUES ('auth_corporate', 'ethic', 'forbid', 'ethic_fanatic_authoritarian', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, icon, sort_order)
