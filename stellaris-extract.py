@@ -678,16 +678,18 @@ CREATE TABLE job_swap (
     sort_order   INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (source_kind, source_key, base_job, swapped_job)
 );
--- The swapped job's effective resources: the base job's produces/upkeep evaluated with
--- the swap condition active (e.g. Catalytic Technician → alloys from Food, not Minerals).
+-- Each swap's effective resources, for both sides of the tooltip: the base job's
+-- produces/upkeep evaluated in a plain empire (side='base') and with the swap condition
+-- active (side='swapped', e.g. Catalytic Technician → alloys from Food, not Minerals).
 CREATE TABLE job_swap_resource (
     source_key  TEXT NOT NULL,
     base_job    TEXT NOT NULL,
     swapped_job TEXT NOT NULL,
+    side        TEXT NOT NULL,      -- 'base' | 'swapped'
     kind        TEXT NOT NULL,      -- 'produces' | 'upkeep'
     resource    TEXT NOT NULL,
     amount      REAL NOT NULL,
-    PRIMARY KEY (source_key, base_job, swapped_job, kind, resource)
+    PRIMARY KEY (source_key, base_job, swapped_job, side, kind, resource)
 );
 
 -- Home-system initializers usable as a custom-empire start (`usage = custom_empire`
@@ -2080,12 +2082,9 @@ _JOB_RES_SKIP = {'trigger', 'modifier', 'mult', 'category', 'pop_amount_change_c
                  'pop_resources', 'desc', 'multiplier'}
 
 
-def _job_resources(block, variables: dict[str, float]) -> list[tuple[str, float]]:
-    """[(resource, amount)] from a produces/upkeep block. The block may repeat (parser
-    yields a list) for conditional bonuses — take the first block and only its direct
-    numeric resource entries (resolving @variables), skipping trigger/modifier sub-blocks."""
-    if isinstance(block, list):
-        block = next((b for b in block if isinstance(b, dict)), None)
+def _block_numeric(block, variables: dict[str, float]) -> list[tuple[str, float]]:
+    """[(resource, amount)] — the direct numeric resource entries of one produces/upkeep
+    block (resolving @variables), skipping trigger/modifier/category sub-blocks."""
     if not isinstance(block, dict):
         return []
     out: list[tuple[str, float]] = []
@@ -2096,6 +2095,36 @@ def _job_resources(block, variables: dict[str, float]) -> list[tuple[str, float]
         val = variables.get(s) if s.startswith('@') else _resolve_modifier_float(v)
         if val is not None and val != 0:
             out.append((k, val))
+    return out
+
+
+def _collect_res_dict(resd, load_script, out: dict[str, list]) -> None:
+    """Accumulate produces/upkeep blocks from a `resources` dict into `out`, following any
+    `inline_script` it references (a job's resources can be nested two levels deep:
+    job-level inline_script → resources → resources.inline_script → produces/upkeep)."""
+    if not isinstance(resd, dict):
+        return
+    for kind in ('produces', 'upkeep'):
+        for b in _as_blocks(resd.get(kind)):
+            if isinstance(b, dict):
+                out[kind].append(b)
+    isc = resd.get('inline_script')
+    for sn in (isc if isinstance(isc, list) else [isc]):
+        if isinstance(sn, str):
+            _collect_res_dict(load_script(sn), load_script, out)
+
+
+def _job_resource_blocks(jdef: dict, load_script) -> dict[str, list]:
+    """All of a job's produces/upkeep blocks {'produces': [...], 'upkeep': [...]}, following
+    both its top-level `resources` block and any job-level `inline_script` (jobs/job_*) that
+    carries a `resources` block — so jobs whose figures live in shared inline scripts
+    (enforcer/telepath/foundry/…) are fully resolved, conditional blocks included."""
+    out: dict[str, list] = {'produces': [], 'upkeep': []}
+    _collect_res_dict(jdef.get('resources'), load_script, out)
+    isc = jdef.get('inline_script')
+    for sn in (isc if isinstance(isc, list) else [isc]):
+        if isinstance(sn, str):
+            _collect_res_dict(load_script(sn).get('resources'), load_script, out)
     return out
 
 
@@ -2161,7 +2190,10 @@ def extract_jobs(install_dir: Path, loc: dict[str, str],
                         if blocks[kind] is None:
                             blocks[kind] = sdata.get(kind)
                 for kind in ('produces', 'upkeep'):
-                    for r_order, (rk, rv) in enumerate(_job_resources(blocks[kind], variables)):
+                    first = blocks[kind]
+                    if isinstance(first, list):
+                        first = next((b for b in first if isinstance(b, dict)), None)
+                    for r_order, (rk, rv) in enumerate(_block_numeric(first, variables)):
                         w.execute(
                             """INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -2277,32 +2309,79 @@ def _collect_swap_sources(trigger, idx: dict[str, dict]) -> set[tuple[str, str]]
     return out
 
 
-def _block_matches_swap(bt, swap_pos: set[str]) -> bool:
-    """A produces/upkeep block applies to the swapped job iff its trigger consists only
-    of the swap's positive conditions (k = yes for k in swap_pos) — so the swap=no and
-    empire-specific (is_robot_empire …) variants are excluded."""
-    if not isinstance(bt, dict):
-        return False
-    for k, v in bt.items():
-        if not (k in swap_pos and str(v).strip() == 'yes'):
-            return False
-    return True
+# Trigger keys that don't assert an empire/planet condition (structural scopes/counters).
+_SIGNAL_SKIP = {'exists', 'count', 'limit', 'years', 'amount', 'percentage'}
 
 
-def _swapped_job_resources(res, swap_pos: set[str],
-                           variables: dict[str, float]) -> list[tuple[str, str, float]]:
-    """The base job's produces/upkeep summed over the blocks that apply once the swap
-    condition holds (unconditional blocks + blocks whose trigger is the swap's)."""
+def _signals(node, idx: dict[str, dict]) -> tuple[set[str], set[str]]:
+    """(positive, negative) normalised condition tokens a trigger asserts, expanding nested
+    scripted_triggers down to leaf checks so equivalent phrasings unify (e.g. both
+    `industrial_jobs_are_catalytic_trigger = yes` and `owner = { is_catalytic_empire = yes }`
+    reduce to the same `has_valid_civic=civic_*` set). `= no` / NOT / NOR flip the sign."""
+    pos: set[str] = set()
+    neg: set[str] = set()
+    seen: set[str] = set()
+
+    def handle(k: str, v, negate: bool) -> None:
+        if k in _SIGNAL_SKIP:
+            return
+        if k in ('NOT', 'NOR', 'NAND'):
+            walk(v, not negate)
+            return
+        if k in ('OR', 'AND', 'hidden_trigger', 'custom_tooltip', 'count_trigger'):
+            walk(v, negate)
+            return
+        if isinstance(v, dict):
+            walk(v, negate)            # scope, e.g. owner = { … }
+            return
+        if isinstance(v, list):
+            for x in v:
+                if isinstance(x, (dict, list)):
+                    walk(x, negate)
+                else:
+                    handle(k, x, negate)
+            return
+        s = str(v).strip()
+        if k in idx and s in ('yes', 'no') and k not in seen:
+            seen.add(k)
+            walk(idx[k], negate if s == 'yes' else not negate)
+            return
+        if s == 'yes':
+            (neg if negate else pos).add(k)
+        elif s == 'no':
+            (pos if negate else neg).add(k)
+        else:
+            (neg if negate else pos).add(f"{k}={s}")
+
+    def walk(n, negate: bool) -> None:
+        if isinstance(n, dict):
+            for k, v in n.items():
+                handle(k, v, negate)
+        elif isinstance(n, list):
+            for x in n:
+                walk(x, negate)
+
+    walk(node, False)
+    return pos, neg
+
+
+def _eval_job_resources(blocks: dict[str, list], swap_pos: set[str], idx: dict[str, dict],
+                        variables: dict[str, float]) -> list[tuple[str, str, float]]:
+    """Sum a job's produces/upkeep for the empire state a swap implies — `swap_pos` is the
+    set of positive condition tokens the swap guarantees (empty = plain base empire). A
+    conditional block applies iff all its positive requirements are guaranteed
+    (⊆ swap_pos) and none of its negative requirements are contradicted by a guaranteed
+    positive (so the `= no` default and empire-specific is_robot_empire variants drop out)."""
     out: dict[tuple[str, str], float] = {}
-    if not isinstance(res, dict):
-        return []
     for kind in ('produces', 'upkeep'):
-        for block in _as_blocks(res.get(kind)):
+        for block in blocks.get(kind, []):
             if not isinstance(block, dict):
                 continue
             bt = block.get('trigger')
-            if bt is not None and not _block_matches_swap(bt, swap_pos):
-                continue
+            if bt is not None:
+                bpos, bneg = _signals(bt, idx)
+                if not bpos <= swap_pos or (bneg & swap_pos):
+                    continue
             for k, v in block.items():
                 if k == 'trigger' or isinstance(v, (dict, list)):
                     continue
@@ -2368,16 +2447,12 @@ def extract_job_swaps(install_dir: Path, loc: dict[str, str], scripted_vars: dic
                     return True
                 civic_gestalt = 'machine' in source_key or 'hive' in source_key
                 return civic_gestalt == job_gestalt
-            # The base job's resources block, with any `output/*` inline script merged in.
-            res = jdef.get('resources') if isinstance(jdef.get('resources'), dict) else {}
-            merged = dict(res)
-            isc = res.get('inline_script') if isinstance(res, dict) else None
-            for sn in (isc if isinstance(isc, list) else [isc]):
-                if isinstance(sn, str):
-                    sdata = load_script(sn)
-                    for kind in ('produces', 'upkeep'):
-                        if merged.get(kind) is None and sdata.get(kind) is not None:
-                            merged[kind] = sdata.get(kind)
+            # All of the base job's produces/upkeep blocks, following the full inline-script
+            # chain (jobs whose figures live in shared inline scripts, possibly nested). The
+            # base side of the tooltip is computed from the same blocks (plain empire) so it
+            # is correct even when the reference job_resource row is empty/missing.
+            merged = _job_resource_blocks(jdef, load_script)
+            base_res = _eval_job_resources(merged, set(), idx, variables)
             for st in swaps:
                 if not isinstance(st, dict):
                     continue
@@ -2388,9 +2463,8 @@ def extract_job_swaps(install_dir: Path, loc: dict[str, str], scripted_vars: dic
                 sources = _collect_swap_sources(trig, idx)
                 if not sources:
                     continue
-                swap_pos = {k for k, v in trig.items() if str(v).strip() == 'yes'} \
-                    if isinstance(trig, dict) else set()
-                swap_res = _swapped_job_resources(merged, swap_pos, variables)
+                swap_pos, _ = _signals(trig, idx)
+                swap_res = _eval_job_resources(merged, swap_pos, idx, variables)
                 for kind, skey in sources:
                     if not attribute_ok(kind, skey):
                         continue
@@ -2401,12 +2475,13 @@ def extract_job_swaps(install_dir: Path, loc: dict[str, str], scripted_vars: dic
                            VALUES (?, ?, ?, ?, ?, ?, ?)""",
                         (kind, skey, key, job_name(key), swapped, job_name(swapped), order))
                     order += 1
-                    for rk, resource, amt in swap_res:
-                        w.execute(
-                            """INSERT OR IGNORE INTO job_swap_resource
-                                   (source_key, base_job, swapped_job, kind, resource, amount)
-                               VALUES (?, ?, ?, ?, ?, ?)""",
-                            (skey, key, swapped, rk, resource, amt))
+                    for side, rows in (('base', base_res), ('swapped', swap_res)):
+                        for rk, resource, amt in rows:
+                            w.execute(
+                                """INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                                (skey, key, swapped, side, rk, resource, amt))
     w.commit()
     if verbose:
         print(f"  job swaps: {order}")
