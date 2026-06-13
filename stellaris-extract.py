@@ -665,6 +665,7 @@ CREATE TABLE prescripted_empire (
     planet_class       TEXT,              -- e.g. "pc_desert"
     initializer        TEXT,              -- home-system initializer, e.g. "sol_system_initializer"
     graphical_culture  TEXT,              -- ship appearance, e.g. "reptilian_01"
+    selectable         INTEGER NOT NULL DEFAULT 1,  -- 0 = design-only template (playable = empire_design_never)
     sort_order         INTEGER NOT NULL DEFAULT 0
 );
 
@@ -2340,6 +2341,10 @@ def extract_prescripted_empires(data: dict, loc: dict[str, str], w: Writer,
         def scalar(v):
             return v if isinstance(v, str) else None
 
+        # Design-only templates (`playable = empire_design_never`) are duplicated by a
+        # real `<key>_1` entry — exclude them so the picker has no duplicates.
+        selectable = 0 if scalar(edef.get('playable')) == 'empire_design_never' else 1
+
         civics_raw = edef.get('civics')
         civics = _to_list(civics_raw) if not isinstance(civics_raw, dict) else []
 
@@ -2350,8 +2355,8 @@ def extract_prescripted_empires(data: dict, loc: dict[str, str], w: Writer,
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, initializer, graphical_culture, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    origin, planet_class, initializer, graphical_culture, selectable, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (key, name, loc_name(edef.get('adjective')), loc_name(edef.get('ship_prefix')),
              scalar(species.get('class')), scalar(species.get('portrait')),
              loc_name(species.get('name')), loc_name(species.get('plural')),
@@ -2362,7 +2367,8 @@ def extract_prescripted_empires(data: dict, loc: dict[str, str], w: Writer,
              loc_name(edef.get('planet_name')), loc_name(edef.get('system_name')),
              scalar(edef.get('authority')), scalar(edef.get('government')),
              scalar(edef.get('origin')), scalar(edef.get('planet_class')),
-             scalar(edef.get('initializer')), scalar(edef.get('graphical_culture')), order),
+             scalar(edef.get('initializer')), scalar(edef.get('graphical_culture')),
+             selectable, order),
         )
         if verbose:
             print(f"  empire {key} | {name} | {scalar(species.get('class'))}")
