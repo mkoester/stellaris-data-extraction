@@ -561,6 +561,8 @@ CREATE TABLE origin (
     selectable     INTEGER NOT NULL DEFAULT 1,
     ascension_lock   TEXT,            -- locked to this single ascension path (blocks all others); NULL = unrestricted
     ascension_blocks TEXT,            -- comma-separated ascension paths blocked (when it still allows others); NULL = none
+    starting_colony  TEXT,            -- forced starting world class (e.g. pc_gaia, pc_shattered_ring_habitable); NULL = normal
+    forces_home_system INTEGER NOT NULL DEFAULT 0,  -- 1 = origin forces a fixed home system (a non custom-empire initializer)
     icon             TEXT,
     sort_order     INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
@@ -2152,9 +2154,29 @@ def compute_ascension_restrictions(install_dir: Path) -> dict[str, dict]:
     return out
 
 
+def _custom_empire_initializers(install_dir: Path) -> set[str]:
+    """The initializer keys usable as a plain custom-empire start (`usage = custom_empire`).
+    An origin whose `initializers` list includes anything else forces a fixed home
+    system (its own `usage = origin` start, e.g. shattered_ring_start)."""
+    custom: set[str] = set()
+    idir = install_dir / 'common' / 'solar_system_initializers'
+    if not idir.is_dir():
+        return custom
+    for f in sorted(idir.glob('*.txt')):
+        try:
+            data = parse_file(f)
+        except Exception:
+            continue
+        for key, idef in data.items():
+            if isinstance(idef, dict) and str(idef.get('usage')).strip() == 'custom_empire':
+                custom.add(key)
+    return custom
+
+
 def extract_origins(data: dict, force_nonselectable: bool, loc: dict[str, str],
                     scripted_vars: dict[str, float], w: Writer, order_start: int,
-                    verbose: bool, ascension: dict[str, dict]) -> int:
+                    verbose: bool, ascension: dict[str, dict],
+                    init_custom: set[str]) -> int:
     """Extract one origins file. `force_nonselectable` marks every origin in it
     non-selectable (the non-playable file). Returns the next sort_order."""
     variables: dict[str, float] = dict(scripted_vars)
@@ -2199,13 +2221,20 @@ def extract_origins(data: dict, force_nonselectable: bool, loc: dict[str, str],
         icon = icon.strip('"') if isinstance(icon, str) else None
 
         asc = ascension.get(key) or {}
+        starting_colony = odef.get('starting_colony')
+        starting_colony = starting_colony.strip('"') if isinstance(starting_colony, str) else None
+        # Origin forces a fixed home system when it lists an initializer that isn't one
+        # of the standard custom-empire starts (origins like arc_welders just list the
+        # standard set → no override).
+        inits = [ik for ik in _to_list(odef.get('initializers')) if isinstance(ik, str)]
+        forces_home_system = 1 if any(ik not in init_custom for ik in inits) else 0
         w.execute(
             """INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
-                    ascension_blocks, icon, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (key, name, description, dlc, selectable, asc.get('lock'),
-             ','.join(asc.get('blocks', [])) or None, icon, order),
+             ','.join(asc.get('blocks', [])) or None, starting_colony, forces_home_system, icon, order),
         )
         if verbose:
             print(f"  origin {key} | {name}{'' if selectable else ' (not selectable)'}")
@@ -4033,6 +4062,7 @@ Examples:
     origin_files = (('00_origins.txt', False), ('01_origins_non_playable.txt', True))
     print(f"\n[origins] {civics_dir}", file=progress)
     ascension = compute_ascension_restrictions(install_dir)
+    init_custom = _custom_empire_initializers(install_dir)
     origin_order = 0
     for fn, nonsel in origin_files:
         f = civics_dir / fn
@@ -4040,7 +4070,7 @@ Examples:
             continue
         try:
             origin_order = extract_origins(parse_file(f), nonsel, loc, scripted_vars, w,
-                                           origin_order, args.verbose, ascension)
+                                           origin_order, args.verbose, ascension, init_custom)
         except Exception as e:
             print(f"  WARNING: failed to parse {fn}: {e}", file=sys.stderr)
 
