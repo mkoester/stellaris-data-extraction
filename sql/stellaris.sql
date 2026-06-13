@@ -10755,7 +10755,7 @@ INSERT OR IGNORE INTO precursor_building_modifier
                     condition, sort_order)
                VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_sr_zro_upkeep_add', '0.5', NULL, NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_biologists_sr_zro_upkeep_add', 'Sr Zro Upkeep per 100', 0);
+           VALUES ('planet_biologists_sr_zro_upkeep_add', 'Zro Upkeep per 100', 0);
 INSERT OR IGNORE INTO precursor_building_modifier
                    (building_key, scope, modifier_key, modifier_value, ae_value,
                     condition, sort_order)
@@ -12707,23 +12707,23 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_zro_deposit_5', 'produces', 'sr_zro', '5.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_dark_matter_deposit_1', 'Sr Dark Matter +1', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
+               VALUES ('d_dark_matter_deposit_1', 'Dark Matter +1', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_dark_matter_deposit_1', 'produces', 'sr_dark_matter', '1.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_dark_matter_deposit_2', 'Sr Dark Matter +2', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
+               VALUES ('d_dark_matter_deposit_2', 'Dark Matter +2', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_dark_matter_deposit_2', 'produces', 'sr_dark_matter', '2.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_dark_matter_deposit_3', 'Sr Dark Matter +3', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
+               VALUES ('d_dark_matter_deposit_3', 'Dark Matter +3', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_dark_matter_deposit_3', 'produces', 'sr_dark_matter', '3.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_dark_matter_deposit_10', 'Sr Dark Matter +10', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
+               VALUES ('d_dark_matter_deposit_10', 'Dark Matter +10', 'orbital_research_deposits', 0, NULL, '02_sr_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_dark_matter_deposit_10', 'produces', 'sr_dark_matter', '10.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_living_metal_deposit', 'Sr Living Metal +1', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
+               VALUES ('d_living_metal_deposit', 'Living Metal +1', 'orbital_mining_deposits', 0, NULL, '02_sr_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_living_metal_deposit', 'produces', 'sr_living_metal', '1.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
@@ -13675,7 +13675,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_microplanet_memorial', 'planet_crime_add', '-30.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_crime_add', '', 1);
+           VALUES ('planet_crime_add', '', 0);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_weapon_extraction_facility', 'Weapon Extraction Facility', 'deposit_cat_rare', 0, NULL, '11_astral_planes_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -14177,7 +14177,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_red_giant_unstable', 'produces', 'energy', '5.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES ('d_red_giant_dm', 'Sr Dark Matter +8', 'orbital_mining_deposits', 0, NULL, '15_infernals_deposits.txt');
+               VALUES ('d_red_giant_dm', 'Dark Matter +8', 'orbital_mining_deposits', 0, NULL, '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_red_giant_dm', 'produces', 'sr_dark_matter', '5.0');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -17494,10 +17494,10 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_storm_callers', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_environmental_architects', 'Planetscapers', 'Additional Starting Technologies: Society Technologies to remove Blocker on the Homeworld
+               VALUES ('civic_environmental_architects', 'Planetscapers', 'Additional Starting Technologies: Society Technologies to remove Blocker Natural Blockers on the Homeworld
 Society Technologies to remove Blocker Natural Blockers are granted as Permanent Research Options upon Colonization
-Mastery of Nature replaced with Cultivated Worldscaping Planetary
-For each Blocker Natural Blocker on Colonized Planet : Resources from Jobs: -10%, Pop Growth Speed: -10%, Pop Upkeep: +15%', 'normal', NULL, 1, 0, NULL, 65);
+Mastery of Nature Ascension Perk replaced with Cultivated Worldscaping Planetary Decision
+For each Blocker Natural Blocker on Colonized Planets: Resources from Jobs: -10%, Pop Growth Speed: -10%, Pop Upkeep: +15%', 'normal', NULL, 1, 0, NULL, 65);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects', 'planet_jobs_produces_mult', '0.1', 0);
@@ -17588,10 +17588,10 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_environmental_architects', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_galactic_curators', 'Galactic Curators', 'Guaranteed Research Options:
-Initial : One Common of each Collection Category
+               VALUES ('civic_galactic_curators', 'Galactic Curators', 'Guaranteed Research Options: Society Research Galactic Archivism
+Initial Specimens: One Common of each Collection Category
 Gain Unity each time you find a Specimen or complete an Archaeological Site
-Purchases from the Curator Enclave: $@galactic_curators_curator_enclave_purchase_cost|%0$
+Purchases from the Curator Enclave: -25%
 Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output
 Replaces Entertainer Jobs with Museum Curator Jobs', 'normal', NULL, 1, 0, NULL, 66);
 INSERT OR IGNORE INTO civic_modifier
@@ -17630,11 +17630,11 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_galactic_curators', 'civic', 'forbid', 'civic_corporate_galactic_curators', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_beastmasters', 'Beastmasters', 'Additional Starting Technologies:  
-Available Starbase Buildings:
-Home System: Start with a
+               VALUES ('civic_beastmasters', 'Beastmasters', 'Additional Starting Technologies: Physics Gravity Snares, Society Artificial Breeding
+Available Starbase Buildings: Beastports
+Home System: Start with a Beastport
 Starting Military Ships are replaced with Space Amoebas
-Starting Genetic Material : Common Space Amoeba', 'normal', NULL, 1, 0, NULL, 67);
+Starting Genetic Material: Common Space Amoeba', 'normal', NULL, 1, 0, NULL, 67);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_beastmasters', 'starbase_shipyard_artificial_build_cost_mult', '2.0', 0);
@@ -17690,7 +17690,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_genetic_identification', 'planet_crime_mult', '-0.15', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_crime_mult', '', 1);
+           VALUES ('planet_crime_mult', '', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_genetic_identification', 'intel_encryption_add', '1.0', 2);
@@ -17857,8 +17857,8 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_superstitious_beliefs', 'Superstitious Beliefs', 'Replaces: Priests with Spirit Mediums, High Priests with High Astrologists
-Enables
-Every 13 years, the changes.
+Enables Galactic Dowsing
+Every 13 years, the Cycle changes.
 Fortune Events will periodically benefit or impair your empire.', 'normal', NULL, 1, 0, NULL, 72);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
@@ -17915,7 +17915,7 @@ INSERT OR REPLACE INTO civic
                VALUES ('civic_secret_societies', 'Secret Societies', 'Clandestine Factions will emerge after contacting other empires.
 Starts with the ability to conduct Proxy Wars., will produce Unity per active and successful Proxy War.
 Starts in First Contact with two neighboring empires.
-Infiltration Level gained on empires after First Contact: +$@secret_society_infiltration_gain|0$', 'normal', NULL, 1, 0, NULL, 74);
+Infiltration Level gained on empires after First Contact: +40', 'normal', NULL, 1, 0, NULL, 74);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_secret_societies', 'proxy_war_cost_mult', '-0.25', 0);
@@ -18306,13 +18306,13 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_pyrolatry', 'origin', 'forbid', 'origin_ocean_paradise', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_galvanic_symbiosis', 'Galvanic Synthesis', 'Starts with Engineering Research already researched.
-Homeworld has a .
-Gain access to special Edicts:  
-Gives access to Sr Living Metal components:  
+               VALUES ('civic_galvanic_symbiosis', 'Galvanic Synthesis', 'Starts with Engineering Research Living Metal already researched.
+Homeworld has a Living Metal Sediment.
+Gain access to special Edicts: Centrifugal Siphoning, Modular Growth Compounds
+Gives access to Living Metal components: Regenerative Armor, Reshaping Projectile Accelerator
 Has access to Planetary Decision: Distribute Living Metal.
 Can recruit the Mimetic Strike Force armies.
-Can build a in systems with a Molten World for jobs.', 'normal', NULL, 1, 0, NULL, 80);
+Can build a Offworld Expedition Hub in systems with a Molten World for Offworld Prospector jobs.', 'normal', NULL, 1, 0, NULL, 80);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
@@ -18576,7 +18576,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ancient_memories_of_control', 'planet_crime_no_happiness_add', '-30.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 1);
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_ancient_memories_of_control', 'monthly_loyalty_from_subjects', '1.0', 2);
@@ -19686,11 +19686,11 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_hive_guided_sapience', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_hive_beastmasters', 'Wild Swarm', 'Additional Starting Technologies:  
-Available Starbase Buildings:
-Home System: Start with a
+               VALUES ('civic_hive_beastmasters', 'Wild Swarm', 'Additional Starting Technologies: Physics Gravity Snares, Society Artificial Breeding
+Available Starbase Buildings: Beastports
+Home System: Start with a Beastport
 Starting Military Ships are replaced with Space Amoebas
-Starting Genetic Material : Common Space Amoeba', 'gestalt', NULL, 1, 1, NULL, 157);
+Starting Genetic Material: Common Space Amoeba', 'gestalt', NULL, 1, 1, NULL, 157);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_beastmasters', 'starbase_shipyard_artificial_build_cost_mult', '2.0', 0);
@@ -19753,10 +19753,10 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_astrometeorology_hive', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_environmental_architects_hive', 'Cultivation Drones', 'Additional Starting Technologies: Society Technologies to remove Blocker on the Homeworld
+               VALUES ('civic_environmental_architects_hive', 'Cultivation Drones', 'Additional Starting Technologies: Society Technologies to remove Blocker Natural Blockers on the Homeworld
 Society Technologies to remove Blocker Natural Blockers are granted as Permanent Research Options upon Colonization
-Mastery of Nature replaced with Cultivated Worldscaping Planetary
-For each Blocker Natural Blocker on Colonized Planet : Resources from Jobs: -10%, Pop Assembly: -10%, Pop Upkeep: +15%', 'gestalt', NULL, 1, 1, NULL, 159);
+Mastery of Nature Ascension Perk replaced with Cultivated Worldscaping Planetary Decision
+For each Blocker Natural Blocker on Colonized Planets: Resources from Jobs: -10%, Pop Assembly: -10%, Pop Upkeep: +15%', 'gestalt', NULL, 1, 1, NULL, 159);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_hive', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -19819,7 +19819,7 @@ INSERT OR REPLACE INTO civic
                VALUES ('civic_hive_galactic_curators', 'Caretaker Network', 'Guaranteed Research Options: Society Research Galactic Archivism
 Initial Specimens: One Common of each Collection Category
 Gain Unity each time you find a Specimen or complete an Archaeological Site
-Purchases from the Curator Enclave: $@galactic_curators_curator_enclave_purchase_cost|%0$
+Purchases from the Curator Enclave: -25%
 Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output', 'gestalt', NULL, 1, 1, NULL, 160);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -20232,13 +20232,13 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_hive_world_forgers', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_hive_galvanic_symbiosis', 'Galvanic Symbiosis', 'Starts with Engineering Research already researched.
-Homeworld has a .
-Gain access to special Edicts:  
-Gives access to Sr Living Metal components:  
+               VALUES ('civic_hive_galvanic_symbiosis', 'Galvanic Symbiosis', 'Starts with Engineering Research Living Metal already researched.
+Homeworld has a Living Metal Sediment.
+Gain access to special Edicts: Centrifugal Siphoning, Modular Growth Compounds
+Gives access to Living Metal components: Regenerative Armor, Reshaping Projectile Accelerator
 Has access to Planetary Decision: Distribute Living Metal.
 Can recruit the Mimetic Strike Force armies.
-Can build a in systems with a Molten World for jobs.', 'gestalt', NULL, 1, 1, NULL, 171);
+Can build a Offworld Expedition Hub in systems with a Molten World for Offworld Prospector Drone jobs.', 'gestalt', NULL, 1, 1, NULL, 171);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
@@ -21217,11 +21217,11 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_machine_astromining_drones', 'origin', 'forbid', 'origin_machine', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_machine_beastmasters', 'Biodrones', 'Additional Starting Technologies:  
-Available Starbase Buildings:
-Home System: Start with a
+               VALUES ('civic_machine_beastmasters', 'Biodrones', 'Additional Starting Technologies: Physics Gravity Snares, Society Artificial Breeding
+Available Starbase Buildings: Beastports
+Home System: Start with a Beastport
 Starting Military Ships are replaced with Space Amoebas
-Starting Genetic Material : Common Space Amoeba', 'gestalt', NULL, 1, 1, NULL, 203);
+Starting Genetic Material: Common Space Amoeba', 'gestalt', NULL, 1, 1, NULL, 203);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_beastmasters', 'artificial_ship_naval_cap_usage_mult', '2.0', 0);
@@ -21276,10 +21276,10 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_astrometeorology_machine', 'authority', 'require', 'auth_machine_intelligence', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_environmental_architects_machine', 'Gardening Protocols', 'Additional Starting Technologies: Society Technologies to remove Blocker on the Homeworld
+               VALUES ('civic_environmental_architects_machine', 'Gardening Protocols', 'Additional Starting Technologies: Society Technologies to remove Blocker Natural Blockers on the Homeworld
 Society Technologies to remove Blocker Natural Blockers are granted as Permanent Research Options upon Colonization
-Mastery of Nature replaced with Cultivated Worldscaping Planetary
-For each Blocker Natural Blocker on Colonized Planet : Resources from Jobs: -10%, Pop Assembly: -10%, Pop Upkeep: +15%', 'gestalt', NULL, 1, 1, NULL, 205);
+Mastery of Nature Ascension Perk replaced with Cultivated Worldscaping Planetary Decision
+For each Blocker Natural Blocker on Colonized Planets: Resources from Jobs: -10%, Pop Assembly: -10%, Pop Upkeep: +15%', 'gestalt', NULL, 1, 1, NULL, 205);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_machine', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -21339,7 +21339,7 @@ INSERT OR REPLACE INTO civic
                VALUES ('civic_machine_galactic_curators', 'Caretaker Network', 'Guaranteed Research Options: Society Research Galactic Archivism
 Initial Specimens: One Common of each Collection Category
 Gain Unity each time you find a Specimen or complete an Archaeological Site
-Purchases from the Curator Enclave: $@galactic_curators_curator_enclave_purchase_cost|%0$
+Purchases from the Curator Enclave: -25%
 Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output', 'gestalt', NULL, 1, 1, NULL, 206);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -21520,13 +21520,13 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_machine_world_forgers', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_machine_galvanic_symbiosis', 'Galvanic Retrofitting', 'Starts with Engineering Research already researched.
-Homeworld has a .
-Gain access to special Edicts:  
-Gives access to Sr Living Metal components:  
+               VALUES ('civic_machine_galvanic_symbiosis', 'Galvanic Retrofitting', 'Starts with Engineering Research Living Metal already researched.
+Homeworld has a Living Metal Sediment.
+Gain access to special Edicts: Centrifugal Siphoning, Modular Growth Compounds
+Gives access to Living Metal components: Regenerative Armor, Reshaping Projectile Accelerator
 Has access to Planetary Decision: Distribute Living Metal.
 Can recruit the Mimetic Strike Force armies.
-Can build a in systems with a Molten World for jobs.', 'gestalt', NULL, 1, 1, NULL, 212);
+Can build a Offworld Expedition Hub in systems with a Molten World for Offworld Prospector Drone jobs.', 'gestalt', NULL, 1, 1, NULL, 212);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_galvanic_symbiosis', 'planet_building_refund_mult', '0.75', 0);
@@ -21899,10 +21899,10 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_public_relations_specialists', 'civic', 'forbid', 'civic_diplomatic_corps', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_death_cult_corporate', 'Corporate Death Cult', 'Available Buildings:
+               VALUES ('civic_death_cult_corporate', 'Corporate Death Cult', 'Available Buildings: Sacrificial Temple
 Additional Starting Buildings: Sacrificial Temple
-Available Holdings:
-Access to
+Available Holdings: Sacrificial Shrine
+Access to Sacrifice Edicts
 Priests are converted into Death Priests
 The Xeno-Outreach Agency Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Necroids Species Pack', 1, 0, NULL, 226);
 INSERT OR IGNORE INTO civic_requirement
@@ -21944,7 +21944,7 @@ INSERT OR REPLACE INTO civic
                VALUES ('civic_corporate_hedonism', 'Corporate Hedonism', 'Pop Cat Civilians are converted into Hedonists, which do not produce Amenities
 Allows Decadent Lifestyle Living Standard, under which all Pops have increased Happiness, Consumer Goods Upkeep and Amenities Usage
 Hedonists with Decadent Lifestyle provide Unity and Pop Growth (or Assembly) Speed, but require Amenities
-Additional Starting Buildings:
+Additional Starting Buildings: Holo-Theatres
 The Amusement Megaplex Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 228);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -22105,7 +22105,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_corporate_relentless_industrialists', 'origin', 'forbid', 'origin_life_seeded', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_corporate_toxic_baths', 'Mutagenic Luxury', 'Available Buildings:
+               VALUES ('civic_corporate_toxic_baths', 'Mutagenic Luxury', 'Available Buildings: Mutagenic Spas
 Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a Colony with Mutagenic Spas.
 Can build Corporate Clinic Corporate Building
 The Corporate Clinic Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 234);
@@ -22312,7 +22312,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_corporate_hyperspace_specialty', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_corporate_dimensional_worship', 'Dimensional Enterprise', 'Available Starbase Buildings:
+               VALUES ('civic_corporate_dimensional_worship', 'Dimensional Enterprise', 'Available Starbase Buildings: Dimensional Shrine
 The Xeno-Outreach Agency Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 239);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -22496,8 +22496,8 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_worker_coop', 'civic', 'forbid', 'civic_police_state', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_corporate_dark_consortium', 'Shadow Corporation', 'Additional Starting Technologies: 
-Access to
+               VALUES ('civic_corporate_dark_consortium', 'Shadow Corporation', 'Additional Starting Technologies: Physics Dark Matter Drawing
+Access to Dark Matter Edicts
 Has access to the Dark Matter Breakthrough Council Agenda.
 The Private Research Enterprises Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 245);
 INSERT OR IGNORE INTO civic_requirement
@@ -22685,7 +22685,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_corporate_guided_sapience', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_corporate_toxic_baths_individual_machine', 'Luxury Lubrication Pools', 'Available Buildings:
+               VALUES ('civic_corporate_toxic_baths_individual_machine', 'Luxury Lubrication Pools', 'Available Buildings: Hyper Lubrication Basin
 Leaders with the Substance Abuser trait gain +3 Effective Leader Skill Level while governing a Colony with Hyper Lubrication Basin.
 Can build Corporate Clinic Corporate Building
 The Corporate Clinic Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 249);
@@ -22702,14 +22702,14 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_corporate_toxic_baths_individual_machine', 'origin', 'forbid', 'origin_life_seeded', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_astrometeorology_megacorp', 'Weather Exploitation', 'Available Buildings:
+               VALUES ('civic_astrometeorology_megacorp', 'Weather Exploitation', 'Available Buildings: Astrometeorology Observatory
 Additional Starting Buildings: Astrometeorology Observatory
 The Private Research Enterprises Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 250);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_storm_callers_megacorp', 'Storm Influencers', 'Available Buildings:
+               VALUES ('civic_storm_callers_megacorp', 'Storm Influencers', 'Available Buildings: Storm Summoning Theater
 Replaces Jobs with Storm Dancer Jobs
-Species Traits:
+Species Traits: Storm Touched
 The Amusement Megaplex Corporate Building generates additional Branch Office Value and adds +50 Merchant jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 251);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -22726,10 +22726,10 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_storm_callers_megacorp', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_environmental_architects_megacorp', 'Geo-Engineering Inc.', 'Additional Starting Technologies: Society Technologies to remove Blocker on the Homeworld
+               VALUES ('civic_environmental_architects_megacorp', 'Geo-Engineering Inc.', 'Additional Starting Technologies: Society Technologies to remove Blocker Natural Blockers on the Homeworld
 Society Technologies to remove Blocker Natural Blockers are granted as Permanent Research Options upon Colonization
-Mastery of Nature replaced with Cultivated Worldscaping Planetary
-For each Blocker Natural Blocker on Colonized Planet : Resources from Jobs: -10%, Pop Growth Speed: -10%, Pop Upkeep: +15%
+Mastery of Nature Ascension Perk replaced with Cultivated Worldscaping Planetary Decision
+For each Blocker Natural Blocker on Colonized Planets: Resources from Jobs: -10%, Pop Growth Speed: -10%, Pop Upkeep: +15%
 The Executive Retreat Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 252);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -22809,10 +22809,10 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_environmental_architects_megacorp', 'origin', 'forbid', 'origin_void_machines', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_corporate_galactic_curators', 'Antiquarian Expertise', 'Guaranteed Research Options:
-Initial : One Common of each Collection Category
+               VALUES ('civic_corporate_galactic_curators', 'Antiquarian Expertise', 'Guaranteed Research Options: Society Research Galactic Archivism
+Initial Specimens: One Common of each Collection Category
 Gain Unity each time you find a Specimen or complete an Archaeological Site
-Purchases from the Curator Enclave: $@galactic_curators_curator_enclave_purchase_cost|%0$
+Purchases from the Curator Enclave: -25%
 Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output
 Replaces Entertainer Jobs with Museum Curator Jobs
 The Public Relations Firm Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 253);
@@ -22851,11 +22851,11 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_corporate_galactic_curators', 'civic', 'forbid', 'civic_galactic_curators', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_corporate_beastmasters', 'Space Ranchers', 'Additional Starting Technologies:  
-Available Starbase Buildings:
-Home System: Start with a
+               VALUES ('civic_corporate_beastmasters', 'Space Ranchers', 'Additional Starting Technologies: Physics Gravity Snares, Society Artificial Breeding
+Available Starbase Buildings: Beastports
+Home System: Start with a Beastport
 Starting Military Ships are replaced with Space Amoebas
-Starting Genetic Material : Common Space Amoeba
+Starting Genetic Material: Common Space Amoeba
 The Fast Food Chain Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 254);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -22906,7 +22906,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_genetic_identification', 'planet_crime_mult', '-0.15', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_crime_mult', '', 1);
+           VALUES ('planet_crime_mult', '', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_genetic_identification', 'intel_encryption_add', '1.0', 2);
@@ -23045,8 +23045,8 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_superstitious_beliefs', 'Fortune Enterprise', 'Replaces: Priests with Fortune Tellers, High Priests with Fortune Brokers
-Enables
-Every 13 years, the changes.
+Enables Galactic Dowsing
+Every 13 years, the Cycle changes.
 Fortune Events will periodically benefit or impair your empire.', 'corporate', NULL, 1, 0, NULL, 258);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
@@ -23095,7 +23095,7 @@ INSERT OR REPLACE INTO civic
                VALUES ('civic_secret_societies_corporate', 'Influential Cartel', 'Clandestine Factions will emerge after contacting other empires.
 Starts with the ability to conduct Proxy Wars., will produce Unity per active and successful Proxy War.
 Starts in First Contact with two neighboring empires.
-Infiltration Level gained on empires after First Contact: +$@secret_society_infiltration_gain|0$
+Infiltration Level gained on empires after First Contact: +40
 The Corporate Embassy Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 260);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -23148,7 +23148,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_chosen', 'Chosen Executives', 'Starts the game in contact with a Shroud Patron.
-Additional Starting Technologies: Society
+Additional Starting Technologies: Society Psionic Aura
 The Psionic Offices Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 261);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -23187,7 +23187,8 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_corporate_chosen', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_tankbound_corporate', 'Corporate Thinktank', 'Adds the trait., , , and are fully Automated., Jobs are Pop Cat Specialists., District Urban Districts have additional Production Overseers jobs.
+               VALUES ('civic_tankbound_corporate', 'Corporate Thinktank', 'Adds the Tankbound trait., , , and are fully Automated.
+Colonist Jobs are Pop Cat Specialists., District Urban Districts have additional Production Overseers jobs.
 The Virtual Entertainment Studios Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 262);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -23279,13 +23280,13 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_corporate_world_forgers', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_corporate_galvanic_symbiosis', 'Biometallic Cartel', 'Starts with Engineering Research already researched.
-Homeworld has a .
-Gain access to special Edicts:  
-Gives access to Sr Living Metal components:  
+               VALUES ('civic_corporate_galvanic_symbiosis', 'Biometallic Cartel', 'Starts with Engineering Research Living Metal already researched.
+Homeworld has a Living Metal Sediment.
+Gain access to special Edicts: Centrifugal Siphoning, Modular Growth Compounds
+Gives access to Living Metal components: Regenerative Armor, Reshaping Projectile Accelerator
 Has access to Planetary Decision: Distribute Living Metal.
 Can recruit the Mimetic Strike Force armies.
-Can build a in systems with a Molten World for jobs.
+Can build a Offworld Expedition Hub in systems with a Molten World for Offworld Prospector jobs.
 Can build the Living Metal Enhancement Clinic Corporate Building.', 'corporate', NULL, 1, 0, NULL, 264);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -23460,8 +23461,8 @@ INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, icon, sort_order)
                VALUES ('origin_default', 'Prosperous Unification', 'Initial Pops: +400
-Homeworld: : +1, District Agriculture Districts: +1, Planetary Modifiers:
-Guaranteed Research Options:', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_default.dds', 0);
+Homeworld: District Generator Districts: +1, District Agriculture Districts: +1, Planetary Modifiers: Prosperous Unification
+Guaranteed Research Options: Society Research Planetary Unification', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_default.dds', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, icon, sort_order)
@@ -23881,7 +23882,7 @@ INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, icon, sort_order)
                VALUES ('origin_storm_chasers', 'Storm Chasers', 'Leader Traits: Storm Rider
-Planet Unity from Jobs per Storm Building: +$@storm_chasers_storm_building_unity_produces_mult|%0$
+Planet Unity from Jobs per Storm Building: +5%
 Capital Buildings automatically provide the modifiers of Storm Shelters once the required technologies are researched.
 Cosmic Storm Appearance Chance Within Borders: +100%
 Cosmic Storm Technology Research Option Chance: +175%
@@ -24413,7 +24414,7 @@ INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, icon, sort_order)
                VALUES ('origin_subterranean', 'Subterranean', 'Species Traits: Cave Dweller
-: Uncapped
+District Mining Districts: Uncapped
 Available District Specializations: Zone Subterranean Urbanization for Mining Districts
 Homeworld starts with a Zone Subterranean Urbanization already built.', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_subterranean.dds', 26);
 INSERT OR IGNORE INTO origin_modifier
@@ -24455,7 +24456,7 @@ INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, icon, sort_order)
                VALUES ('origin_subterranean_machines', 'Subterranean Machines', 'Species Traits: Molebots
-: Uncapped
+District Mining Districts: Uncapped
 Available District Specializations: Zone Subterranean Urbanization for Mining Districts
 Homeworld starts with a Zone Subterranean Urbanization already built.', NULL, 1, NULL, NULL, 'gfx/interface/icons/origins/origins_subterranean.dds', 27);
 INSERT OR IGNORE INTO origin_modifier
@@ -24826,8 +24827,8 @@ INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, icon, sort_order)
                VALUES ('origin_common_ground', 'Common Ground', 'Leader of a non-Hegemony Federation
-: Replaced with Federation members
-Additional Starting Technologies:', 'Federations', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_common_ground.dds', 41);
+Guaranteed Habitable Worlds: Replaced with Federation members
+Additional Starting Technologies: Federation Code', 'Federations', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_common_ground.dds', 41);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_common_ground', 'ethic', 'forbid', 'ethic_xenophobe', 0);
@@ -24859,8 +24860,8 @@ INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, icon, sort_order)
                VALUES ('origin_hegemon', 'Hegemon', 'Leader of a Hegemony Federation
-: Replaced with Federation members
-Additional Starting Technologies:', 'Federations', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_hegemon.dds', 42);
+Guaranteed Habitable Worlds: Replaced with Federation members
+Additional Starting Technologies: Federation Code', 'Federations', 1, NULL, NULL, 'gfx/interface/icons/origins/origins_hegemon.dds', 42);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_hegemon', 'ethic', 'forbid', 'ethic_xenophobe', 0);

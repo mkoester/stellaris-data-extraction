@@ -66,6 +66,8 @@ def _render_icon(m: re.Match) -> str:
         return ' ' + mp.group(1).replace('_', ' ').title() + ' '
     if _ICON_DROP.search(name):
         return ' '
+    name = re.sub(r'^sr_', '', name)   # strategic-resource icon prefix (sr_living_metal
+                                       # → "Living Metal", matching its $sr_…$ text twin)
     return ' ' + name.replace('_', ' ').title() + ' '
 
 def _wnorm(w: str) -> str:
@@ -96,8 +98,27 @@ def _dedup_adjacent(s: str) -> str:
             i += 1
     return ' '.join(out)
 
-def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False) -> str:
-    """Expand $KEY$ refs and ['concept', …] scripted-loc tags (up to 4 rounds),
+# A $@scripted_variable$ ref, optionally with a Paradox number-format spec after '|'
+# (e.g. $@cost|%0$). These only resolve when the caller passes the `variables` map.
+_SCRIPTED_VAR_REF = re.compile(r'\$(@\w+)(?:\|([^$]*))?\$')
+
+def _fmt_scripted(value: float, fmt: str | None) -> str:
+    """Format a scripted-variable value per its loc format spec (the part after '|'):
+    `%` = percentage (×100, trailing %); a digit sets decimal places; `+` forces a sign.
+    E.g. -0.25 with `%0` → "-25%", 1.5 with `1` → "1.5"."""
+    fmt = fmt or ''
+    pct = '%' in fmt
+    dm = re.search(r'\d', fmt)
+    decimals = int(dm.group()) if dm else (0 if pct else 2)
+    v = value * 100 if pct else value
+    out = f'{v:.{decimals}f}'
+    if '+' in fmt and value > 0:
+        out = '+' + out
+    return out + ('%' if pct else '')
+
+def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False,
+               variables: dict[str, float] | None = None) -> str:
+    """Expand $KEY$ refs and ['concept', …] scripted-loc tags (up to 6 rounds),
     strip §X colour codes and [command] tags, and resolve £icon£ refs.
 
     Icons are pictures. Decoration/category icons (job/mod/trigger/building/…) are
@@ -106,13 +127,22 @@ def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False) -> str:
     per 100"). An icon name that simply repeats the word next to it is then collapsed
     ("£official£ Official Capacity" → "Official Capacity"). With keep_newlines=True
     the loc's \\n line breaks are preserved (tooltip rules stay on separate lines);
-    otherwise everything collapses to one space-joined line (names, labels)."""
-    s = _LOC_CONCEPT.sub(_concept_sub, s)   # ['concept'] / ['type:key'] tags
-    for _ in range(4):
-        expanded = _LOC_INLINE_REF.sub(lambda m: loc.get(m.group(1), m.group(0)), s)
-        if expanded == s:
+    otherwise everything collapses to one space-joined line (names, labels). When
+    `variables` is given, $@scripted_var|fmt$ refs are resolved to formatted numbers."""
+    # Concept tags and $KEY$ refs are interleaved each round: a $KEY$ can expand to text
+    # that itself contains ['concept'] tags (and vice-versa), so resolve both until the
+    # string stops changing — otherwise nested concepts survive only to be stripped as
+    # [commands] below, leaving gaps (e.g. "Homeworld has a .").
+    for _ in range(6):
+        before = s
+        s = _LOC_CONCEPT.sub(_concept_sub, s)   # ['concept'] / ['type:key'] tags
+        s = _LOC_INLINE_REF.sub(lambda m: loc.get(m.group(1), m.group(0)), s)  # $KEY$
+        if s == before:
             break
-        s = expanded
+    if variables is not None:
+        s = _SCRIPTED_VAR_REF.sub(
+            lambda m: _fmt_scripted(variables[m.group(1)], m.group(2))
+            if m.group(1) in variables else m.group(0), s)
     s = _LOC_COMMAND.sub('', s)        # drop leftover [Command.Chain] tags
     s = _LOC_FMT_CODE.sub('', s)       # strip §X colour codes
     s = _LOC_ICON.sub(_render_icon, s) # £icon£ → word (or dropped, if decoration)
@@ -1844,7 +1874,8 @@ def extract_civics(data: dict, civic_type: str, loc: dict[str, str],
         desc_key = cdef.get('description')
         desc_key = desc_key.strip('"') if isinstance(desc_key, str) else None
         raw_desc = loc.get(desc_key) if desc_key else None
-        description = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
+        description = (_clean_loc(raw_desc, loc, keep_newlines=True, variables=variables)
+                      if raw_desc else None)
         icon = cdef.get('icon')
         icon = icon.strip('"') if isinstance(icon, str) else None
         # `modification = no` → the civic can't be added/removed via a government
@@ -1957,7 +1988,8 @@ def extract_authorities(data: dict, loc: dict[str, str],
         raw_name = loc.get(key)
         name = _clean_loc(raw_name, loc) if raw_name else None
         raw_desc = loc.get(key + '_desc')
-        description = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
+        description = (_clean_loc(raw_desc, loc, keep_newlines=True, variables=variables)
+                      if raw_desc else None)
         icon = adef.get('icon')
         icon = icon.strip('"') if isinstance(icon, str) else None
 
@@ -2125,7 +2157,8 @@ def extract_origins(data: dict, force_nonselectable: bool, loc: dict[str, str],
         desc_key = odef.get('description')
         desc_key = desc_key.strip('"') if isinstance(desc_key, str) else None
         raw_desc = loc.get(desc_key) if desc_key else None
-        description = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
+        description = (_clean_loc(raw_desc, loc, keep_newlines=True, variables=variables)
+                      if raw_desc else None)
         icon = odef.get('icon')
         icon = icon.strip('"') if isinstance(icon, str) else None
 
@@ -2426,10 +2459,12 @@ def _write_modifier_label(w: Writer, loc: dict[str, str], mod_key: str):
         label = f"{label.rstrip()} {am.group(1).replace('_', ' ').title()}"
     if '$' in label:
         return
-    # Lower is better for any cost/upkeep modifier, so a negative value is *good*
-    # (shown green). Covers the curated set plus every `*_cost_*` / `*_upkeep_*` key
-    # (e.g. planet_structures_cost_mult −15% reads as a saving, not a penalty).
-    inverted = mod_key in INVERTED_MODIFIERS or re.search(r'(?:_cost|_upkeep)_(?:mult|add)$', mod_key)
+    # Lower is better for any cost/upkeep modifier (a negative value is *good*, shown
+    # green) — the curated set plus every `*_cost_*` / `*_upkeep_*` key (e.g.
+    # planet_structures_cost_mult −15% is a saving, not a penalty). Crime is the same:
+    # less crime is better, so `planet_crime_*` reductions also read as good.
+    inverted = (mod_key in INVERTED_MODIFIERS
+                or re.search(r'(?:_cost|_upkeep)_(?:mult|add)$|crime', mod_key))
     pig = 0 if inverted else 1
     w.execute(
         """INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
