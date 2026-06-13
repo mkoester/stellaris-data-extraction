@@ -603,6 +603,36 @@ CREATE TABLE planet_class (
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 
+-- Home-system initializers usable as a custom-empire start (`usage = custom_empire`
+-- in common/solar_system_initializers/*.txt). `name` is the localised system name.
+DROP TABLE IF EXISTS initializer;
+CREATE TABLE initializer (
+    key        TEXT PRIMARY KEY,   -- e.g. "sol_system_initializer"
+    name       TEXT,               -- localised, e.g. "Sol"
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+-- Diplomacy/portrait rooms an empire can pick (the backdrop behind the ruler). Rooms
+-- are gfx entities with no localisation, so the set is the distinct `room = "…"` values
+-- used by the prescripted empires; `label` is derived from the key.
+DROP TABLE IF EXISTS room;
+CREATE TABLE room (
+    key        TEXT PRIMARY KEY,   -- e.g. "default_room", "machine_room"
+    label      TEXT,               -- derived, e.g. "Default", "Slaving Despots"
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+-- Empire flag assets scanned from the flags/ directory: each icon category's files and
+-- the background files (the colours come from named_color). Icons/backgrounds are .dds.
+DROP TABLE IF EXISTS flag_asset;
+CREATE TABLE flag_asset (
+    kind       TEXT NOT NULL,      -- 'icon' | 'background'
+    category   TEXT NOT NULL,      -- e.g. "pirate"; "backgrounds" for backgrounds
+    file       TEXT NOT NULL,      -- e.g. "flag_pirate_2.dds"
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (kind, category, file)
+);
+
 -- Prescripted (predefined) empires from prescripted_countries/*.txt — the built-in
 -- empires the game ships, usable as starting points. Scalar setup in
 -- prescripted_empire; the repeated picks (traits/civics/ethics) in
@@ -631,6 +661,7 @@ CREATE TABLE prescripted_empire (
     government         TEXT,              -- e.g. "gov_star_empire"
     origin             TEXT,              -- e.g. "origin_default"
     planet_class       TEXT,              -- e.g. "pc_desert"
+    initializer        TEXT,              -- home-system initializer, e.g. "sol_system_initializer"
     graphical_culture  TEXT,              -- ship appearance, e.g. "reptilian_01"
     sort_order         INTEGER NOT NULL DEFAULT 0
 );
@@ -2290,8 +2321,8 @@ def extract_prescripted_empires(data: dict, loc: dict[str, str], w: Writer,
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (key, name, loc_name(edef.get('adjective')), loc_name(edef.get('ship_prefix')),
              scalar(species.get('class')), scalar(species.get('portrait')),
              loc_name(species.get('name')), loc_name(species.get('plural')),
@@ -2302,7 +2333,7 @@ def extract_prescripted_empires(data: dict, loc: dict[str, str], w: Writer,
              loc_name(edef.get('planet_name')), loc_name(edef.get('system_name')),
              scalar(edef.get('authority')), scalar(edef.get('government')),
              scalar(edef.get('origin')), scalar(edef.get('planet_class')),
-             scalar(edef.get('graphical_culture')), order),
+             scalar(edef.get('initializer')), scalar(edef.get('graphical_culture')), order),
         )
         if verbose:
             print(f"  empire {key} | {name} | {scalar(species.get('class'))}")
@@ -2323,6 +2354,73 @@ def extract_prescripted_empires(data: dict, loc: dict[str, str], w: Writer,
             )
     w.commit()
     return order
+
+
+def extract_initializers(data: dict, loc: dict[str, str], w: Writer, order_start: int) -> int:
+    """Extract one solar_system_initializers file → the initializers flagged
+    `usage = custom_empire` (the home systems a custom empire can start in)."""
+    order = order_start
+    for key, idef in data.items():
+        if key.startswith('@') or not isinstance(idef, dict):
+            continue
+        if str(idef.get('usage')).strip() != 'custom_empire':
+            continue
+        raw = idef.get('name')
+        if isinstance(raw, dict):
+            raw = raw.get('key') or raw.get('name')
+        name = None
+        if isinstance(raw, str):
+            name = _clean_loc(loc[raw], loc) if raw in loc else raw
+        w.execute("INSERT OR REPLACE INTO initializer (key, name, sort_order) VALUES (?, ?, ?)",
+                  (key, name, order))
+        order += 1
+    w.commit()
+    return order
+
+
+def extract_rooms(install_dir: Path, w: Writer, verbose: bool) -> None:
+    """The distinct diplomacy rooms the prescripted empires use → room table (rooms are
+    gfx entities with no loc, so their keys are the source of truth)."""
+    pdir = install_dir / 'prescripted_countries'
+    rooms: set[str] = set()
+    if pdir.is_dir():
+        for f in sorted(pdir.glob('*.txt')):
+            text = f.read_text(encoding='utf-8', errors='ignore')
+            rooms.update(re.findall(r'\broom\s*=\s*"([a-z_0-9]+)"', text))
+
+    def label(k: str) -> str:
+        s = re.sub(r'_room$', '', k)
+        s = re.sub(r'^personality_', '', s)
+        return s.replace('_', ' ').title()
+
+    # default_room first, then alphabetical by label.
+    for order, k in enumerate(sorted(rooms, key=lambda r: (r != 'default_room', label(r)))):
+        w.execute("INSERT OR REPLACE INTO room (key, label, sort_order) VALUES (?, ?, ?)",
+                  (k, label(k), order))
+    w.commit()
+    if verbose:
+        print(f"  rooms: {len(rooms)}")
+
+
+def extract_flag_assets(install_dir: Path, w: Writer, verbose: bool) -> None:
+    """Scan the flags/ directory → flag_asset rows (icon files per category +
+    background files). The .dds files can't be rendered, but their names are what the
+    empire_flag block references."""
+    flags_dir = install_dir / 'flags'
+    if not flags_dir.is_dir():
+        print(f"  WARNING: {flags_dir} not found", file=sys.stderr)
+        return
+    n = 0
+    for sub in sorted(p for p in flags_dir.iterdir() if p.is_dir()):
+        kind = 'background' if sub.name == 'backgrounds' else 'icon'
+        for order, f in enumerate(sorted(sub.glob('*.dds'))):
+            w.execute(
+                "INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES (?, ?, ?, ?)",
+                (kind, sub.name, f.name, order))
+            n += 1
+    w.commit()
+    if verbose:
+        print(f"  flag assets: {n}")
 
 
 # ---------------------------------------------------------------------------
@@ -3971,6 +4069,21 @@ Examples:
                 print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
     else:
         print(f"  WARNING: {prescripted_dir} not found", file=progress)
+
+    # --- home-system initializers (custom_empire) + flag assets ---
+    init_dir = install_dir / 'common' / 'solar_system_initializers'
+    print(f"\n[initializers] {init_dir}", file=progress)
+    if init_dir.exists():
+        init_order = 0
+        for f in sorted(init_dir.glob('*.txt')):
+            try:
+                init_order = extract_initializers(parse_file(f), loc, w, init_order)
+            except Exception as e:
+                print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+    print(f"\n[flags] {install_dir / 'flags'}", file=progress)
+    extract_flag_assets(install_dir, w, args.verbose)
+    print(f"\n[rooms] {prescripted_dir}", file=progress)
+    extract_rooms(install_dir, w, args.verbose)
 
     w.close()
 

@@ -320,6 +320,36 @@ CREATE TABLE planet_class (
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 
+-- Home-system initializers usable as a custom-empire start (`usage = custom_empire`
+-- in common/solar_system_initializers/*.txt). `name` is the localised system name.
+DROP TABLE IF EXISTS initializer;
+CREATE TABLE initializer (
+    key        TEXT PRIMARY KEY,   -- e.g. "sol_system_initializer"
+    name       TEXT,               -- localised, e.g. "Sol"
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+-- Diplomacy/portrait rooms an empire can pick (the backdrop behind the ruler). Rooms
+-- are gfx entities with no localisation, so the set is the distinct `room = "…"` values
+-- used by the prescripted empires; `label` is derived from the key.
+DROP TABLE IF EXISTS room;
+CREATE TABLE room (
+    key        TEXT PRIMARY KEY,   -- e.g. "default_room", "machine_room"
+    label      TEXT,               -- derived, e.g. "Default", "Slaving Despots"
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+-- Empire flag assets scanned from the flags/ directory: each icon category's files and
+-- the background files (the colours come from named_color). Icons/backgrounds are .dds.
+DROP TABLE IF EXISTS flag_asset;
+CREATE TABLE flag_asset (
+    kind       TEXT NOT NULL,      -- 'icon' | 'background'
+    category   TEXT NOT NULL,      -- e.g. "pirate"; "backgrounds" for backgrounds
+    file       TEXT NOT NULL,      -- e.g. "flag_pirate_2.dds"
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (kind, category, file)
+);
+
 -- Prescripted (predefined) empires from prescripted_countries/*.txt — the built-in
 -- empires the game ships, usable as starting points. Scalar setup in
 -- prescripted_empire; the repeated picks (traits/civics/ethics) in
@@ -348,6 +378,7 @@ CREATE TABLE prescripted_empire (
     government         TEXT,              -- e.g. "gov_star_empire"
     origin             TEXT,              -- e.g. "origin_default"
     planet_class       TEXT,              -- e.g. "pc_desert"
+    initializer        TEXT,              -- home-system initializer, e.g. "sol_system_initializer"
     graphical_culture  TEXT,              -- ship appearance, e.g. "reptilian_01"
     sort_order         INTEGER NOT NULL DEFAULT 0
 );
@@ -25557,8 +25588,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('humans1', 'United Nations of Earth', 'Human', 'UNS', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', NULL, NULL, NULL, NULL, NULL, 'Dolores Muwanga', 'Earth', 'Sol', 'auth_democratic', 'gov_representative_democracy', 'origin_default', 'pc_continental', 'mammalian_01', 0);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('humans1', 'United Nations of Earth', 'Human', 'UNS', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', NULL, NULL, NULL, NULL, NULL, 'Dolores Muwanga', 'Earth', 'Sol', 'auth_democratic', 'gov_representative_democracy', 'origin_default', 'pc_continental', 'sol_system_initializer', 'mammalian_01', 0);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('humans1', 'trait', 'trait_organic', 0);
@@ -25589,8 +25620,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('humans2', 'Commonwealth of Man', 'Human', 'CNS', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', NULL, NULL, NULL, NULL, NULL, 'Sidney Beauclair', 'Unity', 'Deneb', 'auth_dictatorial', 'gov_military_dictatorship', 'origin_lost_colony', 'pc_continental', 'mammalian_01', 1);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('humans2', 'Commonwealth of Man', 'Human', 'CNS', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', NULL, NULL, NULL, NULL, NULL, 'Sidney Beauclair', 'Unity', 'Deneb', 'auth_dictatorial', 'gov_military_dictatorship', 'origin_lost_colony', 'pc_continental', 'deneb_system', 'mammalian_01', 1);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('humans2', 'trait', 'trait_organic', 0);
@@ -25621,8 +25652,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('humans1_1', 'United Nations of Earth', 'Human', 'UNS', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', NULL, NULL, NULL, NULL, NULL, 'Dolores Muwanga', 'Earth', 'Sol', 'auth_democratic', 'gov_representative_democracy', 'origin_default', 'pc_continental', 'humanoid_01', 2);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('humans1_1', 'United Nations of Earth', 'Human', 'UNS', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', NULL, NULL, NULL, NULL, NULL, 'Dolores Muwanga', 'Earth', 'Sol', 'auth_democratic', 'gov_representative_democracy', 'origin_default', 'pc_continental', 'sol_system_initializer', 'humanoid_01', 2);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('humans1_1', 'trait', 'trait_organic', 0);
@@ -25653,8 +25684,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('humans2_1', 'Commonwealth of Man', 'Human', 'CNS', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', NULL, NULL, NULL, NULL, NULL, 'Sidney Beauclair', 'Unity', 'Deneb', 'auth_dictatorial', 'gov_military_dictatorship', 'origin_lost_colony', 'pc_continental', 'humanoid_01', 3);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('humans2_1', 'Commonwealth of Man', 'Human', 'CNS', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', NULL, NULL, NULL, NULL, NULL, 'Sidney Beauclair', 'Unity', 'Deneb', 'auth_dictatorial', 'gov_military_dictatorship', 'origin_lost_colony', 'pc_continental', 'deneb_system', 'humanoid_01', 3);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('humans2_1', 'trait', 'trait_organic', 0);
@@ -25685,8 +25716,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('lithoid_humans', 'Federated Theian Preservers', 'Theian', 'TPC', 'LITHOID', 'lith_human', 'Theian', 'Theians', 'Theian $1$', NULL, NULL, NULL, NULL, NULL, 'Jade Chipjaw', 'Theia', 'Titawin', 'auth_oligarchic', 'gov_irenic_bureaucracy', 'origin_lithoid', 'pc_desert', 'lithoid_01', 4);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('lithoid_humans', 'Federated Theian Preservers', 'Theian', 'TPC', 'LITHOID', 'lith_human', 'Theian', 'Theians', 'Theian $1$', NULL, NULL, NULL, NULL, NULL, 'Jade Chipjaw', 'Theia', 'Titawin', 'auth_oligarchic', 'gov_irenic_bureaucracy', 'origin_lithoid', 'pc_desert', 'titawin_init', 'lithoid_01', 4);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('lithoid_humans', 'trait', 'trait_lithoid', 0);
@@ -25720,8 +25751,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('plantoid_humans', 'Blooms of Gaea', 'Human', 'SEED', 'PLANT', 'pla17', 'Homo Plantae', 'Homines Plantae', 'Verdant $1$', NULL, NULL, NULL, NULL, NULL, 'Willow Breen', 'Gaea', 'Sol', 'auth_democratic', 'gov_moral_democracy', 'origin_fruitful', 'pc_tropical', 'plantoid_01', 5);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('plantoid_humans', 'Blooms of Gaea', 'Human', 'SEED', 'PLANT', 'pla17', 'Homo Plantae', 'Homines Plantae', 'Verdant $1$', NULL, NULL, NULL, NULL, NULL, 'Willow Breen', 'Gaea', 'Sol', 'auth_democratic', 'gov_moral_democracy', 'origin_fruitful', 'pc_tropical', 'sol_system_initializer', 'plantoid_01', 5);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('plantoid_humans', 'trait', 'trait_organic', 0);
@@ -25758,8 +25789,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('pyrragthul', 'Pyrrag''Thul Planet Forgers', 'Pyrrag''Thul Planet Forgers', 'VPF', 'INF', 'inf9', 'Pyrrag''Thul', 'Pyrrag''Thul', 'Pyrrag''Thul', NULL, NULL, NULL, NULL, NULL, 'Kuzai', 'Embron', 'Embrala', 'auth_imperial', 'gov_despotic_hegemony', 'origin_red_giant', 'pc_volcanic', 'infernal_01', 6);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('pyrragthul', 'Pyrrag''Thul Planet Forgers', 'Pyrrag''Thul Planet Forgers', 'VPF', 'INF', 'inf9', 'Pyrrag''Thul', 'Pyrrag''Thul', 'Pyrrag''Thul', NULL, NULL, NULL, NULL, NULL, 'Kuzai', 'Embron', 'Embrala', 'auth_imperial', 'gov_despotic_hegemony', 'origin_red_giant', 'pc_volcanic', 'red_giant_start', 'infernal_01', 6);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('pyrragthul', 'trait', 'trait_infernal', 0);
@@ -25790,8 +25821,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('mindwardens', 'Krijdex Wardenship', 'Krijdexine', 'KWS', 'MINDWARDEN', 'mindwarden_01', 'Krijdan', 'Krijdans', 'Krijdine', NULL, NULL, NULL, NULL, NULL, 'Aba Czoikin', 'Doehaum', 'Leborain', 'auth_oligarchic', 'gov_executive_committee', 'origin_mindwardens', 'pc_tropical', 'mindwarden_01', 7);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('mindwardens', 'Krijdex Wardenship', 'Krijdexine', 'KWS', 'MINDWARDEN', 'mindwarden_01', 'Krijdan', 'Krijdans', 'Krijdine', NULL, NULL, NULL, NULL, NULL, 'Aba Czoikin', 'Doehaum', 'Leborain', 'auth_oligarchic', 'gov_executive_committee', 'origin_mindwardens', 'pc_tropical', 'mindwarden_system_init', 'mindwarden_01', 7);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('mindwardens', 'trait', 'trait_organic', 0);
@@ -25831,8 +25862,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('tankbound', 'Oracularity of Noerm', 'Oracular', 'ONS', 'AQUATIC', 'psionic_07', 'Noermer', 'Noermers', 'Noermish', NULL, NULL, NULL, NULL, NULL, 'Forj il''Roig', 'Noerm', 'Olphon', 'auth_democratic', 'gov_theocratic_republic', 'origin_default', 'pc_desert', 'psionic_01', 8);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('tankbound', 'Oracularity of Noerm', 'Oracular', 'ONS', 'AQUATIC', 'psionic_07', 'Noermer', 'Noermers', 'Noermish', NULL, NULL, NULL, NULL, NULL, 'Forj il''Roig', 'Noerm', 'Olphon', 'auth_democratic', 'gov_theocratic_republic', 'origin_default', 'pc_desert', '', 'psionic_01', 8);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('tankbound', 'trait', 'trait_organic', 0);
@@ -25875,8 +25906,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('zrobots', 'Yorphian Extractorate', 'Yorphian', 'YEV', 'MACHINE', 'psionic_11', 'Yorphid', 'Yorphidi', 'Yorphide', NULL, NULL, NULL, NULL, NULL, 'Uxon D1', 'Yorphia', 'Gomox', 'auth_machine_intelligence', 'gov_machine_empire', 'origin_shroud_forged', 'pc_arctic', 'psionic_01', 9);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('zrobots', 'Yorphian Extractorate', 'Yorphian', 'YEV', 'MACHINE', 'psionic_11', 'Yorphid', 'Yorphidi', 'Yorphide', NULL, NULL, NULL, NULL, NULL, 'Uxon D1', 'Yorphia', 'Gomox', 'auth_machine_intelligence', 'gov_machine_empire', 'origin_shroud_forged', 'pc_arctic', '', 'psionic_01', 9);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('zrobots', 'trait', 'trait_machine_unit', 0);
@@ -25910,8 +25941,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('zrobots_machine_age', 'Yorphian Extractorate', 'Yorphian', 'YEV', 'MACHINE', 'psionic_11', 'Yorphid', 'Yorphidi', 'Yorphide', NULL, NULL, NULL, NULL, NULL, 'Uxon D1', 'Yorphia', 'Gomox', 'auth_machine_intelligence', 'gov_machine_empire', 'origin_shroud_forged', 'pc_arctic', 'psionic_01', 10);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('zrobots_machine_age', 'Yorphian Extractorate', 'Yorphian', 'YEV', 'MACHINE', 'psionic_11', 'Yorphid', 'Yorphidi', 'Yorphide', NULL, NULL, NULL, NULL, NULL, 'Uxon D1', 'Yorphia', 'Gomox', 'auth_machine_intelligence', 'gov_machine_empire', 'origin_shroud_forged', 'pc_arctic', '', 'psionic_01', 10);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('zrobots_machine_age', 'trait', 'trait_machine_unit', 0);
@@ -25948,8 +25979,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('zhardmehka', 'Bloomwrought Wildscape of Tellon', 'Bloomers', 'ZMV', 'FUN', 'fun4', 'Zhard-Krellin', 'Zhard-Krellins', 'Zhard-Krelline', NULL, NULL, NULL, NULL, NULL, 'Obanva $FUN3_CHR_uvi-Livve$', 'Tellon', 'Tattla', 'auth_hive_mind', 'gov_wilderness', 'origin_wilderness', 'pc_tropical', 'biogenesis_02', 11);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('zhardmehka', 'Bloomwrought Wildscape of Tellon', 'Bloomers', 'ZMV', 'FUN', 'fun4', 'Zhard-Krellin', 'Zhard-Krellins', 'Zhard-Krelline', NULL, NULL, NULL, NULL, NULL, 'Obanva $FUN3_CHR_uvi-Livve$', 'Tellon', 'Tattla', 'auth_hive_mind', 'gov_wilderness', 'origin_wilderness', 'pc_tropical', '', 'biogenesis_02', 11);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('zhardmehka', 'trait', 'trait_hive_mind', 0);
@@ -25986,8 +26017,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('djunnetic', 'Djunnetic Dominion', 'Djunnetic', 'ADN', 'MAM', 'bio10', 'Djunn', 'Djunni', 'Djunn', NULL, NULL, NULL, NULL, NULL, 'Tumpus', 'Fulsi', 'Boass Ceind', 'auth_imperial', 'gov_enlightened_monarchy', 'origin_evolutionary_predators', 'pc_ocean', 'biogenesis_01', 12);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('djunnetic', 'Djunnetic Dominion', 'Djunnetic', 'ADN', 'MAM', 'bio10', 'Djunn', 'Djunni', 'Djunn', NULL, NULL, NULL, NULL, NULL, 'Tumpus', 'Fulsi', 'Boass Ceind', 'auth_imperial', 'gov_enlightened_monarchy', 'origin_evolutionary_predators', 'pc_ocean', '', 'biogenesis_01', 12);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('djunnetic', 'trait', 'trait_organic', 0);
@@ -26027,8 +26058,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('oviron_lodge', 'Oviron Lodge', 'Ovirine', 'CUV', 'AVI', 'avi5', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Kaakrupuk', 'Alatus', 'Arcoterea', 'auth_oligarchic', 'gov_executive_committee', 'origin_treasure_hunters', 'pc_alpine', 'avian_01', 13);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('oviron_lodge', 'Oviron Lodge', 'Ovirine', 'CUV', 'AVI', 'avi5', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Kaakrupuk', 'Alatus', 'Arcoterea', 'auth_oligarchic', 'gov_executive_committee', 'origin_treasure_hunters', 'pc_alpine', NULL, 'avian_01', 13);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('oviron_lodge', 'trait', 'trait_organic', 0);
@@ -26062,8 +26093,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('graparx_trophy_hunters', 'Graparx Primal Stalkers', 'Graparx', 'GVP', 'MAM', 'mam12', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Scargum had''Mik', 'Sifran', 'So''Sifran', 'auth_oligarchic', 'gov_citizen_stratocracy', 'origin_primal_calling', 'pc_tropical', 'mammalian_01', 14);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('graparx_trophy_hunters', 'Graparx Primal Stalkers', 'Graparx', 'GVP', 'MAM', 'mam12', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Scargum had''Mik', 'Sifran', 'So''Sifran', 'auth_oligarchic', 'gov_citizen_stratocracy', 'origin_primal_calling', 'pc_tropical', NULL, 'mammalian_01', 14);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('graparx_trophy_hunters', 'trait', 'trait_organic', 0);
@@ -26097,8 +26128,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('yatunan_radicals', 'Yatunan Radicals', 'Yatunan', 'RAD', 'HUM', 'humanoid_03', 'Yatune', 'Yatunes', 'Yatunan', NULL, NULL, NULL, NULL, NULL, 'Hem tal Gun', 'Yatunea', 'Kon tal Mol', 'auth_oligarchic', 'gov_storm_chasers', 'origin_storm_chasers', 'pc_ocean', 'avian_01', 15);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('yatunan_radicals', 'Yatunan Radicals', 'Yatunan', 'RAD', 'HUM', 'humanoid_03', 'Yatune', 'Yatunes', 'Yatunan', NULL, NULL, NULL, NULL, NULL, 'Hem tal Gun', 'Yatunea', 'Kon tal Mol', 'auth_oligarchic', 'gov_storm_chasers', 'origin_storm_chasers', 'pc_ocean', '', 'avian_01', 15);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('yatunan_radicals', 'trait', 'trait_organic', 0);
@@ -26135,8 +26166,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('basidrix_cyber_ecclesia', 'Basidrix Cyber Ecclesia', 'Basidrix Ecclesiastic', 'HDS', 'FUN', 'cyb13', 'Basidrix', 'Basidrix', 'Basidri', NULL, NULL, NULL, NULL, NULL, 'Qaarugm Seedkugh', 'Naridixis', 'Basolux', 'auth_oligarchic', 'gov_holy_tribunal', 'origin_cybernetic_creed', 'pc_arid', 'cybernetics_01', 16);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('basidrix_cyber_ecclesia', 'Basidrix Cyber Ecclesia', 'Basidrix Ecclesiastic', 'HDS', 'FUN', 'cyb13', 'Basidrix', 'Basidrix', 'Basidri', NULL, NULL, NULL, NULL, NULL, 'Qaarugm Seedkugh', 'Naridixis', 'Basolux', 'auth_oligarchic', 'gov_holy_tribunal', 'origin_cybernetic_creed', 'pc_arid', '', 'cybernetics_01', 16);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('basidrix_cyber_ecclesia', 'trait', 'trait_organic', 0);
@@ -26170,8 +26201,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('lacertan_techno_protectorate', 'Lacertan Techno-Protectorate', 'Lacertan Techno-Protectorate', 'LTP', 'MOL', 'synth05', 'Lacertan', 'Lacertans', 'Lacertan', NULL, NULL, NULL, NULL, NULL, 'Cathiox Moz', 'Lacertis', 'Lacerta Lumina', 'auth_democratic', 'gov_rational_consensus', 'origin_synthetic_fertility', 'pc_tropical', 'synthetics_01', 17);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('lacertan_techno_protectorate', 'Lacertan Techno-Protectorate', 'Lacertan Techno-Protectorate', 'LTP', 'MOL', 'synth05', 'Lacertan', 'Lacertans', 'Lacertan', NULL, NULL, NULL, NULL, NULL, 'Cathiox Moz', 'Lacertis', 'Lacerta Lumina', 'auth_democratic', 'gov_rational_consensus', 'origin_synthetic_fertility', 'pc_tropical', '', 'synthetics_01', 17);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('lacertan_techno_protectorate', 'trait', 'trait_organic', 0);
@@ -26205,8 +26236,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('free_sunbuilt_uplifters', 'Sunbuilt Uplifters', 'Sunbuilt', 'SUS', 'MACHINE', 'synth_machine_01', 'Sunbuilt', 'Sunbuilt', 'Sunbuilt', NULL, NULL, NULL, NULL, NULL, 'Saisar', 'Luxoria', 'Karnakor', 'auth_imperial', 'gov_theocratic_monarchy', 'origin_default', 'pc_desert', 'synthetics_01', 18);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('free_sunbuilt_uplifters', 'Sunbuilt Uplifters', 'Sunbuilt', 'SUS', 'MACHINE', 'synth_machine_01', 'Sunbuilt', 'Sunbuilt', 'Sunbuilt', NULL, NULL, NULL, NULL, NULL, 'Saisar', 'Luxoria', 'Karnakor', 'auth_imperial', 'gov_theocratic_monarchy', 'origin_default', 'pc_desert', '', 'synthetics_01', 18);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('free_sunbuilt_uplifters', 'trait', 'trait_machine_unit', 0);
@@ -26240,8 +26271,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('certeran_covenant', 'Certeran Covenant', 'Certeran', 'HCS', 'HUM', 'humanoid_hp_16', 'Certera', 'Certerans', 'Certeran', NULL, NULL, NULL, NULL, NULL, 'Thea', 'Certera', 'Wrynne', 'auth_democratic', 'gov_dimensional_covenant', 'origin_riftworld', 'pc_alpine', 'arthropoid_01', 19);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('certeran_covenant', 'Certeran Covenant', 'Certeran', 'HCS', 'HUM', 'humanoid_hp_16', 'Certera', 'Certerans', 'Certeran', NULL, NULL, NULL, NULL, NULL, 'Thea', 'Certera', 'Wrynne', 'auth_democratic', 'gov_dimensional_covenant', 'origin_riftworld', 'pc_alpine', 'custom_starting_init_01', 'arthropoid_01', 19);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('certeran_covenant', 'trait', 'trait_organic', 0);
@@ -26272,8 +26303,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('guardianship_of_nyrr', 'Guardianship of Nyrr', 'Nyrrian', 'GDN', 'REP', 'rep14', 'Nyrr', 'Nyrrians', 'Nyrrian', NULL, NULL, NULL, NULL, NULL, 'Krog', 'Nyrra', 'Nyrrast', 'auth_imperial', 'gov_defensive_union', 'origin_default', 'pc_desert', 'reptilian_01', 20);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('guardianship_of_nyrr', 'Guardianship of Nyrr', 'Nyrrian', 'GDN', 'REP', 'rep14', 'Nyrr', 'Nyrrians', 'Nyrrian', NULL, NULL, NULL, NULL, NULL, 'Krog', 'Nyrra', 'Nyrrast', 'auth_imperial', 'gov_defensive_union', 'origin_default', 'pc_desert', NULL, 'reptilian_01', 20);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('guardianship_of_nyrr', 'trait', 'trait_organic', 0);
@@ -26310,8 +26341,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('resistance', 'Roccan Resistance', 'Roccan', 'FNG', 'AVI', 'avi6', 'Roc', 'Rocs', 'Defiant', NULL, NULL, NULL, NULL, NULL, 'Gahuda', 'Nogg', 'Nog-Rasset', 'auth_democratic', 'gov_military_commissariat', 'origin_payback', 'pc_arid', 'avian_01', 21);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('resistance', 'Roccan Resistance', 'Roccan', 'FNG', 'AVI', 'avi6', 'Roc', 'Rocs', 'Defiant', NULL, NULL, NULL, NULL, NULL, 'Gahuda', 'Nogg', 'Nog-Rasset', 'auth_democratic', 'gov_military_commissariat', 'origin_payback', 'pc_arid', NULL, 'avian_01', 21);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('resistance', 'trait', 'trait_organic', 0);
@@ -26345,8 +26376,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('broken_shackles', 'Free Peoples of the Fall', 'FPF', 'FPF', 'REP', 'rep3', 'Naatig', 'Naati', 'I''Naati', NULL, NULL, NULL, NULL, NULL, 'I''Nathra', 'Freedom''s Landing', 'Ikazuri', 'auth_democratic', 'gov_moral_democracy', 'origin_broken_shackles', 'pc_continental', 'reptilian_01', 22);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('broken_shackles', 'Free Peoples of the Fall', 'FPF', 'FPF', 'REP', 'rep3', 'Naatig', 'Naati', 'I''Naati', NULL, NULL, NULL, NULL, NULL, 'I''Nathra', 'Freedom''s Landing', 'Ikazuri', 'auth_democratic', 'gov_moral_democracy', 'origin_broken_shackles', 'pc_continental', NULL, 'reptilian_01', 22);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('broken_shackles', 'trait', 'trait_organic', 0);
@@ -26380,8 +26411,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('gorthikan', 'Gorthikan Alliance', 'Gorthikan', 'GRT', 'TOX', 'tox4', 'Gorthikan', 'Gorthikans', 'Gorthikan', NULL, NULL, NULL, NULL, NULL, NULL, 'Gorthhold', 'Unhopeful Lantern', 'auth_democratic', 'gov_direct_democracy', 'origin_overtuned', 'pc_alpine', 'toxoid_01', 23);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('gorthikan', 'Gorthikan Alliance', 'Gorthikan', 'GRT', 'TOX', 'tox4', 'Gorthikan', 'Gorthikans', 'Gorthikan', NULL, NULL, NULL, NULL, NULL, NULL, 'Gorthhold', 'Unhopeful Lantern', 'auth_democratic', 'gov_direct_democracy', 'origin_overtuned', 'pc_alpine', 'custom_starting_init_02', 'toxoid_01', 23);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('gorthikan', 'trait', 'trait_organic', 0);
@@ -26418,8 +26449,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('knights', 'Rototavuul High Suzerainty', 'Rototavuul', 'HRS', 'TOX', 'tox9', 'Rototavuul', 'Rototavuuls', 'Rototavuul', NULL, NULL, NULL, NULL, NULL, NULL, 'Camlann', 'Logres', 'auth_imperial', 'gov_feudal_empire', 'origin_toxic_knights', 'pc_desert', 'toxoid_01', 24);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('knights', 'Rototavuul High Suzerainty', 'Rototavuul', 'HRS', 'TOX', 'tox9', 'Rototavuul', 'Rototavuuls', 'Rototavuul', NULL, NULL, NULL, NULL, NULL, NULL, 'Camlann', 'Logres', 'auth_imperial', 'gov_feudal_empire', 'origin_toxic_knights', 'pc_desert', 'toxic_knights_start', 'toxoid_01', 24);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('knights', 'trait', 'trait_organic', 0);
@@ -26459,8 +26490,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('sathyrel', 'Sathyrelian Bliss', 'Sathyrelian', 'ATH', 'AQUATIC', 'aqu1', 'Sathyrel', 'Sathyrels', 'Sathyrelian $1$', NULL, NULL, NULL, NULL, NULL, 'Tidess Chessil', 'Rilldeep', 'Ralnair', 'auth_dictatorial', 'gov_irenic_dictatorship', 'origin_ocean_paradise', 'pc_ocean', 'aquatic_01', 25);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('sathyrel', 'Sathyrelian Bliss', 'Sathyrelian', 'ATH', 'AQUATIC', 'aqu1', 'Sathyrel', 'Sathyrels', 'Sathyrelian $1$', NULL, NULL, NULL, NULL, NULL, 'Tidess Chessil', 'Rilldeep', 'Ralnair', 'auth_dictatorial', 'gov_irenic_dictatorship', 'origin_ocean_paradise', 'pc_ocean', 'ocean_paradise_start', 'aquatic_01', 25);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('sathyrel', 'trait', 'trait_organic', 0);
@@ -26494,8 +26525,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('pasharti', 'Pasharti Absorbers', 'Pashartian', 'PDS', 'NECROID', 'nec1', 'Pasharti', 'Pashartians', 'Pashartian $1$', 'NECROID', 'nec12', 'Jeferi', 'Jeferians', 'Jeferian', 'Ne''ed''anezza', 'Taralon', 'Akkanar', 'auth_dictatorial', 'gov_elective_monarchy', 'origin_necrophage', 'pc_tundra', 'necroid_01', 26);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('pasharti', 'Pasharti Absorbers', 'Pashartian', 'PDS', 'NECROID', 'nec1', 'Pasharti', 'Pashartians', 'Pashartian $1$', 'NECROID', 'nec12', 'Jeferi', 'Jeferians', 'Jeferian', 'Ne''ed''anezza', 'Taralon', 'Akkanar', 'auth_dictatorial', 'gov_elective_monarchy', 'origin_necrophage', 'pc_tundra', '', 'necroid_01', 26);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('pasharti', 'trait', 'trait_organic', 0);
@@ -26541,8 +26572,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('khennet', 'Keepers of Ave''brenn', 'Khennet''na', 'KAV', 'LITHOID', 'lith11', 'Khennet', 'Khennet''e', 'Khennet''an $1$', NULL, NULL, NULL, NULL, NULL, 'J''hem Vhaawr', 'Ave''bonn', 'Barra Lhonn', 'auth_imperial', 'gov_theocratic_monarchy', 'origin_default', 'pc_arid', 'lithoid_01', 27);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('khennet', 'Keepers of Ave''brenn', 'Khennet''na', 'KAV', 'LITHOID', 'lith11', 'Khennet', 'Khennet''e', 'Khennet''an $1$', NULL, NULL, NULL, NULL, NULL, 'J''hem Vhaawr', 'Ave''bonn', 'Barra Lhonn', 'auth_imperial', 'gov_theocratic_monarchy', 'origin_default', 'pc_arid', '', 'lithoid_01', 27);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('khennet', 'trait', 'trait_lithoid', 0);
@@ -26573,8 +26604,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('kilik', 'Kilik Cooperative', 'Kilik', 'KIC', 'AVI', 'avi11', 'Kilik', 'Kiliki', 'Kilik $1$', NULL, NULL, NULL, NULL, NULL, 'Senka Vanye', 'Unbroken Medley', 'First Song', 'auth_democratic', 'gov_communal_parity', 'origin_default', 'pc_tropical', 'avian_01', 28);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('kilik', 'Kilik Cooperative', 'Kilik', 'KIC', 'AVI', 'avi11', 'Kilik', 'Kiliki', 'Kilik $1$', NULL, NULL, NULL, NULL, NULL, 'Senka Vanye', 'Unbroken Medley', 'First Song', 'auth_democratic', 'gov_communal_parity', 'origin_default', 'pc_tropical', '', 'avian_01', 28);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('kilik', 'trait', 'trait_organic', 0);
@@ -26608,8 +26639,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('orbis', 'Orbis Customer Synergies', 'Orbisic', 'KIC', 'REP', 'rep1', 'Orbis', 'Orbisur', 'Orbisur $1$', NULL, NULL, NULL, NULL, NULL, 'Shess Lorba', 'Slephus Prime', 'Slephus', 'auth_corporate', 'gov_megacorporation', 'origin_default', 'pc_ocean', 'reptilian_01', 29);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('orbis', 'Orbis Customer Synergies', 'Orbisic', 'KIC', 'REP', 'rep1', 'Orbis', 'Orbisur', 'Orbisur $1$', NULL, NULL, NULL, NULL, NULL, 'Shess Lorba', 'Slephus Prime', 'Slephus', 'auth_corporate', 'gov_megacorporation', 'origin_default', 'pc_ocean', '', 'reptilian_01', 29);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('orbis', 'trait', 'trait_organic', 0);
@@ -26649,8 +26680,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('chinorr', 'Chinorr Combine', 'Chinorran', 'CUS', 'MOL', 'mol11', 'Chinorr', 'Chinorr', 'Chinorr $1$', NULL, NULL, NULL, NULL, NULL, 'Jurrba Shogg', 'Chicora', 'Chiconaph', 'auth_corporate', 'gov_megacorporation', 'origin_default', 'pc_arid', 'molluscoid_01', 30);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('chinorr', 'Chinorr Combine', 'Chinorran', 'CUS', 'MOL', 'mol11', 'Chinorr', 'Chinorr', 'Chinorr $1$', NULL, NULL, NULL, NULL, NULL, 'Jurrba Shogg', 'Chicora', 'Chiconaph', 'auth_corporate', 'gov_megacorporation', 'origin_default', 'pc_arid', NULL, 'molluscoid_01', 30);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('chinorr', 'trait', 'trait_organic', 0);
@@ -26684,8 +26715,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('hazbuzan', 'Hazbuzan Syndicate', 'Hazbuzan', 'HZB', 'REP', 'rep11', 'Hazbuzi', 'Hazbuzi', 'Hazbuzi $1$', NULL, NULL, NULL, NULL, NULL, 'Mama ''Knife-Tongue'' Nonie', 'Zumaka', 'Buzbuznol', 'auth_corporate', 'gov_criminal_syndicate', 'origin_default', 'pc_savannah', 'reptilian_01', 31);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('hazbuzan', 'Hazbuzan Syndicate', 'Hazbuzan', 'HZB', 'REP', 'rep11', 'Hazbuzi', 'Hazbuzi', 'Hazbuzi $1$', NULL, NULL, NULL, NULL, NULL, 'Mama ''Knife-Tongue'' Nonie', 'Zumaka', 'Buzbuznol', 'auth_corporate', 'gov_criminal_syndicate', 'origin_default', 'pc_savannah', '', 'reptilian_01', 31);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('hazbuzan', 'trait', 'trait_organic', 0);
@@ -26719,8 +26750,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('voor', 'Voor Technocracy', 'Voor', 'MSS', 'HUM', 'humanoid_hp_06', 'Voor', 'Voor', 'Voor $1$', NULL, NULL, NULL, NULL, NULL, 'Vex Kai''fa', 'Hiverion', 'Exedor', 'auth_dictatorial', 'gov_technocratic_dictatorship', 'origin_default', 'pc_arctic', 'humanoid_01', 32);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('voor', 'Voor Technocracy', 'Voor', 'MSS', 'HUM', 'humanoid_hp_06', 'Voor', 'Voor', 'Voor $1$', NULL, NULL, NULL, NULL, NULL, 'Vex Kai''fa', 'Hiverion', 'Exedor', 'auth_dictatorial', 'gov_technocratic_dictatorship', 'origin_default', 'pc_arctic', '', 'humanoid_01', 32);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('voor', 'trait', 'trait_organic', 0);
@@ -26754,8 +26785,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('tebrid', 'Tebrid Homolog', 'Tebridean', 'TBR', 'MACHINE', 'sd_mol_robot', 'Homolog', 'Homologs', 'Homologian $1$', 'MOL', 'mol8', 'Tebir', 'Tebirs', 'Tebrid', 'Nexus', 'Tebri', 'Tebiron', 'auth_machine_intelligence', 'gov_machine_assimilator', 'origin_default', 'pc_ocean', 'molluscoid_01', 33);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('tebrid', 'Tebrid Homolog', 'Tebridean', 'TBR', 'MACHINE', 'sd_mol_robot', 'Homolog', 'Homologs', 'Homologian $1$', 'MOL', 'mol8', 'Tebir', 'Tebirs', 'Tebrid', 'Nexus', 'Tebri', 'Tebiron', 'auth_machine_intelligence', 'gov_machine_assimilator', 'origin_default', 'pc_ocean', '', 'molluscoid_01', 33);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('tebrid', 'trait', 'trait_machine_unit', 0);
@@ -26798,8 +26829,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('custodianship', 'Earth Custodianship', 'Custodian', 'ECS', 'MACHINE', 'sd_hum_robot', 'Custodian', 'Custodians', 'Custodian $1$', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', 'Coordinator', 'Earth', 'Sol', 'auth_machine_intelligence', 'gov_machine_servitor', 'origin_default', 'pc_continental', 'mammalian_01', 34);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('custodianship', 'Earth Custodianship', 'Custodian', 'ECS', 'MACHINE', 'sd_hum_robot', 'Custodian', 'Custodians', 'Custodian $1$', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', 'Coordinator', 'Earth', 'Sol', 'auth_machine_intelligence', 'gov_machine_servitor', 'origin_default', 'pc_continental', 'sol_system_initializer', 'mammalian_01', 34);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('custodianship', 'trait', 'trait_machine_unit', 0);
@@ -26839,8 +26870,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('xt489', 'XT-489 Eliminator', 'XT-489', '489', 'MACHINE', 'sd_avi_robot', 'XT-489', 'XT-489', 'XT-489 $1$', NULL, NULL, NULL, NULL, NULL, 'XT-489', 'XT-489.00', 'st.XT-489', 'auth_machine_intelligence', 'gov_machine_terminator', 'origin_default', 'pc_desert', 'avian_01', 35);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('xt489', 'XT-489 Eliminator', 'XT-489', '489', 'MACHINE', 'sd_avi_robot', 'XT-489', 'XT-489', 'XT-489 $1$', NULL, NULL, NULL, NULL, NULL, 'XT-489', 'XT-489.00', 'st.XT-489', 'auth_machine_intelligence', 'gov_machine_terminator', 'origin_default', 'pc_desert', '', 'avian_01', 35);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('xt489', 'trait', 'trait_machine_unit', 0);
@@ -26871,8 +26902,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('tebrid_machine_age', 'Tebrid Homolog', 'Tebridean', 'TBR', 'MACHINE', 'sd_mol_robot', 'Homolog', 'Homologs', 'Homologian $1$', 'MOL', 'mol8', 'Tebir', 'Tebirs', 'Tebrid', 'Nexus', 'Tebri', 'Tebiron', 'auth_machine_intelligence', 'gov_machine_assimilator', 'origin_default', 'pc_ocean', 'molluscoid_01', 36);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('tebrid_machine_age', 'Tebrid Homolog', 'Tebridean', 'TBR', 'MACHINE', 'sd_mol_robot', 'Homolog', 'Homologs', 'Homologian $1$', 'MOL', 'mol8', 'Tebir', 'Tebirs', 'Tebrid', 'Nexus', 'Tebri', 'Tebiron', 'auth_machine_intelligence', 'gov_machine_assimilator', 'origin_default', 'pc_ocean', '', 'molluscoid_01', 36);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('tebrid_machine_age', 'trait', 'trait_machine_unit', 0);
@@ -26918,8 +26949,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('custodianship_machine_age', 'Earth Custodianship', 'Custodian', 'ECS', 'MACHINE', 'sd_hum_robot', 'Custodian', 'Custodians', 'Custodian $1$', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', 'Coordinator', 'Earth', 'Sol', 'auth_machine_intelligence', 'gov_machine_servitor', 'origin_default', 'pc_continental', 'mammalian_01', 37);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('custodianship_machine_age', 'Earth Custodianship', 'Custodian', 'ECS', 'MACHINE', 'sd_hum_robot', 'Custodian', 'Custodians', 'Custodian $1$', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', 'Coordinator', 'Earth', 'Sol', 'auth_machine_intelligence', 'gov_machine_servitor', 'origin_default', 'pc_continental', 'sol_system_initializer', 'mammalian_01', 37);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('custodianship_machine_age', 'trait', 'trait_machine_unit', 0);
@@ -26962,8 +26993,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('xt489_machine_age', 'XT-489 Eliminator', 'XT-489', '489', 'MACHINE', 'sd_avi_robot', 'XT-489', 'XT-489', 'XT-489 $1$', NULL, NULL, NULL, NULL, NULL, 'XT-489', 'XT-489.00', 'st.XT-489', 'auth_machine_intelligence', 'gov_machine_terminator', 'origin_default', 'pc_desert', 'avian_01', 38);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('xt489_machine_age', 'XT-489 Eliminator', 'XT-489', '489', 'MACHINE', 'sd_avi_robot', 'XT-489', 'XT-489', 'XT-489 $1$', NULL, NULL, NULL, NULL, NULL, 'XT-489', 'XT-489.00', 'st.XT-489', 'auth_machine_intelligence', 'gov_machine_terminator', 'origin_default', 'pc_desert', '', 'avian_01', 38);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('xt489_machine_age', 'trait', 'trait_machine_unit', 0);
@@ -26997,8 +27028,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('xanid', 'Xanid Suzerainty', 'Xanid', 'XAN', 'ART', 'art10', 'Xani', 'Xanis', 'Xanid $1$', 'REP', 'rep7', 'Vheln', 'Vhelns', 'Vhelnid', 'Zaox Huketkin', 'Xanth', 'Dir-Xan', 'auth_dictatorial', 'gov_constitutional_dictatorship', 'origin_syncretic_evolution', 'pc_arid', 'arthropoid_01', 39);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('xanid', 'Xanid Suzerainty', 'Xanid', 'XAN', 'ART', 'art10', 'Xani', 'Xanis', 'Xanid $1$', 'REP', 'rep7', 'Vheln', 'Vhelns', 'Vhelnid', 'Zaox Huketkin', 'Xanth', 'Dir-Xan', 'auth_dictatorial', 'gov_constitutional_dictatorship', 'origin_syncretic_evolution', 'pc_arid', '', 'arthropoid_01', 39);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('xanid', 'trait', 'trait_organic', 0);
@@ -27050,8 +27081,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('lokken', 'Lokken Mechanists', 'Lokken', 'LOK', 'REP', 'rep4', 'Lok', 'Lokks', 'Lokken $1$', NULL, NULL, NULL, NULL, NULL, 'Xoblagiss', 'Lokkur', 'Dal-Lokkur', 'auth_democratic', 'gov_rational_consensus', 'origin_mechanists', 'pc_arid', 'reptilian_01', 40);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('lokken', 'Lokken Mechanists', 'Lokken', 'LOK', 'REP', 'rep4', 'Lok', 'Lokks', 'Lokken $1$', NULL, NULL, NULL, NULL, NULL, 'Xoblagiss', 'Lokkur', 'Dal-Lokkur', 'auth_democratic', 'gov_rational_consensus', 'origin_mechanists', 'pc_arid', '', 'reptilian_01', 40);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('lokken', 'trait', 'trait_organic', 0);
@@ -27085,8 +27116,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('ixidar', 'Ix''Idar Star Collective', 'Ixidar', 'ICS', 'ART', 'art12', 'Ix''Idar', 'Ix''Idars', 'Ix''Idari $1$', NULL, NULL, NULL, NULL, NULL, 'Xid''Ixa''Xir''Idon', 'Ix''Athrak', 'Athrak', 'auth_hive_mind', 'gov_hive_mind', 'origin_default', 'pc_arctic', 'arthropoid_01', 41);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('ixidar', 'Ix''Idar Star Collective', 'Ixidar', 'ICS', 'ART', 'art12', 'Ix''Idar', 'Ix''Idars', 'Ix''Idari $1$', NULL, NULL, NULL, NULL, NULL, 'Xid''Ixa''Xir''Idon', 'Ix''Athrak', 'Athrak', 'auth_hive_mind', 'gov_hive_mind', 'origin_default', 'pc_arctic', NULL, 'arthropoid_01', 41);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('ixidar', 'trait', 'trait_organic', 0);
@@ -27117,8 +27148,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('maweer', 'Maweer Caretakers', 'Maweer', 'MSS', 'PLANT', 'pla14', 'Maweer', 'Maweer', 'Maweer $1$', NULL, NULL, NULL, NULL, NULL, 'Pollus', 'The Garden', 'Maweer', 'auth_dictatorial', 'gov_irenic_dictatorship', 'origin_default', 'pc_tropical', 'plantoid_01', 42);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('maweer', 'Maweer Caretakers', 'Maweer', 'MSS', 'PLANT', 'pla14', 'Maweer', 'Maweer', 'Maweer $1$', NULL, NULL, NULL, NULL, NULL, 'Pollus', 'The Garden', 'Maweer', 'auth_dictatorial', 'gov_irenic_dictatorship', 'origin_default', 'pc_tropical', '', 'plantoid_01', 42);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('maweer', 'trait', 'trait_organic', 0);
@@ -27152,8 +27183,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('tzynn', 'Tzynn Empire', 'Tzynn', 'TIS', 'REP', 'rep9', 'Tzynn', 'Tzynn', 'Tzynn $1$', NULL, NULL, NULL, NULL, NULL, 'Sazzeeja', 'Tzynnia', 'Sal''Tzynn', 'auth_imperial', 'gov_star_empire', 'origin_default', 'pc_desert', 'reptilian_01', 43);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('tzynn', 'Tzynn Empire', 'Tzynn', 'TIS', 'REP', 'rep9', 'Tzynn', 'Tzynn', 'Tzynn $1$', NULL, NULL, NULL, NULL, NULL, 'Sazzeeja', 'Tzynnia', 'Sal''Tzynn', 'auth_imperial', 'gov_star_empire', 'origin_default', 'pc_desert', NULL, 'reptilian_01', 43);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('tzynn', 'trait', 'trait_organic', 0);
@@ -27190,8 +27221,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('yondar', 'Kingdom of Yondarim', 'Yondar', 'YRS', 'AVI', 'avi10', 'Yondar', 'Yondar', 'Yondari $1$', NULL, NULL, NULL, NULL, NULL, 'Yeerak', 'Yondarim', 'B''Yond', 'auth_imperial', 'gov_divine_empire', 'origin_default', 'pc_alpine', 'avian_01', 44);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('yondar', 'Kingdom of Yondarim', 'Yondar', 'YRS', 'AVI', 'avi10', 'Yondar', 'Yondar', 'Yondari $1$', NULL, NULL, NULL, NULL, NULL, 'Yeerak', 'Yondarim', 'B''Yond', 'auth_imperial', 'gov_divine_empire', 'origin_default', 'pc_alpine', NULL, 'avian_01', 44);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('yondar', 'trait', 'trait_organic', 0);
@@ -27222,8 +27253,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('iferyx', 'Iferyx Amalgamated Fleets', 'Iferyx', 'IAS', 'MAM', 'mam16', 'Iferyx', 'Iferyssians', 'Iferyssian $1$', NULL, NULL, NULL, NULL, NULL, 'Gorlif One-Eye', 'Iferysia', 'Iferys', 'auth_oligarchic', 'gov_trade_league', 'origin_default', 'pc_tundra', 'mammalian_01', 45);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('iferyx', 'Iferyx Amalgamated Fleets', 'Iferyx', 'IAS', 'MAM', 'mam16', 'Iferyx', 'Iferyssians', 'Iferyssian $1$', NULL, NULL, NULL, NULL, NULL, 'Gorlif One-Eye', 'Iferysia', 'Iferys', 'auth_oligarchic', 'gov_trade_league', 'origin_default', 'pc_tundra', NULL, 'mammalian_01', 45);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('iferyx', 'trait', 'trait_organic', 0);
@@ -27257,8 +27288,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('glebsig', 'Glebsig Foundation', 'Glebsigan', 'GLB', 'MOL', 'mol7', 'Glebsig', 'Glebsigi', 'Glebsigan $1$', NULL, NULL, NULL, NULL, NULL, 'Thir-Rogg', 'Ladnah', 'Ladnah Vyg', 'auth_oligarchic', 'gov_holy_tribunal', 'origin_default', 'pc_alpine', 'molluscoid_01', 46);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('glebsig', 'Glebsig Foundation', 'Glebsigan', 'GLB', 'MOL', 'mol7', 'Glebsig', 'Glebsigi', 'Glebsigan $1$', NULL, NULL, NULL, NULL, NULL, 'Thir-Rogg', 'Ladnah', 'Ladnah Vyg', 'auth_oligarchic', 'gov_holy_tribunal', 'origin_default', 'pc_alpine', '', 'molluscoid_01', 46);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('glebsig', 'trait', 'trait_organic', 0);
@@ -27292,8 +27323,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('jehetma', 'Jehetma Dominion', 'Jahetman', 'JDS', 'FUN', 'fun13', 'Jehetma', 'Jehetma', 'Jehetman $1$', NULL, NULL, NULL, NULL, NULL, 'Haragma', 'Jehet Prime', 'Jehet', 'auth_dictatorial', 'gov_elective_monarchy', 'origin_default', 'pc_tundra', 'fungoid_01', 47);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('jehetma', 'Jehetma Dominion', 'Jahetman', 'JDS', 'FUN', 'fun13', 'Jehetma', 'Jehetma', 'Jehetman $1$', NULL, NULL, NULL, NULL, NULL, 'Haragma', 'Jehet Prime', 'Jehet', 'auth_dictatorial', 'gov_elective_monarchy', 'origin_default', 'pc_tundra', NULL, 'fungoid_01', 47);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('jehetma', 'trait', 'trait_organic', 0);
@@ -27327,8 +27358,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('scyldari', 'Scyldari Confederacy', 'Scyldarian', 'SCS', 'MAM', 'mam6', 'Scyldari', 'Scyldarians', 'Scyldarian $1$', NULL, NULL, NULL, NULL, NULL, 'Dackam', 'Scyldaria', 'Scyldon', 'auth_democratic', 'gov_theocratic_republic', 'origin_default', 'pc_ocean', 'mammalian_01', 48);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('scyldari', 'Scyldari Confederacy', 'Scyldarian', 'SCS', 'MAM', 'mam6', 'Scyldari', 'Scyldarians', 'Scyldarian $1$', NULL, NULL, NULL, NULL, NULL, 'Dackam', 'Scyldaria', 'Scyldon', 'auth_democratic', 'gov_theocratic_republic', 'origin_default', 'pc_ocean', NULL, 'mammalian_01', 48);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('scyldari', 'trait', 'trait_organic', 0);
@@ -27362,8 +27393,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('kel_azaan', 'Kel-Azaan Republic', 'Azaan', 'KAS', 'ART', 'art8', 'Kel-Azaan', 'Azaans', 'Kel-Azaan $1$', NULL, NULL, NULL, NULL, NULL, 'Krexax', 'Azak', 'Kel-Azak', 'auth_oligarchic', 'gov_citizen_stratocracy', 'origin_default', 'pc_savannah', 'arthropoid_01', 49);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('kel_azaan', 'Kel-Azaan Republic', 'Azaan', 'KAS', 'ART', 'art8', 'Kel-Azaan', 'Azaans', 'Kel-Azaan $1$', NULL, NULL, NULL, NULL, NULL, 'Krexax', 'Azak', 'Kel-Azak', 'auth_oligarchic', 'gov_citizen_stratocracy', 'origin_default', 'pc_savannah', NULL, 'arthropoid_01', 49);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('kel_azaan', 'trait', 'trait_organic', 0);
@@ -27397,8 +27428,8 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('blorg', 'Blorg Commonality', 'Blorg', 'BCS', 'FUN', 'fun12', 'Blorg', 'Blorg', 'Blorg $1$', NULL, NULL, NULL, NULL, NULL, 'Ashley Easterbrook', 'Blorg', 'Blorg', 'auth_oligarchic', 'gov_military_junta', 'origin_default', 'pc_tropical', 'fungoid_01', 50);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('blorg', 'Blorg Commonality', 'Blorg', 'BCS', 'FUN', 'fun12', 'Blorg', 'Blorg', 'Blorg $1$', NULL, NULL, NULL, NULL, NULL, 'Ashley Easterbrook', 'Blorg', 'Blorg', 'auth_oligarchic', 'gov_military_junta', 'origin_default', 'pc_tropical', '', 'fungoid_01', 50);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('blorg', 'trait', 'trait_organic', 0);
@@ -27432,8 +27463,430 @@ INSERT OR REPLACE INTO prescripted_empire
                     secondary_class, secondary_portrait, secondary_name,
                     secondary_plural, secondary_adjective, ruler_name,
                     planet_name, system_name, authority, government,
-                    origin, planet_class, graphical_culture, sort_order)
-               VALUES ('default', 'default', '', '', 'HUM', 'human', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', '', '', 'auth_democratic', 'gov_despotic_empire', 'origin_default', 'pc_continental', 'mammalian_01', 51);
+                    origin, planet_class, initializer, graphical_culture, sort_order)
+               VALUES ('default', 'default', '', '', 'HUM', 'human', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', '', '', 'auth_democratic', 'gov_despotic_empire', 'origin_default', 'pc_continental', NULL, 'mammalian_01', 51);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('default', 'trait', 'trait_organic', 0);
+INSERT OR REPLACE INTO initializer (key, name, sort_order) VALUES ('custom_starting_init_01', NULL, 0);
+INSERT OR REPLACE INTO initializer (key, name, sort_order) VALUES ('custom_starting_init_02', NULL, 1);
+INSERT OR REPLACE INTO initializer (key, name, sort_order) VALUES ('custom_starting_init_03', NULL, 2);
+INSERT OR REPLACE INTO initializer (key, name, sort_order) VALUES ('custom_starting_init_04', NULL, 3);
+INSERT OR REPLACE INTO initializer (key, name, sort_order) VALUES ('custom_starting_init_05', NULL, 4);
+INSERT OR REPLACE INTO initializer (key, name, sort_order) VALUES ('custom_starting_init_06', NULL, 5);
+INSERT OR REPLACE INTO initializer (key, name, sort_order) VALUES ('titawin_init', 'Titawin', 6);
+INSERT OR REPLACE INTO initializer (key, name, sort_order) VALUES ('deneb_system', 'Deneb', 7);
+INSERT OR REPLACE INTO initializer (key, name, sort_order) VALUES ('sol_system_initializer', 'Sol', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'aquatic', 'aquatic_01.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'aquatic', 'aquatic_02.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'aquatic', 'aquatic_03.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'aquatic', 'aquatic_04.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'aquatic', 'aquatic_05.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'aquatic', 'aquatic_06.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'aquatic', 'aquatic_07.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'aquatic', 'aquatic_08.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'aquatic', 'aquatic_09.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'aquatic', 'aquatic_10.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'aquatic', 'aquatic_11.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'aquatic', 'aquatic_12.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', '00_solid.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'circle.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'diagonal.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'diagonal_stripe.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'double_hemispheres.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'double_triangles.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_1.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_10.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_11.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_12.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_13.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_15.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_17.dds', 12);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_18.dds', 13);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_19.dds', 14);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_2.dds', 15);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_20.dds', 16);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_21.dds', 17);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_24.dds', 18);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_26.dds', 19);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_27.dds', 20);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_28.dds', 21);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_29.dds', 22);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_3.dds', 23);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_31.dds', 24);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_32.dds', 25);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_34.dds', 26);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_35.dds', 27);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_36.dds', 28);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_37.dds', 29);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_38.dds', 30);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_39.dds', 31);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_4.dds', 32);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_40.dds', 33);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_41.dds', 34);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_42.dds', 35);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_43.dds', 36);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_45.dds', 37);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_48.dds', 38);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_49.dds', 39);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_5.dds', 40);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_50.dds', 41);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_51.dds', 42);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_52.dds', 43);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_53.dds', 44);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_54.dds', 45);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_55.dds', 46);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_56.dds', 47);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_57.dds', 48);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_6.dds', 49);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'flag_BG_8.dds', 50);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'horizontal.dds', 51);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'horizontal_stripe.dds', 52);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'inverted_v.dds', 53);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'new_dawn.dds', 54);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'pattern_01.dds', 55);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'rounded_middle.dds', 56);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'sinus.dds', 57);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'stripe.dds', 58);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'stripes.dds', 59);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'triangle_split.dds', 60);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'v.dds', 61);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('background', 'backgrounds', 'vertical.dds', 62);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_1.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_10.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_11.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_12.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_13.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_14.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_15.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_16.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_17.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_18.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_19.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_2.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_20.dds', 12);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_21.dds', 13);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_22.dds', 14);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_23.dds', 15);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_24.dds', 16);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_3.dds', 17);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_4.dds', 18);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_5.dds', 19);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_6.dds', 20);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_7.dds', 21);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_8.dds', 22);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'blocky', 'flag_blocky_9.dds', 23);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'corporate', 'corporate_01.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'corporate', 'corporate_02.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'corporate', 'corporate_03.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'corporate', 'corporate_04.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'corporate', 'corporate_05.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'corporate', 'corporate_06.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'corporate', 'corporate_07.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'corporate', 'corporate_08.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'corporate', 'corporate_09.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'corporate', 'corporate_10.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'corporate', 'corporate_11.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'corporate', 'corporate_12.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_1.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_10.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_11.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_12.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_13.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_14.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_15.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_16.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_17.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_18.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_19.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_2.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_20.dds', 12);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_21.dds', 13);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_22.dds', 14);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_23.dds', 15);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_24.dds', 16);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_3.dds', 17);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_4.dds', 18);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_5.dds', 19);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_6.dds', 20);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_7.dds', 21);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_8.dds', 22);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'domination', 'domination_9.dds', 23);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'enclaves', 'enclaves_flag_artist.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'enclaves', 'enclaves_flag_curator.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'enclaves', 'enclaves_flag_trader.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_1.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_10.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_11.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_12.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_13.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_14.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_15.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_2.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_3.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_4.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_5.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_6.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_7.dds', 12);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_8.dds', 13);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'flag_human_9.dds', 14);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'human', 'human_14.dds', 15);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'imperial', 'imperial_01.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'imperial', 'imperial_02.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'imperial', 'imperial_03.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'imperial', 'imperial_04.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'imperial', 'imperial_05.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'imperial', 'imperial_06.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'imperial', 'imperial_07.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'imperial', 'imperial_08.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'imperial', 'imperial_09.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'imperial', 'imperial_10.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'imperial', 'imperial_11.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'imperial', 'imperial_12.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'infernal', 'infernal_01.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'infernal', 'infernal_02.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'infernal', 'infernal_03.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'infernal', 'infernal_04.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'infernal', 'infernal_05.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'infernal', 'infernal_06.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'infernal', 'infernal_07.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'infernal', 'infernal_08.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'infernal', 'infernal_09.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'infernal', 'infernal_10.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'infernal', 'infernal_11.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'infernal', 'infernal_12.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'legion', 'flag_mp_beta_01.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'legion', 'flag_mp_beta_02.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'legion', 'flag_mp_beta_03.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'legion', 'flag_mp_beta_04.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'legion', 'flag_mp_beta_05.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'legion', 'flag_mp_beta_06.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'legion', 'flag_opus.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'legion', 'legion_01.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'legion', 'legion_02.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'legion', 'legion_03.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'legion', 'legion_04.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'legion', 'legion_05.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'legion', 'legion_06.dds', 12);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'lithoid', 'lithoid_01.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'lithoid', 'lithoid_02.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'lithoid', 'lithoid_03.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'lithoid', 'lithoid_04.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'lithoid', 'lithoid_05.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'lithoid', 'lithoid_06.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'lithoid', 'lithoid_07.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'lithoid', 'lithoid_08.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'lithoid', 'lithoid_09.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'lithoid', 'lithoid_10.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'lithoid', 'lithoid_11.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'lithoid', 'lithoid_12.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'necroid', 'necroid_01.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'necroid', 'necroid_02.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'necroid', 'necroid_03.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'necroid', 'necroid_04.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'necroid', 'necroid_05.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'necroid', 'necroid_06.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'necroid', 'necroid_07.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'necroid', 'necroid_08.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'necroid', 'necroid_09.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'necroid', 'necroid_10.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'necroid', 'necroid_11.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'necroid', 'necroid_12.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_1.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_10.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_11.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_12.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_13.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_14.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_15.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_16.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_17.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_18.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_19.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_2.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_20.dds', 12);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_21.dds', 13);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_22.dds', 14);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_23.dds', 15);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_24.dds', 16);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_3.dds', 17);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_4.dds', 18);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_5.dds', 19);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_6.dds', 20);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_7.dds', 21);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_8.dds', 22);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'ornate', 'flag_ornate_9.dds', 23);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'paradox', 'paradox_arctic_logo.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'paradox', 'paradox_logo.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pirate', 'flag_pirate_1.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pirate', 'flag_pirate_10.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pirate', 'flag_pirate_11.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pirate', 'flag_pirate_2.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pirate', 'flag_pirate_3.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pirate', 'flag_pirate_4.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pirate', 'flag_pirate_5.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pirate', 'flag_pirate_6.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pirate', 'flag_pirate_7.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pirate', 'flag_pirate_8.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pirate', 'flag_pirate_9.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pirate', 'pirate_12.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'plantoid', 'plantoid_01.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'plantoid', 'plantoid_02.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'plantoid', 'plantoid_03.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'plantoid', 'plantoid_04.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'plantoid', 'plantoid_05.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'plantoid', 'plantoid_06.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'plantoid', 'plantoid_07.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'plantoid', 'plantoid_08.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'plantoid', 'plantoid_09.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'plantoid', 'plantoid_10.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'plantoid', 'plantoid_11.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'plantoid', 'plantoid_12.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_1.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_10.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_11.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_12.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_13.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_14.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_15.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_16.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_17.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_18.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_19.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_2.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_20.dds', 12);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_21.dds', 13);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_22.dds', 14);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_23.dds', 15);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_24.dds', 16);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_3.dds', 17);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_4.dds', 18);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_5.dds', 19);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_6.dds', 20);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_7.dds', 21);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_8.dds', 22);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pointy', 'flag_pointy_9.dds', 23);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pre_ftl', 'preftl_atomic_age.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pre_ftl', 'preftl_bronze_age.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pre_ftl', 'preftl_early_space_age.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pre_ftl', 'preftl_industrial_age.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pre_ftl', 'preftl_iron_age.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pre_ftl', 'preftl_machine_age.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pre_ftl', 'preftl_medieval_age.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pre_ftl', 'preftl_renaissance_age.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pre_ftl', 'preftl_steam_age.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'pre_ftl', 'preftl_stone_age.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'abandoned.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'ai_01.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'ai_02.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'caravaneer_00.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'caravaneer_01.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'caravaneer_02.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'caravaneer_03.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'extradimensional_01.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'extradimensional_02.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'extradimensional_03.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'gdf.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'gray_goo.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'hive_fe_flag_1.dds', 12);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'hive_fe_flag_2.dds', 13);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'hive_fe_flag_3.dds', 14);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'hive_fe_flag_restored.dds', 15);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'mercenaries.dds', 16);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'mindwardens.dds', 17);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'primitive.dds', 18);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'salvagers.dds', 19);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'shroudwalkers.dds', 20);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'synth_queen.dds', 21);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'the_empire.dds', 22);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'the_shroud.dds', 23);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'the_swarm.dds', 24);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'special', 'unknown.dds', 25);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_1.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_10.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_11.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_12.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_13.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_14.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_15.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_16.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_17.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_18.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_19.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_2.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_20.dds', 12);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_21.dds', 13);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_22.dds', 14);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_23.dds', 15);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_24.dds', 16);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_3.dds', 17);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_4.dds', 18);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_5.dds', 19);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_6.dds', 20);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_7.dds', 21);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_8.dds', 22);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'spherical', 'flag_spherical_9.dds', 23);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'toxoid', 'toxoid_01.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'toxoid', 'toxoid_02.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'toxoid', 'toxoid_03.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'toxoid', 'toxoid_04.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'toxoid', 'toxoid_05.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'toxoid', 'toxoid_06.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'toxoid', 'toxoid_07.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'toxoid', 'toxoid_08.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'toxoid', 'toxoid_09.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'toxoid', 'toxoid_10.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'toxoid', 'toxoid_11.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'toxoid', 'toxoid_12.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_1.dds', 0);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_10.dds', 1);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_11.dds', 2);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_12.dds', 3);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_13.dds', 4);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_14.dds', 5);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_15.dds', 6);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_16.dds', 7);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_17.dds', 8);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_18.dds', 9);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_19.dds', 10);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_2.dds', 11);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_20.dds', 12);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_21.dds', 13);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_22.dds', 14);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_23.dds', 15);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_24.dds', 16);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_3.dds', 17);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_4.dds', 18);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_5.dds', 19);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_6.dds', 20);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_7.dds', 21);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_8.dds', 22);
+INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_9.dds', 23);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('default_room', 'Default', 0);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('aquatics_room', 'Aquatics', 1);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('biogenesis_01_room', 'Biogenesis 01', 2);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_erudite_explorers_room', 'Erudite Explorers', 3);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('ethic_ai_room', 'Ethic Ai', 4);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_evangelizing_zealots_room', 'Evangelizing Zealots', 5);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_fanatic_befrienders_room', 'Fanatic Befrienders', 6);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_federation_builders_room', 'Federation Builders', 7);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_harmonious_hierarchy_room', 'Harmonious Hierarchy', 8);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_hegemonic_imperialists_room', 'Hegemonic Imperialists', 9);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_hive_mind_room', 'Hive Mind', 10);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_honorbound_warriors_room', 'Honorbound Warriors', 11);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('infernal_room', 'Infernal', 12);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('lithoid_room', 'Lithoid', 13);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('machine_room', 'Machine', 14);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_metalheads_room', 'Metalheads', 15);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_migrating_flock_room', 'Migrating Flock', 16);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('necroids_room', 'Necroids', 17);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_peaceful_traders_room', 'Peaceful Traders', 18);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('pre_ftl_ancient_room', 'Pre Ftl Ancient', 19);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('pre_ftl_modern_room', 'Pre Ftl Modern', 20);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('psionic_room', 'Psionic', 21);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_ruthless_capitalists_room', 'Ruthless Capitalists', 22);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_slaving_despots_room', 'Slaving Despots', 23);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_spiritual_seekers_room', 'Spiritual Seekers', 24);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('toxoids_room', 'Toxoids', 25);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('wilderness_room', 'Wilderness', 26);
+INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_xenophobic_isolationists_room', 'Xenophobic Isolationists', 27);
