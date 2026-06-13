@@ -285,16 +285,24 @@ CREATE TABLE planet_class (
 DROP TABLE IF EXISTS prescripted_empire_item;
 DROP TABLE IF EXISTS prescripted_empire;
 CREATE TABLE prescripted_empire (
-    key               TEXT PRIMARY KEY,   -- e.g. "tzynn", "humans1"
-    name              TEXT,               -- localised display name
-    species_class     TEXT,               -- phenotype, e.g. "REP", "HUM", "MACHINE"
-    species_portrait  TEXT,
-    authority         TEXT,               -- e.g. "auth_imperial"
-    government         TEXT,               -- e.g. "gov_star_empire"
-    origin            TEXT,               -- e.g. "origin_default"
-    planet_class      TEXT,               -- e.g. "pc_desert"
-    graphical_culture TEXT,               -- ship appearance, e.g. "reptilian_01"
-    sort_order        INTEGER NOT NULL DEFAULT 0
+    key                TEXT PRIMARY KEY,   -- e.g. "tzynn", "humans1"
+    name               TEXT,              -- localised display name
+    adjective          TEXT,              -- empire adjective, e.g. "Tzynn"
+    ship_prefix        TEXT,              -- e.g. "TIS"
+    species_class      TEXT,              -- phenotype, e.g. "REP", "HUM", "MACHINE"
+    species_portrait   TEXT,
+    species_name       TEXT,              -- species (singular) name
+    species_plural     TEXT,              -- species plural
+    species_adjective  TEXT,              -- species adjective
+    ruler_name         TEXT,              -- starting leader's name
+    planet_name        TEXT,              -- homeworld name
+    system_name        TEXT,              -- home system / star name
+    authority          TEXT,              -- e.g. "auth_imperial"
+    government         TEXT,              -- e.g. "gov_star_empire"
+    origin             TEXT,              -- e.g. "origin_default"
+    planet_class       TEXT,              -- e.g. "pc_desert"
+    graphical_culture  TEXT,              -- ship appearance, e.g. "reptilian_01"
+    sort_order         INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE prescripted_empire_item (
@@ -25341,9 +25349,11 @@ INSERT OR REPLACE INTO planet_class
                    (key, name, climate, colonizable, is_standard, sort_order)
                VALUES ('pc_relic', 'Relic World', 'dry', 1, 0, 29);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('humans1', 'United Nations of Earth', 'HUM', 'human', 'auth_democratic', 'gov_representative_democracy', 'origin_default', 'pc_continental', 'mammalian_01', 0);
+               VALUES ('humans1', 'United Nations of Earth', 'Human', 'UNS', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', 'Dolores Muwanga', 'Earth', 'Sol', 'auth_democratic', 'gov_representative_democracy', 'origin_default', 'pc_continental', 'mammalian_01', 0);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('humans1', 'trait', 'trait_organic', 0);
@@ -25369,9 +25379,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('humans1', 'ethic', 'ethic_fanatic_egalitarian', 7);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('humans2', 'Commonwealth of Man', 'HUM', 'human', 'auth_dictatorial', 'gov_military_dictatorship', 'origin_lost_colony', 'pc_continental', 'mammalian_01', 1);
+               VALUES ('humans2', 'Commonwealth of Man', 'Human', 'CNS', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', 'Sidney Beauclair', 'Unity', 'Deneb', 'auth_dictatorial', 'gov_military_dictatorship', 'origin_lost_colony', 'pc_continental', 'mammalian_01', 1);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('humans2', 'trait', 'trait_organic', 0);
@@ -25397,9 +25409,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('humans2', 'ethic', 'ethic_fanatic_militarist', 7);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('humans1_1', 'United Nations of Earth', 'HUM', 'human', 'auth_democratic', 'gov_representative_democracy', 'origin_default', 'pc_continental', 'humanoid_01', 2);
+               VALUES ('humans1_1', 'United Nations of Earth', 'Human', 'UNS', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', 'Dolores Muwanga', 'Earth', 'Sol', 'auth_democratic', 'gov_representative_democracy', 'origin_default', 'pc_continental', 'humanoid_01', 2);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('humans1_1', 'trait', 'trait_organic', 0);
@@ -25425,9 +25439,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('humans1_1', 'ethic', 'ethic_fanatic_egalitarian', 7);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('humans2_1', 'Commonwealth of Man', 'HUM', 'human', 'auth_dictatorial', 'gov_military_dictatorship', 'origin_lost_colony', 'pc_continental', 'humanoid_01', 3);
+               VALUES ('humans2_1', 'Commonwealth of Man', 'Human', 'CNS', 'HUM', 'human', 'Human', 'Humans', 'Human $1$', 'Sidney Beauclair', 'Unity', 'Deneb', 'auth_dictatorial', 'gov_military_dictatorship', 'origin_lost_colony', 'pc_continental', 'humanoid_01', 3);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('humans2_1', 'trait', 'trait_organic', 0);
@@ -25453,9 +25469,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('humans2_1', 'ethic', 'ethic_fanatic_militarist', 7);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('lithoid_humans', 'Federated Theian Preservers', 'LITHOID', 'lith_human', 'auth_oligarchic', 'gov_irenic_bureaucracy', 'origin_lithoid', 'pc_desert', 'lithoid_01', 4);
+               VALUES ('lithoid_humans', 'Federated Theian Preservers', 'Theian', 'TPC', 'LITHOID', 'lith_human', 'Theian', 'Theians', 'Theian $1$', 'Jade Chipjaw', 'Theia', 'Titawin', 'auth_oligarchic', 'gov_irenic_bureaucracy', 'origin_lithoid', 'pc_desert', 'lithoid_01', 4);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('lithoid_humans', 'trait', 'trait_lithoid', 0);
@@ -25484,9 +25502,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('lithoid_humans', 'ethic', 'ethic_fanatic_materialist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('plantoid_humans', 'Blooms of Gaea', 'PLANT', 'pla17', 'auth_democratic', 'gov_moral_democracy', 'origin_fruitful', 'pc_tropical', 'plantoid_01', 5);
+               VALUES ('plantoid_humans', 'Blooms of Gaea', 'Human', 'SEED', 'PLANT', 'pla17', 'Homo Plantae', 'Homines Plantae', 'Verdant $1$', 'Willow Breen', 'Gaea', 'Sol', 'auth_democratic', 'gov_moral_democracy', 'origin_fruitful', 'pc_tropical', 'plantoid_01', 5);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('plantoid_humans', 'trait', 'trait_organic', 0);
@@ -25518,9 +25538,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('plantoid_humans', 'ethic', 'ethic_fanatic_egalitarian', 9);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('pyrragthul', 'Pyrrag''Thul Planet Forgers', 'INF', 'inf9', 'auth_imperial', 'gov_despotic_hegemony', 'origin_red_giant', 'pc_volcanic', 'infernal_01', 6);
+               VALUES ('pyrragthul', 'Pyrrag''Thul Planet Forgers', 'Pyrrag''Thul Planet Forgers', 'VPF', 'INF', 'inf9', 'Pyrrag''Thul', 'Pyrrag''Thul', 'Pyrrag''Thul', 'Kuzai', 'Embron', 'Embrala', 'auth_imperial', 'gov_despotic_hegemony', 'origin_red_giant', 'pc_volcanic', 'infernal_01', 6);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('pyrragthul', 'trait', 'trait_infernal', 0);
@@ -25546,9 +25568,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('pyrragthul', 'ethic', 'ethic_fanatic_materialist', 7);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('mindwardens', 'Krijdex Wardenship', 'MINDWARDEN', 'mindwarden_01', 'auth_oligarchic', 'gov_executive_committee', 'origin_mindwardens', 'pc_tropical', 'mindwarden_01', 7);
+               VALUES ('mindwardens', 'Krijdex Wardenship', 'Krijdexine', 'KWS', 'MINDWARDEN', 'mindwarden_01', 'Krijdan', 'Krijdans', 'Krijdine', 'Aba Czoikin', 'Doehaum', 'Leborain', 'auth_oligarchic', 'gov_executive_committee', 'origin_mindwardens', 'pc_tropical', 'mindwarden_01', 7);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('mindwardens', 'trait', 'trait_organic', 0);
@@ -25583,9 +25607,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('mindwardens', 'ethic', 'ethic_materialist', 10);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('tankbound', 'Oracularity of Noerm', 'AQUATIC', 'psionic_07', 'auth_democratic', 'gov_theocratic_republic', 'origin_default', 'pc_desert', 'psionic_01', 8);
+               VALUES ('tankbound', 'Oracularity of Noerm', 'Oracular', 'ONS', 'AQUATIC', 'psionic_07', 'Noermer', 'Noermers', 'Noermish', 'Forj il''Roig', 'Noerm', 'Olphon', 'auth_democratic', 'gov_theocratic_republic', 'origin_default', 'pc_desert', 'psionic_01', 8);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('tankbound', 'trait', 'trait_organic', 0);
@@ -25623,9 +25649,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('tankbound', 'ethic', 'ethic_spiritualist', 11);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('zrobots', 'Yorphian Extractorate', 'MACHINE', 'psionic_11', 'auth_machine_intelligence', 'gov_machine_empire', 'origin_shroud_forged', 'pc_arctic', 'psionic_01', 9);
+               VALUES ('zrobots', 'Yorphian Extractorate', 'Yorphian', 'YEV', 'MACHINE', 'psionic_11', 'Yorphid', 'Yorphidi', 'Yorphide', 'Uxon D1', 'Yorphia', 'Gomox', 'auth_machine_intelligence', 'gov_machine_empire', 'origin_shroud_forged', 'pc_arctic', 'psionic_01', 9);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('zrobots', 'trait', 'trait_machine_unit', 0);
@@ -25654,9 +25682,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('zrobots', 'ethic', 'ethic_gestalt_consciousness', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('zrobots_machine_age', 'Yorphian Extractorate', 'MACHINE', 'psionic_11', 'auth_machine_intelligence', 'gov_machine_empire', 'origin_shroud_forged', 'pc_arctic', 'psionic_01', 10);
+               VALUES ('zrobots_machine_age', 'Yorphian Extractorate', 'Yorphian', 'YEV', 'MACHINE', 'psionic_11', 'Yorphid', 'Yorphidi', 'Yorphide', 'Uxon D1', 'Yorphia', 'Gomox', 'auth_machine_intelligence', 'gov_machine_empire', 'origin_shroud_forged', 'pc_arctic', 'psionic_01', 10);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('zrobots_machine_age', 'trait', 'trait_machine_unit', 0);
@@ -25688,9 +25718,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('zrobots_machine_age', 'ethic', 'ethic_gestalt_consciousness', 9);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('zhardmehka', 'Bloomwrought Wildscape of Tellon', 'FUN', 'fun4', 'auth_hive_mind', 'gov_wilderness', 'origin_wilderness', 'pc_tropical', 'biogenesis_02', 11);
+               VALUES ('zhardmehka', 'Bloomwrought Wildscape of Tellon', 'Bloomers', 'ZMV', 'FUN', 'fun4', 'Zhard-Krellin', 'Zhard-Krellins', 'Zhard-Krelline', 'Obanva $FUN3_CHR_uvi-Livve$', 'Tellon', 'Tattla', 'auth_hive_mind', 'gov_wilderness', 'origin_wilderness', 'pc_tropical', 'biogenesis_02', 11);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('zhardmehka', 'trait', 'trait_hive_mind', 0);
@@ -25722,9 +25754,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('zhardmehka', 'ethic', 'ethic_gestalt_consciousness', 9);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('djunnetic', 'Djunnetic Dominion', 'MAM', 'bio10', 'auth_imperial', 'gov_enlightened_monarchy', 'origin_evolutionary_predators', 'pc_ocean', 'biogenesis_01', 12);
+               VALUES ('djunnetic', 'Djunnetic Dominion', 'Djunnetic', 'ADN', 'MAM', 'bio10', 'Djunn', 'Djunni', 'Djunn', 'Tumpus', 'Fulsi', 'Boass Ceind', 'auth_imperial', 'gov_enlightened_monarchy', 'origin_evolutionary_predators', 'pc_ocean', 'biogenesis_01', 12);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('djunnetic', 'trait', 'trait_organic', 0);
@@ -25759,9 +25793,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('djunnetic', 'ethic', 'ethic_spiritualist', 10);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('oviron_lodge', 'Oviron Lodge', 'AVI', 'avi5', 'auth_oligarchic', 'gov_executive_committee', 'origin_treasure_hunters', 'pc_alpine', 'avian_01', 13);
+               VALUES ('oviron_lodge', 'Oviron Lodge', 'Ovirine', 'CUV', 'AVI', 'avi5', NULL, NULL, NULL, 'Kaakrupuk', 'Alatus', 'Arcoterea', 'auth_oligarchic', 'gov_executive_committee', 'origin_treasure_hunters', 'pc_alpine', 'avian_01', 13);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('oviron_lodge', 'trait', 'trait_organic', 0);
@@ -25790,9 +25826,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('oviron_lodge', 'ethic', 'ethic_fanatic_materialist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('graparx_trophy_hunters', 'Graparx Primal Stalkers', 'MAM', 'mam12', 'auth_oligarchic', 'gov_citizen_stratocracy', 'origin_primal_calling', 'pc_tropical', 'mammalian_01', 14);
+               VALUES ('graparx_trophy_hunters', 'Graparx Primal Stalkers', 'Graparx', 'GVP', 'MAM', 'mam12', NULL, NULL, NULL, 'Scargum had''Mik', 'Sifran', 'So''Sifran', 'auth_oligarchic', 'gov_citizen_stratocracy', 'origin_primal_calling', 'pc_tropical', 'mammalian_01', 14);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('graparx_trophy_hunters', 'trait', 'trait_organic', 0);
@@ -25821,9 +25859,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('graparx_trophy_hunters', 'ethic', 'ethic_fanatic_militarist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('yatunan_radicals', 'Yatunan Radicals', 'HUM', 'humanoid_03', 'auth_oligarchic', 'gov_storm_chasers', 'origin_storm_chasers', 'pc_ocean', 'avian_01', 15);
+               VALUES ('yatunan_radicals', 'Yatunan Radicals', 'Yatunan', 'RAD', 'HUM', 'humanoid_03', 'Yatune', 'Yatunes', 'Yatunan', 'Hem tal Gun', 'Yatunea', 'Kon tal Mol', 'auth_oligarchic', 'gov_storm_chasers', 'origin_storm_chasers', 'pc_ocean', 'avian_01', 15);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('yatunan_radicals', 'trait', 'trait_organic', 0);
@@ -25855,9 +25895,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('yatunan_radicals', 'ethic', 'ethic_spiritualist', 9);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('basidrix_cyber_ecclesia', 'Basidrix Cyber Ecclesia', 'FUN', 'cyb13', 'auth_oligarchic', 'gov_holy_tribunal', 'origin_cybernetic_creed', 'pc_arid', 'cybernetics_01', 16);
+               VALUES ('basidrix_cyber_ecclesia', 'Basidrix Cyber Ecclesia', 'Basidrix Ecclesiastic', 'HDS', 'FUN', 'cyb13', 'Basidrix', 'Basidrix', 'Basidri', 'Qaarugm Seedkugh', 'Naridixis', 'Basolux', 'auth_oligarchic', 'gov_holy_tribunal', 'origin_cybernetic_creed', 'pc_arid', 'cybernetics_01', 16);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('basidrix_cyber_ecclesia', 'trait', 'trait_organic', 0);
@@ -25886,9 +25928,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('basidrix_cyber_ecclesia', 'ethic', 'ethic_xenophobe', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('lacertan_techno_protectorate', 'Lacertan Techno-Protectorate', 'MOL', 'synth05', 'auth_democratic', 'gov_rational_consensus', 'origin_synthetic_fertility', 'pc_tropical', 'synthetics_01', 17);
+               VALUES ('lacertan_techno_protectorate', 'Lacertan Techno-Protectorate', 'Lacertan Techno-Protectorate', 'LTP', 'MOL', 'synth05', 'Lacertan', 'Lacertans', 'Lacertan', 'Cathiox Moz', 'Lacertis', 'Lacerta Lumina', 'auth_democratic', 'gov_rational_consensus', 'origin_synthetic_fertility', 'pc_tropical', 'synthetics_01', 17);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('lacertan_techno_protectorate', 'trait', 'trait_organic', 0);
@@ -25917,9 +25961,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('lacertan_techno_protectorate', 'ethic', 'ethic_materialist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('free_sunbuilt_uplifters', 'Sunbuilt Uplifters', 'MACHINE', 'synth_machine_01', 'auth_imperial', 'gov_theocratic_monarchy', 'origin_default', 'pc_desert', 'synthetics_01', 18);
+               VALUES ('free_sunbuilt_uplifters', 'Sunbuilt Uplifters', 'Sunbuilt', 'SUS', 'MACHINE', 'synth_machine_01', 'Sunbuilt', 'Sunbuilt', 'Sunbuilt', 'Saisar', 'Luxoria', 'Karnakor', 'auth_imperial', 'gov_theocratic_monarchy', 'origin_default', 'pc_desert', 'synthetics_01', 18);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('free_sunbuilt_uplifters', 'trait', 'trait_machine_unit', 0);
@@ -25948,9 +25994,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('free_sunbuilt_uplifters', 'ethic', 'ethic_xenophile', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('certeran_covenant', 'Certeran Covenant', 'HUM', 'humanoid_hp_16', 'auth_democratic', 'gov_dimensional_covenant', 'origin_riftworld', 'pc_alpine', 'arthropoid_01', 19);
+               VALUES ('certeran_covenant', 'Certeran Covenant', 'Certeran', 'HCS', 'HUM', 'humanoid_hp_16', 'Certera', 'Certerans', 'Certeran', 'Thea', 'Certera', 'Wrynne', 'auth_democratic', 'gov_dimensional_covenant', 'origin_riftworld', 'pc_alpine', 'arthropoid_01', 19);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('certeran_covenant', 'trait', 'trait_organic', 0);
@@ -25976,9 +26024,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('certeran_covenant', 'ethic', 'ethic_fanatic_spiritualist', 7);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('guardianship_of_nyrr', 'Guardianship of Nyrr', 'REP', 'rep14', 'auth_imperial', 'gov_defensive_union', 'origin_default', 'pc_desert', 'reptilian_01', 20);
+               VALUES ('guardianship_of_nyrr', 'Guardianship of Nyrr', 'Nyrrian', 'GDN', 'REP', 'rep14', 'Nyrr', 'Nyrrians', 'Nyrrian', 'Krog', 'Nyrra', 'Nyrrast', 'auth_imperial', 'gov_defensive_union', 'origin_default', 'pc_desert', 'reptilian_01', 20);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('guardianship_of_nyrr', 'trait', 'trait_organic', 0);
@@ -26010,9 +26060,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('guardianship_of_nyrr', 'ethic', 'ethic_fanatic_militarist', 9);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('resistance', 'Roccan Resistance', 'AVI', 'avi6', 'auth_democratic', 'gov_military_commissariat', 'origin_payback', 'pc_arid', 'avian_01', 21);
+               VALUES ('resistance', 'Roccan Resistance', 'Roccan', 'FNG', 'AVI', 'avi6', 'Roc', 'Rocs', 'Defiant', 'Gahuda', 'Nogg', 'Nog-Rasset', 'auth_democratic', 'gov_military_commissariat', 'origin_payback', 'pc_arid', 'avian_01', 21);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('resistance', 'trait', 'trait_organic', 0);
@@ -26041,9 +26093,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('resistance', 'ethic', 'ethic_militarist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('broken_shackles', 'Free Peoples of the Fall', 'REP', 'rep3', 'auth_democratic', 'gov_moral_democracy', 'origin_broken_shackles', 'pc_continental', 'reptilian_01', 22);
+               VALUES ('broken_shackles', 'Free Peoples of the Fall', 'FPF', 'FPF', 'REP', 'rep3', 'Naatig', 'Naati', 'I''Naati', 'I''Nathra', 'Freedom''s Landing', 'Ikazuri', 'auth_democratic', 'gov_moral_democracy', 'origin_broken_shackles', 'pc_continental', 'reptilian_01', 22);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('broken_shackles', 'trait', 'trait_organic', 0);
@@ -26072,9 +26126,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('broken_shackles', 'ethic', 'ethic_fanatic_xenophile', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('gorthikan', 'Gorthikan Alliance', 'TOX', 'tox4', 'auth_democratic', 'gov_direct_democracy', 'origin_overtuned', 'pc_alpine', 'toxoid_01', 23);
+               VALUES ('gorthikan', 'Gorthikan Alliance', 'Gorthikan', 'GRT', 'TOX', 'tox4', 'Gorthikan', 'Gorthikans', 'Gorthikan', NULL, 'Gorthhold', 'Unhopeful Lantern', 'auth_democratic', 'gov_direct_democracy', 'origin_overtuned', 'pc_alpine', 'toxoid_01', 23);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('gorthikan', 'trait', 'trait_organic', 0);
@@ -26106,9 +26162,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('gorthikan', 'ethic', 'ethic_materialist', 9);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('knights', 'Rototavuul High Suzerainty', 'TOX', 'tox9', 'auth_imperial', 'gov_feudal_empire', 'origin_toxic_knights', 'pc_desert', 'toxoid_01', 24);
+               VALUES ('knights', 'Rototavuul High Suzerainty', 'Rototavuul', 'HRS', 'TOX', 'tox9', 'Rototavuul', 'Rototavuuls', 'Rototavuul', NULL, 'Camlann', 'Logres', 'auth_imperial', 'gov_feudal_empire', 'origin_toxic_knights', 'pc_desert', 'toxoid_01', 24);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('knights', 'trait', 'trait_organic', 0);
@@ -26143,9 +26201,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('knights', 'ethic', 'ethic_spiritualist', 10);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('sathyrel', 'Sathyrelian Bliss', 'AQUATIC', 'aqu1', 'auth_dictatorial', 'gov_irenic_dictatorship', 'origin_ocean_paradise', 'pc_ocean', 'aquatic_01', 25);
+               VALUES ('sathyrel', 'Sathyrelian Bliss', 'Sathyrelian', 'ATH', 'AQUATIC', 'aqu1', 'Sathyrel', 'Sathyrels', 'Sathyrelian $1$', 'Tidess Chessil', 'Rilldeep', 'Ralnair', 'auth_dictatorial', 'gov_irenic_dictatorship', 'origin_ocean_paradise', 'pc_ocean', 'aquatic_01', 25);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('sathyrel', 'trait', 'trait_organic', 0);
@@ -26174,9 +26234,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('sathyrel', 'ethic', 'ethic_fanatic_pacifist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('pasharti', 'Pasharti Absorbers', 'NECROID', 'nec1', 'auth_dictatorial', 'gov_elective_monarchy', 'origin_necrophage', 'pc_tundra', 'necroid_01', 26);
+               VALUES ('pasharti', 'Pasharti Absorbers', 'Pashartian', 'PDS', 'NECROID', 'nec1', 'Pasharti', 'Pashartians', 'Pashartian $1$', 'Ne''ed''anezza', 'Taralon', 'Akkanar', 'auth_dictatorial', 'gov_elective_monarchy', 'origin_necrophage', 'pc_tundra', 'necroid_01', 26);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('pasharti', 'trait', 'trait_organic', 0);
@@ -26202,9 +26264,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('pasharti', 'ethic', 'ethic_militarist', 7);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('khennet', 'Keepers of Ave''brenn', 'LITHOID', 'lith11', 'auth_imperial', 'gov_theocratic_monarchy', 'origin_default', 'pc_arid', 'lithoid_01', 27);
+               VALUES ('khennet', 'Keepers of Ave''brenn', 'Khennet''na', 'KAV', 'LITHOID', 'lith11', 'Khennet', 'Khennet''e', 'Khennet''an $1$', 'J''hem Vhaawr', 'Ave''bonn', 'Barra Lhonn', 'auth_imperial', 'gov_theocratic_monarchy', 'origin_default', 'pc_arid', 'lithoid_01', 27);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('khennet', 'trait', 'trait_lithoid', 0);
@@ -26230,9 +26294,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('khennet', 'ethic', 'ethic_fanatic_spiritualist', 7);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('kilik', 'Kilik Cooperative', 'AVI', 'avi11', 'auth_democratic', 'gov_communal_parity', 'origin_default', 'pc_tropical', 'avian_01', 28);
+               VALUES ('kilik', 'Kilik Cooperative', 'Kilik', 'KIC', 'AVI', 'avi11', 'Kilik', 'Kiliki', 'Kilik $1$', 'Senka Vanye', 'Unbroken Medley', 'First Song', 'auth_democratic', 'gov_communal_parity', 'origin_default', 'pc_tropical', 'avian_01', 28);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('kilik', 'trait', 'trait_organic', 0);
@@ -26261,9 +26327,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('kilik', 'ethic', 'ethic_materialist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('orbis', 'Orbis Customer Synergies', 'REP', 'rep1', 'auth_corporate', 'gov_megacorporation', 'origin_default', 'pc_ocean', 'reptilian_01', 29);
+               VALUES ('orbis', 'Orbis Customer Synergies', 'Orbisic', 'KIC', 'REP', 'rep1', 'Orbis', 'Orbisur', 'Orbisur $1$', 'Shess Lorba', 'Slephus Prime', 'Slephus', 'auth_corporate', 'gov_megacorporation', 'origin_default', 'pc_ocean', 'reptilian_01', 29);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('orbis', 'trait', 'trait_organic', 0);
@@ -26298,9 +26366,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('orbis', 'ethic', 'ethic_materialist', 10);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('chinorr', 'Chinorr Combine', 'MOL', 'mol11', 'auth_corporate', 'gov_megacorporation', 'origin_default', 'pc_arid', 'molluscoid_01', 30);
+               VALUES ('chinorr', 'Chinorr Combine', 'Chinorran', 'CUS', 'MOL', 'mol11', 'Chinorr', 'Chinorr', 'Chinorr $1$', 'Jurrba Shogg', 'Chicora', 'Chiconaph', 'auth_corporate', 'gov_megacorporation', 'origin_default', 'pc_arid', 'molluscoid_01', 30);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('chinorr', 'trait', 'trait_organic', 0);
@@ -26329,9 +26399,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('chinorr', 'ethic', 'ethic_fanatic_materialist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('hazbuzan', 'Hazbuzan Syndicate', 'REP', 'rep11', 'auth_corporate', 'gov_criminal_syndicate', 'origin_default', 'pc_savannah', 'reptilian_01', 31);
+               VALUES ('hazbuzan', 'Hazbuzan Syndicate', 'Hazbuzan', 'HZB', 'REP', 'rep11', 'Hazbuzi', 'Hazbuzi', 'Hazbuzi $1$', 'Mama ''Knife-Tongue'' Nonie', 'Zumaka', 'Buzbuznol', 'auth_corporate', 'gov_criminal_syndicate', 'origin_default', 'pc_savannah', 'reptilian_01', 31);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('hazbuzan', 'trait', 'trait_organic', 0);
@@ -26360,9 +26432,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('hazbuzan', 'ethic', 'ethic_spiritualist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('voor', 'Voor Technocracy', 'HUM', 'humanoid_hp_06', 'auth_dictatorial', 'gov_technocratic_dictatorship', 'origin_default', 'pc_arctic', 'humanoid_01', 32);
+               VALUES ('voor', 'Voor Technocracy', 'Voor', 'MSS', 'HUM', 'humanoid_hp_06', 'Voor', 'Voor', 'Voor $1$', 'Vex Kai''fa', 'Hiverion', 'Exedor', 'auth_dictatorial', 'gov_technocratic_dictatorship', 'origin_default', 'pc_arctic', 'humanoid_01', 32);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('voor', 'trait', 'trait_organic', 0);
@@ -26391,9 +26465,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('voor', 'ethic', 'ethic_fanatic_materialist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('tebrid', 'Tebrid Homolog', 'MACHINE', 'sd_mol_robot', 'auth_machine_intelligence', 'gov_machine_assimilator', 'origin_default', 'pc_ocean', 'molluscoid_01', 33);
+               VALUES ('tebrid', 'Tebrid Homolog', 'Tebridean', 'TBR', 'MACHINE', 'sd_mol_robot', 'Homolog', 'Homologs', 'Homologian $1$', 'Nexus', 'Tebri', 'Tebiron', 'auth_machine_intelligence', 'gov_machine_assimilator', 'origin_default', 'pc_ocean', 'molluscoid_01', 33);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('tebrid', 'trait', 'trait_machine_unit', 0);
@@ -26416,9 +26492,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('tebrid', 'ethic', 'ethic_gestalt_consciousness', 6);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('custodianship', 'Earth Custodianship', 'MACHINE', 'sd_hum_robot', 'auth_machine_intelligence', 'gov_machine_servitor', 'origin_default', 'pc_continental', 'mammalian_01', 34);
+               VALUES ('custodianship', 'Earth Custodianship', 'Custodian', 'ECS', 'MACHINE', 'sd_hum_robot', 'Custodian', 'Custodians', 'Custodian $1$', 'Coordinator', 'Earth', 'Sol', 'auth_machine_intelligence', 'gov_machine_servitor', 'origin_default', 'pc_continental', 'mammalian_01', 34);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('custodianship', 'trait', 'trait_machine_unit', 0);
@@ -26441,9 +26519,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('custodianship', 'ethic', 'ethic_gestalt_consciousness', 6);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('xt489', 'XT-489 Eliminator', 'MACHINE', 'sd_avi_robot', 'auth_machine_intelligence', 'gov_machine_terminator', 'origin_default', 'pc_desert', 'avian_01', 35);
+               VALUES ('xt489', 'XT-489 Eliminator', 'XT-489', '489', 'MACHINE', 'sd_avi_robot', 'XT-489', 'XT-489', 'XT-489 $1$', 'XT-489', 'XT-489.00', 'st.XT-489', 'auth_machine_intelligence', 'gov_machine_terminator', 'origin_default', 'pc_desert', 'avian_01', 35);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('xt489', 'trait', 'trait_machine_unit', 0);
@@ -26469,9 +26549,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('xt489', 'ethic', 'ethic_gestalt_consciousness', 7);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('tebrid_machine_age', 'Tebrid Homolog', 'MACHINE', 'sd_mol_robot', 'auth_machine_intelligence', 'gov_machine_assimilator', 'origin_default', 'pc_ocean', 'molluscoid_01', 36);
+               VALUES ('tebrid_machine_age', 'Tebrid Homolog', 'Tebridean', 'TBR', 'MACHINE', 'sd_mol_robot', 'Homolog', 'Homologs', 'Homologian $1$', 'Nexus', 'Tebri', 'Tebiron', 'auth_machine_intelligence', 'gov_machine_assimilator', 'origin_default', 'pc_ocean', 'molluscoid_01', 36);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('tebrid_machine_age', 'trait', 'trait_machine_unit', 0);
@@ -26497,9 +26579,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('tebrid_machine_age', 'ethic', 'ethic_gestalt_consciousness', 7);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('custodianship_machine_age', 'Earth Custodianship', 'MACHINE', 'sd_hum_robot', 'auth_machine_intelligence', 'gov_machine_servitor', 'origin_default', 'pc_continental', 'mammalian_01', 37);
+               VALUES ('custodianship_machine_age', 'Earth Custodianship', 'Custodian', 'ECS', 'MACHINE', 'sd_hum_robot', 'Custodian', 'Custodians', 'Custodian $1$', 'Coordinator', 'Earth', 'Sol', 'auth_machine_intelligence', 'gov_machine_servitor', 'origin_default', 'pc_continental', 'mammalian_01', 37);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('custodianship_machine_age', 'trait', 'trait_machine_unit', 0);
@@ -26525,9 +26609,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('custodianship_machine_age', 'ethic', 'ethic_gestalt_consciousness', 7);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('xt489_machine_age', 'XT-489 Eliminator', 'MACHINE', 'sd_avi_robot', 'auth_machine_intelligence', 'gov_machine_terminator', 'origin_default', 'pc_desert', 'avian_01', 38);
+               VALUES ('xt489_machine_age', 'XT-489 Eliminator', 'XT-489', '489', 'MACHINE', 'sd_avi_robot', 'XT-489', 'XT-489', 'XT-489 $1$', 'XT-489', 'XT-489.00', 'st.XT-489', 'auth_machine_intelligence', 'gov_machine_terminator', 'origin_default', 'pc_desert', 'avian_01', 38);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('xt489_machine_age', 'trait', 'trait_machine_unit', 0);
@@ -26556,9 +26642,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('xt489_machine_age', 'ethic', 'ethic_gestalt_consciousness', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('xanid', 'Xanid Suzerainty', 'ART', 'art10', 'auth_dictatorial', 'gov_constitutional_dictatorship', 'origin_syncretic_evolution', 'pc_arid', 'arthropoid_01', 39);
+               VALUES ('xanid', 'Xanid Suzerainty', 'Xanid', 'XAN', 'ART', 'art10', 'Xani', 'Xanis', 'Xanid $1$', 'Zaox Huketkin', 'Xanth', 'Dir-Xan', 'auth_dictatorial', 'gov_constitutional_dictatorship', 'origin_syncretic_evolution', 'pc_arid', 'arthropoid_01', 39);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('xanid', 'trait', 'trait_organic', 0);
@@ -26587,9 +26675,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('xanid', 'ethic', 'ethic_xenophobe', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('lokken', 'Lokken Mechanists', 'REP', 'rep4', 'auth_democratic', 'gov_rational_consensus', 'origin_mechanists', 'pc_arid', 'reptilian_01', 40);
+               VALUES ('lokken', 'Lokken Mechanists', 'Lokken', 'LOK', 'REP', 'rep4', 'Lok', 'Lokks', 'Lokken $1$', 'Xoblagiss', 'Lokkur', 'Dal-Lokkur', 'auth_democratic', 'gov_rational_consensus', 'origin_mechanists', 'pc_arid', 'reptilian_01', 40);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('lokken', 'trait', 'trait_organic', 0);
@@ -26618,9 +26708,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('lokken', 'ethic', 'ethic_fanatic_materialist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('ixidar', 'Ix''Idar Star Collective', 'ART', 'art12', 'auth_hive_mind', 'gov_hive_mind', 'origin_default', 'pc_arctic', 'arthropoid_01', 41);
+               VALUES ('ixidar', 'Ix''Idar Star Collective', 'Ixidar', 'ICS', 'ART', 'art12', 'Ix''Idar', 'Ix''Idars', 'Ix''Idari $1$', 'Xid''Ixa''Xir''Idon', 'Ix''Athrak', 'Athrak', 'auth_hive_mind', 'gov_hive_mind', 'origin_default', 'pc_arctic', 'arthropoid_01', 41);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('ixidar', 'trait', 'trait_organic', 0);
@@ -26646,9 +26738,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('ixidar', 'ethic', 'ethic_gestalt_consciousness', 7);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('maweer', 'Maweer Caretakers', 'PLANT', 'pla14', 'auth_dictatorial', 'gov_irenic_dictatorship', 'origin_default', 'pc_tropical', 'plantoid_01', 42);
+               VALUES ('maweer', 'Maweer Caretakers', 'Maweer', 'MSS', 'PLANT', 'pla14', 'Maweer', 'Maweer', 'Maweer $1$', 'Pollus', 'The Garden', 'Maweer', 'auth_dictatorial', 'gov_irenic_dictatorship', 'origin_default', 'pc_tropical', 'plantoid_01', 42);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('maweer', 'trait', 'trait_organic', 0);
@@ -26677,9 +26771,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('maweer', 'ethic', 'ethic_fanatic_pacifist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('tzynn', 'Tzynn Empire', 'REP', 'rep9', 'auth_imperial', 'gov_star_empire', 'origin_default', 'pc_desert', 'reptilian_01', 43);
+               VALUES ('tzynn', 'Tzynn Empire', 'Tzynn', 'TIS', 'REP', 'rep9', 'Tzynn', 'Tzynn', 'Tzynn $1$', 'Sazzeeja', 'Tzynnia', 'Sal''Tzynn', 'auth_imperial', 'gov_star_empire', 'origin_default', 'pc_desert', 'reptilian_01', 43);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('tzynn', 'trait', 'trait_organic', 0);
@@ -26711,9 +26807,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('tzynn', 'ethic', 'ethic_fanatic_militarist', 9);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('yondar', 'Kingdom of Yondarim', 'AVI', 'avi10', 'auth_imperial', 'gov_divine_empire', 'origin_default', 'pc_alpine', 'avian_01', 44);
+               VALUES ('yondar', 'Kingdom of Yondarim', 'Yondar', 'YRS', 'AVI', 'avi10', 'Yondar', 'Yondar', 'Yondari $1$', 'Yeerak', 'Yondarim', 'B''Yond', 'auth_imperial', 'gov_divine_empire', 'origin_default', 'pc_alpine', 'avian_01', 44);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('yondar', 'trait', 'trait_organic', 0);
@@ -26739,9 +26837,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('yondar', 'ethic', 'ethic_fanatic_spiritualist', 7);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('iferyx', 'Iferyx Amalgamated Fleets', 'MAM', 'mam16', 'auth_oligarchic', 'gov_trade_league', 'origin_default', 'pc_tundra', 'mammalian_01', 45);
+               VALUES ('iferyx', 'Iferyx Amalgamated Fleets', 'Iferyx', 'IAS', 'MAM', 'mam16', 'Iferyx', 'Iferyssians', 'Iferyssian $1$', 'Gorlif One-Eye', 'Iferysia', 'Iferys', 'auth_oligarchic', 'gov_trade_league', 'origin_default', 'pc_tundra', 'mammalian_01', 45);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('iferyx', 'trait', 'trait_organic', 0);
@@ -26770,9 +26870,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('iferyx', 'ethic', 'ethic_pacifist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('glebsig', 'Glebsig Foundation', 'MOL', 'mol7', 'auth_oligarchic', 'gov_holy_tribunal', 'origin_default', 'pc_alpine', 'molluscoid_01', 46);
+               VALUES ('glebsig', 'Glebsig Foundation', 'Glebsigan', 'GLB', 'MOL', 'mol7', 'Glebsig', 'Glebsigi', 'Glebsigan $1$', 'Thir-Rogg', 'Ladnah', 'Ladnah Vyg', 'auth_oligarchic', 'gov_holy_tribunal', 'origin_default', 'pc_alpine', 'molluscoid_01', 46);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('glebsig', 'trait', 'trait_organic', 0);
@@ -26801,9 +26903,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('glebsig', 'ethic', 'ethic_spiritualist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('jehetma', 'Jehetma Dominion', 'FUN', 'fun13', 'auth_dictatorial', 'gov_elective_monarchy', 'origin_default', 'pc_tundra', 'fungoid_01', 47);
+               VALUES ('jehetma', 'Jehetma Dominion', 'Jahetman', 'JDS', 'FUN', 'fun13', 'Jehetma', 'Jehetma', 'Jehetman $1$', 'Haragma', 'Jehet Prime', 'Jehet', 'auth_dictatorial', 'gov_elective_monarchy', 'origin_default', 'pc_tundra', 'fungoid_01', 47);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('jehetma', 'trait', 'trait_organic', 0);
@@ -26832,9 +26936,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('jehetma', 'ethic', 'ethic_fanatic_pacifist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('scyldari', 'Scyldari Confederacy', 'MAM', 'mam6', 'auth_democratic', 'gov_theocratic_republic', 'origin_default', 'pc_ocean', 'mammalian_01', 48);
+               VALUES ('scyldari', 'Scyldari Confederacy', 'Scyldarian', 'SCS', 'MAM', 'mam6', 'Scyldari', 'Scyldarians', 'Scyldarian $1$', 'Dackam', 'Scyldaria', 'Scyldon', 'auth_democratic', 'gov_theocratic_republic', 'origin_default', 'pc_ocean', 'mammalian_01', 48);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('scyldari', 'trait', 'trait_organic', 0);
@@ -26863,9 +26969,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('scyldari', 'ethic', 'ethic_xenophile', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('kel_azaan', 'Kel-Azaan Republic', 'ART', 'art8', 'auth_oligarchic', 'gov_citizen_stratocracy', 'origin_default', 'pc_savannah', 'arthropoid_01', 49);
+               VALUES ('kel_azaan', 'Kel-Azaan Republic', 'Azaan', 'KAS', 'ART', 'art8', 'Kel-Azaan', 'Azaans', 'Kel-Azaan $1$', 'Krexax', 'Azak', 'Kel-Azak', 'auth_oligarchic', 'gov_citizen_stratocracy', 'origin_default', 'pc_savannah', 'arthropoid_01', 49);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('kel_azaan', 'trait', 'trait_organic', 0);
@@ -26894,9 +27002,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('kel_azaan', 'ethic', 'ethic_fanatic_militarist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('blorg', 'Blorg Commonality', 'FUN', 'fun12', 'auth_oligarchic', 'gov_military_junta', 'origin_default', 'pc_tropical', 'fungoid_01', 50);
+               VALUES ('blorg', 'Blorg Commonality', 'Blorg', 'BCS', 'FUN', 'fun12', 'Blorg', 'Blorg', 'Blorg $1$', 'Ashley Easterbrook', 'Blorg', 'Blorg', 'auth_oligarchic', 'gov_military_junta', 'origin_default', 'pc_tropical', 'fungoid_01', 50);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('blorg', 'trait', 'trait_organic', 0);
@@ -26925,9 +27035,11 @@ INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('blorg', 'ethic', 'ethic_militarist', 8);
 INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES ('default', 'default', 'HUM', 'human', 'auth_democratic', 'gov_despotic_empire', 'origin_default', 'pc_continental', 'mammalian_01', 51);
+               VALUES ('default', 'default', '', '', 'HUM', 'human', NULL, NULL, NULL, '', '', '', 'auth_democratic', 'gov_despotic_empire', 'origin_default', 'pc_continental', 'mammalian_01', 51);
 INSERT OR IGNORE INTO prescripted_empire_item
                        (empire_key, kind, value, sort_order)
                    VALUES ('default', 'trait', 'trait_organic', 0);

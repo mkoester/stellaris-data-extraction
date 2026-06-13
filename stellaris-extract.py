@@ -538,16 +538,24 @@ CREATE TABLE planet_class (
 DROP TABLE IF EXISTS prescripted_empire_item;
 DROP TABLE IF EXISTS prescripted_empire;
 CREATE TABLE prescripted_empire (
-    key               TEXT PRIMARY KEY,   -- e.g. "tzynn", "humans1"
-    name              TEXT,               -- localised display name
-    species_class     TEXT,               -- phenotype, e.g. "REP", "HUM", "MACHINE"
-    species_portrait  TEXT,
-    authority         TEXT,               -- e.g. "auth_imperial"
-    government         TEXT,               -- e.g. "gov_star_empire"
-    origin            TEXT,               -- e.g. "origin_default"
-    planet_class      TEXT,               -- e.g. "pc_desert"
-    graphical_culture TEXT,               -- ship appearance, e.g. "reptilian_01"
-    sort_order        INTEGER NOT NULL DEFAULT 0
+    key                TEXT PRIMARY KEY,   -- e.g. "tzynn", "humans1"
+    name               TEXT,              -- localised display name
+    adjective          TEXT,              -- empire adjective, e.g. "Tzynn"
+    ship_prefix        TEXT,              -- e.g. "TIS"
+    species_class      TEXT,              -- phenotype, e.g. "REP", "HUM", "MACHINE"
+    species_portrait   TEXT,
+    species_name       TEXT,              -- species (singular) name
+    species_plural     TEXT,              -- species plural
+    species_adjective  TEXT,              -- species adjective
+    ruler_name         TEXT,              -- starting leader's name
+    planet_name        TEXT,              -- homeworld name
+    system_name        TEXT,              -- home system / star name
+    authority          TEXT,              -- e.g. "auth_imperial"
+    government         TEXT,              -- e.g. "gov_star_empire"
+    origin             TEXT,              -- e.g. "origin_default"
+    planet_class       TEXT,              -- e.g. "pc_desert"
+    graphical_culture  TEXT,              -- ship appearance, e.g. "reptilian_01"
+    sort_order         INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE prescripted_empire_item (
@@ -2065,13 +2073,18 @@ def extract_prescripted_empires(data: dict, loc: dict[str, str], w: Writer,
         if not isinstance(species, dict):
             continue  # not an empire design
 
-        name_raw = edef.get('name')
-        if isinstance(name_raw, dict):  # user files use name = { key = "…" }
-            name_raw = name_raw.get('key') or name_raw.get('name')
-        name = None
-        if isinstance(name_raw, str):
-            name = _clean_loc(loc[name_raw], loc) if name_raw in loc else name_raw
-        name = name or key
+        # Resolve a name-ish field (loc key or literal) to display text. Prescripted
+        # files carry localisation keys (PRESCRIPTED_…); user files carry literals.
+        def loc_name(raw):
+            if isinstance(raw, dict):  # name = { key = "…" }
+                raw = raw.get('key') or raw.get('name')
+            if not isinstance(raw, str):
+                return None
+            return _clean_loc(loc[raw], loc) if raw in loc else raw
+
+        name = loc_name(edef.get('name')) or key
+        ruler = edef.get('ruler')
+        ruler_name = loc_name(ruler.get('name')) if isinstance(ruler, dict) else None
 
         def scalar(v):
             return v if isinstance(v, str) else None
@@ -2081,10 +2094,16 @@ def extract_prescripted_empires(data: dict, loc: dict[str, str], w: Writer,
 
         w.execute(
             """INSERT OR REPLACE INTO prescripted_empire
-                   (key, name, species_class, species_portrait, authority, government,
+                   (key, name, adjective, ship_prefix, species_class, species_portrait,
+                    species_name, species_plural, species_adjective, ruler_name,
+                    planet_name, system_name, authority, government,
                     origin, planet_class, graphical_culture, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (key, name, scalar(species.get('class')), scalar(species.get('portrait')),
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, name, loc_name(edef.get('adjective')), loc_name(edef.get('ship_prefix')),
+             scalar(species.get('class')), scalar(species.get('portrait')),
+             loc_name(species.get('name')), loc_name(species.get('plural')),
+             loc_name(species.get('adjective')), ruler_name,
+             loc_name(edef.get('planet_name')), loc_name(edef.get('system_name')),
              scalar(edef.get('authority')), scalar(edef.get('government')),
              scalar(edef.get('origin')), scalar(edef.get('planet_class')),
              scalar(edef.get('graphical_culture')), order),
