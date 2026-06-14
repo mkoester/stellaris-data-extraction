@@ -614,6 +614,7 @@ CREATE TABLE planet_class (
 
 -- Pop jobs (reference / wiki): every job, its category (worker/specialist/ruler/drone
 -- …), flavour description, and its base produced/upkeep resources in job_resource.
+DROP TABLE IF EXISTS job_modifier;
 DROP TABLE IF EXISTS job_resource;
 DROP TABLE IF EXISTS job;
 CREATE TABLE job (
@@ -630,6 +631,17 @@ CREATE TABLE job_resource (
     amount   REAL NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (job_key, kind, resource),
+    FOREIGN KEY (job_key) REFERENCES job(key)
+);
+-- A job's non-resource effects (planet/country modifiers): Amenities, Crime, Stability,
+-- Planetary defense armies, Ethics attraction, Naval cap, … from planet_modifier /
+-- country_modifier / triggered_planet_modifier blocks. Label + good/bad via modifier_label.
+CREATE TABLE job_modifier (
+    job_key    TEXT NOT NULL,
+    modifier   TEXT NOT NULL,        -- modifier key, e.g. "planet_crime_add"
+    value      REAL NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (job_key, modifier),
     FOREIGN KEY (job_key) REFERENCES job(key)
 );
 
@@ -666,6 +678,7 @@ CREATE TABLE building_job (
 -- Job replacements: a civic/origin swaps a base job for a variant (Catalytic Processing:
 -- Metallurgist → Catalytic Technician). Derived from each base job's `swap_type` blocks,
 -- resolving the swap `trigger` through scripted_triggers to a has_civic / has_origin.
+DROP TABLE IF EXISTS job_swap_modifier;
 DROP TABLE IF EXISTS job_swap_resource;
 DROP TABLE IF EXISTS job_swap;
 CREATE TABLE job_swap (
@@ -690,6 +703,17 @@ CREATE TABLE job_swap_resource (
     resource    TEXT NOT NULL,
     amount      REAL NOT NULL,
     PRIMARY KEY (source_key, base_job, swapped_job, side, kind, resource)
+);
+-- Same, for the job's non-resource modifiers (Crime, Stability, Amenities, …) on each
+-- side of the swap (e.g. Enforcer −25 Crime/+0.2 Stability → Educator −20 Crime/+10% Ethics).
+CREATE TABLE job_swap_modifier (
+    source_key  TEXT NOT NULL,
+    base_job    TEXT NOT NULL,
+    swapped_job TEXT NOT NULL,
+    side        TEXT NOT NULL,      -- 'base' | 'swapped'
+    modifier    TEXT NOT NULL,
+    value       REAL NOT NULL,
+    PRIMARY KEY (source_key, base_job, swapped_job, side, modifier)
 );
 
 -- Home-system initializers usable as a custom-empire start (`usage = custom_empire`
@@ -2140,6 +2164,7 @@ def extract_jobs(install_dir: Path, loc: dict[str, str],
         print(f"  WARNING: {jobs_dir} not found", file=sys.stderr)
         return
 
+    idx = _scripted_trigger_index(install_dir)
     script_cache: dict[str, dict] = {}
 
     def load_script(name: str) -> dict:
@@ -2199,6 +2224,14 @@ def extract_jobs(install_dir: Path, loc: dict[str, str],
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES (?, ?, ?, ?, ?)""",
                             (key, kind, rk, rv, r_order))
+            # Non-resource effects (Amenities, Crime, Stability, …): base-empire state.
+            mod_blocks = _collect_modifier_blocks(jdef, load_script)
+            for m_order, (mk, mv) in enumerate(_eval_job_modifiers(mod_blocks, set(), idx, variables)):
+                w.execute(
+                    """INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES (?, ?, ?, ?)""",
+                    (key, mk, mv, m_order))
+                _write_modifier_label(w, loc, mk)
     w.commit()
     if verbose:
         print(f"  jobs: {order}")
@@ -2392,6 +2425,91 @@ def _eval_job_resources(blocks: dict[str, list], swap_pos: set[str], idx: dict[s
     return [(kind, resource, amt) for (kind, resource), amt in out.items() if amt != 0]
 
 
+# Sub-keys inside a (triggered_)planet_modifier/country_modifier block that aren't modifiers.
+_MOD_BLOCK_SKIP = {'potential', 'trigger', 'desc', 'mult', 'multiplier', 'weight', 'modifier'}
+
+
+def _block_modifier_values(block: dict, variables: dict[str, float]) -> list[tuple[str, float]]:
+    """[(modifier_key, value)] in a modifier block — its direct numeric stats plus those in
+    a nested `modifier = { … }` sub-block; non-numeric/scope entries are skipped."""
+    out: list[tuple[str, float]] = []
+    for k, v in block.items():
+        if k == 'modifier' and isinstance(v, dict):
+            out += _block_modifier_values(v, variables)
+            continue
+        if k in _MOD_BLOCK_SKIP or isinstance(v, (dict, list)):
+            continue
+        s = str(v).strip()
+        val = variables.get(s) if s.startswith('@') else _resolve_modifier_float(v)
+        if val is not None and val != 0:
+            out.append((k, val))
+    return out
+
+
+def _collect_modifier_blocks(jdef: dict, load_script, seen: set[str] | None = None
+                             ) -> list[tuple[object, dict]]:
+    """[(potential_or_None, block)] for a job: planet_modifier / country_modifier (always-on,
+    potential=None) and triggered_planet_modifier (gated by its `potential`), following the
+    job-level inline_script chain (recursively, e.g. job_enforcer → job_enforcer_additional…)."""
+    if seen is None:
+        seen = set()
+    blocks: list[tuple[object, dict]] = []
+    for key in ('planet_modifier', 'country_modifier'):
+        for b in _as_blocks(jdef.get(key)):
+            blocks.append((None, b))
+    for b in _as_blocks(jdef.get('triggered_planet_modifier')):
+        blocks.append((b.get('potential'), b))
+    isc = jdef.get('inline_script')
+    for sn in (isc if isinstance(isc, list) else [isc]):
+        if isinstance(sn, str) and sn not in seen:
+            seen.add(sn)
+            blocks += _collect_modifier_blocks(load_script(sn), load_script, seen)
+    return blocks
+
+
+# Amenity modifiers are stored in the ×100 pop/workforce space (clerk = 300 → +3 Amenities),
+# unlike crime/stability/defense-armies which are already per-pop — so scale only these down.
+_MOD_X100 = {'planet_amenities_add', 'planet_amenities_no_happiness_add'}
+
+
+def _block_mult(block: dict, variables: dict[str, float]) -> float:
+    """The block-level `mult` as a number for base evaluation. A literal/@var resolves
+    directly; `value:scripted_modifier_mult|…` is a base-1.0 multiplier (1 + empire bonuses,
+    0 at base); any other scope ref (e.g. planet.modifier:… → 0 by default) zeroes the block."""
+    if 'mult' not in block:
+        return 1.0
+    raw = block['mult']
+    s = str(raw).strip()
+    f = variables.get(s) if s.startswith('@') else _resolve_modifier_float(raw)
+    if f is not None:
+        return f
+    if 'scripted_modifier_mult' in s:
+        return 1.0
+    return 0.0
+
+
+def _eval_job_modifiers(blocks: list[tuple[object, dict]], swap_pos: set[str],
+                        idx: dict[str, dict], variables: dict[str, float]
+                        ) -> list[tuple[str, float]]:
+    """Sum a job's modifier effects for the empire state `swap_pos` implies (empty = base).
+    Same gating as resources: a potential-gated block applies iff its positives are
+    guaranteed and no negative is contradicted. The block-level `mult` scales its values
+    (a scope ref that's 0 at base drops the block)."""
+    out: dict[str, float] = {}
+    for potential, block in blocks:
+        if potential is not None:
+            bpos, bneg = _signals(potential, idx)
+            if not bpos <= swap_pos or (bneg & swap_pos):
+                continue
+        scale = _block_mult(block, variables)
+        if scale == 0:
+            continue
+        for k, v in _block_modifier_values(block, variables):
+            out[k] = round(out.get(k, 0.0) + v * scale, 4)
+    return [(k, round(v / 100, 4) if k in _MOD_X100 else v)
+            for k, v in out.items() if v != 0]
+
+
 def extract_job_swaps(install_dir: Path, loc: dict[str, str], scripted_vars: dict[str, float],
                       inline_scripts_dir: Path, w: Writer, verbose: bool) -> None:
     """Per base job, each `swap_type` variant + its trigger → which civic/origin forces
@@ -2452,7 +2570,9 @@ def extract_job_swaps(install_dir: Path, loc: dict[str, str], scripted_vars: dic
             # base side of the tooltip is computed from the same blocks (plain empire) so it
             # is correct even when the reference job_resource row is empty/missing.
             merged = _job_resource_blocks(jdef, load_script)
+            mod_blocks = _collect_modifier_blocks(jdef, load_script)
             base_res = _eval_job_resources(merged, set(), idx, variables)
+            base_mod = _eval_job_modifiers(mod_blocks, set(), idx, variables)
             for st in swaps:
                 if not isinstance(st, dict):
                     continue
@@ -2465,6 +2585,7 @@ def extract_job_swaps(install_dir: Path, loc: dict[str, str], scripted_vars: dic
                     continue
                 swap_pos, _ = _signals(trig, idx)
                 swap_res = _eval_job_resources(merged, swap_pos, idx, variables)
+                swap_mod = _eval_job_modifiers(mod_blocks, swap_pos, idx, variables)
                 for kind, skey in sources:
                     if not attribute_ok(kind, skey):
                         continue
@@ -2482,6 +2603,14 @@ def extract_job_swaps(install_dir: Path, loc: dict[str, str], scripted_vars: dic
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES (?, ?, ?, ?, ?, ?, ?)""",
                                 (skey, key, swapped, side, rk, resource, amt))
+                    for side, rows in (('base', base_mod), ('swapped', swap_mod)):
+                        for mk, mv in rows:
+                            w.execute(
+                                """INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES (?, ?, ?, ?, ?, ?)""",
+                                (skey, key, swapped, side, mk, mv))
+                            _write_modifier_label(w, loc, mk)
     w.commit()
     if verbose:
         print(f"  job swaps: {order}")
@@ -3104,6 +3233,12 @@ def _write_modifier_label(w: Writer, loc: dict[str, str], mod_key: str):
         label = f"{label.rstrip()} {am.group(1).replace('_', ' ').title()}"
     if '$' in label:
         return
+    # Some modifiers localise to a runtime-only command that strips to nothing (e.g.
+    # planet_crime_add = "[GetCrimeDeviancy]"). Fall back to a prettified key, dropping the
+    # scope prefix and value suffix so it reads as a name ("Crime", not "Planet Crime").
+    if not label.strip():
+        label = re.sub(r'^(planet|pop|country|army|ship|species|leader)_', '', mod_key)
+        label = re.sub(r'_(add|mult|perc)$', '', label).replace('_', ' ').title()
     # Lower is better for any cost/upkeep modifier (a negative value is *good*, shown
     # green) — the curated set plus every `*_cost_*` / `*_upkeep_*` key (e.g.
     # planet_structures_cost_mult −15% is a saving, not a penalty). Crime is the same:

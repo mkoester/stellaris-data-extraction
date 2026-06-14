@@ -324,6 +324,7 @@ CREATE TABLE planet_class (
 
 -- Pop jobs (reference / wiki): every job, its category (worker/specialist/ruler/drone
 -- …), flavour description, and its base produced/upkeep resources in job_resource.
+DROP TABLE IF EXISTS job_modifier;
 DROP TABLE IF EXISTS job_resource;
 DROP TABLE IF EXISTS job;
 CREATE TABLE job (
@@ -340,6 +341,17 @@ CREATE TABLE job_resource (
     amount   REAL NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (job_key, kind, resource),
+    FOREIGN KEY (job_key) REFERENCES job(key)
+);
+-- A job's non-resource effects (planet/country modifiers): Amenities, Crime, Stability,
+-- Planetary defense armies, Ethics attraction, Naval cap, … from planet_modifier /
+-- country_modifier / triggered_planet_modifier blocks. Label + good/bad via modifier_label.
+CREATE TABLE job_modifier (
+    job_key    TEXT NOT NULL,
+    modifier   TEXT NOT NULL,        -- modifier key, e.g. "planet_crime_add"
+    value      REAL NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (job_key, modifier),
     FOREIGN KEY (job_key) REFERENCES job(key)
 );
 
@@ -376,6 +388,7 @@ CREATE TABLE building_job (
 -- Job replacements: a civic/origin swaps a base job for a variant (Catalytic Processing:
 -- Metallurgist → Catalytic Technician). Derived from each base job's `swap_type` blocks,
 -- resolving the swap `trigger` through scripted_triggers to a has_civic / has_origin.
+DROP TABLE IF EXISTS job_swap_modifier;
 DROP TABLE IF EXISTS job_swap_resource;
 DROP TABLE IF EXISTS job_swap;
 CREATE TABLE job_swap (
@@ -400,6 +413,17 @@ CREATE TABLE job_swap_resource (
     resource    TEXT NOT NULL,
     amount      REAL NOT NULL,
     PRIMARY KEY (source_key, base_job, swapped_job, side, kind, resource)
+);
+-- Same, for the job's non-resource modifiers (Crime, Stability, Amenities, …) on each
+-- side of the swap (e.g. Enforcer −25 Crime/+0.2 Stability → Educator −20 Crime/+10% Ethics).
+CREATE TABLE job_swap_modifier (
+    source_key  TEXT NOT NULL,
+    base_job    TEXT NOT NULL,
+    swapped_job TEXT NOT NULL,
+    side        TEXT NOT NULL,      -- 'base' | 'swapped'
+    modifier    TEXT NOT NULL,
+    value       REAL NOT NULL,
+    PRIMARY KEY (source_key, base_job, swapped_job, side, modifier)
 );
 
 -- Home-system initializers usable as a custom-empire start (`usage = custom_empire`
@@ -13794,7 +13818,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_microplanet_memorial', 'planet_crime_add', '-30.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_crime_add', '', 0);
+           VALUES ('planet_crime_add', 'Crime', 0);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_weapon_extraction_facility', 'Weapon Extraction Facility', 'deposit_cat_rare', 0, NULL, '11_astral_planes_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -17809,7 +17833,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_genetic_identification', 'planet_crime_mult', '-0.15', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_crime_mult', '', 0);
+           VALUES ('planet_crime_mult', 'Crime', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_genetic_identification', 'intel_encryption_add', '1.0', 2);
@@ -23025,7 +23049,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_genetic_identification', 'planet_crime_mult', '-0.15', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_crime_mult', '', 0);
+           VALUES ('planet_crime_mult', 'Crime', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_genetic_identification', 'intel_encryption_add', '1.0', 2);
@@ -27977,11 +28001,19 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('civilian', 'produces', 'trade', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('civilian', 'planet_amenities_add', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_processing', 'Repurposing', 'slave_unemployment2', 'Working towards enslavement', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('heart_processing', 'Newly Formed Biomass', 'wilderness_heart_strata', 'This biomass will soon be integrated. It is destined to serve a higher function within ourselves.', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_unprocessing', 'Repurposing', 'slave', 'Working towards liberation', 3);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('presapient_unprocessing', 'Repurposing', 'pre_sapients', 'Working towards sapience', 4);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('servant', 'Servant', 'worker', 'Servants perform various menial domestic tasks and household work for their masters.', 5);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('servant', 'planet_amenities_add', '4.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_overseer', 'Overseer', 'worker', 'These relatively privileged slaves keep their less fortunate brethren in line.', 6);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -27989,7 +28021,19 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('slave_overseer', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('slave_overseer', 'planet_crime_add', '-25.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('slave_overseer', 'planet_defense_armies_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_toiler', 'Toiler', 'worker', 'Toilers perform the grueling menial labor required to keep crude infrastructure of the Thrall-World running.', 7);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('slave_toiler', 'planet_amenities_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('organic_battery', 'Grid Amalgamated', 'worker', 'Their organic energy will be absorbed, until they expire.', 8);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28006,14 +28050,26 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('livestock_zoo_animal', 'upkeep', 'food', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('livestock_zoo_animal', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_zoo_beast', 'Gladiatorial Xeno', 'pre_sapients', 'These xenos are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 12);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('livestock_zoo_beast', 'upkeep', 'food', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('livestock_zoo_beast', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bio_trophy', 'Bio-Trophy', 'bio_trophy', 'Their only job is to be themselves.', 13);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('bio_trophy', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('bio_trophy', 'pop_cat_complex_drone_bonus_workforce_mult', '0.01', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_complex_drone_bonus_workforce_mult', 'Job Efficiency for Complex Drones', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bio_trophy_processing', 'Acclimatizing Bio-Trophy', 'bio_trophy', 'These Bio-Trophies are being introduced into their new sanctuaries.', 14);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bio_trophy_unprocessing', 'Bio-Trophy', 'bio_trophy', 'Their only job is to be themselves.', 15);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 16);
@@ -28021,6 +28077,10 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('crisis_purge', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 18);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('assimilation', 'Undergoing Assimilation', 'assimilation', 'This pop is being integrated into our collective.', 19);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('criminal', 'Criminal', 'criminal', 'These criminals live outside the bounds of legal society, some by choice and some by circumstance.', 20);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('criminal', 'branch_office_criminal_syndicate_value_add', '7.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('branch_office_criminal_syndicate_value_add', 'Criminal Branch Office Trade', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('deviant_drone', 'Deviant Drone', 'deviant_drone', 'These deviants no longer obey the Hive Mind.', 21);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28030,6 +28090,18 @@ INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('corrupt_drone', 'upkeep', 'energy', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fotd_protectors', 'Protector', 'worker', 'So that the majority can rest peacefully and enjoy their lives of extravagance, these rough individuals stand ready in the night to visit violence on those who would do them harm.', 23);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('fotd_protectors', 'planet_crime_add', '-5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('fotd_protectors', 'planet_defense_armies_add', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('fotd_protectors', 'planet_stability_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('organic_exhibit', 'Organic Specimen', 'bio_trophy', 'The uplifted organics enhance our drones'' life-creation subroutines, infusing new perspectives and lessons into future projects.', 24);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28045,10 +28117,18 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('livestock_zoo_animal_lithoid', 'upkeep', 'minerals', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('livestock_zoo_animal_lithoid', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_zoo_beast_lithoid', 'Gladiatorial Xeno', 'pre_sapients', 'These xenos are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 27);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('livestock_zoo_beast_lithoid', 'upkeep', 'minerals', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('livestock_zoo_beast_lithoid', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_lithoid', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 28);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28105,8 +28185,32 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('knight_commander', 'upkeep', 'alloys', '200.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('knight_commander', 'country_naval_cap_add', '600.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('dystopian_enforcer', 'Enforcer', 'ruler', 'Law enforcement officers are responsible for upholding the law and maintaining peace.', 42);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('dystopian_enforcer', 'planet_crime_add', '-25.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('dystopian_enforcer', 'planet_defense_armies_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('dystopian_enforcer', 'planet_stability_add', '0.2', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('dystopian_telepath', 'Telepath', 'ruler', 'Members of the Psi Corps, a unit of psionically-gifted crime fighters.', 43);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('dystopian_telepath', 'planet_defense_armies_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('dystopian_telepath', 'planet_crime_add', '-10.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('head_researcher', 'Science Director', 'ruler', 'These specialists coordinate and manage the research and development of new technologies.', 44);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('high_priest', 'High Priest', 'ruler', 'To whom do guides turn when they themselves seek guidance? Another, more experienced guide.', 45);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('noble', 'Noble', 'ruler', 'Heavy is the burden of the nobility, whose birthright is to rule over their unwashed lessers. Luckily, there are a few financial advantages to the position.', 46);
@@ -28143,8 +28247,28 @@ INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('bureaucrat', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('enforcer', 'Enforcer', 'specialist', 'Law enforcement officers are responsible for upholding the law and maintaining peace.', 55);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('enforcer', 'planet_crime_add', '-25.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('enforcer', 'planet_defense_armies_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('enforcer', 'planet_stability_add', '0.2', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('educator', 'Educator', 'specialist', 'Dedicated to preparing the youth, these tireless champions of knowledge perform the irreplaceable service of ensuring that every citizen is ready to face the galaxy.', 56);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('telepath', 'Telepath', 'specialist', 'Members of the Psi Corps, a unit of psionically-gifted crime fighters.', 57);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('telepath', 'planet_defense_armies_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('telepath', 'planet_crime_add', '-10.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('entertainer', 'Entertainer', 'specialist', 'It is said there are only two types of lifeforms in the galaxy: the entertainers, and the entertained.', 58);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28152,6 +28276,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('entertainer', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('entertainer', 'planet_amenities_add', '12.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('culture_worker', 'Culture Worker', 'specialist', 'Maintaining the arts is the realm of these workers, vital for the inner development and social expression of citizens.', 59);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('unifier', 'Unification Officer', 'specialist', 'The administrative corps of our newly unified planet, these officers ensure that amenities are delivered to those in need.', 60);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('chemist', 'Chemist', 'specialist', 'The synthetic development of volatile motes by chemical processes is left to these specialists.', 61);
@@ -28179,6 +28307,10 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('roboticist', 'upkeep', 'alloys', '2.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('roboticist', 'planet_pop_assembly_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_add', 'Monthly Mechanical Pop Assembly', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('healthcare', 'Medical Worker', 'specialist', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', 65);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28186,6 +28318,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('healthcare', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('healthcare', 'planet_amenities_add', '7.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('trader', 'Trader', 'specialist', 'These proud deal-makers boost the value of everyday commodities, and expedite the movement of goods to where they are most needed or desired.', 66);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28206,6 +28342,14 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('necro_apprentice', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('necro_apprentice', 'fake_pop_growth_mod', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('necro_apprentice', 'planet_amenities_add', '5.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('foundry', 'Metallurgist', 'specialist', 'Highly trained workers are needed to turn raw minerals into the durable alloys that are used in a wide variety of advanced construction.', 74);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28227,6 +28371,10 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('reassigner', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('reassigner', 'fake_pop_growth_mod', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant', 'Spa Attendant', 'specialist', 'Trained Attendants for the Mutagenic Spas. Their purpose in life is to ensure their clients'' continued health through a variety of services, including intemperate detoxification and carefully curated genotype degeneration.', 80);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28234,6 +28382,14 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('bath_attendant', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('bath_attendant', 'pop_cat_ruler_bonus_workforce_mult', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_bonus_workforce_mult', 'Job Efficiency for Elites', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('bath_attendant', 'planet_amenities_add', '5.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant_individual_machine', 'Lubrication Terminal', 'specialist', 'Lubrication Terminals turn Alloys into new Pop Machine Pops but increase Amenities Usage.', 81);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('knight', 'Knight', 'specialist', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 82);
 INSERT OR IGNORE INTO job_resource
@@ -28242,6 +28398,18 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('knight', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('knight', 'planet_defense_armies_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('knight', 'country_naval_cap_add', '4.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('knight', 'knight_quest_progress_add', '0.01', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('knight_quest_progress_add', 'Monthly Quest Progress', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('archaeoengineers', 'Archaeo-Engineer', 'specialist', 'Sometimes, it belongs in a warship, not a museum.', 83);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('resort_worker', 'Resort Worker', 'specialist', 'Skilled artisans of hospitality who are dedicated to creating an unforgettable experience. They work hard, so you don''t have to.', 84);
 INSERT OR IGNORE INTO job_resource
@@ -28253,6 +28421,14 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('resort_worker', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('resort_worker', 'pop_amenities_usage_mult', '-0.01', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('resort_worker', 'planet_pops_trade_produces_mult', '0.02', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_trade_produces_mult', 'Trade from Living Standards', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('polytechnic_mentor', 'Thermotechnic Mentor', 'specialist', 'With a diverse background of skills, this mentor helps bridge disciplinary gaps to boost the efficiency of specialized workers.', 85);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28289,15 +28465,47 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('soldier', 'upkeep', 'consumer_goods', '0.5', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('soldier', 'country_naval_cap_add', '4.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('soldier', 'planet_defense_armies_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('soldier', 'planet_stability_add', '0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('battle_thrall', 'Battle Thrall', 'specialist', 'Elite slave warriors, trained from birth, who fight with unparalleled zeal and ferocity. Their loyalty and dedication make them formidable on the front lines.', 88);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('battle_thrall', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('battle_thrall', 'country_naval_cap_add', '4.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('battle_thrall', 'planet_defense_armies_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('battle_thrall', 'planet_stability_add', '0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('colonist', 'Colonist', NULL, 'The settling of a new world is no easy undertaking.', 89);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('clerk', 'Clerk', 'worker', 'White-collar workers perform the various administrative office tasks that are crucial to any sufficiently complex working environment. A hopelessly outdated profession.', 90);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('clerk', 'produces', 'trade', '3.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('clerk', 'planet_jobs_trade_produces_mult', '0.01', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('clerk', 'planet_amenities_add', '3.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('technician', 'Technician', 'worker', 'Power plants require plenty of warm bodies to operate equipment and oversee operations.', 91);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28323,6 +28531,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('mortal_initiate', 'produces', 'society_research', '0.5', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('mortal_initiate', 'planet_amenities_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('scrap_miner', 'Scrap Miner', NULL, 'Scrap Miners explore the depths of the shattered remains for materials suitable for construction.', 98);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('angler', 'Angler', 'worker', 'Hook and line are things of the past, but sustainably growing and hauling food out of nature takes equal patience, much planning, and great care.', 99);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('ranger', 'Ranger', 'worker', 'Special individuals tasked with ensuring that our planets remain clean and natural.', 100);
@@ -28330,6 +28542,26 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('squire', 'upkeep', 'alloys', '0.5', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('squire', 'planet_defense_armies_add', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('squire', 'pop_knight_bonus_workforce_mult', '0.025', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_knight_bonus_workforce_mult', 'Job Efficiency for Knights', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('squire', 'planet_knights_upkeep_mult', '0.005', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_knights_upkeep_mult', 'Upkeep for Lord Commanders and Knights', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('squire', 'pop_knight_commander_bonus_workforce_mult', '0.0125', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_knight_commander_bonus_workforce_mult', 'Job Efficiency for Lord Commanders', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('squire', 'planet_amenities_add', '2.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('foundry_prison_worker', 'Penal Metallurgist', 'worker', 'Trained prisoners are used to turn raw minerals into durable alloys used in various advanced construction.', 102);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28365,11 +28597,19 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('spawning_drone', 'upkeep', 'food', '5.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('spawning_drone', 'fake_pop_growth_mod', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('offspring_drone', 'Offspring Drone', 'complex_drone', 'The administrator of the entire planet resides here. It is through Offspring drones that the Progenitor enacts their grand design.', 107);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('replicator', 'Replicator', 'complex_drone', 'A machine that builds a machine that builds a machine that...', 108);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('replicator', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('replicator', 'planet_pop_assembly_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_add', 'Monthly Mechanical Pop Assembly', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gestation_drone', 'Gestation Drone', 'complex_drone', 'Designed to nurture, these specialized drones oversee the growth of young biologicals, preparing them to become integral cybernetic contributors to the collective.', 109);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28380,6 +28620,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('gestation_drone', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('gestation_drone', 'logistic_growth_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('evaluator', 'Evaluator', 'complex_drone', 'Signals to and from the Drones must be amplified, analyzed and cleaned of deviancy.', 110);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28387,6 +28631,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('evaluator', 'upkeep', 'energy', '2.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('evaluator', 'planet_amenities_no_happiness_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('coordinator', 'Coordinator', 'complex_drone', 'Signals to and from the Core must be amplified, boosted, and cleaned of static and data corruption.', 111);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28466,6 +28714,14 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('patrol_drone', 'produces', 'unity', '0.5', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('patrol_drone', 'planet_crime_no_happiness_add', '-20.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('patrol_drone', 'planet_defense_armies_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mote_harvesting_drone', 'Mote Harvesting Drone', 'complex_drone', 'Due to the inherently volatile nature of preternatural motes, the drones who specialize in trapping and harvesting them have a high turnover rate.', 130);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('crystal_mining_drone', 'Crystal Mining Drone', 'complex_drone', 'Miners specialized in carefully extracting and refining rare crystals from geological formations.', 131);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gas_extraction_drone', 'Gas Extraction Drone', 'complex_drone', 'These specialized drones employ advanced hydraulic fracking methods to free rare, exotic gases from promising rock beds.', 132);
@@ -28501,10 +28757,30 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('warrior_drone', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('warrior_drone', 'country_naval_cap_add', '4.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('warrior_drone', 'planet_defense_armies_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('warrior_drone', 'planet_stability_add', '0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant_machine', 'Lubrication Terminal', 'simple_drone', 'Lubrication Terminals are specially programmed drones, overseeing the submerged production of new shells, carefully monitoring the lubricant conditions during the process.', 141);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('bath_attendant_machine', 'upkeep', 'minerals', '4.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('bath_attendant_machine', 'pop_cat_complex_drone_bonus_workforce_mult', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_complex_drone_bonus_workforce_mult', 'Job Efficiency for Complex Drones', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('bath_attendant_machine', 'planet_amenities_no_happiness_add', '5.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant_hive', 'Permutation Attendance Drone', 'simple_drone', 'Specialized Drones, grown for the sole purpose of overseeing the Permutation Process during the creation of new biological drones for the hive.', 142);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('polytechnic_drone', 'Pyroclastic Drone', 'complex_drone', 'With a diverse background of skills, this drone helps bridge disciplinary gaps to boost the efficiency of specialized workers.', 143);
 INSERT OR IGNORE INTO job_resource
@@ -28546,42 +28822,82 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('xeno_zoo_animal', 'upkeep', 'food', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('xeno_zoo_animal', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_animal_nascent', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 150);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('xeno_zoo_animal_nascent', 'upkeep', 'food', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('xeno_zoo_animal_nascent', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_animal_lithoid', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 151);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('xeno_zoo_animal_lithoid', 'upkeep', 'minerals', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('xeno_zoo_animal_lithoid', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_animal_lithoid_nascent', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 152);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('xeno_zoo_animal_lithoid_nascent', 'upkeep', 'minerals', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('xeno_zoo_animal_lithoid_nascent', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_beast', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 153);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('xeno_zoo_beast', 'upkeep', 'food', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('xeno_zoo_beast', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_beast_nascent', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 154);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('xeno_zoo_beast_nascent', 'upkeep', 'food', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('xeno_zoo_beast_nascent', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_beast_lithoid', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 155);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('xeno_zoo_beast_lithoid', 'upkeep', 'minerals', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('xeno_zoo_beast_lithoid', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_beast_lithoid_nascent', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 156);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('xeno_zoo_beast_lithoid_nascent', 'upkeep', 'minerals', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('xeno_zoo_beast_lithoid_nascent', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hunter_gatherer', 'Hunter-Gatherer', 'worker', 'These semi-nomadic explorers survive by foraging and hunting. There is evidence of early tool use.', 157);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('hunter_gatherer', 'produces', 'food', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('hunter_gatherer', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hunter_gatherer_lithoid', 'Hunter-Gatherer', 'worker', 'These semi-nomadic explorers survive by foraging and hunting. There is evidence of early tool use.', 158);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('hunter_gatherer_lithoid', 'produces', 'minerals', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('hunter_gatherer_lithoid', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('peasant', 'Peasant', 'worker', 'The peasants toil endlessly in the fields, so that those perceived as their betters might prosper.', 159);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28591,6 +28907,10 @@ INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('peasant_lithoid', 'produces', 'minerals', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_warrior', 'Warrior', 'specialist', 'Members of a combative warrior class. These fighters rely on bladed weapons, spears or various blunt instruments to see them through combat.', 161);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('primitive_warrior', 'planet_defense_armies_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_noble', 'Feudal Noble', 'ruler', 'The landed nobility rule from their stone castles and keeps.', 162);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28650,6 +28970,10 @@ INSERT OR IGNORE INTO job_resource
                                VALUES ('primitive_priest_2', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_entertainer', 'Entertainer', 'specialist', 'Celebrities and media personalities that provide entertainment and distraction from day-to-day life.', 171);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_warrior_2', 'Soldier', 'specialist', 'Professional soldiers, typically armed with early projectile weapons powered by exothermic combustion.', 172);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('primitive_warrior_2', 'planet_defense_armies_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_bureaucrat', 'Bureaucrat', 'ruler', 'Many early industrialist and post-industrialist societies are governed by an ever-expanding class of civil servants.', 173);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28658,6 +28982,10 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('solarpunk_anarchist', 'produces', 'unity', '3.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('solarpunk_anarchist', 'planet_stability_add', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_administrator', 'Administrator', 'specialist', 'These paper-pushers ensure that the bureaucracy exists.', 175);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28682,6 +29010,10 @@ INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('hive_basic_agri_drone_lithoid', 'produces', 'minerals', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_warrior', 'Simple Warrior Drone', 'simple_drone', 'Having yet to fully come to grips with genetic specialization, these drones are grown bulkier to protect their hive. They have yet to evolve any specialized weapon appendages.', 180);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('primitive_hive_warrior', 'planet_defense_armies_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_synapse_drone', 'Nascent Synapse Drone', 'complex_drone', 'The budding Overmind formed between the local drones has found a need to extend their consciousness further. These more cerebral Synapse Drones mainly facilitate this.', 181);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28727,6 +29059,10 @@ INSERT OR IGNORE INTO job_resource
                                VALUES ('primitive_hive_brain_drone', 'produces', 'society_research', '1.0', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_spawning_drone', 'Spawning Drone', 'complex_drone', 'Having each member of a society reproduce is vastly inefficient. These drones specialize in generating whatever new drones the Hive needs.', 188);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_warrior_2', 'Warrior Drone', 'simple_drone', 'Specialized for war, these hulking drones have multiple specialized appendages perfected for crushing their own species.', 189);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('primitive_hive_warrior_2', 'planet_defense_armies_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_synapse_drone_2', 'Synapse Drone', 'complex_drone', 'Administrating and coordinating an entire country is no easier if you are a single individual. These drones ensure that every drone has an appropriate task.', 190);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28902,6 +29238,14 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('stasis_warden', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('stasis_warden', 'planet_crime_add', '-25.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('stasis_warden', 'planet_stability_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stasis_warden_drone', 'Stasis Warden Drone', 'complex_drone', 'Warden drones maintain the stasis prison, along with marking deviants for disappearance.', 218);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28909,14 +29253,26 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('stasis_warden_drone', 'produces', 'unity', '0.5', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('stasis_warden_drone', 'planet_crime_no_happiness_add', '-20.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astrogarbage_collector', 'Astrogarbage Collector', 'worker', 'A special unit responsible for collecting space debris from planetary orbit.', 219);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('astrogarbage_collector', 'produces', 'alloys', '2.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('astrogarbage_collector', 'pop_environment_tolerance', '0.025', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astrogarbage_collector_gestalt', 'Astrogarbage Drone', 'simple_drone', 'A special drone unit responsible for collecting space debris from planetary orbit.', 220);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('astrogarbage_collector_gestalt', 'produces', 'alloys', '3.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('astrogarbage_collector_gestalt', 'pop_environment_tolerance', '0.015', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('myrmeku_power_farmer', 'Myrmeku Power Farmer', 'specialist', 'Technicians that harness energy from Myrmeku colonies.', 221);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28947,6 +29303,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('stratovent_researcher', 'upkeep', 'consumer_goods', '3.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('stratovent_researcher', 'planet_amenities_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stratovent_refiner', 'Vent Refiner', 'specialist', 'Workers specialized in gathering and refining precious gasses from the Stratospheric Vents.', 224);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -28974,10 +29334,38 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('alien_hunter', 'produces', 'food', '2.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('alien_hunter', 'pop_environment_tolerance', '0.025', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_overseer', 'Overseer', 'precursor', 'The stalwart few have rejected lives of luxury in favor of public service. It is up to them to oversee and guide the remnants of their ancient civilization.', 230);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('fe_overseer', 'planet_stability_add', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_sky_cardinal', 'Sky Cardinal', 'precursor', 'And it was there, in the sky, that the future was born. The light was blinding, but a few could see past it. They took it upon themselves to lead others forward.', 231);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('fe_sky_cardinal', 'planet_stability_add', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_guardian_bot', 'Guardian', 'precursor', 'These ancient machines maintain a ceaseless vigil over the expired remains of billions of cryogenically frozen sapients.', 232);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('fe_guardian_bot', 'planet_crime_add', '-25.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('fe_guardian_bot', 'planet_defense_armies_add', '2.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_protector', 'Protector', 'precursor', 'So that the majority can rest peacefully and enjoy their lives of extravagance, these rough individuals stand ready in the night to visit violence on those who would do them harm.', 233);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('fe_protector', 'planet_crime_add', '-100.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('fe_protector', 'planet_defense_armies_add', '2.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_archivist', 'Archivist', 'precursor', 'Each data fragment must be filed, cataloged, and indexed precisely according to the ancient rites established eons ago by the First Librarian.', 234);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29005,6 +29393,14 @@ INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('fe_augur', 'produces', 'unity', '5.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_xeno_keeper', 'Xeno-Keeper', 'precursor', 'These precursor zookeepers look after the needs of the Xeno-Wards under their care.', 239);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('fe_xeno_keeper', 'planet_crime_add', '-20.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('fe_xeno_keeper', 'planet_defense_armies_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_xeno_ward', 'Xeno-Ward', 'xeno_ward', 'These specimens have been gathered here, in settings that approximate their natural environments, to ensure the preservation of their species in an often chaotic and destructive galaxy.', 240);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29056,11 +29452,19 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_trader', 'upkeep', 'trade', '7.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_trader', 'planet_amenities_add', '10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_trader_drone', 'Distribution Drone', 'complex_drone', 'A distribution drone which specializes in redistributing foreign goods among its peers for maximum efficiency.', 249);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_trader_drone', 'upkeep', 'energy', '7.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('aid_worker', 'Aid Worker', 'worker', 'Aid workers bring foreign knowledge and goods to improve the lives of the local population, in ways often overlooked by the domestic government.', 250);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('aid_worker', 'planet_amenities_add', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('aid_worker_drone', 'Aid Worker', 'simple_drone', 'Aid workers bring foreign knowledge and goods to improve the lives of the local population, in ways often overlooked by the domestic government.', 251);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_breeder', 'Overlord Breeder', 'specialist', 'Feeding the Offspring is a vital job to ensure stability on the planet. It''s also a fairly well paid job.', 252);
 INSERT OR IGNORE INTO job_resource
@@ -29076,10 +29480,18 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_offspring_drone_feeder', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_offspring_drone_feeder', 'planet_jobs_worker_produces_mult', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_offspring_drone_feeder_drone', 'Offspring Drone Feeder', 'complex_drone', 'Feeding the Offspring is a vital job to ensure stability on the planet.', 257);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_offspring_drone_feeder_drone', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_offspring_drone_feeder_drone', 'planet_jobs_simple_drone_produces_mult', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_simple_drone_produces_mult', 'Menial Drone Output', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_metallurgist', 'Overlord Metallurgist', 'specialist', 'Highly trained workers are needed to turn raw minerals into the durable alloys that are used in a wide variety of advanced construction.', 258);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29112,10 +29524,18 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_necromancer', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_necromancer', 'planet_defense_armies_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_necromancer_drone', 'Overlord Necromancer Drone', 'complex_drone', 'Skilled practitioners of the secrets art, from our Overlord, have shared the secrets of reanimation to a chosen few.', 266);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_necromancer_drone', 'upkeep', 'minerals', '6.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_necromancer_drone', 'planet_defense_armies_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_reassigner', 'Overlord Reassigner', 'specialist', 'The Overlord has made sure that their employees will never be out of a job and have now extended that courtesy to their vassals.', 267);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29131,6 +29551,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_recruiter', 'upkeep', 'unity', '1.0', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_recruiter', 'planet_defense_armies_add', '1.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_recruiter_drone', 'Overlord Recruiter Drone', 'complex_drone', 'The Overlord desires for the Vassal to be able to defend themselves. That is at least what they say before they ship the fresh recruits off-world.', 270);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29138,7 +29562,15 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_recruiter_drone', 'upkeep', 'unity', '1.0', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_recruiter_drone', 'planet_defense_armies_add', '1.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_ranger', 'Overlord Ranger', 'worker', 'Tasked with ensuring that nature is always present in some form on the planet, the Ranger is on the lookout for anything that could endanger the area sectioned off by the Overlord.', 271);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_ranger', 'planet_pops_consumer_goods_upkeep_mult', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_ranger_drone', 'Overlord Ranger Drone', 'simple_drone', 'Tasked with ensuring that nature is always present in some form on the planet, the Ranger is on the lookout for anything that could endanger the area sectioned off by the Overlord.', 272);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_arborist', 'Overlord Arborist', 'worker', 'On this world, the Overlord planted a sapling from their world tree. It is our responsibility to ensure it never withers, lest we face their wrath.', 273);
 INSERT OR IGNORE INTO job_resource
@@ -29152,6 +29584,10 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_bio_trophy', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_bio_trophy', 'pop_happiness', '0.01', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_bio_trophy_drone', 'Overlord Bio-Trophy Drone', 'simple_drone', 'The drones our Overlord directed to this structure are told to', 276);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29173,6 +29609,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_mortal_initiate', 'produces', 'society_research', '0.5', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_mortal_initiate', 'planet_amenities_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_mortal_initiate_drone', 'Overlord Mortal Initiate Drone', 'simple_drone', 'The customs of our Overlord may seem strange and mysterious, yet we are to be a part of them. A few of our drones have been designated to join what the Overlord calls ''a study of life'', one which concludes with their willing sacrifice.', 279);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29184,10 +29624,26 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_knight', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_knight', 'planet_stability_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_knight', 'planet_defense_armies_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_knight_drone', 'Overlord Knight', 'complex_drone', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 281);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_knight_drone', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_knight_drone', 'planet_stability_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_knight_drone', 'planet_defense_armies_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_healthcare', 'Medical Worker', 'specialist', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', 282);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29195,18 +29651,46 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_healthcare', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_healthcare', 'logistic_growth_mult', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_healthcare', 'bonus_pop_growth_mult', '0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_healthcare', 'pop_environment_tolerance', '0.025', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_healthcare', 'planet_amenities_add', '5.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_replicator', 'Replicator', 'complex_drone', 'A machine that builds a machine that builds a machine that...', 283);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_replicator', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_replicator', 'planet_pop_assembly_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_add', 'Monthly Mechanical Pop Assembly', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_spawning_drone', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 284);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_spawning_drone', 'upkeep', 'food', '5.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_spawning_drone', 'fake_pop_growth_mod', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_spawning_drone_lithoid', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 285);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('overlord_spawning_drone_lithoid', 'upkeep', 'minerals', '5.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('overlord_spawning_drone_lithoid', 'fake_pop_growth_mod', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_laborer', 'Laborer', 'worker', 'As assets they were worked to the bone. With freedom has come renewed purpose, and a vigor that no slave could ever hope to match.', 286);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29246,6 +29730,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('low_tech_priest', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('low_tech_priest', 'planet_amenities_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_bureaucrat', 'Administrator', 'specialist', 'Our former masters delegated much of their empire''s day-to-day administration to indentured assets. The result was a class of highly trained logistics personnel.', 292);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29264,6 +29752,14 @@ INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('low_tech_manager', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_warrior', 'Militia', 'specialist', 'Indentured soldiers were mainly used as cannon fodder; the fortunate few who survived have volunteered to protect our newfound freedom with their lives.', 294);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('low_tech_warrior', 'planet_crime_add', '-10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('low_tech_warrior', 'planet_defense_armies_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('broken_shackles_scavenger', 'Scavenger', 'worker', 'Scavengers explore the ruins of the Crashed Slaver Ship for anything of value.', 295);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29277,6 +29773,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('broken_shackles_scavenger', 'produces', 'society_research', '0.5', 3);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('broken_shackles_scavenger', 'planet_amenities_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('captain', 'Captain', NULL, NULL, 296);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('chief_navigator', 'Chief Navigator', NULL, NULL, 297);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('principal_pilot', 'Pilot First Class', NULL, NULL, 298);
@@ -29392,6 +29892,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('haruspex', 'upkeep', 'consumer_goods', '2.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('haruspex', 'planet_amenities_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('technophant', 'Technophant', 'ruler', 'Exalted interpreters of divine wetware. They guide the people toward a perfect fusion of and machine.
 This Job requires the Pop to have the Ritualistic Implants of any Cybernetic Creed or Cybernetic trait.', 320);
 INSERT OR IGNORE INTO job_resource
@@ -29403,6 +29907,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('technophant', 'upkeep', 'consumer_goods', '3.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('technophant', 'planet_amenities_add', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('neural_chip', 'Neural Chip', 'chip_slave', 'A single Neural Chip is inconsequential. Once connected, their processing capabilities increase exponentially.', 321);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29431,6 +29939,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('augmentor', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('augmentor', 'planet_amenities_add', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('augmentor_drone', 'Augmentor Drone', 'complex_drone', 'Augmentor Drones research and design cybernetic implants.', 325);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29448,6 +29960,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('identity_designer', 'upkeep', 'alloys', '2.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('identity_designer', 'planet_amenities_add', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cyberdome_duelist', 'Hyper-Gladiator', 'specialist', 'Hyper-Gladiators face off in the Cyberdome, utilizing cutting-edge cybernetic implants.', 327);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29455,6 +29971,14 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('cyberdome_duelist', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('cyberdome_duelist', 'pop_happiness', '0.02', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('cyberdome_duelist', 'planet_amenities_add', '10.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cyberdome_spectator', 'Spectator', 'worker', 'Spectators enjoy games in the Cyberdome. When witnessed via cyberbrain, even the cheapest seats provide a spectacle, but when neurocasting is enabled it''s possible to experience gladiatorial combat in first person.', 328);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29561,10 +30085,34 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('skywatcher', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('skywatcher', 'planet_stability_add', '1.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('skywatcher', 'country_naval_cap_add', '6.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('skywatcher', 'planet_defense_armies_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('skywatcher_drone', 'Skywatcher Drone', 'complex_drone', 'These specialized drones ensure a constant and secure uplink to the Deep Space Citadel.', 338);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('skywatcher_drone', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('skywatcher_drone', 'planet_stability_add', '1.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('skywatcher_drone', 'country_naval_cap_add', '6.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('skywatcher_drone', 'planet_defense_armies_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('genomic_researcher', 'Genomic Researcher', 'specialist', 'Genomic Researchers conduct research into our genetic future.', 339);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('genomic_drone', 'Genomic Drone', 'complex_drone', 'Genomic Drones conduct research into our genetic future.', 340);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('transference_volunteer', 'Transference Volunteer', 'specialist', 'For many, the mindlink with the Beast is but an afterthought. Constant, but remote. For some however, the need to merge with it is irrepressible. These volunteers act as a conduit as their minds are slowly absorbed into the beastly collective.', 341);
@@ -29574,6 +30122,18 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('transference_volunteer', 'upkeep', 'food', '5.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('transference_volunteer', 'planet_stability_add', '0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('transference_volunteer', 'ship_fire_rate_mult', '0.01', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('transference_volunteer', 'ship_armor_mult', '0.01', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('transference_drone', 'Transference Drone', 'complex_drone', 'While the mindlink established a permanent connection between the Beast and us, the transference is a slow process. Without these precautions we risk shattering both psyches and ruin everything.', 342);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29581,6 +30141,18 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('transference_drone', 'upkeep', 'food', '5.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('transference_drone', 'planet_stability_add', '0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('transference_drone', 'ship_fire_rate_mult', '0.01', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('transference_drone', 'ship_armor_mult', '0.01', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('complex_drone_unemployment', 'Idle Complex Drone', 'complex_drone_unemployment', 'These Complex Drones are currently not assigned to any task.', 343);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29652,6 +30224,18 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('telepath_drone', 'upkeep', 'energy', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('telepath_drone', 'planet_crime_no_happiness_add', '-10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('telepath_drone', 'planet_defense_armies_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('telepath_drone', 'planet_crime_add', '-10.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('physician_drone', 'Physician Drone', 'complex_drone', 'A specialized drone capable of diagnosing and repairing both artificial and organic entities. It meticulously catalogs everything it comes across, storing the data for use by the collective.', 357);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29659,6 +30243,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('physician_drone', 'upkeep', 'energy', '4.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('physician_drone', 'planet_amenities_no_happiness_add', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('observator_drone', 'Observator Drone', 'complex_drone', 'A drone put in charge of observing the Shroud, Zro, and the effects the two have on observable reality.', 358);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('energy_thrall', 'Energy Thrall', 'worker', 'Excess energies of the population can be put to better use in sustaining quality leadership. Each Energy Thrall is implanted with a specially calibrated siphoning device which collects their essence into easy-to-transfer power cells.', 359);
 INSERT OR IGNORE INTO job_resource
@@ -29668,6 +30256,10 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('drone_energy_thrall', 'produces', 'unity', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('drone_energy_thrall', 'planet_amenities_no_happiness_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('test_subject', 'Test Subject', 'criminal', 'Convicted of criminal activity, these individuals have been put to productive use as live test subjects in technological experiments.', 361);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29681,6 +30273,14 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('test_subject', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('test_subject', 'branch_office_criminal_syndicate_value_add', '7.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('branch_office_criminal_syndicate_value_add', 'Criminal Branch Office Trade', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('test_subject', 'planet_amenities_add', '3.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('test_subject_drone', 'Test Subject Drone', 'deviant_drone', 'After straying from the will of the collective, these deviants have been put to productive use as live test subjects in technological experiments.', 362);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29694,6 +30294,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('test_subject_drone', 'upkeep', 'energy', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('test_subject_drone', 'planet_amenities_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('experiment_engineer', 'Experiment Engineer', 'specialist', 'These elite researchers carry out experiments on live test subjects drawn from the criminal population, with no qualms about the severity of their methodologies.', 363);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29721,6 +30325,18 @@ INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('experiment_engineer_drone', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_orderly', 'Orderly', 'worker', 'These workers are responsible for the day-to-day care of those subjected to experimental procedures that often render them unable to care for themselves.', 365);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('slave_orderly', 'pop_experiment_engineer_bonus_workforce_mult', '0.025', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_experiment_engineer_bonus_workforce_mult', 'Job Efficiency for Experiment Engineers', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('slave_orderly', 'pop_test_subject_bonus_workforce_mult', '0.025', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_test_subject_bonus_workforce_mult', 'Job Efficiency for Test Subjects', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('slave_orderly', 'planet_amenities_add', '5.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('production_overseer', 'Production Overseer', 'specialist', 'Production Overseers work to eliminate inefficiencies and maximize the outputs from complex manufacturing processes.', 366);
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
@@ -29728,6 +30344,14 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('production_overseer', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('production_overseer', 'bonus_automated_workforce_mult', '0.02', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_automated_workforce_mult', 'Automated Workforce Efficiency', 1);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('production_overseer', 'planet_amenities_add', '2.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('spe_colonist', 'Colonist', NULL, 'The settling of a new world is no easy undertaking.', 367);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('extradimensional_research_unit', 'Extra-dimensional Research Unit', 'complex_drone', 'Dedicated research units focused on studies into the dimensions of thought.', 368);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('shroud_trader', 'Empathic Marketer', 'specialist', 'These experts attune to the emotional zeitgeist in the local markets, striking deals and hosting seminars on current trends in thought leadership.', 369);
@@ -29737,6 +30361,10 @@ INSERT OR IGNORE INTO job_resource
 INSERT OR IGNORE INTO job_resource
                                    (job_key, kind, resource, amount, sort_order)
                                VALUES ('shroud_trader', 'upkeep', 'consumer_goods', '1.0', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('shroud_trader', 'category_psionics_draw_chance_mult', '0.01', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_draw_chance_mult', 'Chance for Psionics Research Options', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('duelist', 'Duelist', 'specialist', 'Martial experts who display their deadly art for the entertainment of the masses.', 370);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('historical_curator', 'Historical Curator', 'specialist', 'Categorizes and contextualizes the most extraordinary specimens in order to gain a greater understanding of important galactic events.', 371);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('storm_dancer', 'Storm Dancer', 'specialist', 'Far from a simple entertainer, the work of a Storm Dancer is to embody the very essence of the storm.', 372);
@@ -33374,6 +34002,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pleasure_seekers', 'civilian', 'fe_hedonist', 'swapped', 'produces', 'trade', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pleasure_seekers', 'civilian', 'fe_hedonist', 'base', 'planet_amenities_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -33384,6 +34017,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_hedonism', 'civilian', 'fe_hedonist', 'swapped', 'produces', 'trade', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_corporate_hedonism', 'civilian', 'fe_hedonist', 'base', 'planet_amenities_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -33444,6 +34082,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_aristocratic_elite', 'politician', 'noble', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -33495,6 +34138,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('origin_cybernetic_creed', 'politician', 'technophant', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_cybernetic_creed', 'politician', 'technophant', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -33514,23 +34162,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'blazewright', 'Blazewright', 9);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'base', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'base', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'swapped', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazewright', 'Blazewright', 10);
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazewright', 'Blazewright', 9);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'politician', 'blazewright', 'base', 'produces', 'unity', '5.0');
@@ -33546,7 +34178,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'blazewright', 'Blazewright', 11);
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'blazewright', 'Blazewright', 10);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_aristocratic_elite', 'politician', 'blazewright', 'base', 'produces', 'unity', '5.0');
@@ -33562,23 +34194,23 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_exalted_priesthood', 'politician', 'Politician', 'radiant_priest', 'Radiant Priest', 12);
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'blazewright', 'Blazewright', 11);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_exalted_priesthood', 'politician', 'radiant_priest', 'base', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'base', 'produces', 'unity', '5.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_exalted_priesthood', 'politician', 'radiant_priest', 'base', 'upkeep', 'consumer_goods', '3.0');
+                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'base', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_exalted_priesthood', 'politician', 'radiant_priest', 'swapped', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'swapped', 'produces', 'unity', '5.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_exalted_priesthood', 'politician', 'radiant_priest', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'swapped', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'radiant_priest', 'Radiant Priest', 13);
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'radiant_priest', 'Radiant Priest', 12);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'politician', 'radiant_priest', 'base', 'produces', 'unity', '5.0');
@@ -33594,23 +34226,23 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 14);
+                           VALUES ('civic', 'civic_exalted_priesthood', 'politician', 'Politician', 'radiant_priest', 'Radiant Priest', 13);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'politician', 'pyrocrat', 'base', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_exalted_priesthood', 'politician', 'radiant_priest', 'base', 'produces', 'unity', '5.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'politician', 'pyrocrat', 'base', 'upkeep', 'consumer_goods', '3.0');
+                                   VALUES ('civic_exalted_priesthood', 'politician', 'radiant_priest', 'base', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'politician', 'pyrocrat', 'swapped', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_exalted_priesthood', 'politician', 'radiant_priest', 'swapped', 'produces', 'unity', '5.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'politician', 'pyrocrat', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+                                   VALUES ('civic_exalted_priesthood', 'politician', 'radiant_priest', 'swapped', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 15);
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 14);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'politician', 'pyrocrat', 'base', 'produces', 'unity', '5.0');
@@ -33626,7 +34258,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 16);
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 15);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_aristocratic_elite', 'politician', 'pyrocrat', 'base', 'produces', 'unity', '5.0');
@@ -33642,23 +34274,23 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'ashbroker', 'Ashbroker', 17);
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 16);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'ashbroker', 'base', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_superstitious_beliefs', 'politician', 'pyrocrat', 'base', 'produces', 'unity', '5.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'ashbroker', 'base', 'upkeep', 'consumer_goods', '3.0');
+                                   VALUES ('civic_superstitious_beliefs', 'politician', 'pyrocrat', 'base', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'ashbroker', 'swapped', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_superstitious_beliefs', 'politician', 'pyrocrat', 'swapped', 'produces', 'unity', '5.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'ashbroker', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+                                   VALUES ('civic_superstitious_beliefs', 'politician', 'pyrocrat', 'swapped', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'ashbroker', 'Ashbroker', 18);
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'ashbroker', 'Ashbroker', 17);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'politician', 'ashbroker', 'base', 'produces', 'unity', '5.0');
@@ -33674,23 +34306,23 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 19);
+                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'ashbroker', 'Ashbroker', 18);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazing_harbinger', 'base', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'ashbroker', 'base', 'produces', 'unity', '5.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazing_harbinger', 'base', 'upkeep', 'consumer_goods', '3.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'ashbroker', 'base', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazing_harbinger', 'swapped', 'produces', 'unity', '7.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'ashbroker', 'swapped', 'produces', 'unity', '5.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazing_harbinger', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'ashbroker', 'swapped', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 20);
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 19);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'base', 'produces', 'unity', '5.0');
@@ -33703,10 +34335,15 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'swapped', 'planet_stability_add', '0.02');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 21);
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 20);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'base', 'produces', 'unity', '5.0');
@@ -33719,6 +34356,32 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'swapped', 'planet_stability_add', '0.02');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 21);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazing_harbinger', 'base', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazing_harbinger', 'base', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazing_harbinger', 'swapped', 'produces', 'unity', '7.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazing_harbinger', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_superstitious_beliefs', 'politician', 'blazing_harbinger', 'swapped', 'planet_stability_add', '0.02');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -33744,6 +34407,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_technocracy', 'politician', 'noble_researcher', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_technocracy', 'politician', 'noble_researcher', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -33769,26 +34437,15 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_exalted_priesthood', 'politician', 'Politician', 'sacred_noble', 'Sacred Noble', 24);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_exalted_priesthood', 'politician', 'sacred_noble', 'base', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_exalted_priesthood', 'politician', 'sacred_noble', 'base', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_exalted_priesthood', 'politician', 'sacred_noble', 'swapped', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_exalted_priesthood', 'politician', 'sacred_noble', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'sacred_noble', 'Sacred Noble', 25);
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'sacred_noble', 'Sacred Noble', 24);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_aristocratic_elite', 'politician', 'sacred_noble', 'base', 'produces', 'unity', '5.0');
@@ -33801,6 +34458,32 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_aristocratic_elite', 'politician', 'sacred_noble', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'sacred_noble', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_exalted_priesthood', 'politician', 'Politician', 'sacred_noble', 'Sacred Noble', 25);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_exalted_priesthood', 'politician', 'sacred_noble', 'base', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_exalted_priesthood', 'politician', 'sacred_noble', 'base', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_exalted_priesthood', 'politician', 'sacred_noble', 'swapped', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_exalted_priesthood', 'politician', 'sacred_noble', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_exalted_priesthood', 'politician', 'sacred_noble', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -33890,32 +34573,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'visionary', 'Tech Visionary', 31);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'base', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'base', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'unity', '4.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'physics_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'society_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'engineering_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_technocracy', 'politician', 'Politician', 'visionary', 'Tech Visionary', 32);
+                           VALUES ('civic', 'civic_technocracy', 'politician', 'Politician', 'visionary', 'Tech Visionary', 31);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_technocracy', 'politician', 'visionary', 'base', 'produces', 'unity', '5.0');
@@ -33940,23 +34598,32 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'noble_merchant', 'Patrician', 33);
+                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'visionary', 'Tech Visionary', 32);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'base', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'base', 'produces', 'unity', '5.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'base', 'upkeep', 'consumer_goods', '3.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'base', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'swapped', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'unity', '4.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'physics_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'society_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'engineering_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'noble_merchant', 'Patrician', 34);
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'noble_merchant', 'Patrician', 33);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'base', 'produces', 'unity', '5.0');
@@ -33969,6 +34636,32 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'noble_merchant', 'Patrician', 34);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'base', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'base', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'swapped', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -33979,6 +34672,36 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_civil_education', 'dystopian_enforcer', 'educator', 'swapped', 'upkeep', 'consumer_goods', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'dystopian_enforcer', 'educator', 'base', 'planet_crime_add', '-25.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'dystopian_enforcer', 'educator', 'base', 'planet_defense_armies_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'dystopian_enforcer', 'educator', 'base', 'planet_stability_add', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'dystopian_enforcer', 'educator', 'swapped', 'planet_crime_add', '-20.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'dystopian_enforcer', 'educator', 'swapped', 'planet_defense_armies_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'dystopian_enforcer', 'educator', 'swapped', 'pop_government_ethic_attraction', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -33998,6 +34721,26 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_civil_education', 'dystopian_telepath', 'educator_telepath', 'swapped', 'upkeep', 'consumer_goods', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'dystopian_telepath', 'educator_telepath', 'base', 'planet_defense_armies_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'dystopian_telepath', 'educator_telepath', 'base', 'planet_crime_add', '-10.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'dystopian_telepath', 'educator_telepath', 'swapped', 'planet_crime_add', '-5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'dystopian_telepath', 'educator_telepath', 'swapped', 'pop_government_ethic_attraction', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34014,6 +34757,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_imperial_cult', 'bureaucrat', 'priest', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_imperial_cult', 'bureaucrat', 'priest', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34033,6 +34781,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_worker_coop', 'bureaucrat', 'steward', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_worker_coop', 'bureaucrat', 'steward', 'swapped', 'planet_amenities_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34052,6 +34805,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_imperial_cult', 'bureaucrat', 'preacher', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_imperial_cult', 'bureaucrat', 'preacher', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34068,6 +34826,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_death_cult_corporate', 'bureaucrat', 'death_priest', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'death_priest', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34084,6 +34847,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_death_cult', 'bureaucrat', 'death_priest', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'death_priest', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34100,26 +34868,20 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_dancer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_dancer', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_dancer', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'fire_seer', 'Fire Seer', 43);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'base', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'base', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'swapped', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'bureaucrat', 'Bureaucrat', 'fire_seer', 'Fire Seer', 44);
+                           VALUES ('civic', 'civic_pyrolatry', 'bureaucrat', 'Bureaucrat', 'fire_seer', 'Fire Seer', 43);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'base', 'produces', 'unity', '3.0');
@@ -34132,6 +34894,42 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'fire_seer', 'Fire Seer', 44);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'base', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'base', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'swapped', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34148,6 +34946,16 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'bureaucrat', 'pyromancer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'pyromancer', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'pyromancer', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34164,6 +34972,16 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34180,6 +34998,16 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34196,6 +35024,16 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_death_cult', 'bureaucrat', 'cremator', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'cremator', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'cremator', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34212,6 +35050,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_imperial_cult', 'bureaucrat', 'low_tech_priest', 'swapped', 'upkeep', 'consumer_goods', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_imperial_cult', 'bureaucrat', 'low_tech_priest', 'swapped', 'planet_amenities_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34228,6 +35071,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_memorialist', 'bureaucrat', 'memorialist', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_memorialist', 'bureaucrat', 'memorialist', 'swapped', 'planet_stability_add', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34247,6 +35095,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_death_cult_corporate', 'bureaucrat', 'death_manager', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'death_manager', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34266,6 +35119,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_death_cult', 'bureaucrat', 'death_manager', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'death_manager', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34285,6 +35143,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('origin_cybernetic_creed', 'bureaucrat', 'haruspex', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_cybernetic_creed', 'bureaucrat', 'haruspex', 'swapped', 'planet_amenities_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34304,6 +35167,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_imperial_cult', 'bureaucrat', 'haruspex', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_imperial_cult', 'bureaucrat', 'haruspex', 'swapped', 'planet_amenities_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34377,19 +35245,19 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 59);
+                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 59);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'base', 'upkeep', 'consumer_goods', '2.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'base', 'upkeep', 'consumer_goods', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'swapped', 'produces', 'unity', '3.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'swapped', 'produces', 'unity', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'swapped', 'upkeep', 'consumer_goods', '2.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34409,23 +35277,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 61);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'base', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'swapped', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'swapped', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 62);
+                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 61);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
@@ -34441,22 +35293,38 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 63);
+                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 62);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'base', 'upkeep', 'consumer_goods', '2.0');
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'base', 'upkeep', 'consumer_goods', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'unity', '3.0');
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'swapped', 'produces', 'unity', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'trade', '2.0');
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 63);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'base', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'swapped', 'upkeep', 'consumer_goods', '2.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34479,26 +35347,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 65);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'base', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'trade', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'swapped', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 66);
+                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 65);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
@@ -34517,6 +35366,25 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 66);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'base', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
                            VALUES ('civic', 'civic_civil_education', 'enforcer', 'Enforcer', 'educator', 'Educator', 67);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
@@ -34524,6 +35392,36 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_civil_education', 'enforcer', 'educator', 'swapped', 'upkeep', 'consumer_goods', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'enforcer', 'educator', 'base', 'planet_crime_add', '-25.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'enforcer', 'educator', 'base', 'planet_defense_armies_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'enforcer', 'educator', 'base', 'planet_stability_add', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'enforcer', 'educator', 'swapped', 'planet_crime_add', '-20.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'enforcer', 'educator', 'swapped', 'planet_defense_armies_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'enforcer', 'educator', 'swapped', 'pop_government_ethic_attraction', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34543,6 +35441,26 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_civil_education', 'telepath', 'educator_telepath', 'swapped', 'upkeep', 'consumer_goods', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'telepath', 'educator_telepath', 'base', 'planet_defense_armies_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'telepath', 'educator_telepath', 'base', 'planet_crime_add', '-10.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'telepath', 'educator_telepath', 'swapped', 'planet_crime_add', '-5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_civil_education', 'telepath', 'educator_telepath', 'swapped', 'pop_government_ethic_attraction', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34559,26 +35477,20 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_warrior_culture', 'entertainer', 'duelist', 'swapped', 'upkeep', 'alloys', '0.5');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'duelist', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'duelist', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_storm_callers', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 70);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'base', 'produces', 'unity', '0.5');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'base', 'upkeep', 'consumer_goods', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'swapped', 'produces', 'unity', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_storm_callers_megacorp', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 71);
+                           VALUES ('civic', 'civic_storm_callers_megacorp', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 70);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'produces', 'unity', '0.5');
@@ -34591,6 +35503,42 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_storm_callers', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 71);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'base', 'produces', 'unity', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'base', 'upkeep', 'consumer_goods', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'swapped', 'produces', 'unity', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34610,6 +35558,16 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_galactic_curators', 'entertainer', 'curator', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_galactic_curators', 'entertainer', 'curator', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_galactic_curators', 'entertainer', 'curator', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34629,22 +35587,42 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_galactic_curators', 'entertainer', 'curator', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'curator', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'curator', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_storm_callers', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 74);
+                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 74);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_duelist', 'base', 'produces', 'unity', '0.5');
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'base', 'produces', 'unity', '0.5');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_duelist', 'base', 'upkeep', 'consumer_goods', '1.0');
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'base', 'upkeep', 'consumer_goods', '1.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_duelist', 'swapped', 'produces', 'unity', '2.5');
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'swapped', 'produces', 'unity', '2.5');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_duelist', 'swapped', 'upkeep', 'alloys', '1.0');
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'swapped', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34661,45 +35639,46 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 76);
+                           VALUES ('civic', 'civic_storm_callers', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 76);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'base', 'produces', 'unity', '0.5');
+                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_duelist', 'base', 'produces', 'unity', '0.5');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'base', 'upkeep', 'consumer_goods', '1.0');
+                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_duelist', 'base', 'upkeep', 'consumer_goods', '1.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'swapped', 'produces', 'unity', '2.5');
+                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_duelist', 'swapped', 'produces', 'unity', '2.5');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'swapped', 'upkeep', 'alloys', '1.0');
+                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_duelist', 'swapped', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_duelist', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_storm_callers', 'entertainer', 'storm_duelist', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 77);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'base', 'produces', 'unity', '0.5');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'base', 'upkeep', 'consumer_goods', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'produces', 'unity', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'produces', 'society_research', '0.5');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'upkeep', 'alloys', '1.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 78);
+                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 77);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'base', 'produces', 'unity', '0.5');
@@ -34715,10 +35694,20 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'swapped', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 79);
+                           VALUES ('civic', 'civic_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 78);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'base', 'produces', 'unity', '0.5');
@@ -34734,6 +35723,45 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 79);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'base', 'produces', 'unity', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'base', 'upkeep', 'consumer_goods', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'produces', 'unity', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'produces', 'society_research', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34769,26 +35797,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 82);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'base', 'produces', 'consumer_goods', '6.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'base', 'upkeep', 'minerals', '6.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'swapped', 'produces', 'consumer_goods', '8.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'swapped', 'produces', 'trade', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'swapped', 'upkeep', 'minerals', '6.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 83);
+                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 82);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_crafters', 'artisan', 'artificer', 'base', 'produces', 'consumer_goods', '6.0');
@@ -34804,6 +35813,25 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_crafters', 'artisan', 'artificer', 'swapped', 'upkeep', 'minerals', '6.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 83);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'base', 'produces', 'consumer_goods', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'base', 'upkeep', 'minerals', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'swapped', 'produces', 'consumer_goods', '8.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'swapped', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'swapped', 'upkeep', 'minerals', '6.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34873,25 +35901,25 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_anglers', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 87);
+                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 87);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
+                                   VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'base', 'upkeep', 'minerals', '6.0');
+                                   VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'base', 'upkeep', 'minerals', '6.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'consumer_goods', '8.0');
+                                   VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'consumer_goods', '8.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'trade', '4.0');
+                                   VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'trade', '4.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'minerals', '4.0');
+                                   VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'minerals', '4.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'food', '3.0');
+                                   VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'food', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34917,25 +35945,25 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 89);
+                           VALUES ('civic', 'civic_corporate_anglers', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 89);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'base', 'upkeep', 'minerals', '6.0');
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'base', 'upkeep', 'minerals', '6.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'consumer_goods', '8.0');
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'consumer_goods', '8.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'trade', '4.0');
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'trade', '4.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'minerals', '4.0');
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'minerals', '4.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'food', '3.0');
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'food', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34955,6 +35983,36 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_reanimated_armies', 'soldier', 'necromancer', 'swapped', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_reanimated_armies', 'soldier', 'necromancer', 'base', 'country_naval_cap_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_reanimated_armies', 'soldier', 'necromancer', 'base', 'planet_defense_armies_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_reanimated_armies', 'soldier', 'necromancer', 'base', 'planet_stability_add', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_reanimated_armies', 'soldier', 'necromancer', 'swapped', 'country_naval_cap_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_reanimated_armies', 'soldier', 'necromancer', 'swapped', 'planet_defense_armies_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_reanimated_armies', 'soldier', 'necromancer', 'swapped', 'planet_stability_add', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -34991,6 +36049,21 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('origin_progenitor_hive', 'spawning_drone', 'offspring_drone', 'swapped', 'upkeep', 'food', '5.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_progenitor_hive', 'spawning_drone', 'offspring_drone', 'base', 'fake_pop_growth_mod', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_progenitor_hive', 'spawning_drone', 'offspring_drone', 'swapped', 'fake_pop_growth_mod', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_progenitor_hive', 'spawning_drone', 'offspring_drone', 'swapped', 'planet_jobs_simple_drone_produces_mult', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_simple_drone_produces_mult', 'Menial Drone Output', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -35001,6 +36074,16 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('origin_wilderness', 'spawning_drone', 'broodsymbiont', 'swapped', 'upkeep', 'food', '5.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'spawning_drone', 'broodsymbiont', 'base', 'fake_pop_growth_mod', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'spawning_drone', 'broodsymbiont', 'swapped', 'fake_pop_growth_mod', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -35017,6 +36100,16 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'upkeep', 'energy', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'base', 'planet_amenities_no_happiness_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'planet_amenities_no_happiness_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -35033,26 +36126,20 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'upkeep', 'energy', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'base', 'planet_amenities_no_happiness_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'planet_amenities_no_happiness_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_hive_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 97);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'base', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'base', 'upkeep', 'energy', '4.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'produces', 'unity', '3.5');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'upkeep', 'energy', '4.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_machine_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 98);
+                           VALUES ('civic', 'civic_machine_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 97);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'base', 'produces', 'unity', '3.0');
@@ -35065,6 +36152,32 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'upkeep', 'energy', '4.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'planet_stability_add', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_hive_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 98);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'base', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'base', 'upkeep', 'energy', '4.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'produces', 'unity', '3.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'upkeep', 'energy', '4.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'planet_stability_add', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -35132,23 +36245,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_machine_catalytic_processing', 'fabricator', 'Fabricator', 'catalytic_drone', 'Catalytic Drone', 103);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'base', 'produces', 'alloys', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'base', 'upkeep', 'minerals', '6.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'swapped', 'produces', 'alloys', '3.75');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'swapped', 'upkeep', 'food', '9.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_hive_catalytic_processing', 'fabricator', 'Fabricator', 'catalytic_drone', 'Catalytic Drone', 104);
+                           VALUES ('civic', 'civic_hive_catalytic_processing', 'fabricator', 'Fabricator', 'catalytic_drone', 'Catalytic Drone', 103);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_hive_catalytic_processing', 'fabricator', 'catalytic_drone', 'base', 'produces', 'alloys', '3.0');
@@ -35161,6 +36258,22 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_hive_catalytic_processing', 'fabricator', 'catalytic_drone', 'swapped', 'upkeep', 'food', '9.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_machine_catalytic_processing', 'fabricator', 'Fabricator', 'catalytic_drone', 'Catalytic Drone', 104);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'base', 'produces', 'alloys', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'base', 'upkeep', 'minerals', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'swapped', 'produces', 'alloys', '3.75');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'swapped', 'upkeep', 'food', '9.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -35235,6 +36348,26 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('origin_wilderness', 'patrol_drone', 'immunosymbiont', 'swapped', 'produces', 'unity', '0.5');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'patrol_drone', 'immunosymbiont', 'base', 'planet_crime_no_happiness_add', '-20.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'patrol_drone', 'immunosymbiont', 'base', 'planet_defense_armies_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'patrol_drone', 'immunosymbiont', 'swapped', 'planet_crime_no_happiness_add', '-20.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'patrol_drone', 'immunosymbiont', 'swapped', 'planet_defense_armies_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -35297,6 +36430,36 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('origin_wilderness', 'warrior_drone', 'tamersymbiont', 'swapped', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'warrior_drone', 'tamersymbiont', 'base', 'country_naval_cap_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'warrior_drone', 'tamersymbiont', 'base', 'planet_defense_armies_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'warrior_drone', 'tamersymbiont', 'base', 'planet_stability_add', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'warrior_drone', 'tamersymbiont', 'swapped', 'country_naval_cap_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'warrior_drone', 'tamersymbiont', 'swapped', 'planet_defense_armies_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'warrior_drone', 'tamersymbiont', 'swapped', 'planet_stability_add', '0.15');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -35307,6 +36470,26 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_machine_servitor', 'bath_attendant_machine', 'bath_attendant', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_machine_servitor', 'bath_attendant_machine', 'bath_attendant', 'base', 'pop_cat_complex_drone_bonus_workforce_mult', '0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_complex_drone_bonus_workforce_mult', 'Job Efficiency for Complex Drones', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_machine_servitor', 'bath_attendant_machine', 'bath_attendant', 'base', 'planet_amenities_no_happiness_add', '5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_machine_servitor', 'bath_attendant_machine', 'bath_attendant', 'swapped', 'pop_bio_trophy_bonus_workforce_mult', '0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bio_trophy_bonus_workforce_mult', 'Job Efficiency for Bio-Trophies', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_machine_servitor', 'bath_attendant_machine', 'bath_attendant', 'swapped', 'planet_amenities_no_happiness_add', '5.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -35395,6 +36578,11 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_warrior_culture', 'wrangler', 'beastfighter', 'swapped', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_warrior_culture', 'wrangler', 'beastfighter', 'swapped', 'planet_amenities_add', '4.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -35411,3 +36599,33 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('origin_wilderness', 'transference_drone', 'neurosymbiont', 'swapped', 'upkeep', 'food', '5.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'transference_drone', 'neurosymbiont', 'base', 'planet_stability_add', '0.75');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'transference_drone', 'neurosymbiont', 'base', 'ship_fire_rate_mult', '0.01');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'transference_drone', 'neurosymbiont', 'base', 'ship_armor_mult', '0.01');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'transference_drone', 'neurosymbiont', 'swapped', 'planet_stability_add', '0.75');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'transference_drone', 'neurosymbiont', 'swapped', 'ship_fire_rate_mult', '0.01');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('origin_wilderness', 'transference_drone', 'neurosymbiont', 'swapped', 'ship_armor_mult', '0.01');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
