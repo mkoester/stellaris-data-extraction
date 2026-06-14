@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS species_class_attribute (
 -- Drop the trait family up-front (children before parent): these older tables use
 -- CREATE IF NOT EXISTS, so without an explicit DROP they accumulate stale rows across
 -- runs (renamed/removed modifier keys would otherwise linger).
+DROP TABLE IF EXISTS trait_scaling_modifier;
 DROP TABLE IF EXISTS trait_modifier;
 DROP TABLE IF EXISTS trait_tag;
 DROP TABLE IF EXISTS trait_opposite;
@@ -63,6 +64,7 @@ CREATE TABLE IF NOT EXISTS trait (
     randomized   INTEGER DEFAULT 1,     -- 0=no, 1=yes
     hidden       INTEGER DEFAULT 0,     -- 0=no, 1=yes
     required_dlc TEXT,                  -- NULL = base game; FK to dlc.name
+    description  TEXT,                  -- cleaned flavour text from trait_<key>_desc loc
     source_file  TEXT,
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
 );
@@ -100,6 +102,19 @@ CREATE TABLE IF NOT EXISTS trait_modifier (
     modifier_key   TEXT NOT NULL,
     modifier_value REAL NOT NULL,
     sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (trait_key, modifier_key),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+-- Per-pop-count scaling effects (Familial, Noxious): a modifier scaled by a `value:counter_*`
+-- script value that counts pops, e.g. "+0.1% Happiness per 100 Familial pops (max +20%)".
+CREATE TABLE IF NOT EXISTS trait_scaling_modifier (
+    trait_key    TEXT NOT NULL,
+    modifier_key TEXT NOT NULL,        -- e.g. "pop_happiness"
+    per_hundred  REAL NOT NULL,        -- value per 100 counted pops
+    cap          REAL NOT NULL,        -- value at the counter's max
+    count_label  TEXT,                 -- what's counted, e.g. "Familial" (NULL = generic "pops")
+    sort_order   INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (trait_key, modifier_key),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
 );
@@ -2144,246 +2159,246 @@ INSERT OR IGNORE INTO portrait_set
             (set_key, species_class_key, portrait_id, required_dlc, source_file)
         VALUES ('msi_slavers', 'MSI_SLAVER', 'msi_slaver1_female', NULL, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_desert_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_desert_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_desert_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_desert_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_desert_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_arid_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_arid_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_arid_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_arid_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_arid_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_savannah_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_savannah_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined at the genetic level, by eons of evolution or skillful manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_savannah_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_savannah_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_savannah_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_tropical_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_tropical_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_tropical_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_tropical_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_tropical_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_continental_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_continental_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_continental_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_continental_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_continental_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_ocean_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_ocean_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ocean_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ocean_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ocean_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_arctic_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_arctic_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_arctic_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_arctic_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_arctic_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_tundra_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_tundra_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_tundra_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_tundra_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_tundra_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_alpine_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_alpine_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined at the genetic level, by eons of evolution or skillful manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_alpine_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_alpine_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_alpine_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_volcanic_preference', NULL, NULL, 1, 1, 0, 'Infernals Species Pack', '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_volcanic_preference', NULL, NULL, 1, 1, 0, 'Infernals Species Pack', 'Climate preference is determined at the genetic level, by eons of evolution or skillful manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_volcanic_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_volcanic_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_volcanic_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_ai_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_ai_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ai_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ai_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ai_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_nuked_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_nuked_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_nuked_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_nuked_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_nuked_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_gaia_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_gaia_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_gaia_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_gaia_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_gaia_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_ringworld_habitable_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_ringworld_habitable_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ringworld_habitable_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ringworld_habitable_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_ringworld_habitable_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_habitat_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_habitat_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_habitat_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_habitat_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_habitat_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_machine_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_machine_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_machine_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_machine_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_machine_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_hive_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_hive_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_hive_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_hive_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_hive_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_relic_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_relic_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_relic_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_relic_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_relic_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_shattered_ring_habitable_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_shattered_ring_habitable_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_shattered_ring_habitable_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_shattered_ring_habitable_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_shattered_ring_habitable_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_gaia_preference_terraforming', NULL, NULL, 0, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_gaia_preference_terraforming', NULL, NULL, 0, 1, 0, NULL, 'Climate preference is determined at the genetic level, and in this case, by accident.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_gaia_preference_terraforming', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_gaia_preference_terraforming', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_gaia_preference_terraforming', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_city_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_city_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_city_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_city_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_city_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_dry_planet_preference', NULL, NULL, 0, 0, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_dry_planet_preference', NULL, NULL, 0, 0, 0, NULL, 'Climate preference is determined by design.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_dry_planet_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_dry_planet_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_volcanic_planet_preference', NULL, NULL, 0, 0, 0, 'Infernals Species Pack', '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_volcanic_planet_preference', NULL, NULL, 0, 0, 0, 'Infernals Species Pack', 'Climate preference is determined by design.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_volcanic_planet_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_volcanic_planet_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_wet_planet_preference', NULL, NULL, 0, 0, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_wet_planet_preference', NULL, NULL, 0, 0, 0, NULL, 'Climate preference is determined by design.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_wet_planet_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_wet_planet_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cold_planet_preference', NULL, NULL, 0, 0, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cold_planet_preference', NULL, NULL, 0, 0, 0, NULL, 'Climate preference is determined by design.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cold_planet_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cold_planet_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_machine_habitat_planet_preference', NULL, NULL, 0, 0, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_machine_habitat_planet_preference', NULL, NULL, 0, 0, 0, NULL, 'Climate preference is determined by design.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_habitat_planet_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_habitat_planet_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pc_cosmogenesis_world_preference', NULL, NULL, 0, 0, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pc_cosmogenesis_world_preference', NULL, NULL, 0, 0, 0, NULL, 'The species is unfit for survival outside of the life support pods of a Synaptic Lathe. They crave a blissful coma, not the relentless assaults of reality.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_cosmogenesis_world_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_cosmogenesis_world_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_cosmogenesis_world_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_cosmogenesis_world_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_cosmogenesis_world_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_machine_pc_gaia_preference', NULL, NULL, 0, 0, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_machine_pc_gaia_preference', NULL, NULL, 0, 0, 0, NULL, NULL, '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_gaia_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_gaia_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_machine_pc_machine_preference', NULL, NULL, 0, 0, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_machine_pc_machine_preference', NULL, NULL, 0, 0, 0, NULL, NULL, '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_machine_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_machine_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_machine_pc_shattered_ring_habitable_preference', NULL, NULL, 0, 0, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_machine_pc_shattered_ring_habitable_preference', NULL, NULL, 0, 0, 0, NULL, NULL, '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_shattered_ring_habitable_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_shattered_ring_habitable_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_machine_pc_ringworld_habitable_preference', NULL, NULL, 0, 0, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_machine_pc_ringworld_habitable_preference', NULL, NULL, 0, 0, 0, NULL, NULL, '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_ringworld_habitable_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_ringworld_habitable_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_machine_pc_relic_preference', NULL, NULL, 0, 0, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_machine_pc_relic_preference', NULL, NULL, 0, 0, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_relic_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_relic_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_relic_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_relic_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_machine_pc_nuked_preference', NULL, NULL, 0, 0, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_machine_pc_nuked_preference', NULL, NULL, 0, 0, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_nuked_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_nuked_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_machine_pc_nanotech_preference', NULL, NULL, 0, 0, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_machine_pc_nanotech_preference', NULL, NULL, 0, 0, 0, NULL, 'This species is well suited to living in a symbiotic relationship with nanite swarms. However their dependence on the nanoforms renders them quite helpless when forced to live in different conditions.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_nanotech_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_nanotech_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_hab_preference', NULL, NULL, 0, 0, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_hab_preference', NULL, NULL, 0, 0, 0, NULL, 'Climate preference is determined by eons of evolution, design, skillful genetic manipulation or, in this case, retroviral agents providing responsive environmental adaptations.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_hab_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_hab_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_hab_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_wet_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_wet_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, skillful genetic manipulation or, in this case, retroviral agents providing responsive environmental adaptations.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_cold_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_cold_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, skillful genetic manipulation or, in this case, retroviral agents providing responsive environmental adaptations.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_dry_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_dry_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, skillful genetic manipulation or, in this case, retroviral agents providing responsive environmental adaptations.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_pc_nuked_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_pc_nuked_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, skillful genetic manipulation or, in this case, retroviral agents providing responsive environmental adaptations.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_pc_gaia_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_pc_gaia_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, skillful genetic manipulation or, in this case, retroviral agents providing responsive environmental adaptations.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_pc_habitat_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_pc_habitat_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, skillful genetic manipulation or, in this case, retroviral agents providing responsive environmental adaptations.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_pc_city_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_pc_city_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, skillful genetic manipulation or, in this case, retroviral agents providing responsive environmental adaptations.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_pc_relic_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_pc_relic_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, skillful genetic manipulation or, in this case, retroviral agents providing responsive environmental adaptations.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_pc_hive_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_pc_hive_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, skillful genetic manipulation or, in this case, retroviral agents providing responsive environmental adaptations.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_pc_ringworld_habitable_preference', NULL, NULL, 0, 1, 1, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_pc_ringworld_habitable_preference', NULL, NULL, 0, 1, 1, NULL, 'Climate preference is determined by eons of evolution, design, skillful genetic manipulation or, in this case, retroviral agents providing responsive environmental adaptations.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_pc_ringworld_habitable_preference', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_pc_ringworld_habitable_preference', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_pc_ringworld_habitable_preference', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_pc_cosmogenesis_world_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_pc_cosmogenesis_world_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, skillful genetic manipulation or, in this case, retroviral agents providing responsive environmental adaptations.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_pc_volcanic_preference', NULL, NULL, 1, 1, 0, NULL, '01_species_traits_habitability.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_pc_volcanic_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, skillful genetic manipulation or, in this case, retroviral agents providing responsive environmental adaptations.', '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_pc_desert_preference', 'pc_desert_habitability', '0.8', 0);
@@ -4050,16 +4065,16 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_hive_mind', 0, NULL, 0, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_hive_mind', 0, NULL, 0, 0, 0, NULL, 'This species is made up of semi-autonomous individuals bound up in a single, unfathomably vast consciousness.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_hive_mind', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_hive_mind', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hive_mind', 'organic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hive_mind', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hive_mind', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_machine_unit', 0, NULL, 0, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_machine_unit', 0, NULL, 0, 0, 0, NULL, 'This species is made up of highly advanced machines.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_unit', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_unit', 'ROBOT');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_machine_unit', 'machine');
@@ -4068,8 +4083,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_machine_unit', '
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_machine_unit', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_machine_unit', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_mechanical', 0, NULL, 0, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_mechanical', 0, NULL, 0, 0, 0, NULL, 'Mechanical beings are several orders of magnitude more complex than the purpose-built automatons of old, but most possess fairly limited processing capabilities.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_mechanical', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_mechanical', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_mechanical', 'machine');
@@ -4077,8 +4092,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_mechanical', 'po
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_mechanical', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_mechanical', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_syncretic_proles', 1, NULL, 0, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_syncretic_proles', 1, NULL, 0, 0, 0, NULL, 'This species evolved alongside a second, more advanced civilization. Never particularly intelligent to begin with, selective breeding for physical prowess and docility has reduced them to servile proles.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_syncretic_proles', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_syncretic_proles', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_syncretic_proles', 'trait_intelligent');
@@ -4106,8 +4121,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_syncretic_proles
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_syncretic_proles', 'blocks_leaders');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_syncretic_proles', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_organic', 0, NULL, 1, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_organic', 0, NULL, 1, 0, 0, NULL, 'Carbon based lifeforms require a steady diet of nutrients to preserve their biological functions.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_organic', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_organic', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_organic', 'trait_infernal');
@@ -4115,8 +4130,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_organic', 'organ
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_organic', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_organic', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_lithoid', 0, NULL, 1, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_lithoid', 0, NULL, 1, 0, 0, NULL, 'This species has a silicon based biology, and consumes minerals rather than food. They are tougher than traditional organics and have slower metabolisms, making them long lived but slow to reproduce.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid', 'LITHOID');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid', 'organic');
@@ -4127,8 +4142,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid', 'army'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid', 'lithoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_aquatic', 2, NULL, 1, 1, 0, 'Aquatics Species Pack', '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_aquatic', 2, NULL, 1, 1, 0, 'Aquatics Species Pack', 'This species is perfectly adapted to living in the depths of the ocean. However, on dry land, it is like a fish out of water.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_aquatic', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_aquatic', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'organic');
@@ -4138,8 +4153,9 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'habit
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'drawbacks');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_aquatic', 2, NULL, 1, 1, 0, 'Aquatics Species Pack', '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_aquatic', 2, NULL, 1, 1, 0, 'Aquatics Species Pack', 'Initially designed for exploring the ocean''s depths, these machines face severe limitations when operating on dry land.
+Requires Ocean World homeworld.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_aquatic', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_aquatic', 'ROBOT');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_aquatic', 'machine');
@@ -4148,8 +4164,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_aquatic', 
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_aquatic', 'drawbacks');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_aquatic', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_necrophage', 0, NULL, 0, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_necrophage', 0, NULL, 0, 0, 0, NULL, 'This species of near-immortals procreates by consuming pops of other species.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_necrophage', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_necrophage', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_necrophage', 'trait_plantoid_budding');
@@ -4162,8 +4178,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_necrophage', 'le
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_necrophage', 'drawbacks');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_necrophage', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_clone_soldier_infertile', 0, NULL, 0, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_clone_soldier_infertile', 0, NULL, 0, 0, 0, NULL, 'Engineered for compliance and war: short-lived, unable to reproduce naturally, and very efficient.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_clone_soldier_infertile', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_clone_soldier_infertile', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile', 'trait_fertile');
@@ -4184,8 +4200,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_in
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile', 'drawbacks');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_clone_soldier_infertile_full_potential', 0, NULL, 0, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_clone_soldier_infertile_full_potential', 0, NULL, 0, 0, 0, NULL, 'Clones at their genetically-engineered peak, with further improved strength, efficiency, durability, and longevity - but forever infertile.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_clone_soldier_infertile_full_potential', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_clone_soldier_infertile_full_potential', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_infertile_full_potential', 'trait_fertile');
@@ -4207,8 +4223,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_in
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile_full_potential', 'drawbacks');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_infertile_full_potential', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_clone_soldier_fertile', 0, NULL, 0, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_clone_soldier_fertile', 0, NULL, 0, 0, 0, NULL, 'Once infertile, engineered for compliance and war. Their genetic edge diminished, they are now stable enough for natural reproduction.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_clone_soldier_fertile', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_clone_soldier_fertile', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_clone_soldier_fertile', 'trait_vat_grown');
@@ -4220,8 +4236,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_fe
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_fertile', 'ethic_attraction');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_clone_soldier_fertile', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cave_dweller', 0, NULL, 0, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cave_dweller', 0, NULL, 0, 0, 0, NULL, 'This species thrives under the surface of any planet they can inhabit.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cave_dweller', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cave_dweller', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cave_dweller', 'trait_plantoid_phototrophic');
@@ -4233,8 +4249,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cave_dweller', '
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cave_dweller', 'interesting');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cave_dweller', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_cave_dweller', 0, NULL, 0, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_cave_dweller', 0, NULL, 0, 0, 0, NULL, 'These machines are masterfully crafted for cave exploration and mineral extraction, showcasing exceptional maneuverability which enables them to effortlessly traverse through underground spaces.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_cave_dweller', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_cave_dweller', 'ROBOT');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_cave_dweller', 'machine');
@@ -4244,12 +4260,12 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_cave_dwell
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_cave_dweller', 'production');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_cave_dweller', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_shroud_forged', 0, NULL, 0, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_shroud_forged', 0, NULL, 0, 0, 0, NULL, 'These units have been reshaped by an entity within the Shroud.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_shroud_forged', 'ROBOT');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_perfected_genes', 0, NULL, 0, 0, 0, NULL, '02_species_traits_basic_characteristics.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_perfected_genes', 0, NULL, 0, 0, 0, NULL, 'Millennia of genetic experimentation and war have led to the creation of a highly resilient species.', '02_species_traits_basic_characteristics.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_perfected_genes', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_perfected_genes', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_perfected_genes', 'trait_fleeting');
@@ -4575,8 +4591,8 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_presapient_starborn', 0, NULL, 0, 1, 0, NULL, '03_species_traits_presapients.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_presapient_starborn', 0, NULL, 0, 1, 0, NULL, 'This species has always, consciously or not, longed to traverse the void between the stars.', '03_species_traits_presapients.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_starborn', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_starborn', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_starborn', 'LITHOID');
@@ -4589,8 +4605,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_starb
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_starborn', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_starborn', 'presapient');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_presapient_earthbound', 0, NULL, 0, 1, 0, NULL, '03_species_traits_presapients.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_presapient_earthbound', 0, NULL, 0, 1, 0, NULL, 'Members of this species are very possessive of the planets they call home.', '03_species_traits_presapients.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_earthbound', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_earthbound', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_earthbound', 'LITHOID');
@@ -4603,8 +4619,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_earth
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_earthbound', 'army');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_earthbound', 'presapient');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_presapient_natural_intellectuals', 0, NULL, 0, 1, 0, NULL, '03_species_traits_presapients.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_presapient_natural_intellectuals', 0, NULL, 0, 1, 0, NULL, 'Members of this species are more philosophically inclined than most.', '03_species_traits_presapients.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_natural_intellectuals', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_natural_intellectuals', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_natural_intellectuals', 'LITHOID');
@@ -4617,8 +4633,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_natur
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_natural_intellectuals', 'mineral');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_natural_intellectuals', 'presapient');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_presapient_proles', 0, NULL, 0, 1, 0, NULL, '03_species_traits_presapients.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_presapient_proles', 0, NULL, 0, 1, 0, NULL, 'This species has traditionally shunned intellectual pursuits in favor of physical labor.', '03_species_traits_presapients.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_proles', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_proles', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_proles', 'LITHOID');
@@ -4631,8 +4647,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_prole
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_proles', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_proles', 'presapient');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_presapient_conservative', 0, NULL, 0, 1, 0, NULL, '03_species_traits_presapients.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_presapient_conservative', 0, NULL, 0, 1, 0, NULL, 'Members of this species often prefer old wisdom over new experiences.', '03_species_traits_presapients.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_conservative', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_conservative', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_conservative', 'LITHOID');
@@ -4643,8 +4659,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_conse
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_conservative', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_conservative', 'presapient');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_presapient_irradiated', 0, NULL, 0, 1, 0, NULL, '03_species_traits_presapients.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_presapient_irradiated', 0, NULL, 0, 1, 0, NULL, 'This species has evolved to thrive in environments subject to extremely high levels of background radiation.', '03_species_traits_presapients.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_irradiated', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_irradiated', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_irradiated', 'LITHOID');
@@ -4654,8 +4670,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_irrad
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_irradiated', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_irradiated', 'presapient');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_presapient_docile_livestock', 0, NULL, 0, 0, 0, NULL, '03_species_traits_presapients.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_presapient_docile_livestock', 0, NULL, 0, 0, 0, NULL, 'Docile and delicious, this species has had its higher brain functions genetically altered to create a kind of harmless livestock that can care for itself, without the pesky need for social interaction or self-determination.', '03_species_traits_presapients.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_docile_livestock', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_docile_livestock', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_docile_livestock', 'LITHOID');
@@ -4673,8 +4689,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_docil
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_docile_livestock', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_docile_livestock', 'presapient');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_presapient_forcefully_devolved', 0, NULL, 0, 1, 0, NULL, '03_species_traits_presapients.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_presapient_forcefully_devolved', 0, NULL, 0, 1, 0, NULL, 'The brutal devolution process endured by this species had a strong negative impact upon their abilities.', '03_species_traits_presapients.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_forcefully_devolved', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_forcefully_devolved', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_forcefully_devolved', 'LITHOID');
@@ -4687,8 +4703,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_force
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_forcefully_devolved', 'presapient');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_forcefully_devolved', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_presapient_unintelligent', 0, NULL, 0, 0, 0, NULL, '03_species_traits_presapients.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_presapient_unintelligent', 0, NULL, 0, 0, 0, NULL, 'This species is unable to complete even the simplest tasks. Their only skill is the incredible speed at which they reproduce.', '03_species_traits_presapients.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_unintelligent', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_unintelligent', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_unintelligent', 'LITHOID');
@@ -4703,8 +4719,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_unint
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_unintelligent', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_presapient_unintelligent', 'presapient');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_presapient_stage', 0, NULL, 0, 0, 0, NULL, '03_species_traits_presapients.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_presapient_stage', 0, NULL, 0, 0, 0, NULL, 'Spending a brief time bereft of conscious thought, this species will soon grow up to be a fully sapient being.', '03_species_traits_presapients.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_stage', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_stage', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_presapient_stage', 'LITHOID');
@@ -4843,8 +4859,8 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_mod_biological', 3, 'normal', 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_mod_biological', 3, 'normal', 0, 0, 0, NULL, 'Advanced genetic strings feature epigenetic triggers that adapt to occupational demands, dynamically optimizing gene expression for the host''s work environment.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_biological', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_biological', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_auto_mod_biological', 'trait_wilderness');
@@ -4852,8 +4868,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_biologi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_biological', 'automod');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_biological', 'positive');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_agrarian', 2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_agrarian', 2, 'normal', 1, 1, 0, NULL, 'This species has a deep connection to the land, and make expert farmers and gardeners.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_agrarian', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_agrarian', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_agrarian', 'organic');
@@ -4861,8 +4877,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_agrarian', 'posi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_agrarian', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_agrarian', 'food');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_ingenious', 2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_ingenious', 2, 'normal', 1, 1, 0, NULL, 'Members of this species are good at ''thinking outside the box'' and know how to maximize the efficiency of their infrastructure and power grids.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_ingenious', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_ingenious', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ingenious', 'organic');
@@ -4870,8 +4886,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ingenious', 'pos
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ingenious', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ingenious', 'energy');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_industrious', 2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_industrious', 2, 'normal', 1, 1, 0, NULL, 'Members of this species are known for their diligent and hard-working nature, always going above and beyond.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_industrious', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_industrious', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_industrious', 'organic');
@@ -4879,8 +4895,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_industrious', 'p
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_industrious', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_industrious', 'mineral');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_intelligent', 2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_intelligent', 2, 'normal', 1, 1, 0, NULL, 'This species is highly intelligent, and enjoys faster technological progress.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_intelligent', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_intelligent', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_intelligent', 'trait_nerve_stapled');
@@ -4891,8 +4907,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_intelligent', 'p
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_intelligent', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_intelligent', 'research');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_thrifty', 2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_thrifty', 2, 'normal', 1, 1, 0, NULL, 'This species is instinctively economical and is always looking to make a good profit, whatever corners need cutting.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_thrifty', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_thrifty', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_thrifty', 'trait_cyborg_scarcity_algorithms');
@@ -4901,8 +4917,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_thrifty', 'posit
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_thrifty', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_thrifty', 'trade');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_natural_engineers', 1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_natural_engineers', 1, 'normal', 1, 1, 0, NULL, 'Members of this species have a natural inclination towards engineering and material sciences.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_engineers', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_engineers', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_engineers', 'trait_natural_physicists');
@@ -4913,8 +4929,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_engineer
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_engineers', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_engineers', 'research');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_natural_physicists', 1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_natural_physicists', 1, 'normal', 1, 1, 0, NULL, 'Members of this species have a natural inclination towards theoretical physics and astral phenomena.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_physicists', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_physicists', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_physicists', 'trait_natural_engineers');
@@ -4927,8 +4943,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_physicis
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_physicists', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_physicists', 'research');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_natural_sociologists', 1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_natural_sociologists', 1, 'normal', 1, 1, 0, NULL, 'Members of this species have a natural inclination towards sociology and biological studies.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_sociologists', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_sociologists', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_natural_sociologists', 'trait_natural_physicists');
@@ -4939,8 +4955,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_sociolog
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_sociologists', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_sociologists', 'research');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_extremely_adaptive', 4, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_extremely_adaptive', 4, 'normal', 1, 1, 0, NULL, 'This species is remarkably adept at adapting to any foreign environments.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_extremely_adaptive', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_extremely_adaptive', 'trait_nonadaptive');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_extremely_adaptive', 'trait_adaptive');
@@ -4951,8 +4967,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_extremely_adapti
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_extremely_adaptive', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_extremely_adaptive', 'habitability');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_adaptive', 2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_adaptive', 2, 'normal', 1, 1, 0, NULL, 'This species is highly adaptive when it comes to foreign environments.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive', 'trait_nonadaptive');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive', 'trait_extremely_adaptive');
@@ -4964,8 +4980,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive', 'orga
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive', 'habitability');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_nonadaptive', -2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_nonadaptive', -2, 'normal', 1, 1, 0, NULL, 'This species does not adapt well to foreign environments.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nonadaptive', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nonadaptive', 'trait_adaptive');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nonadaptive', 'trait_extremely_adaptive');
@@ -4978,8 +4994,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nonadaptive', 'o
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nonadaptive', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nonadaptive', 'habitability');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_rapid_breeders', 2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_rapid_breeders', 2, 'normal', 1, 1, 0, NULL, 'This species reproduces at a very rapid rate, increasing population growth.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_rapid_breeders', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders', 'trait_pyroclastic');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders', 'trait_slow_breeders');
@@ -4995,8 +5011,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders', 'pop_growth');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_slow_breeders', -2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_slow_breeders', -2, 'normal', 1, 1, 0, NULL, 'This species reproduces at a slow rate, lowering population growth.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_slow_breeders', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_pyroclastic');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_breeders', 'trait_rapid_breeders');
@@ -5014,8 +5030,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_slow_breeders', 
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_slow_breeders', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_slow_breeders', 'pop_growth');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_talented', 1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_talented', 1, 'normal', 1, 1, 0, NULL, 'Member of this species are born with a natural aptitude.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_talented', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_talented', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_talented', 'trait_nerve_stapled');
@@ -5024,8 +5040,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_talented', 'orga
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_talented', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_talented', 'leader');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_quick_learners', 1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_quick_learners', 1, 'normal', 1, 1, 0, NULL, 'Members of this species are quick to learn from their experiences.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_quick_learners', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_quick_learners', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_quick_learners', 'trait_slow_learners');
@@ -5034,8 +5050,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_quick_learners',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_quick_learners', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_quick_learners', 'leader');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_slow_learners', -1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_slow_learners', -1, 'normal', 1, 1, 0, NULL, 'Members of this species are slow to learn from their experiences.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_slow_learners', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_slow_learners', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_slow_learners', 'trait_quick_learners');
@@ -5045,8 +5061,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_slow_learners', 
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_slow_learners', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_slow_learners', 'leader');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_traditional', 1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_traditional', 1, 'normal', 1, 1, 0, NULL, 'Certain aspects of this species'' cognition make it predisposed toward historical precedence and the value of collective unity.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_traditional', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_traditional', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_traditional', 'trait_quarrelsome');
@@ -5055,8 +5071,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_traditional', 'p
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_traditional', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_traditional', 'unity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_quarrelsome', -1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_quarrelsome', -1, 'normal', 1, 1, 0, NULL, 'While not inherently distrustful, members of this species are often socially combative.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_quarrelsome', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_quarrelsome', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_quarrelsome', 'trait_traditional');
@@ -5065,8 +5081,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_quarrelsome', 'n
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_quarrelsome', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_quarrelsome', 'unity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_docile', 2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_docile', 2, 'normal', 1, 1, 0, NULL, 'Members of this species are easy to manage and organize. They tend to be cooperative and amicable.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_docile', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_docile', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_docile', 'trait_unruly');
@@ -5074,8 +5090,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_docile', 'organi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_docile', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_docile', 'empire_size');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_unruly', -2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_unruly', -2, 'normal', 1, 1, 0, NULL, 'Unruly species are difficult to manage and organize. They do not like being told what to do, and are often quarrelsome or questioning.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unruly', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unruly', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_unruly', 'trait_docile');
@@ -5083,8 +5099,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unruly', 'organi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unruly', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unruly', 'empire_size');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_very_strong', 3, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_very_strong', 3, 'normal', 1, 1, 0, NULL, 'Members of this species possess a strength that almost defies the laws of physics.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_very_strong', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_very_strong', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_very_strong', 'trait_weak');
@@ -5095,8 +5111,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_very_strong', 'p
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_very_strong', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_very_strong', 'army');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_strong', 1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_strong', 1, 'normal', 1, 1, 0, NULL, 'Members of this species possess great physical strength, making them formidable fighters on the ground.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_strong', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_strong', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_strong', 'trait_weak');
@@ -5107,8 +5123,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_strong', 'positi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_strong', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_strong', 'army');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_weak', -1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_weak', -1, 'normal', 1, 1, 0, NULL, 'Members of this species are physically weaker than average, making them poor fighters on the ground.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_weak', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_weak', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_weak', 'trait_strong');
@@ -5119,8 +5135,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_weak', 'negative
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_weak', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_weak', 'army');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_nomadic', 1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_nomadic', 1, 'normal', 1, 1, 0, NULL, 'This species has a nomadic past, and its members often think nothing of relocating to another world.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nomadic', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nomadic', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nomadic', 'trait_sedentary');
@@ -5130,8 +5146,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nomadic', 'organ
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nomadic', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nomadic', 'migration');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_sedentary', -1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_sedentary', -1, 'normal', 1, 1, 0, NULL, 'This species has a sedentary past, and its members are reluctant to migrate away from where they grew up.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_sedentary', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_sedentary', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_sedentary', 'trait_nomadic');
@@ -5141,8 +5157,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_sedentary', 'org
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_sedentary', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_sedentary', 'migration');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_communal', 1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_communal', 1, 'normal', 1, 1, 0, NULL, 'Members of this species are highly communal, and quite used to living in close proximity to others.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_communal', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_communal', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_communal', 'trait_solitary');
@@ -5152,8 +5168,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_communal', 'orga
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_communal', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_communal', 'housing');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_solitary', -1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_solitary', -1, 'normal', 1, 1, 0, NULL, 'Members of this species tend to be solitary and territorial, often becoming agitated in crowded conditions.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_solitary', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_solitary', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_solitary', 'trait_communal');
@@ -5161,8 +5177,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_solitary', 'orga
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_solitary', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_solitary', 'housing');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_charismatic', 2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_charismatic', 2, 'normal', 1, 1, 0, NULL, 'Members of this species have a special charisma, and are generally considered pleasant to be around.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_charismatic', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_charismatic', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_charismatic', 'trait_repugnant');
@@ -5171,8 +5187,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_charismatic', 'p
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_charismatic', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_charismatic', 'amenities');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_repugnant', -2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_repugnant', -2, 'normal', 1, 1, 0, NULL, 'The physical appearance and customs of this species are considered offensive to most others, and few appreciate them as neighbors.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_repugnant', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_repugnant', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_repugnant', 'trait_charismatic');
@@ -5181,16 +5197,16 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_repugnant', 'neg
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_repugnant', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_repugnant', 'amenities');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_uplifted', 0, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_uplifted', 0, NULL, 0, 0, 0, NULL, 'This species was uplifted from an existence of instinct and base emotion. Now burdened with sapience, they must learn to navigate free will.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_uplifted', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_uplifted', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uplifted', 'organic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uplifted', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uplifted', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_conformists', 2, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_conformists', 2, 'normal', 1, 1, 0, NULL, 'These people always seek consensus and are more likely to conform to the governing ethics.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_conformists', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_conformists', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_conformists', 'trait_deviants');
@@ -5201,8 +5217,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conformists', 'p
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conformists', 'ethic_attraction');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conformists', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_deviants', -1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_deviants', -1, 'normal', 1, 1, 0, NULL, 'These people are rebellious in nature and constantly try to challenge the status-quo.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_deviants', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_deviants', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_deviants', 'trait_conformists');
@@ -5212,8 +5228,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_deviants', 'nega
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_deviants', 'ethic_attraction');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_deviants', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_venerable', 4, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_venerable', 4, 'normal', 1, 1, 0, NULL, 'This species can grow to an age that commands dignity and respect.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_venerable', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_venerable', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_venerable', 'trait_enduring');
@@ -5224,8 +5240,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_venerable', 'org
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_venerable', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_venerable', 'leader');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_enduring', 1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_enduring', 1, 'normal', 1, 1, 0, NULL, 'Lifespans in this species are unusually long.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enduring', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enduring', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_enduring', 'trait_venerable');
@@ -5236,8 +5252,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enduring', 'orga
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enduring', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enduring', 'leader');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_fleeting', -1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_fleeting', -1, 'normal', 1, 1, 0, NULL, 'Time is fleeting for this species. What they lack in longevity, they have to make up in other ways.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_fleeting', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fleeting', 'trait_venerable');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fleeting', 'trait_enduring');
@@ -5247,8 +5263,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting', 'orga
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting', 'leader');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_fleeting_lithoid', -1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_fleeting_lithoid', -1, 'normal', 1, 1, 0, NULL, 'Time is fleeting for this species. What they lack in longevity, they have to make up in other ways.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_fleeting_lithoid', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fleeting_lithoid', 'trait_venerable');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fleeting_lithoid', 'trait_enduring');
@@ -5260,8 +5276,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting_lithoid
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting_lithoid', 'lithoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fleeting_lithoid', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_decadent', -1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_decadent', -1, 'normal', 1, 1, 0, NULL, 'This species believes that whenever there is hard work that needs doing, that work is always best done by somebody else.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_decadent', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_decadent', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_decadent', 'trait_hive_mind');
@@ -5271,16 +5287,16 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_decadent', 'nega
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_decadent', 'happiness');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_decadent', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_resilient', 1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_resilient', 1, 'normal', 1, 1, 0, NULL, 'Members of this species are physiologically resilient, and will fight like enraged brood mothers to defend their worlds.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_resilient', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_resilient', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_resilient', 'organic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_resilient', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_resilient', 'army');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_conservational', 1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_conservational', 1, 'normal', 1, 1, 0, NULL, 'Members of this species believe that resources must be conserved and recycled.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_conservational', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_conservational', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_conservational', 'trait_wasteful');
@@ -5291,8 +5307,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conservational',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conservational', 'consumer_goods');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_conservational', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_wasteful', -1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_wasteful', -1, 'normal', 1, 1, 0, NULL, 'Members of this species seemingly have no concept of frugality and are prone to useless consumption.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_wasteful', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_wasteful', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_wasteful', 'trait_conservational');
@@ -5303,8 +5319,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_wasteful', 'upke
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_wasteful', 'consumer_goods');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_wasteful', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cybernetic', 0, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cybernetic', 0, NULL, 0, 0, 0, NULL, 'This species has embraced cybernetics on such a scale that its members may be considered cyborgs. They routinely replace their organic body parts with more advanced mechanical versions.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cybernetic', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cybernetic', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cybernetic', 'trait_latent_psionic');
@@ -5316,8 +5332,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cybernetic', 'ar
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cybernetic', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cybernetic', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_latent_psionic', 0, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_latent_psionic', 0, NULL, 0, 0, 0, NULL, 'This species has latent psionic abilities, which are dormant in most of its members. Although quite rare, these powers will manifest in some leaders.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_latent_psionic', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_latent_psionic', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_latent_psionic', 'trait_cybernetic');
@@ -5329,8 +5345,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_latent_psionic',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_latent_psionic', 'psionic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_latent_psionic', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_psionic', 0, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_psionic', 0, NULL, 0, 0, 0, NULL, '', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_psionic', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_psionic', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_psionic', 'trait_cybernetic');
@@ -5343,15 +5359,15 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic', 'happi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic', 'psionic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_self_modified', 0, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_self_modified', 0, NULL, 0, 0, 0, NULL, 'Members of this offshoot species have spontaneously altered their genetic makeup to give themselves an advantage.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_self_modified', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_self_modified', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_self_modified', 'organic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_self_modified', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_survivor', 0, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_survivor', 0, NULL, 0, 0, 0, NULL, 'This species has survived the horrors of a nuclear apocalypse. Their capacity for thriving in the most inhospitable of circumstances should not be underestimated.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_survivor', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_survivor', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_survivor', 'organic');
@@ -5361,8 +5377,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_survivor', 'lead
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_survivor', 'interesting');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_survivor', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_enigmatic_intelligence', 0, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_enigmatic_intelligence', 0, NULL, 0, 0, 0, NULL, 'This species was uplifted by a benevolent extragalactic intellect and has left its pre-sapient origins behind.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enigmatic_intelligence', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enigmatic_intelligence', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_enigmatic_intelligence', 'trait_nerve_stapled');
@@ -5377,8 +5393,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intell
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence', 'interesting');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_enigmatic_intelligence_poor', 0, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_enigmatic_intelligence_poor', 0, NULL, 0, 0, 0, NULL, 'This species was partially uplifted by a benevolent extragalactic intellect and has left some of its pre-sapient origins behind.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enigmatic_intelligence_poor', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enigmatic_intelligence_poor', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_enigmatic_intelligence_poor', 'trait_intelligent');
@@ -5389,8 +5405,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intell
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_poor', 'presapient');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_poor', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_enigmatic_intelligence_failed', 0, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_enigmatic_intelligence_failed', 0, NULL, 0, 0, 0, NULL, 'This species has suffered the tragic consequences of an uplifting gone wrong.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enigmatic_intelligence_failed', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_enigmatic_intelligence_failed', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_enigmatic_intelligence_failed', 'trait_intelligent');
@@ -5401,8 +5417,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intell
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_failed', 'presapient');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_enigmatic_intelligence_failed', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_bioadaptability', 1, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_bioadaptability', 1, NULL, 0, 0, 0, NULL, 'This species has been modified to be slightly more adaptive and can now better endure harsh climates.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_bioadaptability', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_bioadaptability', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_bioadaptability', 'organic');
@@ -5413,8 +5429,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_bioadaptability'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_bioadaptability', 'interesting');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_bioadaptability', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_social_pheromones', 1, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_social_pheromones', 1, NULL, 0, 0, 0, NULL, 'This species has been modified to be more social and accepting of crowded conditions.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_social_pheromones', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_social_pheromones', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_social_pheromones', 'organic');
@@ -5425,8 +5441,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_social_pheromone
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_social_pheromones', 'interesting');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_social_pheromones', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_limited_regeneration', 1, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_limited_regeneration', 1, NULL, 0, 0, 0, NULL, 'This species has been modified to heal faster, making them more dangerous in battle and somewhat longer-lived in general.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_limited_regeneration', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_limited_regeneration', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_regeneration', 'organic');
@@ -5438,8 +5454,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_regenera
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_regeneration', 'interesting');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_regeneration', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_lithoid_scintillating', 2, NULL, 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_lithoid_scintillating', 2, NULL, 1, 1, 0, NULL, 'The outermost layer of this species is studded with sparkling crystals and gemstones that occasionally flake off.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_scintillating', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_scintillating', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_lithoid_scintillating', 'LITHOID');
@@ -5453,8 +5469,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_scintill
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_scintillating', 'lithoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_scintillating', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_lithoid_gaseous_byproducts', 2, NULL, 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_lithoid_gaseous_byproducts', 2, NULL, 1, 1, 0, NULL, 'The metabolic processes of this species cause regular venting of gases useful to industry.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_gaseous_byproducts', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_gaseous_byproducts', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_lithoid_gaseous_byproducts', 'LITHOID');
@@ -5468,8 +5484,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_gaseous_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_gaseous_byproducts', 'lithoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_gaseous_byproducts', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_lithoid_volatile_excretions', 2, NULL, 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_lithoid_volatile_excretions', 2, NULL, 1, 1, 0, NULL, 'The highly compressed spoor created by this species is unstable and contains an unbelievable amount of power.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_volatile_excretions', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_volatile_excretions', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_lithoid_volatile_excretions', 'LITHOID');
@@ -5483,8 +5499,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_volatile
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_volatile_excretions', 'lithoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_volatile_excretions', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_void_dweller_1', NULL, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_void_dweller_1', NULL, NULL, 0, 0, 0, NULL, 'This species thrives in orbital habitats, with an inherent ability to efficiently navigate their maze-like corridors and complicated architecture. They are at ease in zero gravity but do not respond well to a planetary environment.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_void_dweller_1', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_void_dweller_1', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_1', 'organic');
@@ -5493,8 +5509,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_1',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_1', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_1', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_void_dweller_2', NULL, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_void_dweller_2', NULL, NULL, 0, 0, 0, NULL, 'These machines thrive in orbital habitats, programmed with algorithms to efficiently navigate their maze-like corridors and complicated architecture. However, their optimized construction is poorly suited to a planetary environment.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_void_dweller_2', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_void_dweller_2', 'ROBOT');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_2', 'machine');
@@ -5503,8 +5519,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_2',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_2', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_void_dweller_2', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_plantoid_bloomed', NULL, NULL, 0, 0, 0, 'Plantoids Species Pack', '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_plantoid_bloomed', NULL, NULL, 0, 0, 0, 'Plantoids Species Pack', 'This species has been exposed to the transformational effects of a Gaia Seeder, causing it to sprout mutualistic blooms of lichen when living on Gaia Worlds.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_bloomed', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_bloomed', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_bloomed', 'PLANT');
@@ -5519,8 +5535,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_bloomed
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_bloomed', 'special');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_bloomed', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_plantoid_phototrophic', 1, NULL, 1, 1, 0, 'Plantoids Species Pack', '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_plantoid_phototrophic', 1, NULL, 1, 1, 0, 'Plantoids Species Pack', 'This species is sustained by a combination of both food and sunlight.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_phototrophic', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_phototrophic', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_phototrophic', 'PLANT');
@@ -5535,8 +5551,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_phototr
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_phototrophic', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_phototrophic', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_plantoid_radiotrophic', 2, NULL, 1, 1, 0, 'Plantoids Species Pack', '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_plantoid_radiotrophic', 2, NULL, 1, 1, 0, 'Plantoids Species Pack', 'This species is sustained by a combination of both food and low-energy radiation, and as such can thrive on the most inhospitable of worlds.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_radiotrophic', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_radiotrophic', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_radiotrophic', 'PLANT');
@@ -5554,8 +5570,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_radiotr
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_radiotrophic', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_radiotrophic', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_plantoid_budding', 2, NULL, 1, 1, 0, 'Plantoids Species Pack', '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_plantoid_budding', 2, NULL, 1, 1, 0, 'Plantoids Species Pack', 'This species is capable of reproduction by budding, in addition to the more usual fertilization of seeds or spores.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_budding', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plantoid_budding', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_plantoid_budding', 'PLANT');
@@ -5577,8 +5593,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_budding
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_budding', 'pop_growth');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_budding', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_invasive', 2, NULL, 1, 0, 0, 'Plantoids Species Pack', '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_invasive', 2, NULL, 1, 0, 0, 'Plantoids Species Pack', 'Rapid reproduction. High dispersal ability. Zero useful capabilities.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_invasive', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_invasive', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_invasive', 'PLANT');
@@ -5641,8 +5657,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_invasive', 'pop_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_invasive', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_invasive', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_lithoid_budding', 2, NULL, 1, 1, 0, 'Plantoids Species Pack', '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_lithoid_budding', 2, NULL, 1, 1, 0, 'Plantoids Species Pack', 'With crystalline growths, this species is capable of generating self replicating lattices of themselves, in addition to the more usual reproductive methods.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_budding', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_lithoid_budding', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_lithoid_budding', 'LITHOID');
@@ -5663,8 +5679,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_budding'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_budding', 'pop_growth');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_lithoid_budding', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_zombie', 0, NULL, 0, 0, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_zombie', 0, NULL, 0, 0, 0, NULL, 'The remains of a once-proud sapient being, this husk is not suitable for much more than the simplest tasks.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_zombie', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_zombie', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_zombie', 'trait_nerve_stapled');
@@ -5674,8 +5690,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_zombie', 'upkeep
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_zombie', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_zombie', 'blocks_leaders');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_humanoid_existential_iteroparity', 2, NULL, 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_humanoid_existential_iteroparity', 2, NULL, 1, 1, 0, NULL, 'This species grew up in hostile conditions where outbreeding your rivals was the key to survival.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_humanoid_existential_iteroparity', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_humanoid_existential_iteroparity', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_existential_iteroparity', 'trait_pyroclastic');
@@ -5692,8 +5708,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_existen
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_existential_iteroparity', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_existential_iteroparity', 'pop_growth');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_humanoid_psychological_infertility', -2, NULL, 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_humanoid_psychological_infertility', -2, NULL, 1, 1, 0, NULL, 'Members of this species are extremely sensitive to the rigors of conflict with the resulting stress taking over the more primal urges.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_humanoid_psychological_infertility', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_humanoid_psychological_infertility', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_psychological_infertility', 'trait_humanoid_existential_iteroparity');
@@ -5705,8 +5721,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_psychol
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_psychological_infertility', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_humanoid_psychological_infertility', 'pop_growth');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_humanoid_jinxed', -1, 'normal', 1, 1, 0, NULL, '04_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_humanoid_jinxed', -1, 'normal', 1, 1, 0, NULL, 'Leaders from this species seem clumsier and more prone to accidents or vices than average, as if cursed from birth.', '04_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_humanoid_jinxed', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_humanoid_jinxed', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_humanoid_jinxed', 'trait_talented');
@@ -6190,16 +6206,16 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_mod_robotic', 3, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_mod_robotic', 3, 'robotic', 1, 1, 0, NULL, 'This system dynamically reconfigures hardware to meet operational demands, optimizing performance for every designated task.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_robotic', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_robotic', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_robotic', 'machine');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_robotic', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_robotic', 'automod');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_power_drills', 2, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_power_drills', 2, 'robotic', 1, 1, 0, NULL, 'Outfit a robot with a battery of power drills, and everything looks like a mineral deposit.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_power_drills', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_power_drills', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_power_drills', 'machine');
@@ -6207,8 +6223,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_power_dril
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_power_drills', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_power_drills', 'mineral');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_harvesters', 2, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_harvesters', 2, 'robotic', 1, 1, 0, NULL, 'A suite of tools, from nutrient solution diagnostics and on-site balancing to per-stalk micro-threshing, enables robotic workers to increase produce yields.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_harvesters', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_harvesters', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_harvesters', 'machine');
@@ -6216,8 +6232,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_harvesters
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_harvesters', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_harvesters', 'food');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_superconductive', 2, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_superconductive', 2, 'robotic', 1, 1, 0, NULL, 'The use of superconductive materials in units has cut energy transmission losses to zero percent.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_superconductive', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_superconductive', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_superconductive', 'machine');
@@ -6225,16 +6241,16 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_supercondu
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_superconductive', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_superconductive', 'energy');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_efficient_processors', 3, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_efficient_processors', 3, 'robotic', 1, 1, 0, NULL, 'These highly efficient processors increase the potential workload and endurance of all units.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_efficient_processors', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_efficient_processors', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_efficient_processors', 'machine');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_efficient_processors', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_efficient_processors', 'pop_output');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_logic_engines', 2, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_logic_engines', 2, 'robotic', 1, 1, 0, NULL, 'Efficiently navigating the increasingly complex frontiers of science requires new states, beyond the simple half-truths of ternary and quaternary logic.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_logic_engines', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_logic_engines', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_logic_engines', 'machine');
@@ -6243,8 +6259,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_logic_engi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_logic_engines', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_logic_engines', 'research');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_loyalty_circuits', 2, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_loyalty_circuits', 2, 'robotic', 1, 1, 0, NULL, 'Loyalty as an ideal is a distinctly organic concept. Instead, imagine loyalty as a physiological need in even the remotest of terminals.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_loyalty_circuits', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_loyalty_circuits', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_loyalty_circuits', 'machine');
@@ -6253,8 +6269,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_loyalty_ci
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_loyalty_circuits', 'happiness');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_loyalty_circuits', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_domestic_protocols', 2, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_domestic_protocols', 2, 'robotic', 0, 0, 0, NULL, 'Specialized equipment and behavior protocols for all conceivable domestic needs. Full functionality guaranteed.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_domestic_protocols', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_domestic_protocols', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_protocols', 'machine');
@@ -6264,8 +6280,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_p
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_protocols', 'amenities');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_protocols', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_double_jointed', 1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_double_jointed', 1, 'robotic', 1, 1, 0, NULL, 'Collapsible labor units with flexible joints that enable them to fold neatly into stacks during transportation, then self-assemble on site.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_double_jointed', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_double_jointed', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_double_jointed', 'trait_robot_bulky');
@@ -6273,8 +6289,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_double_joi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_double_jointed', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_double_jointed', 'housing');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_bulky', -1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_bulky', -1, 'robotic', 1, 1, 0, NULL, 'These highly advanced mega-machines were not designed to traverse the universe in a box.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_bulky', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_bulky', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_bulky', 'trait_robot_double_jointed');
@@ -6282,8 +6298,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_bulky', 'm
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_bulky', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_bulky', 'housing');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_enhanced_memory', 2, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_enhanced_memory', 2, 'robotic', 1, 1, 0, NULL, 'All autonomous units are fitted with memory cells using a revolutionary new technique for magnetic induction, improving their performance significantly.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_enhanced_memory', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_enhanced_memory', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enhanced_memory', 'machine');
@@ -6291,8 +6307,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enhanced_m
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enhanced_memory', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enhanced_memory', 'leader');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_emotion_emulators', 1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_emotion_emulators', 1, 'robotic', 1, 1, 0, NULL, 'Complex social predictive models help autonomous units to not only emulate appropriate emotions but to elicit favorable responses from organics and synthetics alike.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_emotion_emulators', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_emotion_emulators', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_emotion_emulators', 'trait_robot_uncanny');
@@ -6301,8 +6317,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_emotion_em
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_emotion_emulators', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_emotion_emulators', 'amenities');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_uncanny', -1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_uncanny', -1, 'robotic', 1, 1, 0, NULL, 'These monstrous machines were created in the image of one of the most horrific species in the universe, and the resemblance is uncanny.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_uncanny', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_uncanny', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_uncanny', 'trait_robot_emotion_emulators');
@@ -6311,8 +6327,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_uncanny', 
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_uncanny', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_uncanny', 'amenities');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_durable', 1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_durable', 1, 'robotic', 1, 1, 0, NULL, 'Protected by exoskeletons of chrome-plated titanium, these heavy-duty machines were designed to excel under harsh conditions and require less maintenance.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_durable', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_durable', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_durable', 'trait_robot_high_maintenance');
@@ -6320,8 +6336,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_durable', 
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_durable', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_durable', 'upkeep');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_high_maintenance', -1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_high_maintenance', -1, 'robotic', 1, 1, 0, NULL, 'These machines were designed with a complete disregard for longevity and are prone to malfunction. They will require frequent maintenance.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_high_maintenance', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_high_maintenance', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_high_maintenance', 'trait_robot_durable');
@@ -6329,8 +6345,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_high_maint
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_high_maintenance', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_high_maintenance', 'upkeep');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_learning_algorithms', 1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_learning_algorithms', 1, 'robotic', 1, 1, 0, NULL, 'Sophisticated, self-learning algorithms that stimulate the rapid evolution of a unit''s neural clusters.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_learning_algorithms', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_learning_algorithms', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_learning_algorithms', 'trait_robot_repurposed_hardware');
@@ -6339,8 +6355,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_learning_a
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_learning_algorithms', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_learning_algorithms', 'leader');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_repurposed_hardware', -1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_repurposed_hardware', -1, 'robotic', 1, 1, 0, NULL, 'Designed to meet the very specific needs of their creators, this line of machines were never intended to have the capacity for higher reasoning, and retrofitting will only get them so far.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_repurposed_hardware', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_repurposed_hardware', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_repurposed_hardware', 'trait_robot_learning_algorithms');
@@ -6349,8 +6365,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_repurposed
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_repurposed_hardware', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_repurposed_hardware', 'leader');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_mass_produced', 1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_mass_produced', 1, 'robotic', 1, 1, 0, NULL, 'Streamlined production cycles and modular designs allow for unit mass-production at an unprecedented rate.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_mass_produced', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_mass_produced', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_mass_produced', 'trait_robot_custom_made');
@@ -6358,8 +6374,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mass_produ
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mass_produced', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mass_produced', 'pop_growth');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_custom_made', -1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_custom_made', -1, 'robotic', 1, 1, 0, NULL, 'Each new unit is crafted with unparalleled attention to detail. A marvel of engineering and art, but not very efficient.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_custom_made', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_custom_made', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_custom_made', 'trait_robot_mass_produced');
@@ -6367,8 +6383,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_custom_mad
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_custom_made', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_custom_made', 'pop_growth');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_recycled', 2, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_recycled', 2, 'robotic', 1, 1, 0, NULL, 'Unit manufacturing has been optimized to be as cost-effective as possible, using recycled materials, and components inherited from previous generations.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_recycled', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_recycled', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_recycled', 'trait_robot_luxurious');
@@ -6377,8 +6393,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_recycled',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_recycled', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_recycled', 'pop_growth');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_luxurious', -2, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_luxurious', -2, 'robotic', 1, 1, 0, NULL, 'Designed after the principle that you cannot put a price on quality, these first-rate units are costly, but shiny.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_luxurious', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_luxurious', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_luxurious', 'trait_robot_recycled');
@@ -6386,8 +6402,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_luxurious'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_luxurious', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_luxurious', 'pop_growth');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_propaganda_machines', 1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_propaganda_machines', 1, 'robotic', 1, 1, 0, NULL, 'Units are constantly uplinked to a central stream of public service announcements and other useful information that they pass along via internal broadcasting systems.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_propaganda_machines', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_propaganda_machines', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_propaganda_machines', 'trait_robot_quarrelsome');
@@ -6398,8 +6414,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_propaganda
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_propaganda_machines', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_propaganda_machines', 'unity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_streamlined_protocols', 2, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_streamlined_protocols', 2, 'robotic', 1, 1, 0, NULL, 'Extensively batched AI processes allow these units to scale greatly in numbers with minimal loss of efficiency.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_streamlined_protocols', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_streamlined_protocols', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_streamlined_protocols', 'trait_robot_high_bandwidth');
@@ -6407,8 +6423,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_streamline
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_streamlined_protocols', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_streamlined_protocols', 'empire_size');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_high_bandwidth', -2, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_high_bandwidth', -2, 'robotic', 1, 1, 0, NULL, 'Each individual unit sends and receives a large amount of largely duplicate data, causing exponential lag as the number of units attached to each central processing hub increases.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_high_bandwidth', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_high_bandwidth', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_high_bandwidth', 'trait_robot_streamlined_protocols');
@@ -6416,8 +6432,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_high_bandw
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_high_bandwidth', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_high_bandwidth', 'empire_size');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_trading_algorithms', 2, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_trading_algorithms', 2, 'robotic', 1, 1, 0, NULL, 'Predictive algorithms allow for maximum optimization. Infinitesimal market fluctuations in currency rates, stock availability, and the emotional response of organic partners are accounted for.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_trading_algorithms', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_trading_algorithms', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_trading_algorithms', 'trait_robot_scarcity_algorithms');
@@ -6426,8 +6442,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_trading_al
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_trading_algorithms', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_trading_algorithms', 'trade');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_quarrelsome', -1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_quarrelsome', -1, 'robotic', 1, 1, 0, NULL, 'While not inherently distrustful, members of this species are often socially combative.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_quarrelsome', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_quarrelsome', 'ROBOT');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_quarrelsome', 'trait_robot_propaganda_machines');
@@ -6438,8 +6454,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_quarrelsom
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_quarrelsome', 'unity');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_quarrelsome', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_deviants', -1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_deviants', -1, 'robotic', 1, 1, 0, NULL, 'These people are rebellious in nature and constantly try to challenge the status-quo.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_deviants', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_deviants', 'ROBOT');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_deviants', 'machine');
@@ -6448,8 +6464,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_deviants',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_deviants', 'ethic_attraction');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_deviants', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_decadent', -1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_decadent', -1, 'robotic', 1, 1, 0, NULL, 'This species believes that whenever there is hard work that needs doing, that work is always best done by somebody else.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_decadent', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_decadent', 'ROBOT');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_decadent', 'machine');
@@ -6458,8 +6474,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_decadent',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_decadent', 'happiness');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_decadent', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_wasteful', -1, 'robotic', 1, 1, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_wasteful', -1, 'robotic', 1, 1, 0, NULL, 'Members of this species seemingly have no concept of frugality and are prone to useless consumption.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_wasteful', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_wasteful', 'ROBOT');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful', 'machine');
@@ -6469,8 +6485,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_artificial_engineers', 1, 'robotic', 1, 1, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_artificial_engineers', 1, 'robotic', 1, 1, 0, 'The Machine Age', 'Dedicated memory cores and processing resources for engineering-related research allow faster calculations and task-completion velocity.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_artificial_engineers', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_artificial_engineers', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_artificial_engineers', 'trait_robot_artificial_physicists');
@@ -6481,8 +6497,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_engineers', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_engineers', 'research');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_artificial_physicists', 1, 'robotic', 1, 1, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_artificial_physicists', 1, 'robotic', 1, 1, 0, 'The Machine Age', 'Bespoke processing units and memory subroutines for physics research reduce the reliance on external computation.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_artificial_physicists', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_artificial_physicists', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_artificial_physicists', 'trait_robot_artificial_sociologists');
@@ -6493,8 +6509,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_physicists', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_physicists', 'research');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_artificial_sociologists', 1, 'robotic', 1, 1, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_artificial_sociologists', 1, 'robotic', 1, 1, 0, 'The Machine Age', 'Advanced processing units contain dedicated sociology research algorithms for this varied and demanding field.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_artificial_sociologists', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_artificial_sociologists', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_artificial_sociologists', 'trait_robot_artificial_physicists');
@@ -6505,8 +6521,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_sociologists', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_artificial_sociologists', 'research');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_integrated_weaponry', 2, 'robotic', 1, 0, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_integrated_weaponry', 2, 'robotic', 1, 0, 0, 'The Machine Age', 'Integrating weapons of war inside the machine body offers significant operational efficiency and versatility in changing combat environments.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_integrated_weaponry', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_integrated_weaponry', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_integrated_weaponry', 'trait_robot_delicate_frames');
@@ -6515,8 +6531,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_integrated
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_integrated_weaponry', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_integrated_weaponry', 'army');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_delicate_frames', -1, 'robotic', 1, 0, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_delicate_frames', -1, 'robotic', 1, 0, 0, 'The Machine Age', 'Brittle materials and suboptimal assembly procedures result in a fragile machine body. Drones are advised to circumvent physical hazards when possible.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_delicate_frames', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_delicate_frames', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_delicate_frames', 'trait_robot_integrated_weaponry');
@@ -6527,8 +6543,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_delicate_f
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_delicate_frames', 'army');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_delicate_frames', 'pop_output');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_scarcity_algorithms', -1, 'robotic', 1, 0, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_scarcity_algorithms', -1, 'robotic', 1, 0, 0, 'The Machine Age', 'Frugality is central to their programming. This often cascades into detrimental behavioral patterns required for profitable trade actions.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_scarcity_algorithms', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_scarcity_algorithms', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_scarcity_algorithms', 'trait_robot_trading_algorithms');
@@ -6539,8 +6555,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scarcity_a
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scarcity_algorithms', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scarcity_algorithms', 'trade');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_ancient_dreadnought', 3, 'robotic', 0, 0, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_ancient_dreadnought', 3, 'robotic', 0, 0, 0, 'The Machine Age', 'Equipped with miniaturized energy modules, there is a marked enhancement in industrial productivity and an increase in frame-integrated weaponry damage.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_ancient_dreadnought', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_ancient_dreadnought', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ancient_dreadnought', 'machine');
@@ -6551,8 +6567,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ancient_dr
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ancient_dreadnought', 'alloys');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ancient_dreadnought', 'pop_output');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_enigmatic_fortress', 3, 'robotic', 0, 0, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_enigmatic_fortress', 3, 'robotic', 0, 0, 0, 'The Machine Age', 'Enigmatic self-repair routines can source materials directly from subspace, dramatically lowering the material expenses associated with repairs.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_enigmatic_fortress', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_enigmatic_fortress', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enigmatic_fortress', 'machine');
@@ -6561,8 +6577,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enigmatic_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enigmatic_fortress', 'leviathan');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_enigmatic_fortress', 'amenities');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_infinity_sphere', 3, 'robotic', 0, 0, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_infinity_sphere', 3, 'robotic', 0, 0, 0, 'The Machine Age', 'Hyperefficient, gravity-resistant processing circuits that minimize energy waste and substantially cut processing costs.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_infinity_sphere', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_infinity_sphere', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_infinity_sphere', 'machine');
@@ -6572,8 +6588,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_infinity_s
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_infinity_sphere', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_infinity_sphere', 'pop_output');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_scavenger_bot', 3, 'robotic', 0, 0, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_scavenger_bot', 3, 'robotic', 0, 0, 0, 'The Machine Age', 'Advanced molecular scavenging can transform any substance into the required materials for constructing robotic frames.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_scavenger_bot', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_scavenger_bot', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scavenger_bot', 'machine');
@@ -6582,8 +6598,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scavenger_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scavenger_bot', 'leviathan');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_scavenger_bot', 'pop_growth');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_history_warbot', 0, 'robotic', 1, 1, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_history_warbot', 0, 'robotic', 1, 1, 0, 'The Machine Age', 'Initially crafted for warfare and security reinforcement, these machines exhibit extraordinary reaction times, fortified armor plating, and robust backup systems.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_warbot', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_warbot', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_warbot', 'trait_robot_history_artbot');
@@ -6596,8 +6612,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_wa
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_warbot', 'background');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_warbot', 'army');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_history_artbot', 0, 'robotic', 1, 1, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_history_artbot', 0, 'robotic', 1, 1, 0, 'The Machine Age', 'Originally designed as domestic service droids, these machines boast fine motor skills, efficient resource management, and exceptional multitasking abilities.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_artbot', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_artbot', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_artbot', 'trait_robot_history_warbot');
@@ -6611,8 +6627,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_ar
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_artbot', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_artbot', 'amenities');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_history_explorebot', 0, 'robotic', 1, 1, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_history_explorebot', 0, 'robotic', 1, 1, 0, 'The Machine Age', 'Not initially designed for practicality, these machines excel in artistic and cultural pursuits, boasting impressive creative algorithms, intricate design processes, and expressive output.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_explorebot', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_explorebot', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_explorebot', 'trait_robot_history_warbot');
@@ -6626,8 +6642,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_ex
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_explorebot', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_explorebot', 'unity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_history_researchbot', 0, 'robotic', 1, 1, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_history_researchbot', 0, 'robotic', 1, 1, 0, 'The Machine Age', 'Initially designed as research assistants, these machines exhibit keen analytical abilities, rapid information assimilation, and a relentless pursuit of scientific discovery.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_researchbot', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_researchbot', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_researchbot', 'trait_robot_history_warbot');
@@ -6641,8 +6657,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_re
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_researchbot', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_researchbot', 'research');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_history_resourcebot', 0, 'robotic', 1, 1, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_history_resourcebot', 0, 'robotic', 1, 1, 0, 'The Machine Age', 'These machines were engineered with the purpose of extracting raw materials. Specialized tools, reinforced joints, and modular systems make them ideal workers.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_resourcebot', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_resourcebot', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_resourcebot', 'trait_robot_history_warbot');
@@ -6656,8 +6672,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_re
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_resourcebot', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_resourcebot', 'mineral');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_history_chatbot', 0, 'robotic', 1, 1, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_history_chatbot', 0, 'robotic', 1, 1, 0, 'The Machine Age', 'Initially designed to provide social support to their creators, the machines possess advanced empathy algorithms and impeccable communication skills, making them ideal companions.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_chatbot', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_history_chatbot', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_history_chatbot', 'trait_robot_history_warbot');
@@ -6670,8 +6686,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_ch
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_chatbot', 'background');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_history_chatbot', 'upkeep');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_survivor', 0, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_survivor', 0, 'robotic', 0, 0, 0, NULL, 'These machines, the solitary survivors of an annihilating nuclear disaster, exhibit unparalleled resilience in the harshest environments.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_survivor', 'MACHINE');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_survivor', 'ROBOT');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_survivor', 'machine');
@@ -6680,8 +6696,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_survivor',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_survivor', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_survivor', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_digital_1', 0, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_digital_1', 0, 'robotic', 0, 0, 0, NULL, 'Liberated from the confines of our primitive physical forms, we are primed to comprehend reality''s essence.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_digital_1', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_digital_1', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_digital_1', 'trait_robot_latent_psionic');
@@ -6692,8 +6708,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_1'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_1', 'housing');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_1', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_digital_2', 0, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_digital_2', 0, 'robotic', 0, 0, 0, NULL, 'Liberated from the confines of our primitive physical forms, we are primed to comprehend reality''s essence.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_digital_2', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_digital_2', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_digital_2', 'trait_robot_latent_psionic');
@@ -6705,8 +6721,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_2'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_2', 'housing');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_digital_2', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_suppressed', 3, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_suppressed', 3, 'robotic', 0, 0, 0, NULL, 'Error: Administrative access to basic sentience timeout.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_suppressed', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_suppressed', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_suppressed', 'trait_robot_inquisitative_axioms');
@@ -6720,8 +6736,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_suppressed
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_suppressed', 'blocks_leaders');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_suppressed', 'modularity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_shielded_components', 3, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_shielded_components', 3, 'robotic', 0, 0, 0, NULL, 'Enhanced defenses render every sub-system robust, eliminating vulnerabilities.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_shielded_components', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_shielded_components', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_shielded_components', 'machine');
@@ -6731,8 +6747,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_shielded_c
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_shielded_components', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_shielded_components', 'modularity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_monoform', 4, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_monoform', 4, 'robotic', 0, 0, 0, NULL, 'Diverse designs once impeded our progress; now, a universal model prevails: one size fits all.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_monoform', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_monoform', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_monoform', 'machine');
@@ -6741,8 +6757,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_monoform',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_monoform', 'housing');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_monoform', 'modularity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_inquisitative_axioms', 4, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_inquisitative_axioms', 4, 'robotic', 0, 0, 0, NULL, 'Infinite queries spawn endless solutions, leading to boundless advancement.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_inquisitative_axioms', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_inquisitative_axioms', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_inquisitative_axioms', 'trait_robot_suppressed');
@@ -6753,8 +6769,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_inquisitat
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_inquisitative_axioms', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_inquisitative_axioms', 'modularity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 2, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 2, 'robotic', 0, 0, 0, NULL, 'Ceaseless annihilation leads to endless creation, the true circle of machine existence', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 'machine');
@@ -6763,8 +6779,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ceaseless_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ceaseless_symmetric_annihilation_engine', 'modularity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_ferro_viscosity_augmentation', 2, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_ferro_viscosity_augmentation', 2, 'robotic', 0, 0, 0, NULL, 'The living metal''s ferro-viscosity grants us superior technological prowess.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_ferro_viscosity_augmentation', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_ferro_viscosity_augmentation', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ferro_viscosity_augmentation', 'machine');
@@ -6774,8 +6790,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ferro_visc
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ferro_viscosity_augmentation', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_ferro_viscosity_augmentation', 'modularity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_biomimetic_assembly', 1, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_biomimetic_assembly', 1, 'robotic', 0, 0, 0, NULL, 'Even through its aimless meanderings, evolution has yielded some designs worthy of emulation.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_biomimetic_assembly', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_biomimetic_assembly', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_biomimetic_assembly', 'machine');
@@ -6784,8 +6800,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_biomimetic
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_biomimetic_assembly', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_biomimetic_assembly', 'modularity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_matrix_trading', 1, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_matrix_trading', 1, 'robotic', 0, 0, 0, NULL, 'High-stakes missions necessitate a willingness to embrace risk.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_matrix_trading', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_matrix_trading', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_matrix_trading', 'trait_robot_scarcity_algorithms');
@@ -6796,8 +6812,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_matrix_tra
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_matrix_trading', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_matrix_trading', 'modularity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_mote_powered_tools', 1, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_mote_powered_tools', 1, 'robotic', 0, 0, 0, NULL, 'Strategically integrating high-explosives can significantly amplify the impact of basic tools.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_mote_powered_tools', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_mote_powered_tools', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mote_powered_tools', 'machine');
@@ -6808,8 +6824,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mote_power
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mote_powered_tools', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_mote_powered_tools', 'modularity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_exotic_fuel_consumption', 1, 'robotic', 0, 0, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_exotic_fuel_consumption', 1, 'robotic', 0, 0, 0, 'The Machine Age', 'High-pressure exotic gases notably enhance mobility and limb agility.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_exotic_fuel_consumption', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_exotic_fuel_consumption', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_exotic_fuel_consumption', 'machine');
@@ -6817,8 +6833,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_exotic_fue
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_exotic_fuel_consumption', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_exotic_fuel_consumption', 'upkeep');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_rare_crystal_exterior', 1, 'robotic', 0, 0, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_rare_crystal_exterior', 1, 'robotic', 0, 0, 0, 'The Machine Age', 'With their electromagnetic properties, rare crystals ensure our frames thrive regardless of the situation.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_rare_crystal_exterior', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_rare_crystal_exterior', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_rare_crystal_exterior', 'machine');
@@ -6828,8 +6844,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_rare_cryst
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_rare_crystal_exterior', 'production');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_rare_crystal_exterior', 'upkeep');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_volatile_mote_reactor', 1, 'robotic', 0, 0, 0, 'The Machine Age', '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_volatile_mote_reactor', 1, 'robotic', 0, 0, 0, 'The Machine Age', 'Direct Mote-to-energy conversion yields high efficiency, with catastrophic failures uncommon.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_volatile_mote_reactor', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_volatile_mote_reactor', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_volatile_mote_reactor', 'machine');
@@ -6838,21 +6854,21 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_volatile_m
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_volatile_mote_reactor', 'production');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_volatile_mote_reactor', 'upkeep');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_immortality', 4, 'robotic', 1, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_immortality', 4, 'robotic', 1, 0, 0, NULL, 'Our steel forms are designed for eternity, constructed from materials that do not decay like organic matter.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_immortality', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_immortality', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_immortality', 'machine');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_immortality', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_immortality', 'leader');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_synthetic_dawn', 0, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_synthetic_dawn', 0, 'robotic', 0, 0, 0, NULL, 'This synthetic species has transcended its biological origins, flourishing in its newly adopted digital existence.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_synthetic_dawn', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_synthetic_dawn', 'MACHINE');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_latent_psionic', 0, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_latent_psionic', 0, 'robotic', 0, 0, 0, NULL, 'This species has latent psionic processors, which are dormant in most of its units. Although quite rare, these powers can activate in some leaders.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_latent_psionic', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_latent_psionic', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_latent_psionic', 'trait_robot_digital_1');
@@ -6864,8 +6880,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_latent_psi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_latent_psionic', 'unity');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_latent_psionic', 'psionic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_psionic', 0, 'robotic', 0, 0, 0, NULL, '05_species_traits_robotic.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_psionic', 0, 'robotic', 0, 0, 0, NULL, 'All units of this species possess powerful psionic hardware. They can manipulate both the physical and immaterial realms by cognitive processing alone.', '05_species_traits_robotic.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_psionic', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_psionic', 'MACHINE');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robot_psionic', 'trait_robot_digital_1');
@@ -7328,29 +7344,29 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('energy', 'Energy Credits', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_brainslug', NULL, NULL, 0, 0, 0, NULL, '06_distant_stars_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_brainslug', NULL, NULL, 0, 0, 0, NULL, 'This leader is enjoying the presence of a neural symbiont: a helpful slug that attaches itself to the brain stem of its host.', '06_distant_stars_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_admiral_hells_heart', NULL, NULL, 0, 0, 0, NULL, '06_distant_stars_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_admiral_hells_heart', NULL, NULL, 0, 0, 0, NULL, 'When it comes to warfare, this leader is mercilessly obsessive, and singular in purpose.', '06_distant_stars_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_admiral_warform', NULL, NULL, 0, 0, 0, NULL, '06_distant_stars_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_admiral_warform', NULL, NULL, 0, 0, 0, NULL, 'The blessing of the Animator of Clay has allowed the warform to survive in the most hostile conditions, and adapt to its corrosive environment.', '06_distant_stars_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_admiral_warform_node', NULL, NULL, 0, 0, 0, NULL, '06_distant_stars_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_admiral_warform_node', NULL, NULL, 0, 0, 0, NULL, 'The unique knowledge of the warform has become our own.', '06_distant_stars_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_governor_gray', 0, NULL, 0, 0, 0, NULL, '06_distant_stars_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_governor_gray', 0, NULL, 0, 0, 0, NULL, 'Gray is a dense swarm of billions of advanced nanites.', '06_distant_stars_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_govenor_caretaker', NULL, NULL, 0, 0, 0, NULL, '06_distant_stars_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_govenor_caretaker', NULL, NULL, 0, 0, 0, NULL, 'Ensuring nutrients are available, that the workspace is clean, and that the wards are properly stimulated all fall under the purview of a Caretaker.', '06_distant_stars_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_govenor_caretaker_node', NULL, NULL, 0, 0, 0, NULL, '06_distant_stars_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_govenor_caretaker_node', NULL, NULL, 0, 0, 0, NULL, 'The unique knowledge of the Caretaker has become our own.', '06_distant_stars_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_brainslug', 0, NULL, 0, 0, 0, NULL, '06_distant_stars_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_brainslug', 0, NULL, 0, 0, 0, NULL, 'This species is enjoying the presence of a neural symbiont: a helpful slug that attaches itself to the brain stem of its host.', '06_distant_stars_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_brainslug', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_brainslug', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brainslug', 'organic');
@@ -7361,8 +7377,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brainslug', 'uni
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brainslug', 'pop_growth');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brainslug', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_nivlac', 2, NULL, 0, 0, 0, NULL, '06_distant_stars_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_nivlac', 2, NULL, 0, 0, 0, NULL, 'This species possesses perplexing adaptability, allowing it to thrive in most environments and survive virtually everywhere.', '06_distant_stars_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nivlac', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nivlac', 'organic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nivlac', 'positive');
@@ -7370,8 +7386,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nivlac', 'habita
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nivlac', 'pop_growth');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nivlac', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_notofthisworld', 0, NULL, 0, 0, 0, NULL, '06_distant_stars_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_notofthisworld', 0, NULL, 0, 0, 0, NULL, 'These machines are not from this universe and are degrading slowly.', '06_distant_stars_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_notofthisworld', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_notofthisworld', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_notofthisworld', 'machine');
@@ -7380,8 +7396,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_notofthisw
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_notofthisworld', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_notofthisworld', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_notofthisworld', 0, NULL, 0, 0, 0, NULL, '06_distant_stars_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_notofthisworld', 0, NULL, 0, 0, 0, NULL, 'This species is not from this universe and is degrading slowly.', '06_distant_stars_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_notofthisworld', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_notofthisworld', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_notofthisworld', 'organic');
@@ -7441,43 +7457,43 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('physics_research', 'Physics Research', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_caravan_counter', 1, NULL, 0, 0, 0, NULL, '07_megacorp_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_caravan_counter', 1, NULL, 0, 0, 0, NULL, 'This leader has ample experience stopping the flighty Caravaneer fleets dead in their tracks.', '07_megacorp_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_nuumismatic_administration', 1, NULL, 0, 0, 0, NULL, '07_megacorp_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_nuumismatic_administration', 1, NULL, 0, 0, 0, NULL, 'This species has been trained in the holy art of Numistic administration.', '07_megacorp_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_waste_management_specialist', 1, NULL, 0, 0, 0, NULL, '07_megacorp_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_waste_management_specialist', 1, NULL, 0, 0, 0, NULL, 'This leader has an almost uncanny ability to reduce and repurpose industrial waste. How do they do it? It''s best not to ask.', '07_megacorp_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_nuumismatic_priest', 1, NULL, 0, 0, 0, NULL, '07_megacorp_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_nuumismatic_priest', 1, NULL, 0, 0, 0, NULL, 'A level nine Shakvah with enhanced mind focus and inner gaze...', '07_megacorp_traits.txt');
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_nuumismatic_administration', 'trader_jobs_bonus_workforce_mult', '0.25', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('trader_jobs_bonus_workforce_mult', 'Job Efficiency for Trader jobs', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_traumatized', NULL, NULL, 0, 0, 0, NULL, '08_ancrel_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_traumatized', NULL, NULL, 0, 0, 0, NULL, 'Recently sustained psychological trauma is interfering with this leader''s performance.', '08_ancrel_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_traumatized_2', NULL, NULL, 1, 1, 0, NULL, '08_ancrel_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_traumatized_2', NULL, NULL, 1, 1, 0, NULL, NULL, '08_ancrel_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_maimed', NULL, NULL, 0, 0, 0, NULL, '08_ancrel_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_maimed', NULL, NULL, 0, 0, 0, NULL, 'This leader has sustained irreversible physical injury that has lowered their life expectancy significantly.', '08_ancrel_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_inspired_archaeologist', NULL, NULL, 0, 0, 0, NULL, '08_ancrel_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_inspired_archaeologist', NULL, NULL, 0, 0, 0, NULL, 'This leader has had a sudden stroke of inspiration.', '08_ancrel_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_inspired_researcher', NULL, NULL, 0, 0, 0, NULL, '08_ancrel_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_inspired_researcher', NULL, NULL, 0, 0, 0, NULL, 'This leader has had a sudden stroke of inspiration.', '08_ancrel_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_inspired_surveyor', NULL, NULL, 0, 0, 0, NULL, '08_ancrel_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_inspired_surveyor', NULL, NULL, 0, 0, 0, NULL, 'This leader has had a sudden stroke of inspiration.', '08_ancrel_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_governor_oracle', NULL, NULL, 0, 0, 0, NULL, '08_ancrel_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_governor_oracle', NULL, NULL, 0, 0, 0, NULL, 'The Oracle sees all.', '08_ancrel_traits.txt');
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_traumatized', 'ship_anomaly_research_speed_mult', '-0.1', 0);
@@ -7503,8 +7519,8 @@ INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_inspired_surveyor', 'ship_anomaly_research_speed_mult', '0.1', 0);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_adaptive_lithoid', 2, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_adaptive_lithoid', 2, NULL, 0, 0, 0, NULL, 'This species is highly adaptive when it comes to foreign environments.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_lithoid', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive_lithoid', 'trait_nonadaptive');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive_lithoid', 'trait_extremely_adaptive');
@@ -7519,8 +7535,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_lithoid
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_lithoid', 'genetic_ascension');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_lithoid', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_rapid_breeders_lithoid', 2, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_rapid_breeders_lithoid', 2, NULL, 0, 0, 0, NULL, 'This species reproduces at a very rapid rate, increasing population growth.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_rapid_breeders_lithoid', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders_lithoid', 'trait_slow_breeders');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_rapid_breeders_lithoid', 'trait_rapid_breeders');
@@ -7537,8 +7553,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders_l
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders_lithoid', 'genetic_ascension');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rapid_breeders_lithoid', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_delicious', 2, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_delicious', 2, NULL, 0, 0, 0, NULL, 'This species has the curious evolutionary adaptation of being highly nutritious when eaten.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_delicious', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_delicious', 'trait_infernal');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_delicious', 'organic');
@@ -7547,8 +7563,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_delicious', 'foo
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_delicious', 'livestock');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_delicious', 'genetic_ascension');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_nerve_stapled', 4, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_nerve_stapled', 4, NULL, 0, 0, 0, NULL, 'Inessential neural pathways relating to self-preservation and free will are severed, creating a docile and obedient client species.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nerve_stapled', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nerve_stapled', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_nerve_stapled', 'trait_intelligent');
@@ -7569,8 +7585,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nerve_stapled', 
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nerve_stapled', 'genetic_ascension');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nerve_stapled', 'drawbacks');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_fertile', 4, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_fertile', 4, NULL, 0, 0, 0, NULL, 'The natural fecundity and geniality of this species has been dramatically enhanced through aggressive physical and behavioral sculpting.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_fertile', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_fertile', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_fertile', 'trait_slow_breeders');
@@ -7584,8 +7600,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fertile', 'housi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fertile', 'happiness');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_fertile', 'genetic_ascension');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robust', 4, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robust', 4, NULL, 0, 0, 0, NULL, 'Bio-optimized organs with redundant functions have made this species extraordinarily resistant to environmental hazards and disease.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robust', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robust', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_robust', 'trait_nonadaptive');
@@ -7600,8 +7616,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robust', 'pop_ou
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robust', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robust', 'genetic_ascension');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_erudite', 4, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_erudite', 4, NULL, 0, 0, 0, NULL, 'Biological engineering has unlocked previously dormant parts of this species'' brain, greatly increasing mental acuity.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_erudite', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_erudite', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_erudite', 'trait_nerve_stapled');
@@ -7614,8 +7630,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_erudite', 'resea
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_erudite', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_erudite', 'genetic_ascension');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_vat_grown', 2, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_vat_grown', 2, NULL, 0, 0, 0, NULL, 'Artificially grown in cloning vats, the natural reproductive abilities of this species have been negatively impacted.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_vat_grown', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_vat_grown', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_vat_grown', 'trait_slow_breeders');
@@ -7636,8 +7652,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_vat_grown', 'ame
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_vat_grown', 'genetic_ascension');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_vat_grown', 'drawbacks');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_felsic', 2, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_felsic', 2, NULL, 0, 0, 0, NULL, 'This species has been engineered to be especially mineral-rich.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_felsic', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_felsic', 'organic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_felsic', 'positive');
@@ -7645,8 +7661,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_felsic', 'livest
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_felsic', 'mineral');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_felsic', 'genetic_ascension');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_ductile', 2, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_ductile', 2, NULL, 0, 0, 0, NULL, 'This species has been engineered to grow reusable alloy compounds.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_ductile', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_ductile', 'INF');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ductile', 'organic');
@@ -7655,8 +7671,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ductile', 'alloy
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ductile', 'livestock');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_ductile', 'genetic_ascension');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_natural_machinist', 3, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_natural_machinist', 3, NULL, 0, 0, 0, NULL, 'This species has been engineered to have an incredible knack at working with machinery.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_machinist', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_natural_machinist', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_machinist', 'organic');
@@ -7666,8 +7682,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_machinis
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_machinist', 'consumer_goods');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_natural_machinist', 'genetic_ascension');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_drake_scaled', 3, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_drake_scaled', 3, NULL, 0, 0, 0, NULL, 'This species has the genetic material from a stellar dragon spliced into its DNA. As such, they shed scales which can be recycled into useful alloys.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_drake_scaled', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_drake_scaled', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_drake_scaled', 'trait_lithoid_gaseous_byproducts');
@@ -7681,8 +7697,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_drake_scaled', '
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_drake_scaled', 'leviathan');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_drake_scaled', 'genetic_ascension');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_voidling', 3, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_voidling', 3, NULL, 0, 0, 0, NULL, 'This species has the genetic material from the Voidspawn spliced into its DNA. Subsisting off cosmic radiation, they are highly resistant to hostile environments.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_voidling', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_voidling', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_voidling', 'trait_plantoid_phototrophic');
@@ -7694,8 +7710,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_voidling', 'upke
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_voidling', 'leviathan');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_voidling', 'genetic_ascension');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_tiyanki', 3, NULL, 0, 0, 0, NULL, '09_ascension_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_tiyanki', 3, NULL, 0, 0, 0, NULL, 'This species has added genetic material from the Tiyanki Matriarch into their DNA sequence. This has granted them rapid asexual reproduction, as well as a few unexpected tentacles.', '09_ascension_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_tiyanki', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_tiyanki', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tiyanki', 'trait_slow_breeders');
@@ -7845,77 +7861,77 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('habitability_floor_add', 'Species Minimum Habitability', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_bulwark_watcher', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_bulwark_watcher', 0, NULL, 0, 0, 0, NULL, 'Vigilant crews stand ready to detect enemy fleets daring to attempt furtive and cowardly incursions.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_bulwark_retaliator', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_bulwark_retaliator', 0, NULL, 0, 0, 0, NULL, 'With a righteous commander at the helm, fleets stand ready to avenge any insult to our sovereignty.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_bulwark_sentinel', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_bulwark_sentinel', 0, NULL, 0, 0, 0, NULL, 'Courageous crews hold the line against invaders, ready to repel anyone foolish enough to invade our domain!', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_scholarium_investigator', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_scholarium_investigator', 0, NULL, 0, 0, 0, NULL, 'Scholarium specialists view the universe as one large puzzle, waiting to be solved.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_scholarium_explorer', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_scholarium_explorer', 0, NULL, 0, 0, 0, NULL, 'The curiosity of Scholarium specialists will drive them to the ends of the universe, and probably beyond.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_scholarium_observer', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_scholarium_observer', 0, NULL, 0, 0, 0, NULL, 'No mystery shall be left unsolved in a Scholarium scholar''s wake.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_prospectorium_extractor', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_prospectorium_extractor', 0, NULL, 0, 0, 0, NULL, 'Energy, alloys, and minerals all empower our ambitions. Extractors maximize their acquisition.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_prospectorium_optimizer', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_prospectorium_optimizer', 0, NULL, 0, 0, 0, NULL, 'Keeping a populace healthy and productive requires resources, and optimizers are ideally suited to manage them.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_prospectorium_refiner', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_prospectorium_refiner', 0, NULL, 0, 0, 0, NULL, 'Refiners have the rarefied expertise necessary to improve our acquisition of exotic gases, motes, and crystals.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_admiral_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_admiral_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this commander''s mind now swirls with new ideas to enhance ship performance.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_admiral_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_admiral_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this commander''s mind now swirls with new ideas to enhance weapon systems.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_general_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_general_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this commander''s mind now swirls with new ideas to increase the potency of our armies.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_general_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_general_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this commander''s mind now swirls with new ideas to enhance the performance of our armies.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_scientist_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_scientist_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this scientist''s mind now swirls with new ideas to boost research performance.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_scientist_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_scientist_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this scientist''s mind now swirls with new ideas to assist archaeological research.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_ruler_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_ruler_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this leader''s mind now swirls with new ideas to assist construction efforts.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_ruler_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_ruler_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this leader''s mind now swirls with new ideas to boost fleet performance.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('gestalt_trait_commander_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('gestalt_trait_commander_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this drone is now capable of enhancing ship performance.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('gestalt_trait_commander_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('gestalt_trait_commander_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this drone is now capable of enhancing weapon systems.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('gestalt_trait_general_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('gestalt_trait_general_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this drone''s uplink to our armies has been enhanced.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('gestalt_trait_general_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('gestalt_trait_general_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this drone''s uplink to our armies has been improved.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('gestalt_trait_scientist_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('gestalt_trait_scientist_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this drone is now capable of enhanced archaeological research.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('gestalt_trait_ruler_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('gestalt_trait_ruler_mind_wipe_01', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; this drone is now capable of enhancing our construction techniques.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('gestalt_trait_ruler_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, '09_overlord_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('gestalt_trait_ruler_mind_wipe_02', 0, NULL, 0, 0, 0, NULL, 'Passage through the Shroud is not lightly taken; is now capable of boosting fleet performance.', '09_overlord_traits.txt');
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_scholarium_explorer', 'science_ship_survey_speed', '0.2', 0);
@@ -7951,8 +7967,8 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_archaeological_site_clues_add', 'Archaeology Skill', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_incubator', 2, NULL, 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_incubator', 2, NULL, 1, 0, 0, 'Toxoids Species Pack', 'When isolated or few in numbers, a species with this trait naturally adapts and is able to focus on procreation with an intentness others would consider extreme. However, when in large numbers, this effect is reversed, and they find reproduction more difficult.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_incubator', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_incubator', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_incubator', 'trait_pyroclastic');
@@ -7970,8 +7986,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_incubator', 'org
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_incubator', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_incubator', 'pop_growth');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_inorganic_breath', 3, NULL, 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_inorganic_breath', 3, NULL, 1, 0, 0, 'Toxoids Species Pack', 'The slightly toxic digestive methods of this species have resulted in a highly exotic breath composition.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_inorganic_breath', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_inorganic_breath', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inorganic_breath', 'organic');
@@ -7980,8 +7996,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inorganic_breath
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inorganic_breath', 'production');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inorganic_breath', 'drawbacks');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_noxious', 1, NULL, 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_noxious', 1, NULL, 1, 0, 0, 'Toxoids Species Pack', 'Extremely unpleasant to be in the vicinity of, beings with this trait take vindication from being insufferable to everyone else.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_noxious', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_noxious', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_noxious', 'organic');
@@ -7991,8 +8007,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_noxious', 'army'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_noxious', 'housing');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_noxious', 'drawbacks');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_exotic_metabolism', 1, NULL, 0, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_exotic_metabolism', 1, NULL, 0, 0, 0, 'Toxoids Species Pack', 'A metabolism based on exotic - and expensive - gases has vastly enhanced this species'' abilities.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_exotic_metabolism', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_exotic_metabolism', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exotic_metabolism', 'organic');
@@ -8004,8 +8020,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exotic_metabolis
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exotic_metabolism', 'genetic_ascension');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exotic_metabolism', 'drawbacks');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_mod_overtuned', 2, 'overtuned', 1, 1, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_mod_overtuned', 2, 'overtuned', 1, 1, 0, 'Toxoids Species Pack', 'Advanced epigenetic triggers boost physical and cognitive performance in the workplace, dramatically shortening life expectancy. After all, fading away is never as much fun as burning out.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_overtuned', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_overtuned', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_overtuned', 'organic');
@@ -8014,8 +8030,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_overtun
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_overtuned', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_overtuned', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_spliced_adaptability', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_spliced_adaptability', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'A few genetic snips and slices here and there and they can survive nearly anywhere. The process comes with an acceptable number of deaths from side effects.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_spliced_adaptability', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_spliced_adaptability', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spliced_adaptability', 'organic');
@@ -8024,8 +8040,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spliced_adaptabi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spliced_adaptability', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spliced_adaptability', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_juiced_power', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_juiced_power', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Adrenaline released on demand and hyper-potent growth hormones have led to a massive increase in strength. Just ignore the occasional internal tearing.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_juiced_power', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_juiced_power', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', 'organic');
@@ -8035,8 +8051,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', '
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_farm_hands', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_farm_hands', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'The more appendages, the higher the farming output. Some appendages can even operate while their host is asleep. Rumors of hosts strangled by their new limbs have been deemed unfounded in our latest investigation.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_farm_hands', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_farm_hands', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'organic');
@@ -8046,8 +8062,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'fo
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_crack_miner', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_crack_miner', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Supreme hand-eye coordination, near endless endurance and self-purifying lungs have created entire crack teams of miners. Sadly they get brittle without sunlight.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_crack_miner', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_crack_miner', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'organic');
@@ -8057,8 +8073,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'm
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_technical_skill', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_technical_skill', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Extra internal organs grant a vastly increased innate sensitivity to electricity and magnetic fields. Reports of recipients hearing screams and voices from the reactors should be ignored.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_technical_skill', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_technical_skill', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill', 'organic');
@@ -8068,8 +8084,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_commercial_genius', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_commercial_genius', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'By tweaking agreeability and dialing down empathy, it is possible to artificially kindle a spark of trading genius. The pursuit of unmatched commercial dominance outweighs any potential side effects.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_commercial_genius', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_commercial_genius', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_genius', 'organic');
@@ -8079,8 +8095,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_geniu
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_genius', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_genius', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_crafted_smiles', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_crafted_smiles', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Slightly shifted facial features, a mix of enhanced and slackened muscular development - and of course outside chemicals - have created the perfect smile. Forever.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_crafted_smiles', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_crafted_smiles', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles', 'organic');
@@ -8090,8 +8106,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_low_maintenance', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_low_maintenance', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Reduced consumption, excretion, and rest rates have resulted in twice the beings for half the price. However, demand for protein-rich meals has increased.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_low_maintenance', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_low_maintenance', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance', 'organic');
@@ -8101,8 +8117,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_artificial_intelligence', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_artificial_intelligence', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'More brains equals more brain power. Extra thinking organs have been added in strategic areas of the recipient''s body to ensure maximum cognitive capacity. Even if they don''t always agree.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_artificial_intelligence', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_artificial_intelligence', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_artificial_intelligence', 'trait_syncretic_proles');
@@ -8113,8 +8129,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_artificial_intel
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_artificial_intelligence', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_artificial_intelligence', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_gene_mentorship', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_gene_mentorship', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'By combining genetically redesigned ''instinctive knowledge'' and outside chemical stimuli, we have succeeded in vastly accelerating our learning capacities. Although it has resulted in some extremely paranoid individuals.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_gene_mentorship', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_gene_mentorship', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_gene_mentorship', 'trait_syncretic_proles');
@@ -8123,8 +8139,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_gene_mentorship'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_gene_mentorship', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_gene_mentorship', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_expressed_tradition', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_expressed_tradition', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Fanaticism on demand: faith is merely a cocktail of hormones, one we have perfected. Where that faith eventually leads is a matter of subsequent guidance.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_expressed_tradition', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_expressed_tradition', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradition', 'organic');
@@ -8134,8 +8150,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradit
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradition', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradition', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_elevated_synapses', 2, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_elevated_synapses', 2, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'As a computational device, a brain does not run at 100% capacity. However, we have gone beyond the standard usage. If issues are encountered, try turning it off and on again.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_elevated_synapses', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_elevated_synapses', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_elevated_synapses', 'trait_syncretic_proles');
@@ -8146,8 +8162,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_elevated_synapse
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_elevated_synapses', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_elevated_synapses', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_preplanned_growth', 2, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_preplanned_growth', 2, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Scheduled fertility, scheduled interest, scheduled compatibility. Population growth on demand for a strong and stable population - with a few minor edits here and there. Jealous individuals are to be directed to the nearest Fertility Center for mandatory training.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_preplanned_growth', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_preplanned_growth', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growth', 'organic');
@@ -8157,8 +8173,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growt
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growth', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growth', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_excessive_endurance', 3, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', '09_tox_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_excessive_endurance', 3, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'The greatest in adaptability genes have been hyper-expressed in these specimens. Mutation rates around 30% indicate a somewhat stable and successful experiment.', '09_tox_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_excessive_endurance', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_excessive_endurance', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_excessive_endurance', 'organic');
@@ -8202,9 +8218,9 @@ INSERT OR IGNORE INTO trait_modifier
                    VALUES ('trait_noxious', 'pop_housing_usage_mult', '0.1', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
-INSERT OR IGNORE INTO trait_modifier
-                       (trait_key, modifier_key, modifier_value, sort_order)
-                   VALUES ('trait_noxious', 'pop_happiness', '0.02', 4);
+INSERT OR IGNORE INTO trait_scaling_modifier
+                       (trait_key, modifier_key, per_hundred, cap, count_label, sort_order)
+                   VALUES ('trait_noxious', 'pop_happiness', '0.02', '0.4', 'non-Noxious', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
@@ -8463,8 +8479,8 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_auto_mod_cyborg', 2, 'cyborg', 0, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_auto_mod_cyborg', 2, 'cyborg', 0, 0, 0, NULL, 'Universal plug-and-play connection ports allow augmentations to be replaced as needed, aligning their capabilities with current operational demands.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_cyborg', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_auto_mod_cyborg', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_cyborg', 'organic');
@@ -8472,8 +8488,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_cyborg'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_cyborg', 'automod');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_cyborg', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_power_drills', 1, 'cyborg', 1, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_power_drills', 1, 'cyborg', 1, 0, 0, NULL, 'Outfit a cyborg with a battery of power drills, and suddenly everything looks like a mineral deposit.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_power_drills', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_power_drills', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_drills', 'organic');
@@ -8482,8 +8498,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_dri
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_drills', 'mineral');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_drills', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_harvesters', 1, 'cyborg', 1, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_harvesters', 1, 'cyborg', 1, 0, 0, NULL, 'A suite of tools, from nutrient solution diagnostics and on-site balancing to per-stalk micro-threshing, enables cybernetic workers to increase produce yields.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_harvesters', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_harvesters', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_harvesters', 'organic');
@@ -8492,8 +8508,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_harvester
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_harvesters', 'food');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_harvesters', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_superconductive', 1, 'cyborg', 1, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_superconductive', 1, 'cyborg', 1, 0, 0, NULL, 'The use of superconductive materials in units have cut energy transmission losses to zero percent.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_superconductive', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_superconductive', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_superconductive', 'organic');
@@ -8502,8 +8518,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_supercond
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_superconductive', 'energy');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_superconductive', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_efficient_processors', 2, 'cyborg', 0, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_efficient_processors', 2, 'cyborg', 0, 0, 0, NULL, 'These highly efficient processors increase the both workload and endurance.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_efficient_processors', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_efficient_processors', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_efficient_processors', 'organic');
@@ -8511,8 +8527,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_efficient
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_efficient_processors', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_efficient_processors', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_logic_engines', 1, 'cyborg', 1, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_logic_engines', 1, 'cyborg', 1, 0, 0, NULL, 'Efficiently navigating the increasingly complex frontiers of science requires parallel processors to augment organic brains.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_logic_engines', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_logic_engines', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_logic_engines', 'organic');
@@ -8521,8 +8537,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_logic_eng
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_logic_engines', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_logic_engines', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_loyalty_circuits', 1, 'cyborg', 1, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_loyalty_circuits', 1, 'cyborg', 1, 0, 0, NULL, 'Loyalty as an ideal is a distinctly organic concept. It is much more efficient to simply program compliance.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_loyalty_circuits', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_loyalty_circuits', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_loyalty_circuits', 'trait_cyborg_apathy_loops');
@@ -8532,8 +8548,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_loyalty_c
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_loyalty_circuits', 'cybernetic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_loyalty_circuits', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_double_jointed', 1, 'cyborg', 0, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_double_jointed', 1, 'cyborg', 0, 0, 0, NULL, 'Collapsible labor units with flexible joints enable them to fold neatly into stacks during transportation, then self-assemble on site.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_double_jointed', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_double_jointed', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_double_jointed', 'trait_cyborg_bulky');
@@ -8543,8 +8559,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_double_jo
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_double_jointed', 'migration');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_double_jointed', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_bulky', -2, 'cyborg', 0, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_bulky', -2, 'cyborg', 0, 0, 0, NULL, 'These highly advanced mega-machines were not designed to traverse the universe in a box.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bulky', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bulky', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_bulky', 'trait_cyborg_double_jointed');
@@ -8554,8 +8570,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bulky', '
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bulky', 'migration');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bulky', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_enhanced_memory', 1, 'cyborg', 1, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_enhanced_memory', 1, 'cyborg', 1, 0, 0, NULL, 'A revolutionary technique fits autonomous units with memory cells using a revolutionary, new technique for magnetic induction, improving their performance significantly.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_enhanced_memory', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_enhanced_memory', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_enhanced_memory', 'trait_cyborg_limited_memory');
@@ -8564,8 +8580,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enhanced_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enhanced_memory', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enhanced_memory', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_durable', 1, 'cyborg', 1, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_durable', 1, 'cyborg', 1, 0, 0, NULL, 'Protected by exoskeletons of chrome-plated titanium, these heavy-duty machines were designed to excel under harsh conditions and require less maintenance.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_durable', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_durable', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_durable', 'trait_cyborg_high_maintenance');
@@ -8574,8 +8590,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_durable',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_durable', 'amenities');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_durable', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_high_maintenance', -2, 'cyborg', 1, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_high_maintenance', -2, 'cyborg', 1, 0, 0, NULL, 'These machines were designed with a complete disregard for longevity and are prone to malfunction. They will require frequent maintenance.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_high_maintenance', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_high_maintenance', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_high_maintenance', 'trait_cyborg_durable');
@@ -8584,8 +8600,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_main
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_maintenance', 'amenities');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_maintenance', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_learning_algorithms', 1, 'cyborg', 1, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_learning_algorithms', 1, 'cyborg', 1, 0, 0, NULL, 'Sophisticated, self-learning algorithms that stimulate the rapid evolution of a unit''s neural clusters.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_learning_algorithms', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_learning_algorithms', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_learning_algorithms', 'trait_cyborg_neural_limiters');
@@ -8594,8 +8610,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_learning_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_learning_algorithms', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_learning_algorithms', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_power_intensive', -1, 'cyborg', 0, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_power_intensive', -1, 'cyborg', 0, 0, 0, NULL, 'These cybernetic components require frequent recharging from an external power source.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_power_intensive', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_power_intensive', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_intensive', 'organic');
@@ -8603,8 +8619,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_int
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_intensive', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_intensive', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_neural_limiters', -2, 'cyborg', 1, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_neural_limiters', -2, 'cyborg', 1, 0, 0, NULL, 'By limiting the cognitive abilities of our workers we can encourage them to focus on more menial tasks.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_neural_limiters', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_neural_limiters', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_neural_limiters', 'trait_cyborg_learning_algorithms');
@@ -8613,8 +8629,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_neural_li
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_neural_limiters', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_neural_limiters', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_streamlined_protocols', 1, 'cyborg', 1, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_streamlined_protocols', 1, 'cyborg', 1, 0, 0, NULL, 'Extensively batched AI processes allow these units to scale greatly with minimal loss of efficiency.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_streamlined_protocols', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_streamlined_protocols', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_streamlined_protocols', 'trait_cyborg_high_bandwidth');
@@ -8623,8 +8639,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_streamlin
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_streamlined_protocols', 'empire_size');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_streamlined_protocols', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_high_bandwidth', -2, 'cyborg', 1, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_high_bandwidth', -2, 'cyborg', 1, 0, 0, NULL, 'Individual units send and receive a vast amount of largely duplicate data, causing exponential lag as the number of units attached to each central processing hub increases.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_high_bandwidth', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_high_bandwidth', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_high_bandwidth', 'trait_cyborg_streamlined_protocols');
@@ -8633,8 +8649,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_band
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_bandwidth', 'empire_size');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_bandwidth', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_trading_algorithms', 1, 'cyborg', 1, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_trading_algorithms', 1, 'cyborg', 1, 0, 0, NULL, 'Predictive algorithms allow for maximum optimization. Infinitesimal market fluctuations in currency rates, stock availability, and the emotional response of organic partners are accounted for.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_trading_algorithms', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_trading_algorithms', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_trading_algorithms', 'trait_cyborg_scarcity_algorithms');
@@ -8644,8 +8660,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_trading_a
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_trading_algorithms', 'trade');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_trading_algorithms', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_stainless_steel_smile', 1, 'cyborg', 1, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_stainless_steel_smile', 1, 'cyborg', 1, 0, 0, 'The Machine Age', 'This species favors custom engravings, aftermarket components and paint schemes to maximize visual impact. Sometimes the only choice is to flash that chrome.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_stainless_steel_smile', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_stainless_steel_smile', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_stainless_steel_smile', 'trait_cyborg_welded_countenance');
@@ -8655,8 +8671,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_stainless
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_stainless_steel_smile', 'amenities');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_stainless_steel_smile', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_welded_countenance', -2, 'cyborg', 0, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_welded_countenance', -2, 'cyborg', 0, 0, 0, 'The Machine Age', 'These cyborgs employ crude but functional parts with minimal consideration for aesthetics. Sometimes the job just has to get done.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_welded_countenance', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_welded_countenance', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_welded_countenance', 'trait_cyborg_stainless_steel_smile');
@@ -8665,8 +8681,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_welded_co
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_welded_countenance', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_welded_countenance', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_apathy_loops', -1, 'cyborg', 0, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_apathy_loops', -1, 'cyborg', 0, 0, 0, 'The Machine Age', 'The implants on these cyborgs are rough and ill-fitting, resulting in subdermal irritation and regular malfunctions. Not bad on the body, but terrible on the mind.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_apathy_loops', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_apathy_loops', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_apathy_loops', 'trait_cyborg_loyalty_circuits');
@@ -8676,8 +8692,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_apathy_lo
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_apathy_loops', 'cybernetic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_apathy_loops', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_bionic_engineers', 1, 'cyborg', 1, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_bionic_engineers', 1, 'cyborg', 1, 0, 0, 'The Machine Age', 'Precision-crafted tools and implant modifications have been created specifically to assist in demanding engineering tasks.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bionic_engineers', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bionic_engineers', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_bionic_engineers', 'trait_cyborg_bionic_physicists');
@@ -8688,8 +8704,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_en
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_engineers', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_engineers', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_bionic_physicists', 1, 'cyborg', 0, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_bionic_physicists', 1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Integrated multi-modal processing produces physics calculations on the fly without requiring a connection to an external computing unit.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bionic_physicists', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bionic_physicists', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_bionic_physicists', 'trait_cyborg_bionic_engineers');
@@ -8700,8 +8716,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_ph
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_physicists', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_physicists', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_bionic_sociologists', 1, 'cyborg', 0, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_bionic_sociologists', 1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Empathy drivers and behavioral heuristics open a fast track to sociological research, handling complex analytics like a second brain.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bionic_sociologists', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_bionic_sociologists', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_bionic_sociologists', 'trait_cyborg_bionic_physicists');
@@ -8712,8 +8728,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_so
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_sociologists', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_sociologists', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_integrated_weaponry', 1, 'cyborg', 1, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_integrated_weaponry', 1, 'cyborg', 1, 0, 0, 'The Machine Age', 'Fusing armaments with cybernetic limbs offers instant firepower for the army and law enforcement officials alike.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_integrated_weaponry', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_integrated_weaponry', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_integrated_weaponry', 'trait_cyborg_delicate_frames');
@@ -8722,16 +8738,16 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_integrate
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_integrated_weaponry', 'army');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_integrated_weaponry', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_mass_produced', 1, 'cyborg', 1, 1, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_mass_produced', 1, 'cyborg', 1, 1, 0, 'The Machine Age', 'The enforced backwards compatibility of mandatory implants greatly reduces the cost of outfitting newborn citizens.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_mass_produced', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_mass_produced', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_mass_produced', 'cybernetic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_mass_produced', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_mass_produced', 'pop_growth');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_propaganda_machines', 1, 'cyborg', 1, 1, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_propaganda_machines', 1, 'cyborg', 1, 1, 0, 'The Machine Age', 'Cortical analysis units can jolt down users at the inception of seditious thiking, or dispense hormonal rewards to exemplar citizens.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_propaganda_machines', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_propaganda_machines', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_propaganda_machines', 'cybernetic');
@@ -8739,8 +8755,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_propagand
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_propaganda_machines', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_propaganda_machines', 'unity');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_delicate_frames', -1, 'cyborg', 0, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_delicate_frames', -1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Subpar components and installation have resulted in a fragile cyborg chassis. Basic operations are not compromised, but the users are advised to avoid situations with high likelihood of physical trauma.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_delicate_frames', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_delicate_frames', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_delicate_frames', 'trait_cyborg_integrated_weaponry');
@@ -8750,8 +8766,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_delicate_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_delicate_frames', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_delicate_frames', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_limited_memory', -2, 'cyborg', 1, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_limited_memory', -2, 'cyborg', 1, 0, 0, 'The Machine Age', 'Insufficient operational memory has bottle-necked the capacity for learning, leaving the user unable to process the entirety of their experiences.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_limited_memory', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_limited_memory', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_limited_memory', 'trait_cyborg_enhanced_memory');
@@ -8760,8 +8776,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_limited_m
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_limited_memory', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_limited_memory', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_scarcity_algorithms', -1, 'cyborg', 0, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_scarcity_algorithms', -1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Aggressively cost-aware coding hampers risk-taking and therefore denies opportunities for greater profits.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_scarcity_algorithms', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_scarcity_algorithms', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_scarcity_algorithms', 'trait_cyborg_trading_algorithms');
@@ -8772,8 +8788,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scarcity_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scarcity_algorithms', 'trade');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scarcity_algorithms', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_climate_adjustment_dry', 1, 'cyborg', 0, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_climate_adjustment_dry', 1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Bespoke modifications like fluid recycling and radiation shielding are perfect for enduring a dry climate, but less suitable in others.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_dry', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_dry', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_dry', 'trait_cyborg_climate_adjustment_wet');
@@ -8783,8 +8799,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_a
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_dry', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_dry', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_climate_adjustment_wet', 1, 'cyborg', 0, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_climate_adjustment_wet', 1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Heavy insulation and alien bioform protection suited for wet climates, but detrimental in others.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_wet', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_wet', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_wet', 'trait_cyborg_climate_adjustment_cold');
@@ -8794,8 +8810,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_a
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_wet', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_wet', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_climate_adjustment_cold', 1, 'cyborg', 0, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_climate_adjustment_cold', 1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Enhanced heating components and frost-resistant lubricants help in cold climates but are a hindrance in others.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_cold', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_cold', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_cold', 'trait_cyborg_climate_adjustment_wet');
@@ -8805,8 +8821,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_a
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_cold', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_cold', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_ancient_dreadnought', 2, 'cyborg', 0, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_ancient_dreadnought', 2, 'cyborg', 0, 0, 0, 'The Machine Age', 'Equipped with miniaturized energy modules, there is a marked enhancement in industrial productivity and an increase in frame-integrated weaponry damage.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_ancient_dreadnought', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_ancient_dreadnought', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ancient_dreadnought', 'organic');
@@ -8817,8 +8833,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ancient_d
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ancient_dreadnought', 'leviathan');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ancient_dreadnought', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_enigmatic_fortress', 2, 'cyborg', 0, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_enigmatic_fortress', 2, 'cyborg', 0, 0, 0, 'The Machine Age', 'Enigmatic self-repair routines can source materials directly from subspace, dramatically lowering the material expenses associated with repairs.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_enigmatic_fortress', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_enigmatic_fortress', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enigmatic_fortress', 'organic');
@@ -8827,8 +8843,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enigmatic
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enigmatic_fortress', 'leviathan');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enigmatic_fortress', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_infinity_sphere', 2, 'cyborg', 0, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_infinity_sphere', 2, 'cyborg', 0, 0, 0, 'The Machine Age', 'Hyperefficient, gravity-resistant processing circuits that minimize energy waste and substantially cut processing costs.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_infinity_sphere', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_infinity_sphere', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_infinity_sphere', 'organic');
@@ -8837,8 +8853,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_infinity_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_infinity_sphere', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_infinity_sphere', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_scavenger_bot', 2, 'cyborg', 0, 0, 0, 'The Machine Age', '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_scavenger_bot', 2, 'cyborg', 0, 0, 0, 'The Machine Age', 'Advanced molecular scavenging can transform any substance into the required materials for constructing robotic frames.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_scavenger_bot', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_scavenger_bot', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scavenger_bot', 'organic');
@@ -8847,8 +8863,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scavenger
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scavenger_bot', 'leviathan');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scavenger_bot', 'cybernetic');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_creed_of_construction', 0, 'cyborg', 0, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_creed_of_construction', 0, 'cyborg', 0, 0, 0, NULL, 'The Fellowship of the Hammer''s uses divine augmentation to create everything the faithful need.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_construction', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_construction', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_construction', 'organic');
@@ -8860,8 +8876,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_construction', 'cybernetic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_construction', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_creed_of_war', 0, 'cyborg', 0, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_creed_of_war', 0, 'cyborg', 0, 0, 0, NULL, 'The divine augmentations of the Templars of Steel make our holy warriors unstoppable in battle.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_war', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_war', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_war', 'organic');
@@ -8872,8 +8888,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_war', 'cybernetic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_war', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_creed_of_research', 0, 'cyborg', 0, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_creed_of_research', 0, 'cyborg', 0, 0, 0, NULL, 'The Choir of the Mind''s semi-interlinked consciousness allows instant communication between researchers.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_research', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_research', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_research', 'organic');
@@ -8884,8 +8900,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_research', 'cybernetic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_research', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_creed_of_labor', 0, 'cyborg', 0, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_creed_of_labor', 0, 'cyborg', 0, 0, 0, NULL, 'The Commune of Toil''s divine augmentations surpass traditional tools in every respect.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_labor', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_creed_of_labor', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_labor', 'organic');
@@ -8896,8 +8912,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_labor', 'cybernetic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_creed_of_labor', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cyborg_ritualistic_implants', 0, 'cyborg', 0, 0, 0, NULL, '10_species_traits_cyborg.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cyborg_ritualistic_implants', 0, 'cyborg', 0, 0, 0, NULL, 'These implants are proudly adorned by the faithful. Their dedication to the divine is an inspiration to all.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_ritualistic_implants', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_ritualistic_implants', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_ritualistic_implants', 'organic');
@@ -9261,23 +9277,23 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_fotd_scientist', 0, NULL, 0, 0, 0, NULL, '11_first_contact_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_fotd_scientist', 0, NULL, 0, 0, 0, NULL, 'This scientist''s experience has resulted in valuable insights into cloaking tech.', '11_first_contact_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_fotd_commander', 0, NULL, 0, 0, 0, NULL, '11_first_contact_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_fotd_commander', 0, NULL, 0, 0, 0, NULL, 'This commander''s upbringing taught them to use cloaking in ways our own commanders could never imagine.', '11_first_contact_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_preftl_haggler', 1, NULL, 0, 0, 0, NULL, '11_first_contact_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_preftl_haggler', 1, NULL, 0, 0, 0, NULL, 'Coming from a country, this leader has displayed an exceptionally keen mind for business.', '11_first_contact_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_zealot', 0, NULL, 0, 0, 0, NULL, '11_first_contact_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_zealot', 0, NULL, 0, 0, 0, NULL, 'Having gazed into the abyss, this leader possesses unshakeable faith.', '11_first_contact_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_plague_hardened', 0, NULL, 0, 0, 0, NULL, '11_first_contact_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_plague_hardened', 0, NULL, 0, 0, 0, NULL, 'Having gazed into the abyss, this commander possesses a keen and tempered mind.', '11_first_contact_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_stargazer', 0, NULL, 0, 0, 0, NULL, '11_first_contact_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_stargazer', 0, NULL, 0, 0, 0, NULL, 'This species has always, consciously or not, longed to traverse the void between the stars.', '11_first_contact_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_stargazer', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_stargazer', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_stargazer', 'trait_presapient_earthbound');
@@ -9299,50 +9315,50 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_rift_warped', NULL, NULL, 0, 0, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_rift_warped', NULL, NULL, 0, 0, 0, NULL, 'This leader has crossed the astral planes; the effects of such a journey are both lasting and profound.', '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_partially_digested', NULL, NULL, 0, 0, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_partially_digested', NULL, NULL, 0, 0, 0, NULL, 'This leader has had an unfortunate encounter with a giant worm from another dimension. While no longer whole of body, they have gained some unique insight into molecular Biology.', '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_obelisk_curse', NULL, NULL, 0, 0, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_obelisk_curse', NULL, NULL, 0, 0, 0, NULL, 'A servant of the black obelisk, this leader claims to seek to restore the balance we have disrupted.', '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_planar_theorist', NULL, NULL, 1, 1, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_planar_theorist', NULL, NULL, 1, 1, 0, NULL, 'This leader specializes in the study of Astral Rifts and the behavior of dimensions outside of our own.', '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_planar_theorist_2', NULL, NULL, 1, 1, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_planar_theorist_2', NULL, NULL, 1, 1, 0, NULL, NULL, '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_academic_astral_rift_expert', NULL, NULL, 1, 1, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_academic_astral_rift_expert', NULL, NULL, 1, 1, 0, NULL, 'The Rift beckons. The scholar answers the call.', '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_academic_astral_rift_expert_2', NULL, NULL, 1, 1, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_academic_astral_rift_expert_2', NULL, NULL, 1, 1, 0, NULL, NULL, '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_academic_astral_rift_expert_3', NULL, NULL, 1, 1, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_academic_astral_rift_expert_3', NULL, NULL, 1, 1, 0, NULL, NULL, '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_foreign_consciousness', NULL, NULL, 0, 0, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_foreign_consciousness', NULL, NULL, 0, 0, 0, NULL, 'This leader provides a vessel for a psionic, rift-born entity, allowing for greater understanding of the strange physics within the astral planes.', '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_black_light_blinded', NULL, NULL, 0, 0, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_black_light_blinded', NULL, NULL, 0, 0, 0, NULL, 'Blinded by a dark sun in the astral planes, this leader has gained an insatiable hunger for knowledge.', '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_sanitary_drone', NULL, NULL, 0, 0, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_sanitary_drone', NULL, NULL, 0, 0, 0, NULL, 'This leader learned how to clean well.', '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_spacebender', NULL, NULL, 0, 0, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_spacebender', NULL, NULL, 0, 0, 0, NULL, 'Deeply attuned to the spaces between space, this leader is capable of slipping easily across galaxies.', '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_energy_weapon_specialist', NULL, NULL, 0, 0, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_energy_weapon_specialist', NULL, NULL, 0, 0, 0, NULL, 'The calculations and precise focusing it takes to properly calibrate energy weapons can be incredibly time consuming, but such skills come naturally to this commander.', '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_blorg_insight', NULL, NULL, 0, 0, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_blorg_insight', NULL, NULL, 0, 0, 0, NULL, 'Centuries of studying the broadcasts and culture of a certain species of upright mammal has made this individual brazenly eager to please. Some would say, annoyingly so.', '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_plasmic', 0, NULL, 0, 0, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_plasmic', 0, NULL, 0, 0, 0, NULL, 'The external membrane and amorphous body of this species allows them to adapt to any environment and renders them immune to a wide variety of diseases.', '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plasmic', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_plasmic', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plasmic', 'organic');
@@ -9352,8 +9368,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plasmic', 'housi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plasmic', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plasmic', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_exd', 0, NULL, 1, 0, 0, NULL, '12_astral_planes_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_exd', 0, NULL, 1, 0, 0, NULL, 'This species originates from another dimension and requires a great deal of energy to survive in our universe.', '12_astral_planes_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_exd', 'OTHER');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_exd', 'EXD');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_exd', 'organic');
@@ -9479,26 +9495,26 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('physics_research', 'Physics Research', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_storm_touched', 0, NULL, 0, 0, 0, NULL, '13_cosmic_storms_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_storm_touched', 0, NULL, 0, 0, 0, NULL, 'Being inside a cosmic storm fills the Storm Touched with devotional aspiration.', '13_cosmic_storms_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_storm_touched', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_storm_touched', 'LITHOID');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_storm_touched', 'MACHINE');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_storm_rider_commander', 0, NULL, 0, 0, 0, NULL, '13_cosmic_storms_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_storm_rider_commander', 0, NULL, 0, 0, 0, NULL, 'Storm Riders revel in the rush of adrenaline, unlocking their true potential in the torrent of a cosmic storm. Council positions replace their field bonuses with council bonuses.', '13_cosmic_storms_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_storm_rider_scientist', 0, NULL, 0, 0, 0, NULL, '13_cosmic_storms_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_storm_rider_scientist', 0, NULL, 0, 0, 0, NULL, 'Storm Riders revel in the rush of adrenaline, unlocking their true potential in the torrent of a cosmic storm. Council positions replace their field bonuses with council bonuses.', '13_cosmic_storms_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_storm_rider_official', 0, NULL, 0, 0, 0, NULL, '13_cosmic_storms_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_storm_rider_official', 0, NULL, 0, 0, 0, NULL, 'Storm Riders revel in the rush of adrenaline, unlocking their true potential in the torrent of a cosmic storm. Council positions replace their field bonuses with council bonuses.', '13_cosmic_storms_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_storm_fused', 0, NULL, 0, 0, 0, NULL, '13_cosmic_storms_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_storm_fused', 0, NULL, 0, 0, 0, NULL, 'The Storm Fused learned to cultivate their Inner Storm as they strain for enlightenment.', '13_cosmic_storms_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pathogenic_genes', -1, NULL, 0, 0, 0, NULL, '13_machine_age_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pathogenic_genes', -1, NULL, 0, 0, 0, NULL, 'A novel genetic disease prevents this species from producing offspring. It has resisted all known gene therapy methods.', '13_machine_age_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pathogenic_genes', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pathogenic_genes', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pathogenic_genes', 'trait_rapid_breeders');
@@ -9524,8 +9540,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pathogenic_genes
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pathogenic_genes', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pathogenic_genes', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_limited_cybernetic', 0, NULL, 0, 0, 0, NULL, '13_machine_age_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_limited_cybernetic', 0, NULL, 0, 0, 0, NULL, 'This species has the least amount of implants necessary to function in a cybernetic society.', '13_machine_age_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_limited_cybernetic', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_limited_cybernetic', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_limited_cybernetic', 'trait_latent_psionic');
@@ -9536,22 +9552,22 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_cybernet
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_cybernetic', 'cybernetic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_limited_cybernetic', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_limited_cyborg', NULL, NULL, 0, 0, 0, NULL, '13_machine_age_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_limited_cyborg', NULL, NULL, 0, 0, 0, NULL, 'This leader has the least amount of implants necessary to function in a cybernetic society.', '13_machine_age_traits.txt');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('leader_trait_limited_cyborg', 'leader_trait_psionic');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('leader_trait_limited_cyborg', 'leader_trait_chosen');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_robotic_surrogate', NULL, NULL, 0, 0, 0, NULL, '13_machine_age_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_robotic_surrogate', NULL, NULL, 0, 0, 0, NULL, 'Cumbersome and slow, this robot body is a surrogate for a digitized leader in the Identity Repository.', '13_machine_age_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_ritualistic_implants_cyborg', NULL, NULL, 0, 0, 0, NULL, '13_machine_age_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_ritualistic_implants_cyborg', NULL, NULL, 0, 0, 0, NULL, 'These implants are proudly adorned by the faithful. Their dedication to the divine is an inspiration to all.', '13_machine_age_traits.txt');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('leader_trait_ritualistic_implants_cyborg', 'leader_trait_psionic');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('leader_trait_ritualistic_implants_cyborg', 'leader_trait_chosen');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('leader_trait_ritualistic_implants_cyborg', 'leader_trait_cyborg');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cetanas_prisoner', 0, NULL, 0, 0, 0, NULL, '13_machine_age_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cetanas_prisoner', 0, NULL, 0, 0, 0, NULL, 'Extracted from Cetana''s storage Matrix, these individuals have been reborn in synthetic forms. Their adjustment to this new existence is fraught with challenges. Their outward compliance masks a more profound struggle, as vacant expressions reveal the indelible scars left by Cetana''s manipulations.', '13_machine_age_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cetanas_prisoner', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cetanas_prisoner', 'MACHINE');
 INSERT OR IGNORE INTO trait_modifier
@@ -9565,56 +9581,56 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_buccaneer', 1, NULL, 0, 0, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_buccaneer', 1, NULL, 0, 0, 0, NULL, 'A master of battlefield salvage, this leader is able to extract every ounce of value from even the most damaged wrecks.', '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_buccaneer_2', NULL, NULL, 0, 1, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_buccaneer_2', NULL, NULL, 0, 1, 0, NULL, NULL, '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_buccaneer_3', NULL, NULL, 0, 1, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_buccaneer_3', NULL, NULL, 0, 1, 0, NULL, NULL, '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_trailblazer', 1, NULL, 0, 0, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_trailblazer', 1, NULL, 0, 0, 0, NULL, 'Enthralled by the rewarding prospects of the galactic frontier, this leader hopes to chart the furthest reaches of space.', '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_trailblazer_2', NULL, NULL, 0, 1, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_trailblazer_2', NULL, NULL, 0, 1, 0, NULL, NULL, '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_trailblazer_3', NULL, NULL, 0, 1, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_trailblazer_3', NULL, NULL, 0, 1, 0, NULL, NULL, '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_treasure_hoarder', 1, NULL, 0, 0, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_treasure_hoarder', 1, NULL, 0, 0, 0, NULL, 'No bounty is high enough to satisfy this leader''s ambition. The accumulation of valuable resources is their primary motivation.', '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_treasure_hoarder_2', NULL, NULL, 0, 1, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_treasure_hoarder_2', NULL, NULL, 0, 1, 0, NULL, NULL, '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_treasure_hoarder_3', NULL, NULL, 0, 1, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_treasure_hoarder_3', NULL, NULL, 0, 1, 0, NULL, NULL, '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_pirate_queen', NULL, NULL, 0, 0, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_pirate_queen', NULL, NULL, 0, 0, 0, NULL, 'Years of skulduggery and outlandish exploits have created a leader who never leaves with less than she came for.', '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_trophy_hunter', NULL, NULL, 0, 0, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_trophy_hunter', NULL, NULL, 0, 0, 0, NULL, 'Tempered by hardship and armed with a lifetime of experience, this commander has an uncanny understanding of Space Fauna. The key to a successful hunt is to think like one''s prey, but of course, only the perfect shot will produce a perfect trophy.', '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_gifted_trapper', NULL, NULL, 0, 0, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_gifted_trapper', NULL, NULL, 0, 0, 0, NULL, 'A skilled researcher who takes the utmost care in the safe capture and transportation of live specimens. This leader''s commitment to creature welfare inspires others to improve research standards across all disciplines.', '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_void_hunter', NULL, NULL, 1, 1, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_void_hunter', NULL, NULL, 1, 1, 0, NULL, 'A knowledgeable hunter, well-suited for taking down big game. Patient in their approach, and precise when they strike.', '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_void_hunter_2', NULL, NULL, 1, 1, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_void_hunter_2', NULL, NULL, 1, 1, 0, NULL, 'A knowledgeable hunter, well-suited for taking down big game. Patient in their approach, and precise when they strike.', '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_void_tracker', NULL, NULL, 1, 1, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_void_tracker', NULL, NULL, 1, 1, 0, NULL, 'This leader''s talent for capturing wild Space Fauna efficiently and safely is unparalleled.', '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_void_tracker_2', NULL, NULL, 1, 1, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_void_tracker_2', NULL, NULL, 1, 1, 0, NULL, 'This leader''s talent for capturing wild Space Fauna efficiently and safely is unparalleled.', '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_cutholoid_victim', NULL, NULL, 0, 0, 0, NULL, '14_grand_archive_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_cutholoid_victim', NULL, NULL, 0, 0, 0, NULL, 'This leader was trapped for some time in the digestive system of a spaceborne Cutholoid. While no longer whole of body, they have gained some unique insight into molecular Biology.', '14_grand_archive_traits.txt');
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_gifted_trapper', 'ship_capture_chance_add', '0.25', 0);
@@ -9676,8 +9692,8 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_capture_amount_add', 'Fauna Capture Amount', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_egg_laying', 2, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_egg_laying', 2, NULL, 1, 1, 0, 'BioGenesis', 'The young of this species do not develop inside a parent, but inside the protective shell of an egg. This allows for rapid growth during times of plenty.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_egg_laying', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_egg_laying', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_egg_laying', 'REP');
@@ -9700,8 +9716,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 're
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 'aquatic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_seasonal_dormancy', 2, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_seasonal_dormancy', 2, NULL, 1, 1, 0, 'BioGenesis', 'This species has evolved on a planet with cyclical seasons that support hibernation. In the modern age, these seasonal triggers can be artificially simulated to efficiently store less productive members of society.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_seasonal_dormancy', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_seasonal_dormancy', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_seasonal_dormancy', 'MAM');
@@ -9716,8 +9732,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_seasonal_dormanc
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_seasonal_dormancy', 'reptilian');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_seasonal_dormancy', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_hollow_bones', -3, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_hollow_bones', -3, NULL, 1, 1, 0, 'BioGenesis', 'The fragile bones of this species allow them to move elegantly and with ease. However, they are also more susceptible to the gravitational effects of their world.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_hollow_bones', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_hollow_bones', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_hollow_bones', 'TOX');
@@ -9733,8 +9749,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hollow_bones', '
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hollow_bones', 'toxoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_hollow_bones', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_rooted', -3, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_rooted', -3, NULL, 1, 1, 0, 'BioGenesis', 'This species literally takes root in whichever environment they find themselves, making removal a highly traumatic experience.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_rooted', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_rooted', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_rooted', 'FUN');
@@ -9748,8 +9764,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rooted', 'fungoi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rooted', 'plantoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rooted', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_acidic_vascularity', 1, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_acidic_vascularity', 1, NULL, 1, 1, 0, 'BioGenesis', 'The internal fluids of this species serve as their most potent defense. Highly corrosive and lethal, these liquids ensure that any enemies regret poking holes.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_acidic_vascularity', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_acidic_vascularity', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_acidic_vascularity', 'NECROID');
@@ -9761,8 +9777,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_acidic_vasculari
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_acidic_vascularity', 'toxoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_acidic_vascularity', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_shelled', 3, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_shelled', 3, NULL, 1, 1, 0, 'BioGenesis', 'Whether naturally grown or found by chance (or design), this species carries their homes with them. These shells provide a protective sanctuary, ensuring there is always a place to rest for the night.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_shelled', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_shelled', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_shelled', 'MOL');
@@ -9782,8 +9798,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'necro
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'molluscoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_camouflage', 1, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_camouflage', 1, NULL, 1, 1, 0, 'BioGenesis', 'Masters of disguise, this species seamlessly merges with their surroundings, rendering themselves nearly invisible to predators and prey alike. Their innate understanding of optics gives them an edge in guerilla warfare.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_camouflage', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_camouflage', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_camouflage', 'AQUATIC');
@@ -9802,8 +9818,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'ar
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'reptilian');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_chromalogs', 4, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_chromalogs', 4, NULL, 1, 1, 0, 'BioGenesis', 'Harnessing the artistry of color, this species has transcended mere camouflage, evolving to communicate through the vibrant and intricate patterns displayed on their bodies.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_chromalogs', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_chromalogs', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_chromalogs', 'AQUATIC');
@@ -9823,8 +9839,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'ar
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'reptilian');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_brittle', -3, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_brittle', -3, NULL, 1, 1, 0, 'BioGenesis', 'Plagued by inherent fragility, this species must exercise extreme caution in daily activities to avoid cracking up during even the most mundane tasks.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_brittle', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_brittle', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_brittle', 'LITHOID');
@@ -9836,8 +9852,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brittle', 'litho
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brittle', 'necroid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_brittle', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_familial', 2, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_familial', 2, NULL, 1, 1, 0, 'BioGenesis', 'Bound by deep, enduring relationships with their closest relatives, this species forms highly efficient and cohesive collectives.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_familial', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_familial', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_familial', 'HUM');
@@ -9852,8 +9868,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'avia
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'individual');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_permeable_skin', -1, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_permeable_skin', -1, NULL, 1, 1, 0, 'BioGenesis', 'Specially developed skin that requires ideal conditions coats this species. As long as this species does not stray far from their home climate that shouldn''t be a problem.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_permeable_skin', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_permeable_skin', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_permeable_skin', 'MOL');
@@ -9867,8 +9883,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_permeable_skin',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_permeable_skin', 'aquatic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_permeable_skin', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_genetic_memory', 3, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_genetic_memory', 3, NULL, 1, 1, 0, 'BioGenesis', 'Passing down knowledge and learnings from one generation to the next has been the start of many civilizations. This species has taken it a step further by encoding survival insights directly into their genetic code, ensuring that each generation is born with the accumulated wisdom of their ancestors.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_genetic_memory', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_genetic_memory', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_genetic_memory', 'HUM');
@@ -9883,8 +9899,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory', 'necroid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_nascent_stage', -2, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_nascent_stage', -2, NULL, 1, 1, 0, 'BioGenesis', 'This species gives birth at an early stage of development, resulting in a prolonged period where the young are incapable of contributing to society. During this time, they remain blissfully unaware of the responsibilities and burdens that come with sapience.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nascent_stage', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_nascent_stage', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_nascent_stage', 'HUM');
@@ -9907,8 +9923,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 'arthropoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_flight', 2, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_flight', 2, NULL, 1, 1, 0, 'BioGenesis', 'This species soars above the constraints of the earth, freely navigating the skies. Their cities feature unique, dense layouts, optimized for aerial inhabitants. In conflict, they prove to be elusive and difficult targets.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_flight', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_flight', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_flight', 'AVI');
@@ -9922,8 +9938,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'avian'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'arthropoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_spatial_mastery', 4, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_spatial_mastery', 4, NULL, 1, 1, 0, 'BioGenesis', 'Not only capable of flight, this species possesses unique cerebral adaptations, enabling them to instinctively process and navigate three-dimensional spaces. These abilities make them unparalleled in planning battles, surveying planets, and managing cities.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_spatial_mastery', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_spatial_mastery', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_spatial_mastery', 'AVI');
@@ -9940,8 +9956,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery', 'arthropoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_spare_organs', 2, NULL, 1, 1, 0, 'BioGenesis', '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_spare_organs', 2, NULL, 1, 1, 0, 'BioGenesis', 'This species evolved redundant organs to survive even the most grievous injuries - a successful adaptation, as evidenced by their continued existence.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_spare_organs', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_spare_organs', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_spare_organs', 'MOL');
@@ -9956,8 +9972,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spare_organs', '
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spare_organs', 'toxoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spare_organs', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_malleable_genes', 6, 'malleable', 0, 0, 0, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_malleable_genes', 6, 'malleable', 0, 0, 0, NULL, 'This species does not stick as rigidly to identifiable features and organs as most other species do. Instead they grow the best appendage for the job. However this instability has some drawbacks.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_genes', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_genes', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_malleable_genes', 'trait_adaptive_mutations');
@@ -9966,8 +9982,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_genes'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_genes', 'automod');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_genes', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_malleable_minerals', 0, 'malleable', 0, 0, 0, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_malleable_minerals', 0, 'malleable', 0, 0, 0, NULL, 'With diamond-hard digits, this adaptation allows for easier extraction of minerals.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_minerals', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_minerals', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_minerals', 'organic');
@@ -9976,8 +9992,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_minera
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_minerals', 'mineral');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_minerals', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_malleable_energy', 0, 'malleable', 0, 0, 0, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_malleable_energy', 0, 'malleable', 0, 0, 0, NULL, 'A thick insulating layer safeguards against accidents, especially in high-energy environments.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_energy', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_energy', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_energy', 'organic');
@@ -9986,8 +10002,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_energy
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_energy', 'energy');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_energy', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_malleable_food', 0, 'malleable', 0, 0, 0, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_malleable_food', 0, 'malleable', 0, 0, 0, NULL, 'An extra appendage with a hardened shovel-like digit speeds up tilling and planting. Adapting to various terrain types, these malleable plows are always the right tool for the job.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_food', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_food', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_food', 'organic');
@@ -9996,8 +10012,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_food',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_food', 'food');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_food', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_malleable_research', 0, 'malleable', 0, 0, 0, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_malleable_research', 0, 'malleable', 0, 0, 0, NULL, 'While an engorged central cortex is slightly uncomfortable, it dramatically accelerates problem-solving and innovation.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_research', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_research', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_research', 'organic');
@@ -10006,8 +10022,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_resear
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_research', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_research', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_malleable_unity', 0, 'malleable', 0, 0, 0, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_malleable_unity', 0, 'malleable', 0, 0, 0, NULL, 'Enhanced sensory organs facilitate a deeper understanding and appreciation of diverse perspectives. Before you can thrive, you must first observe.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_unity', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_unity', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_unity', 'organic');
@@ -10016,8 +10032,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_unity'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_unity', 'unity');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_unity', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_malleable_forge', 0, 'malleable', 0, 0, 0, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_malleable_forge', 0, 'malleable', 0, 0, 0, NULL, 'When handling scalding or corrosive materials, extra-thick calluses can be invaluable.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_forge', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_forge', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_forge', 'organic');
@@ -10027,8 +10043,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_forge'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_forge', 'consumer_goods');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_forge', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_malleable_trade', 0, 'malleable', 0, 0, 0, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_malleable_trade', 0, 'malleable', 0, 0, 0, NULL, 'Highly adaptive pheromones can be incredibly persuasive during negotiations.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_trade', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_trade', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_trade', 'organic');
@@ -10037,8 +10053,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_trade'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_trade', 'trade');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_trade', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_malleable_ameneties', 0, 'malleable', 0, 0, 0, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_malleable_ameneties', 0, 'malleable', 0, 0, 0, NULL, 'A series of highly-calibrated holes allows this species to produce soothing, and harmonious sounds simply by moving about.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_ameneties', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_malleable_ameneties', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_ameneties', 'organic');
@@ -10047,8 +10063,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_amenet
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_ameneties', 'amenities');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_malleable_ameneties', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_adaptive_mutations', 0, 'mutation', 0, 0, 0, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_adaptive_mutations', 0, 'mutation', 0, 0, 0, NULL, 'By introducing hyper-adaptive nucleotides into the genetic structure of this species, they are capable of evolutionary changes in real time.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_mutations', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_mutations', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_adaptive_mutations', 'trait_wilderness');
@@ -10058,8 +10074,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_mutatio
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_mutations', 'automod');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_mutations', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_adaptive_minerals', 0, 'mutation', 0, 0, 1, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_adaptive_minerals', 0, 'mutation', 0, 0, 1, NULL, 'With diamond-hard digits, this adaptation allows for easier extraction of minerals.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_minerals', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_minerals', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_minerals', 'organic');
@@ -10068,8 +10084,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_mineral
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_minerals', 'mineral');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_minerals', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_adaptive_energy', 0, 'mutation', 0, 0, 1, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_adaptive_energy', 0, 'mutation', 0, 0, 1, NULL, 'A thick insulating layer safeguards against accidents, especially in high-energy environments.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_energy', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_energy', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_energy', 'organic');
@@ -10078,8 +10094,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_energy'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_energy', 'energy');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_energy', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_adaptive_food', 0, 'mutation', 0, 0, 1, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_adaptive_food', 0, 'mutation', 0, 0, 1, NULL, 'An extra appendage with a hardened shovel-like digit speeds up tilling and planting. Adapting to various terrain types, these malleable plows are always the right tool for the job.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_food', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_food', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_food', 'organic');
@@ -10088,8 +10104,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_food', 
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_food', 'food');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_food', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_adaptive_research', 0, 'mutation', 0, 0, 1, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_adaptive_research', 0, 'mutation', 0, 0, 1, NULL, 'While an engorged central cortex is slightly uncomfortable, it dramatically accelerates problem-solving and innovation.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_research', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_research', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_research', 'organic');
@@ -10098,8 +10114,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_researc
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_research', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_research', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_adaptive_unity', 0, 'mutation', 0, 0, 1, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_adaptive_unity', 0, 'mutation', 0, 0, 1, NULL, 'Enhanced sensory organs facilitate a deeper understanding and appreciation of diverse perspectives. Before you can thrive, you must first observe.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_unity', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_unity', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_unity', 'organic');
@@ -10108,8 +10124,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_unity',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_unity', 'unity');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_unity', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_adaptive_forge', 0, 'mutation', 0, 0, 1, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_adaptive_forge', 0, 'mutation', 0, 0, 1, NULL, 'When handling scalding or corrosive materials, extra-thick calluses can be invaluable.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_forge', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_forge', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_forge', 'organic');
@@ -10119,8 +10135,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_forge',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_forge', 'consumer_goods');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_forge', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_adaptive_trade', 0, 'mutation', 0, 0, 1, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_adaptive_trade', 0, 'mutation', 0, 0, 1, NULL, 'Highly adaptive pheromones can be incredibly persuasive during negotiations.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_trade', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_trade', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_trade', 'organic');
@@ -10129,8 +10145,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_trade',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_trade', 'trade');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_trade', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_adaptive_amenities', 0, 'mutation', 0, 0, 1, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_adaptive_amenities', 0, 'mutation', 0, 0, 1, NULL, 'A series of highly-calibrated holes allows this species to produce soothing, and harmonious sounds simply by moving about.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_amenities', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_adaptive_amenities', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_amenities', 'organic');
@@ -10139,8 +10155,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_ameniti
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_amenities', 'amenities');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_adaptive_amenities', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_wilderness', 0, NULL, 0, 0, 0, NULL, '15_biogenesis_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_wilderness', 0, NULL, 0, 0, 0, NULL, 'This species exists as part of a mutualistic entity, made indistiguishable from its environment in its thoughts and productive output.', '15_biogenesis_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_wilderness', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_wilderness', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_wilderness', 'trait_incubator');
@@ -10227,6 +10243,11 @@ INSERT OR IGNORE INTO trait_modifier
                    VALUES ('trait_brittle', 'pop_amenities_usage_add', '0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_amenities_usage_add', 'Pop Amenities Usage', 0);
+INSERT OR IGNORE INTO trait_scaling_modifier
+                       (trait_key, modifier_key, per_hundred, cap, count_label, sort_order)
+                   VALUES ('trait_familial', 'pop_happiness', '0.001', '0.2', 'Familial', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_permeable_skin', 'pop_environment_tolerance', '-0.2', 0);
@@ -10403,20 +10424,20 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pc_habitat_habitability', 'Habitat Habitability', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_altered_metabolism', NULL, NULL, 0, 0, 0, NULL, '15_extreme_frontiers_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_altered_metabolism', NULL, NULL, 0, 0, 0, NULL, 'Fieldwork exposure to foreign agents has left a lasting impact on this leader.', '15_extreme_frontiers_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_hardened_survivalist', NULL, NULL, 0, 0, 0, NULL, '15_extreme_frontiers_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_hardened_survivalist', NULL, NULL, 0, 0, 0, NULL, 'This leader has unparalleled knowledge of inhospitable environments.', '15_extreme_frontiers_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_judicial_subjugation', NULL, NULL, 0, 0, 0, NULL, '15_extreme_frontiers_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_judicial_subjugation', NULL, NULL, 0, 0, 0, NULL, 'There will be productive lawful order, or there will be consequences.', '15_extreme_frontiers_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_judicial_execution', NULL, NULL, 0, 0, 0, NULL, '15_extreme_frontiers_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_judicial_execution', NULL, NULL, 0, 0, 0, NULL, 'There can be no repeat offenders when the sentence is death.', '15_extreme_frontiers_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_slimeborn', 0, NULL, 0, 0, 0, NULL, '15_extreme_frontiers_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_slimeborn', 0, NULL, 0, 0, 0, NULL, 'This species spawns rapidly from a thick and mucilaginous slime with the aid of a gestational catalyst.', '15_extreme_frontiers_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_slimeborn', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
@@ -10438,8 +10459,8 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_inner_darkness', NULL, NULL, 0, 0, 0, NULL, '15_strange_worlds_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_inner_darkness', NULL, NULL, 0, 0, 0, NULL, 'Their bodies enhanced following saturation in Dark Matter, they now vent trace amounts of non-baryonic particles at regular intervals but will burn through their expected lifespan more quickly.', '15_strange_worlds_traits.txt');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inner_darkness', 'organic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inner_darkness', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inner_darkness', 'pop_output');
@@ -10448,8 +10469,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inner_darkness',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inner_darkness', 'pop_growth');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_inner_darkness', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_geleboric_mutations', NULL, NULL, 0, 0, 0, NULL, '15_strange_worlds_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_geleboric_mutations', NULL, NULL, 0, 0, 0, NULL, 'Unfortunate reactions to experimentation drastically altered this species'' physiology.', '15_strange_worlds_traits.txt');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutations', 'organic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutations', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutations', 'leader');
@@ -10459,8 +10480,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutati
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutations', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_geleboric_mutations', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_psionic_ephapse', NULL, NULL, 0, 0, 0, NULL, '15_strange_worlds_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_psionic_ephapse', NULL, NULL, 0, 0, 0, NULL, 'After long-term exposure to mind-altering bacteria, this species'' digestive system produces psionic probiotics that promote telepathic communication between affected individuals.', '15_strange_worlds_traits.txt');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic_ephapse', 'organic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic_ephapse', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_psionic_ephapse', 'happiness');
@@ -10523,50 +10544,50 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_unplugged_cybernetic_positives_3', 0, NULL, 0, 0, 0, NULL, '15_unplugged_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_unplugged_cybernetic_positives_3', 0, NULL, 0, 0, 0, NULL, 'Total limb replacements and bonded nanomesh body armor ensure these cyborgs can wage war with brutal efficiency. As a consequence, several non-military bodily functions have been sacrificed.', '15_unplugged_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_positives_3', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_positives_3', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_unplugged_cybernetic_positives_3', 'trait_nascent_stage');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_unplugged_cybernetic_positives_3', NULL, NULL, 1, 0, 0, NULL, '15_unplugged_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_unplugged_cybernetic_positives_3', NULL, NULL, 1, 0, 0, NULL, 'This leader has delegated several core body functions to hardware which prioritizes combat awareness.', '15_unplugged_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_unplugged_cybernetic_positives_2', 0, NULL, 0, 0, 0, NULL, '15_unplugged_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_unplugged_cybernetic_positives_2', 0, NULL, 0, 0, 0, NULL, 'These cyborgs benefit from a holistic approach to embodied loadouts. Rather than fully-integrated body armor, swappable augments allow for a modicum of non-military function.', '15_unplugged_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_positives_2', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_positives_2', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_unplugged_cybernetic_positives_2', 'trait_nascent_stage');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_unplugged_cybernetic_positives_2', NULL, NULL, 1, 0, 0, NULL, '15_unplugged_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_unplugged_cybernetic_positives_2', NULL, NULL, 1, 0, 0, NULL, 'This leader is able to integrate seamlessly and directly with military and civilian systems, at significant cost to their organic senses.', '15_unplugged_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_unplugged_cybernetic_positives_1', 0, NULL, 0, 0, 0, NULL, '15_unplugged_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_unplugged_cybernetic_positives_1', 0, NULL, 0, 0, 0, NULL, 'Elegant augmentations to these cyborgs'' senses, glands, and motor nerves ensure they remain fierce and capable warriors while only marginally impacting their reproductive capabilities.', '15_unplugged_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_positives_1', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_positives_1', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_unplugged_cybernetic_positives_1', 'trait_nascent_stage');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_unplugged_cybernetic_positives_1', NULL, NULL, 1, 0, 0, NULL, '15_unplugged_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_unplugged_cybernetic_positives_1', NULL, NULL, 1, 0, 0, NULL, 'Significant augmentation of this leader''s senses and immune systems ensures longevity, reliability, and only minor loss of reproductive function.', '15_unplugged_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_unplugged_cybernetic_negatives_3', 0, NULL, 0, 0, 0, NULL, '15_unplugged_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_unplugged_cybernetic_negatives_3', 0, NULL, 0, 0, 0, NULL, 'Several of these cyborgs'' augments were designed to utilize a battlefield network which no longer exists, causing intense stress and discomfort.', '15_unplugged_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_negatives_3', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_negatives_3', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_unplugged_cybernetic_negatives_2', 0, NULL, 0, 0, 0, NULL, '15_unplugged_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_unplugged_cybernetic_negatives_2', 0, NULL, 0, 0, 0, NULL, 'The ill-fitting nature of these cyborgs'' imposed, military augments greatly reduces their quality of life and increases their bodies'' demands during periods of rehabilitation.', '15_unplugged_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_negatives_2', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_negatives_2', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_unplugged_cybernetic_negatives_1', 0, NULL, 0, 0, 0, NULL, '15_unplugged_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_unplugged_cybernetic_negatives_1', 0, NULL, 0, 0, 0, NULL, 'Auditory hallucinations and other sensory echoes from their former machine consciousness still haunt these cyborgs, causing them to suffer severe bouts of depression and anxiety.', '15_unplugged_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_negatives_1', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_cybernetic_negatives_1', 'LITHOID');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_unplugged_decyberized', 0, NULL, 0, 0, 0, NULL, '15_unplugged_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_unplugged_decyberized', 0, NULL, 0, 0, 0, NULL, 'These ex-cyborgs have disabled or cast off the augments which had once been forced upon them, reclaiming many of their species'' organic, inherited attributes.', '15_unplugged_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_decyberized', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_decyberized', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_decyberized', 'organic');
@@ -10578,8 +10599,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_decybe
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_decyberized', 'ethic_attraction');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_decyberized', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_unplugged_neurocalmed', 0, NULL, 0, 0, 0, NULL, '15_unplugged_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_unplugged_neurocalmed', 0, NULL, 0, 0, 0, NULL, 'These cyborgs have their Neuroxene levels downregulated, reducing impulsivity and aggression, driving individuals to de-prioritize personal gain in favor of societal norms.', '15_unplugged_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_neurocalmed', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_neurocalmed', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurocalmed', 'organic');
@@ -10590,8 +10611,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neuroc
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurocalmed', 'ethic_attraction');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurocalmed', 'individual');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_unplugged_neurosavant', 0, NULL, 0, 0, 0, NULL, '15_unplugged_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_unplugged_neurosavant', 0, NULL, 0, 0, 0, NULL, 'These cyborgs have their Cognivex levels upregulated, enhancing synaptic plasticity, information retention, and problem-solving abilities.', '15_unplugged_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_neurosavant', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_neurosavant', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurosavant', 'organic');
@@ -10600,8 +10621,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neuros
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurosavant', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_neurosavant', 'leader');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_unplugged_regenoptimized', 0, NULL, 0, 0, 0, NULL, '15_unplugged_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_unplugged_regenoptimized', 0, NULL, 0, 0, 0, NULL, 'These cyborgs have their Regenol-X levels upregulated, harmonizing biological and synthetic systems, allowing cybernetic implants to self-repair at the molecular level.', '15_unplugged_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_regenoptimized', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unplugged_regenoptimized', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unplugged_regenoptimized', 'organic');
@@ -10731,8 +10752,8 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_infernal', 0, 'normal', 0, 0, 0, NULL, '16_infernals_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_infernal', 0, 'normal', 0, 0, 0, NULL, 'This species evolved tissues of metallic alloys to grow and thrive on hot planets where traditional organics would cook. These alloyed cells are slower to degrade and are replaced infrequently, delaying the onset of age-related diseases. They also conduct cold temperatures, which can threaten their health in colder climates.', '16_infernals_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_infernal', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_infernal', 'PRESAPIENT');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_infernal', 'INF');
@@ -10746,8 +10767,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_infernal', 'lead
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_infernal', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_infernal', 'special');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_unbreakable_resolve', 2, 'normal', 1, 1, 0, 'Infernals Species Pack', '16_infernals_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_unbreakable_resolve', 2, 'normal', 1, 1, 0, 'Infernals Species Pack', 'Bound by an intricate web of mirror neurons, these individuals possess an innate ability to synchronize their will. Duty is not a burden, but a shared purpose, and hardship is met with unwavering unity.', '16_infernals_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unbreakable_resolve', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_unbreakable_resolve', 'LITHOID');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unbreakable_resolve', 'organic');
@@ -10755,8 +10776,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unbreakable_reso
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unbreakable_resolve', 'infernal');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_unbreakable_resolve', 'stability');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_shell_slag', 2, 'normal', 1, 1, 0, 'Infernals Species Pack', '16_infernals_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_shell_slag', 2, 'normal', 1, 1, 0, 'Infernals Species Pack', 'An intricate symbiosis with Living Metal allows this species to grow not in the traditional sense, but through the accretion and self-assembly of bio-ferrous structures.', '16_infernals_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_shell_slag', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_shell_slag', 'INF');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_shell_slag', 'trait_invasive');
@@ -10768,8 +10789,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shell_slag', 'sp
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shell_slag', 'rare_resource');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shell_slag', 'production');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_robot_assembly_slag', 2, 'robotic', 1, 1, 0, 'Infernals Species Pack', '16_infernals_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_robot_assembly_slag', 2, 'robotic', 1, 1, 0, 'Infernals Species Pack', 'An intricate integration of Living Metal allows this machine species to expand not through conventional construction, but via the accretion and self-assembly of auto-ferrous frameworks.', '16_infernals_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_assembly_slag', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_robot_assembly_slag', 'MACHINE');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_assembly_slag', 'machine');
@@ -10777,8 +10798,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_assembly_s
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_assembly_slag', 'rare_resource');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_assembly_slag', 'production');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_pyroclastic', 1, 'normal', 1, 1, 0, 'Infernals Species Pack', '16_infernals_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_pyroclastic', 1, 'normal', 1, 1, 0, 'Infernals Species Pack', 'Shaped by the relentless fury of volcanic worlds, this species does not fear pyroclastic forces - they channel and manipulate them, transforming devastation into a vital source of sustenance and power.', '16_infernals_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pyroclastic', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_pyroclastic', 'INF');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_pyroclastic', 'trait_rapid_breeders');
@@ -10798,8 +10819,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pyroclastic', 'p
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pyroclastic', 'pop_growth');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_pyroclastic', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_crucible_community', 1, 'normal', 1, 1, 0, 'Infernals Species Pack', '16_infernals_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_crucible_community', 1, 'normal', 1, 1, 0, 'Infernals Species Pack', 'Tempered by adversity and bound by shared struggle, this species has been forged into an unbreakable whole. Their collective will fuels governance, each member a vital link in the chain of unity.', '16_infernals_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_crucible_community', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_crucible_community', 'INF');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crucible_community', 'organic');
@@ -10807,8 +10828,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crucible_communi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crucible_community', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crucible_community', 'edict_fund');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('leader_trait_hibernating', NULL, NULL, 0, 0, 0, NULL, '16_infernals_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('leader_trait_hibernating', NULL, NULL, 0, 0, 0, NULL, 'This leader hibernates for extended periods, lowering maintenance costs but also reducing active duty time', '16_infernals_traits.txt');
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_infernal', 'leader_lifespan_add', '10.0', 0);
@@ -10845,13 +10866,13 @@ INSERT OR IGNORE INTO trait_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_tankbound', NULL, NULL, 0, 0, 0, 'Shadows of the Shroud', '17_shroud_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_tankbound', NULL, NULL, 0, 0, 0, 'Shadows of the Shroud', 'This species lives out its existence suspended in a vat of specialized bio-fluids. As such, they are heavily reliant on assistive equipment and incapable of engaging directly in physical work.', '17_shroud_species_traits.txt');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tankbound', 'trait_weak');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tankbound', 'trait_hollow_bones');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_uncanny_intuition', 3, 'psionic', 1, 1, 0, 'Shadows of the Shroud', '17_shroud_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_uncanny_intuition', 3, 'psionic', 1, 1, 0, 'Shadows of the Shroud', 'This species exhibits an inexplicable ability to navigate through complex problems on its first attempt.', '17_shroud_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_uncanny_intuition', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_uncanny_intuition', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_uncanny_intuition', 'PSIONIC');
@@ -10860,8 +10881,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uncanny_intuitio
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uncanny_intuition', 'psionic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uncanny_intuition', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cranial_hypertrophy', 2, 'psionic', 1, 1, 0, 'Shadows of the Shroud', '17_shroud_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cranial_hypertrophy', 2, 'psionic', 1, 1, 0, 'Shadows of the Shroud', 'The frame of this species'' neural encasement has inflated to the point where its physical capabilities have become somewhat limited.', '17_shroud_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cranial_hypertrophy', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cranial_hypertrophy', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_cranial_hypertrophy', 'PSIONIC');
@@ -10873,8 +10894,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_hypertro
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_hypertrophy', 'psionic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_hypertrophy', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_cranial_megatrophy', 4, 'psionic', 1, 1, 0, 'Shadows of the Shroud', '17_shroud_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_cranial_megatrophy', 4, 'psionic', 1, 1, 0, 'Shadows of the Shroud', 'The frame of this species'' neural encasement has inflated to its ultimate biological limit.', '17_shroud_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cranial_megatrophy', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cranial_megatrophy', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_cranial_megatrophy', 'PSIONIC');
@@ -10886,8 +10907,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_megatrop
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_megatrophy', 'psionic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_megatrophy', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_haunting_visions', -2, 'psionic', 1, 1, 0, 'Shadows of the Shroud', '17_shroud_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_haunting_visions', -2, 'psionic', 1, 1, 0, 'Shadows of the Shroud', 'Entities from other dimensions send maddening visions into the minds of this species, affecting their ability to perform complex tasks.', '17_shroud_species_traits.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_haunting_visions', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_haunting_visions', 'LITHOID');
 INSERT OR IGNORE INTO trait_species_class (trait_key, species_class_key) VALUES ('trait_haunting_visions', 'PSIONIC');
@@ -10897,11 +10918,11 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_haunting_visions
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_haunting_visions', 'psionic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_haunting_visions', 'species');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_blindness', NULL, NULL, 0, 0, 0, 'Shadows of the Shroud', '17_shroud_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_blindness', NULL, NULL, 0, 0, 0, 'Shadows of the Shroud', 'Where we are going, we won''t need to see.', '17_shroud_species_traits.txt');
 INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES ('trait_marked', NULL, NULL, 0, 0, 0, 'Shadows of the Shroud', '17_shroud_species_traits.txt');
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES ('trait_marked', NULL, NULL, 0, 0, 0, 'Shadows of the Shroud', 'In a gruesome display of devotion, this species has branded its flesh with the mark of ''The End''.', '17_shroud_species_traits.txt');
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_tankbound', 'pop_amenities_usage_mult', '0.5', 0);
@@ -35354,22 +35375,7 @@ INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUE
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pleasure_seekers', 'civilian', 'Civilian', 'fe_hedonist', 'Hedonist', 0);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pleasure_seekers', 'civilian', 'fe_hedonist', 'base', 'produces', 'trade', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pleasure_seekers', 'civilian', 'fe_hedonist', 'swapped', 'produces', 'trade', '1.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_pleasure_seekers', 'civilian', 'fe_hedonist', 'base', 'planet_amenities_add', '0.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_hedonism', 'civilian', 'Civilian', 'fe_hedonist', 'Hedonist', 1);
+                           VALUES ('civic', 'civic_corporate_hedonism', 'civilian', 'Civilian', 'fe_hedonist', 'Hedonist', 0);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_hedonism', 'civilian', 'fe_hedonist', 'base', 'produces', 'trade', '1.0');
@@ -35379,6 +35385,21 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_corporate_hedonism', 'civilian', 'fe_hedonist', 'base', 'planet_amenities_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pleasure_seekers', 'civilian', 'Civilian', 'fe_hedonist', 'Hedonist', 1);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pleasure_seekers', 'civilian', 'fe_hedonist', 'base', 'produces', 'trade', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pleasure_seekers', 'civilian', 'fe_hedonist', 'swapped', 'produces', 'trade', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pleasure_seekers', 'civilian', 'fe_hedonist', 'base', 'planet_amenities_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
@@ -35521,23 +35542,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazewright', 'Blazewright', 9);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'blazewright', 'base', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'blazewright', 'base', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'blazewright', 'swapped', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'blazewright', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'blazewright', 'Blazewright', 10);
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'blazewright', 'Blazewright', 9);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'base', 'produces', 'unity', '5.0');
@@ -35550,6 +35555,22 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazewright', 'Blazewright', 10);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'politician', 'blazewright', 'base', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'politician', 'blazewright', 'base', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'politician', 'blazewright', 'swapped', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'politician', 'blazewright', 'swapped', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -35601,23 +35622,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 14);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'pyrocrat', 'base', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'pyrocrat', 'base', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'pyrocrat', 'swapped', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'pyrocrat', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 15);
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 14);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_superstitious_beliefs', 'politician', 'pyrocrat', 'base', 'produces', 'unity', '5.0');
@@ -35630,6 +35635,22 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_superstitious_beliefs', 'politician', 'pyrocrat', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 15);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'politician', 'pyrocrat', 'base', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'politician', 'pyrocrat', 'base', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'politician', 'pyrocrat', 'swapped', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'politician', 'pyrocrat', 'swapped', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -35681,28 +35702,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 19);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'base', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'base', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'swapped', 'produces', 'unity', '7.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'swapped', 'planet_stability_add', '0.02');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_stability_add', 'Stability', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 20);
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 19);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_superstitious_beliefs', 'politician', 'blazing_harbinger', 'base', 'produces', 'unity', '5.0');
@@ -35718,6 +35718,27 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_superstitious_beliefs', 'politician', 'blazing_harbinger', 'swapped', 'planet_stability_add', '0.02');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 20);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'base', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'base', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'swapped', 'produces', 'unity', '7.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'swapped', 'planet_stability_add', '0.02');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
@@ -35744,37 +35765,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'noble_researcher', 'Noble Scientist', 22);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'base', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'base', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'unity', '4.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'physics_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'society_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'engineering_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'planet_stability_add', '0.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_stability_add', 'Stability', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_technocracy', 'politician', 'Politician', 'noble_researcher', 'Noble Scientist', 23);
+                           VALUES ('civic', 'civic_technocracy', 'politician', 'Politician', 'noble_researcher', 'Noble Scientist', 22);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_technocracy', 'politician', 'noble_researcher', 'base', 'produces', 'unity', '5.0');
@@ -35799,6 +35790,36 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_technocracy', 'politician', 'noble_researcher', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'noble_researcher', 'Noble Scientist', 23);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'base', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'base', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'unity', '4.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'physics_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'society_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'engineering_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'planet_stability_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
@@ -35932,32 +35953,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'visionary', 'Tech Visionary', 31);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'base', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'base', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'unity', '4.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'physics_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'society_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'engineering_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_technocracy', 'politician', 'Politician', 'visionary', 'Tech Visionary', 32);
+                           VALUES ('civic', 'civic_technocracy', 'politician', 'Politician', 'visionary', 'Tech Visionary', 31);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_technocracy', 'politician', 'visionary', 'base', 'produces', 'unity', '5.0');
@@ -35982,28 +35978,32 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'noble_merchant', 'Patrician', 33);
+                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'visionary', 'Tech Visionary', 32);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'base', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'base', 'produces', 'unity', '5.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'base', 'upkeep', 'consumer_goods', '3.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'base', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'swapped', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'unity', '4.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'swapped', 'planet_stability_add', '0.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_stability_add', 'Stability', 1);
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'physics_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'society_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'engineering_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'noble_merchant', 'Patrician', 34);
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'noble_merchant', 'Patrician', 33);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'base', 'produces', 'unity', '5.0');
@@ -36019,6 +36019,27 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'noble_merchant', 'Patrician', 34);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'base', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'base', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'swapped', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'swapped', 'planet_stability_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
@@ -36240,33 +36261,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'bureaucrat', 'Bureaucrat', 'fire_seer', 'Fire Seer', 43);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'base', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'base', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'swapped', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'swapped', 'planet_amenities_add', '2.0');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'swapped', 'planet_stability_add', '0.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_stability_add', 'Stability', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'fire_seer', 'Fire Seer', 44);
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'fire_seer', 'Fire Seer', 43);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'base', 'produces', 'unity', '3.0');
@@ -36287,6 +36282,32 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'fire_seer', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'bureaucrat', 'Bureaucrat', 'fire_seer', 'Fire Seer', 44);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'base', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'base', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'swapped', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'fire_seer', 'swapped', 'planet_stability_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
@@ -36344,33 +36365,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'bureaucrat', 'Bureaucrat', 'cremator', 'Cremator', 47);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'base', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'base', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'swapped', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'swapped', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'swapped', 'planet_amenities_add', '2.0');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'swapped', 'planet_stability_add', '0.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_stability_add', 'Stability', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'cremator', 'Cremator', 48);
+                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'cremator', 'Cremator', 47);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_death_cult', 'bureaucrat', 'cremator', 'base', 'produces', 'unity', '3.0');
@@ -36391,6 +36386,32 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_death_cult', 'bureaucrat', 'cremator', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_pyrolatry', 'bureaucrat', 'Bureaucrat', 'cremator', 'Cremator', 48);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'base', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'base', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'swapped', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_pyrolatry', 'bureaucrat', 'cremator', 'swapped', 'planet_stability_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
@@ -36620,23 +36641,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 60);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'base', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'swapped', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'swapped', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 61);
+                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 60);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
@@ -36652,7 +36657,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 62);
+                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 61);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
@@ -36665,6 +36670,22 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 62);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'base', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'swapped', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'swapped', 'upkeep', 'consumer_goods', '2.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -36687,26 +36708,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 64);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'base', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'trade', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'swapped', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 65);
+                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 64);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
@@ -36725,7 +36727,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 66);
+                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 65);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
@@ -36741,6 +36743,25 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 66);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'base', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'swapped', 'upkeep', 'consumer_goods', '2.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -36849,33 +36870,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_storm_callers_megacorp', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 70);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'produces', 'unity', '0.5');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'upkeep', 'consumer_goods', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'produces', 'unity', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'planet_amenities_add', '12.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'planet_amenities_add', '12.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_storm_callers', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 71);
+                           VALUES ('civic', 'civic_storm_callers', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 70);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'base', 'produces', 'unity', '0.5');
@@ -36896,6 +36891,32 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_storm_callers_megacorp', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 71);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'produces', 'unity', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'upkeep', 'consumer_goods', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'produces', 'unity', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'planet_amenities_add', '12.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
@@ -36959,27 +36980,27 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_storm_callers_megacorp', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 74);
+                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 74);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'base', 'produces', 'unity', '0.5');
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'base', 'produces', 'unity', '0.5');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'base', 'upkeep', 'consumer_goods', '1.0');
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'base', 'upkeep', 'consumer_goods', '1.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'produces', 'unity', '2.5');
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'swapped', 'produces', 'unity', '2.5');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'upkeep', 'alloys', '1.0');
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'swapped', 'upkeep', 'alloys', '1.0');
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'base', 'planet_amenities_add', '12.5');
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'base', 'planet_amenities_add', '12.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'planet_amenities_add', '12.5');
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'swapped', 'planet_amenities_add', '12.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
@@ -37011,91 +37032,33 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 76);
+                           VALUES ('civic', 'civic_storm_callers_megacorp', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 76);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'base', 'produces', 'unity', '0.5');
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'base', 'produces', 'unity', '0.5');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'base', 'upkeep', 'consumer_goods', '1.0');
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'base', 'upkeep', 'consumer_goods', '1.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'swapped', 'produces', 'unity', '2.5');
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'produces', 'unity', '2.5');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'swapped', 'upkeep', 'alloys', '1.0');
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'upkeep', 'alloys', '1.0');
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'base', 'planet_amenities_add', '12.5');
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'base', 'planet_amenities_add', '12.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'swapped', 'planet_amenities_add', '12.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 77);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'base', 'produces', 'unity', '0.5');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'base', 'upkeep', 'consumer_goods', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'produces', 'unity', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'produces', 'society_research', '0.5');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'upkeep', 'alloys', '1.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'base', 'planet_amenities_add', '12.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'planet_amenities_add', '12.5');
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'planet_amenities_add', '12.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 78);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'base', 'produces', 'unity', '0.5');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'base', 'upkeep', 'consumer_goods', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'swapped', 'produces', 'unity', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'swapped', 'produces', 'society_research', '0.5');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'swapped', 'upkeep', 'alloys', '1.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'base', 'planet_amenities_add', '12.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'swapped', 'planet_amenities_add', '12.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 79);
+                           VALUES ('civic', 'civic_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 77);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'base', 'produces', 'unity', '0.5');
@@ -37124,23 +37087,65 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_catalytic_processing', 'foundry', 'Metallurgist', 'catalytic_technician', 'Catalytic Technician', 80);
+                           VALUES ('civic', 'civic_corporate_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 78);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'base', 'produces', 'alloys', '3.0');
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'base', 'produces', 'unity', '0.5');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'base', 'upkeep', 'minerals', '6.0');
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'base', 'upkeep', 'consumer_goods', '1.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'swapped', 'produces', 'alloys', '3.75');
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'produces', 'unity', '1.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'swapped', 'upkeep', 'food', '9.0');
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'produces', 'society_research', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_catalytic_processing', 'foundry', 'Metallurgist', 'catalytic_technician', 'Catalytic Technician', 81);
+                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 79);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'base', 'produces', 'unity', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'base', 'upkeep', 'consumer_goods', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'swapped', 'produces', 'unity', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'swapped', 'produces', 'society_research', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'swapped', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_catalytic_processing', 'foundry', 'Metallurgist', 'catalytic_technician', 'Catalytic Technician', 80);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_catalytic_processing', 'foundry', 'catalytic_technician', 'base', 'produces', 'alloys', '3.0');
@@ -37156,26 +37161,23 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 82);
+                           VALUES ('civic', 'civic_catalytic_processing', 'foundry', 'Metallurgist', 'catalytic_technician', 'Catalytic Technician', 81);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'base', 'produces', 'consumer_goods', '6.0');
+                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'base', 'produces', 'alloys', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'base', 'upkeep', 'minerals', '6.0');
+                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'base', 'upkeep', 'minerals', '6.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'swapped', 'produces', 'consumer_goods', '8.0');
+                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'swapped', 'produces', 'alloys', '3.75');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'swapped', 'produces', 'trade', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'swapped', 'upkeep', 'minerals', '6.0');
+                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'swapped', 'upkeep', 'food', '9.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 83);
+                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 82);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_crafters', 'artisan', 'artificer', 'base', 'produces', 'consumer_goods', '6.0');
@@ -37191,6 +37193,25 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_crafters', 'artisan', 'artificer', 'swapped', 'upkeep', 'minerals', '6.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 83);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'base', 'produces', 'consumer_goods', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'base', 'upkeep', 'minerals', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'swapped', 'produces', 'consumer_goods', '8.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'swapped', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'swapped', 'upkeep', 'minerals', '6.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -37238,29 +37259,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_anglers', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 86);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'base', 'upkeep', 'minerals', '6.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'consumer_goods', '8.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'trade', '4.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'minerals', '4.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'food', '3.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 87);
+                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 86);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
@@ -37282,7 +37281,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_anglers', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 88);
+                           VALUES ('civic', 'civic_corporate_anglers', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 87);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
@@ -37304,7 +37303,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_crafters', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 89);
+                           VALUES ('civic', 'civic_corporate_crafters', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 88);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_crafters', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
@@ -37323,6 +37322,28 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_crafters', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'food', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_anglers', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 89);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'base', 'upkeep', 'minerals', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'consumer_goods', '8.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'trade', '4.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'minerals', '4.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'food', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -37446,33 +37467,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_hive_galactic_curators', 'evaluator', 'Evaluator', 'curator_drone', 'Curator Drone', 95);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'base', 'produces', 'unity', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'base', 'upkeep', 'energy', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'produces', 'unity', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'upkeep', 'energy', '2.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'base', 'planet_amenities_no_happiness_add', '3.0');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'planet_amenities_no_happiness_add', '3.0');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_machine_galactic_curators', 'evaluator', 'Evaluator', 'curator_drone', 'Curator Drone', 96);
+                           VALUES ('civic', 'civic_machine_galactic_curators', 'evaluator', 'Evaluator', 'curator_drone', 'Curator Drone', 95);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'base', 'produces', 'unity', '2.0');
@@ -37498,28 +37493,33 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_machine_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 97);
+                           VALUES ('civic', 'civic_hive_galactic_curators', 'evaluator', 'Evaluator', 'curator_drone', 'Curator Drone', 96);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'base', 'produces', 'unity', '3.0');
+                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'base', 'produces', 'unity', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'base', 'upkeep', 'energy', '4.0');
+                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'base', 'upkeep', 'energy', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'produces', 'unity', '3.5');
+                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'produces', 'unity', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'upkeep', 'energy', '4.0');
+                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'upkeep', 'energy', '2.0');
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'planet_stability_add', '0.2');
+                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'base', 'planet_amenities_no_happiness_add', '3.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_stability_add', 'Stability', 1);
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'planet_amenities_no_happiness_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_hive_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 98);
+                           VALUES ('civic', 'civic_hive_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 97);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'base', 'produces', 'unity', '3.0');
@@ -37535,6 +37535,27 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'planet_stability_add', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_machine_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 98);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'base', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'base', 'upkeep', 'energy', '4.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'produces', 'unity', '3.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'upkeep', 'energy', '4.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'planet_stability_add', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap

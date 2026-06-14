@@ -338,6 +338,7 @@ CREATE TABLE IF NOT EXISTS species_class_attribute (
 -- Drop the trait family up-front (children before parent): these older tables use
 -- CREATE IF NOT EXISTS, so without an explicit DROP they accumulate stale rows across
 -- runs (renamed/removed modifier keys would otherwise linger).
+DROP TABLE IF EXISTS trait_scaling_modifier;
 DROP TABLE IF EXISTS trait_modifier;
 DROP TABLE IF EXISTS trait_tag;
 DROP TABLE IF EXISTS trait_opposite;
@@ -353,6 +354,7 @@ CREATE TABLE IF NOT EXISTS trait (
     randomized   INTEGER DEFAULT 1,     -- 0=no, 1=yes
     hidden       INTEGER DEFAULT 0,     -- 0=no, 1=yes
     required_dlc TEXT,                  -- NULL = base game; FK to dlc.name
+    description  TEXT,                  -- cleaned flavour text from trait_<key>_desc loc
     source_file  TEXT,
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
 );
@@ -390,6 +392,19 @@ CREATE TABLE IF NOT EXISTS trait_modifier (
     modifier_key   TEXT NOT NULL,
     modifier_value REAL NOT NULL,
     sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (trait_key, modifier_key),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+-- Per-pop-count scaling effects (Familial, Noxious): a modifier scaled by a `value:counter_*`
+-- script value that counts pops, e.g. "+0.1% Happiness per 100 Familial pops (max +20%)".
+CREATE TABLE IF NOT EXISTS trait_scaling_modifier (
+    trait_key    TEXT NOT NULL,
+    modifier_key TEXT NOT NULL,        -- e.g. "pop_happiness"
+    per_hundred  REAL NOT NULL,        -- value per 100 counted pops
+    cap          REAL NOT NULL,        -- value at the counter's max
+    count_label  TEXT,                 -- what's counted, e.g. "Familial" (NULL = generic "pops")
+    sort_order   INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (trait_key, modifier_key),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
 );
@@ -1440,7 +1455,7 @@ def _to_list(value) -> list:
     return []
 
 
-def extract_traits(data: dict, source_file: str, w: Writer, verbose: bool):
+def extract_traits(data: dict, source_file: str, loc: dict[str, str], w: Writer, verbose: bool):
     for trait_key, trait_data in data.items():
         if not isinstance(trait_data, dict):
             continue
@@ -1451,12 +1466,14 @@ def extract_traits(data: dict, source_file: str, w: Writer, verbose: bool):
         randomized   = 0 if trait_data.get('randomized', 'yes') == 'no' else 1
         hidden       = 1 if trait_data.get('hidden',     'no')  == 'yes' else 0
         required_dlc = trait_data.get('host_has_dlc') or None
+        raw_desc     = loc.get(trait_key + '_desc')
+        description  = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
 
         w.execute("""
             INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, source_file)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (trait_key, cost, category, initial, randomized, hidden, required_dlc, source_file))
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (trait_key, cost, category, initial, randomized, hidden, required_dlc, description, source_file))
 
         for arch in _to_list(trait_data.get('allowed_archetypes')):
             w.execute(
@@ -1580,6 +1597,78 @@ def _load_scripted_variables(install_dir: Path) -> dict[str, float]:
     return out
 
 
+_COUNTER_RE = re.compile(r'(?:\w+\.)?value:(counter_\w+)')
+
+
+def _load_pop_counters(install_dir: Path) -> dict[str, dict]:
+    """Pop-counting script_values used as per-pop modifier multipliers: name → {max, divide,
+    trait, negated}. These are `complex_trigger_modifier { trigger = count_owned_pop_amount …
+    limit { has_trait = … } }` with a `max` cap (e.g. counter_familial, counter_noxious)."""
+    out: dict[str, dict] = {}
+    sdir = install_dir / 'common' / 'script_values'
+    if not sdir.is_dir():
+        return out
+    for f in sorted(sdir.glob('*.txt')):
+        try:
+            data = parse_file(f)
+        except Exception:
+            continue
+        for name, blk in data.items():
+            if not isinstance(blk, dict):
+                continue
+            ctm = next((b for b in _as_blocks(blk.get('complex_trigger_modifier'))), None)
+            if not isinstance(ctm, dict) or ctm.get('trigger') != 'count_owned_pop_amount':
+                continue
+            mx = _resolve_modifier_float(blk.get('max'))
+            if mx is None:
+                continue
+            params = ctm.get('parameters')
+            limit = params.get('limit') if isinstance(params, dict) else None
+            trait, negated = None, False
+            if isinstance(limit, dict):
+                if isinstance(limit.get('has_trait'), str):
+                    trait = limit['has_trait']
+                elif isinstance(limit.get('NOT'), dict) and isinstance(limit['NOT'].get('has_trait'), str):
+                    trait, negated = limit['NOT']['has_trait'], True
+            out[name] = {'max': mx, 'divide': _resolve_modifier_float(blk.get('divide')) or 1.0,
+                         'trait': trait, 'negated': negated}
+    return out
+
+
+def _block_counter(block: dict) -> str | None:
+    """The pop-counter name a block scales by (`mult = …value:counter_X`), or None."""
+    if isinstance(block, dict):
+        m = block.get('mult')
+        if isinstance(m, str):
+            mm = _COUNTER_RE.match(m.strip())
+            if mm:
+                return mm.group(1)
+    return None
+
+
+def _trait_scaling_effects(tdef: dict, variables: dict[str, float], counters: dict[str, dict]
+                           ) -> list[tuple[str, float, float, str | None]]:
+    """[(modifier_key, value_per_100_pops, value_at_cap, count_label)] for a trait's per-pop
+    scaling modifiers (a block scaled by a pop-counter value:counter_*). e.g. Familial →
+    (pop_happiness, 0.001, 0.2, 'Familial') → '+0.1% Happiness per 100 Familial pops (max +20%)'."""
+    out: list[tuple[str, float, float, str | None]] = []
+    for bk in ('modifier', 'triggered_species_modifier', 'triggered_pop_group_modifier',
+               'triggered_planet_growth_habitability_modifier'):
+        for block in _as_blocks(tdef.get(bk)):
+            cname = _block_counter(block)
+            c = counters.get(cname) if cname else None
+            if not c:
+                continue
+            div = c['divide'] or 1.0
+            label = None
+            if c['trait']:
+                pretty = c['trait'].replace('trait_', '').replace('_', ' ').title()
+                label = ('non-' + pretty) if c['negated'] else pretty
+            for k, base in _block_modifier_values(block, variables):
+                out.append((k, round(base * 100 / div, 6), round(base * c['max'], 6), label))
+    return out
+
+
 def _trait_modifier_pairs(tdef: dict, variables: dict[str, float], idx: dict[str, dict],
                           load_script, seen: set[str] | None = None) -> dict[str, float]:
     """{modifier_key: summed value} a trait grants in a plain empire. Sources, in order:
@@ -1594,6 +1683,8 @@ def _trait_modifier_pairs(tdef: dict, variables: dict[str, float], idx: dict[str
     out: dict[str, float] = {}
 
     def add(block: dict, scale: float = 1.0) -> None:
+        if _block_counter(block):
+            return  # per-pop scaling block → handled by _trait_scaling_effects, not a flat row
         for k, v in _block_modifier_values(block, variables):
             out[k] = round(out.get(k, 0.0) + v * scale, 4)
 
@@ -1629,7 +1720,8 @@ def _trait_modifier_pairs(tdef: dict, variables: dict[str, float], idx: dict[str
 
 def extract_trait_modifiers(data: dict, source_file: str, loc: dict[str, str],
                             variables_base: dict[str, float], idx: dict[str, dict],
-                            inline_scripts_dir: Path, w: Writer, verbose: bool):
+                            inline_scripts_dir: Path, counters: dict[str, dict],
+                            w: Writer, verbose: bool):
     # File-local @vars layered on the global scripted_variables base.
     variables = dict(variables_base)
     for key, val in data.items():
@@ -1665,6 +1757,16 @@ def extract_trait_modifiers(data: dict, source_file: str, loc: dict[str, str],
             _write_modifier_label(w, loc, mod_key)
             if verbose:
                 print(f"  Modifier: {trait_key} | {mod_key} = {value}")
+
+        for order, (mod_key, per100, cap, count_label) in enumerate(
+                _trait_scaling_effects(trait_data, variables, counters)):
+            w.execute(
+                """INSERT OR IGNORE INTO trait_scaling_modifier
+                       (trait_key, modifier_key, per_hundred, cap, count_label, sort_order)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (trait_key, mod_key, per100, cap, count_label, order),
+            )
+            _write_modifier_label(w, loc, mod_key)
 
     w.commit()
 
@@ -4592,13 +4694,14 @@ Examples:
     # triggered_species/pop_group_modifier blocks through the scripted_triggers index.
     trait_vars = _load_scripted_variables(install_dir)
     trait_idx = _scripted_trigger_index(install_dir)
+    pop_counters = _load_pop_counters(install_dir)
     for f in tr_files:
         print(f"  Reading: {f.name}", file=progress)
         try:
             data = parse_file(f)
-            extract_traits(data, f.name, w, args.verbose)
+            extract_traits(data, f.name, loc, w, args.verbose)
             extract_trait_modifiers(data, f.name, loc, trait_vars, trait_idx,
-                                    inline_scripts_dir, w, args.verbose)
+                                    inline_scripts_dir, pop_counters, w, args.verbose)
         except Exception as e:
             print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
 
