@@ -1551,65 +1551,94 @@ def _load_scripted_modifier_meta(install_dir: Path) -> None:
                 _SCRIPTED_MOD_GOOD[key] = str(block['good']).strip() == 'yes'
 
 
+def _load_scripted_variables(install_dir: Path) -> dict[str, float]:
+    """All @variables (resolved to float) from common/scripted_variables/*.txt — where
+    shared trait/job values like @adaptive_base_output, @auto_penalty, @cyborg_hab_preference
+    live (referenced by trait modifier blocks but not defined in the trait files)."""
+    out: dict[str, float] = {}
+    sdir = install_dir / 'common' / 'scripted_variables'
+    if not sdir.is_dir():
+        return out
+    for f in sorted(sdir.glob('*.txt')):
+        try:
+            for vk, vv in parse_file(f).items():
+                if vk.startswith('@'):
+                    fv = _resolve_modifier_float(vv)
+                    if fv is not None:
+                        out[vk] = fv
+        except Exception:
+            continue
+    return out
+
+
+def _trait_modifier_pairs(tdef: dict, variables: dict[str, float], idx: dict[str, dict],
+                          load_script, seen: set[str] | None = None) -> dict[str, float]:
+    """{modifier_key: summed value} a trait grants in a plain empire: its top-level `modifier`
+    block plus `triggered_species_modifier` / `triggered_pop_group_modifier` blocks whose
+    `potential` imposes no positive special requirement (the base variant — same gating as
+    job swaps), following `inline_script` references (e.g. traits/psionic_effects)."""
+    if seen is None:
+        seen = set()
+    out: dict[str, float] = {}
+
+    def add(block: dict) -> None:
+        for k, v in _block_modifier_values(block, variables):
+            out[k] = round(out.get(k, 0.0) + v, 4)
+
+    for block in _as_blocks(tdef.get('modifier')):
+        add(block)
+    for key in ('triggered_species_modifier', 'triggered_pop_group_modifier'):
+        for block in _as_blocks(tdef.get(key)):
+            pot = block.get('potential')
+            if pot is not None and _signals(pot, idx)[0]:
+                continue  # gated by a positive special condition → not the base variant
+            add(block)
+    isc = tdef.get('inline_script')
+    for sn in (isc if isinstance(isc, list) else [isc]):
+        if isinstance(sn, str) and sn not in seen:
+            seen.add(sn)
+            for k, v in _trait_modifier_pairs(load_script(sn), variables, idx,
+                                              load_script, seen).items():
+                out[k] = round(out.get(k, 0.0) + v, 4)
+    return {k: v for k, v in out.items() if v != 0}
+
+
 def extract_trait_modifiers(data: dict, source_file: str, loc: dict[str, str],
-                             w: Writer, verbose: bool):
-    # Collect @variable definitions (float) from this file's top level
-    variables: dict[str, float] = {}
+                            variables_base: dict[str, float], idx: dict[str, dict],
+                            inline_scripts_dir: Path, w: Writer, verbose: bool):
+    # File-local @vars layered on the global scripted_variables base.
+    variables = dict(variables_base)
     for key, val in data.items():
         if key.startswith('@'):
-            try:
-                variables[key] = float(val)
-            except (ValueError, TypeError):
-                pass
+            fv = _resolve_modifier_float(val)
+            if fv is not None:
+                variables[key] = fv
 
-    def resolve_float(raw) -> float | None:
-        if raw is None:
-            return None
-        s = str(raw).strip()
-        if s.startswith('@'):
-            return variables.get(s)
-        try:
-            return float(s)
-        except ValueError:
-            return None
+    script_cache: dict[str, dict] = {}
+
+    def load_script(name: str) -> dict:
+        if name not in script_cache:
+            p = inline_scripts_dir / (name + '.txt')
+            try:
+                script_cache[name] = parse_file(p) if p.exists() else {}
+            except Exception:
+                script_cache[name] = {}
+        return script_cache[name]
 
     for trait_key, trait_data in data.items():
         if trait_key.startswith('@') or not isinstance(trait_data, dict):
             continue
-
-        modifier = trait_data.get('modifier')
-        if modifier is None:
-            continue
-
-        # Multiple modifier = {} blocks in one trait get promoted to a list by the parser
-        if isinstance(modifier, list):
-            merged: dict = {}
-            for m in modifier:
-                if isinstance(m, dict):
-                    merged.update(m)
-            modifier = merged
-        if not isinstance(modifier, dict):
-            continue
-
-        for order, (mod_key, mod_val) in enumerate(modifier.items()):
-            # Duplicate values within one block are unusual; take the last
-            if isinstance(mod_val, list):
-                mod_val = mod_val[-1]
-            value = resolve_float(mod_val)
-            if value is None:
-                continue
-
+        pairs = _trait_modifier_pairs(trait_data, variables, idx, load_script)
+        for order, (mod_key, value) in enumerate(pairs.items()):
             w.execute(
                 """INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES (?, ?, ?, ?)""",
                 (trait_key, mod_key, value, order),
             )
-
             # Populate modifier_label via the shared helper (icon-stripped,
             # attunement-aware, same loc lookup order for every modifier source).
             _write_modifier_label(w, loc, mod_key)
-
             if verbose:
                 print(f"  Modifier: {trait_key} | {mod_key} = {value}")
 
@@ -2446,8 +2475,10 @@ def _eval_job_resources(blocks: dict[str, list], swap_pos: set[str], idx: dict[s
     return [(kind, resource, amt) for (kind, resource), amt in out.items() if amt != 0]
 
 
-# Sub-keys inside a (triggered_)planet_modifier/country_modifier block that aren't modifiers.
-_MOD_BLOCK_SKIP = {'potential', 'trigger', 'desc', 'mult', 'multiplier', 'weight', 'modifier'}
+# Sub-keys inside a modifier block that aren't stat modifiers: structural/scope keys, and
+# the add/subtract/from of habitability-style `modifier = { add = N from = {…} }` calcs.
+_MOD_BLOCK_SKIP = {'potential', 'trigger', 'desc', 'mult', 'multiplier', 'weight', 'modifier',
+                   'add', 'subtract', 'from', 'prev', 'this'}
 
 
 def _block_modifier_values(block: dict, variables: dict[str, float]) -> list[tuple[str, float]]:
@@ -4533,12 +4564,17 @@ Examples:
         f for f in traits_dir.glob('*.txt') if is_species_trait_file(f)
     ) if traits_dir.exists() else []
     print(f"\n[4/6] traits: {len(tr_files)} file(s)", file=progress)
+    # Trait modifiers resolve @vars from common/scripted_variables and gate
+    # triggered_species/pop_group_modifier blocks through the scripted_triggers index.
+    trait_vars = _load_scripted_variables(install_dir)
+    trait_idx = _scripted_trigger_index(install_dir)
     for f in tr_files:
         print(f"  Reading: {f.name}", file=progress)
         try:
             data = parse_file(f)
             extract_traits(data, f.name, w, args.verbose)
-            extract_trait_modifiers(data, f.name, loc, w, args.verbose)
+            extract_trait_modifiers(data, f.name, loc, trait_vars, trait_idx,
+                                    inline_scripts_dir, w, args.verbose)
         except Exception as e:
             print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
 
