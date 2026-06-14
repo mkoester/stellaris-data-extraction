@@ -291,23 +291,33 @@ def parse_file(path: Path) -> dict:
 # ---------------------------------------------------------------------------
 
 SCHEMA = """\
+-- Every table is dropped before it is (re)created, so a regen always rebuilds a clean
+-- schema in-place — no stale rows, and column changes take effect without deleting the
+-- .sqlite file first. DROPs list children before parents.
+DROP TABLE IF EXISTS meta;
+DROP TABLE IF EXISTS dlc;
+DROP TABLE IF EXISTS species_class_attribute;
+DROP TABLE IF EXISTS portrait_set;
+DROP TABLE IF EXISTS species_class;
+
 -- Key/value metadata about the extracted game (e.g. game_version, game_version_raw).
-CREATE TABLE IF NOT EXISTS meta (
+CREATE TABLE meta (
     key   TEXT PRIMARY KEY,
     value TEXT
 );
 
-CREATE TABLE IF NOT EXISTS dlc (
+CREATE TABLE dlc (
     name             TEXT PRIMARY KEY,   -- matches host_has_dlc values, e.g. "Toxoids Species Pack"
     steam_id         TEXT,
     affects_gameplay INTEGER DEFAULT 0   -- 0/1
 );
 
-CREATE TABLE IF NOT EXISTS species_class (
+CREATE TABLE species_class (
     id                   INTEGER PRIMARY KEY AUTOINCREMENT,
     key                  TEXT UNIQUE NOT NULL,   -- e.g. "MAM"
     label                TEXT,                   -- display name from localisation, e.g. "Mammalian"
     archetype            TEXT,                   -- e.g. "BIOLOGICAL"
+    base_trait           TEXT,                   -- the class's auto-included base trait, e.g. trait_organic / trait_infernal (Thermophile / INF)
     graphical_culture    TEXT,                   -- e.g. "mammalian_01"
     move_pop_sound_effect TEXT,
     portrait_modding      INTEGER DEFAULT 1,     -- boolean (0/1), default yes per game docs
@@ -315,7 +325,7 @@ CREATE TABLE IF NOT EXISTS species_class (
     source_file          TEXT
 );
 
-CREATE TABLE IF NOT EXISTS portrait_set (
+CREATE TABLE portrait_set (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     set_key           TEXT NOT NULL,             -- e.g. "mammalians"
     species_class_key TEXT,                      -- e.g. "MAM" (from species_class = MAM)
@@ -327,7 +337,7 @@ CREATE TABLE IF NOT EXISTS portrait_set (
     FOREIGN KEY(required_dlc)      REFERENCES dlc(name)
 );
 
-CREATE TABLE IF NOT EXISTS species_class_attribute (
+CREATE TABLE species_class_attribute (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     species_class_key TEXT NOT NULL,
     attribute_key     TEXT NOT NULL,
@@ -345,7 +355,7 @@ DROP TABLE IF EXISTS trait_opposite;
 DROP TABLE IF EXISTS trait_species_class;
 DROP TABLE IF EXISTS trait_archetype;
 DROP TABLE IF EXISTS trait;
-CREATE TABLE IF NOT EXISTS trait (
+CREATE TABLE trait (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     key          TEXT UNIQUE NOT NULL,
     cost         INTEGER,               -- base point cost; NULL if not specified
@@ -359,35 +369,35 @@ CREATE TABLE IF NOT EXISTS trait (
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
 );
 
-CREATE TABLE IF NOT EXISTS trait_archetype (
+CREATE TABLE trait_archetype (
     trait_key TEXT NOT NULL,
     archetype TEXT NOT NULL,          -- BIOLOGICAL, LITHOID, ROBOT, MACHINE
     PRIMARY KEY (trait_key, archetype),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
 );
 
-CREATE TABLE IF NOT EXISTS trait_species_class (
+CREATE TABLE trait_species_class (
     trait_key         TEXT NOT NULL,
     species_class_key TEXT NOT NULL,  -- e.g. LITHOID, PSIONIC, PLANT
     PRIMARY KEY (trait_key, species_class_key),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
 );
 
-CREATE TABLE IF NOT EXISTS trait_opposite (
+CREATE TABLE trait_opposite (
     trait_key    TEXT NOT NULL,
     opposite_key TEXT NOT NULL,       -- mutually exclusive trait
     PRIMARY KEY (trait_key, opposite_key),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
 );
 
-CREATE TABLE IF NOT EXISTS trait_tag (
+CREATE TABLE trait_tag (
     trait_key TEXT NOT NULL,
     tag       TEXT NOT NULL,          -- e.g. organic, positive, pop_output, research
     PRIMARY KEY (trait_key, tag),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
 );
 
-CREATE TABLE IF NOT EXISTS trait_modifier (
+CREATE TABLE trait_modifier (
     trait_key      TEXT NOT NULL,
     modifier_key   TEXT NOT NULL,
     modifier_value REAL NOT NULL,
@@ -396,14 +406,16 @@ CREATE TABLE IF NOT EXISTS trait_modifier (
     FOREIGN KEY (trait_key) REFERENCES trait(key)
 );
 
--- Per-pop-count scaling effects (Familial, Noxious): a modifier scaled by a `value:counter_*`
--- script value that counts pops, e.g. "+0.1% Happiness per 100 Familial pops (max +20%)".
-CREATE TABLE IF NOT EXISTS trait_scaling_modifier (
+-- Scaling effects (Familial, Noxious, Genetic Memory): a modifier scaled by a script
+-- `value:` with a cap — per 100 pops of a kind, or per year of colony age. e.g.
+-- "+0.1% Happiness per 100 Familial pops (max +20%)", "+0.5% Habitability per year of
+-- colony age (max +25%)".
+CREATE TABLE trait_scaling_modifier (
     trait_key    TEXT NOT NULL,
     modifier_key TEXT NOT NULL,        -- e.g. "pop_happiness"
-    per_hundred  REAL NOT NULL,        -- value per 100 counted pops
-    cap          REAL NOT NULL,        -- value at the counter's max
-    count_label  TEXT,                 -- what's counted, e.g. "Familial" (NULL = generic "pops")
+    rate         REAL NOT NULL,        -- value per one display unit (per 100 pops / per year)
+    cap          REAL NOT NULL,        -- value at the scaling value's max
+    unit         TEXT NOT NULL,        -- the "per X" unit, e.g. "100 Familial pops", "year of colony age"
     sort_order   INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (trait_key, modifier_key),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
@@ -416,7 +428,8 @@ CREATE TABLE modifier_label (
     positive_is_good INTEGER NOT NULL DEFAULT 1  -- 0 when a higher value is worse for the empire
 );
 
-CREATE TABLE IF NOT EXISTS species_archetype (
+DROP TABLE IF EXISTS species_archetype;
+CREATE TABLE species_archetype (
     key                     TEXT PRIMARY KEY,
     trait_points            INTEGER,   -- base point budget for species creation
     max_traits              INTEGER,   -- pick limit (cost=0 traits don't count)
@@ -427,7 +440,9 @@ CREATE TABLE IF NOT EXISTS species_archetype (
     FOREIGN KEY (inherit_trait_points_from) REFERENCES species_archetype(key)
 );
 
-CREATE TABLE IF NOT EXISTS named_color (
+DROP TABLE IF EXISTS trait_category;
+DROP TABLE IF EXISTS named_color;
+CREATE TABLE named_color (
     key         TEXT PRIMARY KEY,  -- e.g. "trait_bg_psionic"
     r           INTEGER NOT NULL,
     g           INTEGER NOT NULL,
@@ -436,7 +451,7 @@ CREATE TABLE IF NOT EXISTS named_color (
     source_file TEXT
 );
 
-CREATE TABLE IF NOT EXISTS trait_category (
+CREATE TABLE trait_category (
     key           TEXT PRIMARY KEY,  -- matches trait.category, e.g. "psionic"
     label         TEXT NOT NULL,     -- display name, e.g. "Psionic Traits"
     color_key     TEXT,              -- FK to named_color.key, e.g. "trait_bg_psionic"
@@ -1308,7 +1323,7 @@ KNOWN_TOP_KEYS = {
 
 # Keys handled explicitly and excluded from the generic attribute table
 EXTRACTED_KEYS = {
-    'archetype', 'graphical_culture', 'move_pop_sound_effect',
+    'archetype', 'trait', 'graphical_culture', 'move_pop_sound_effect',
     'portrait_modding', 'possible',
 }
 
@@ -1325,13 +1340,17 @@ def extract_species_classes(data: dict, source_file: str, loc: dict[str, str],
         move_pop_sound    = class_data.get('move_pop_sound_effect')
         portrait_modding  = 0 if class_data.get('portrait_modding', 'yes') == 'no' else 1
         possible_raw      = str(class_data.get('possible', ''))
+        # The class's own auto-included base trait (e.g. INF/Thermophile → trait_infernal,
+        # LITHOID → trait_lithoid) — class-specific, so it overrides the archetype default.
+        base_trait        = class_data.get('trait')
+        base_trait        = str(base_trait).strip('"') if base_trait else None
 
         w.execute("""
             INSERT OR REPLACE INTO species_class
-                (key, label, archetype, graphical_culture, move_pop_sound_effect,
+                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
                  portrait_modding, possible_block, source_file)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (class_key, label, archetype, graphical_culture, move_pop_sound,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (class_key, label, archetype, base_trait, graphical_culture, move_pop_sound,
               portrait_modding, possible_raw, source_file))
 
         if verbose:
@@ -1600,10 +1619,15 @@ def _load_scripted_variables(install_dir: Path) -> dict[str, float]:
 _COUNTER_RE = re.compile(r'(?:\w+\.)?value:(counter_\w+)')
 
 
-def _load_pop_counters(install_dir: Path) -> dict[str, dict]:
-    """Pop-counting script_values used as per-pop modifier multipliers: name → {max, divide,
-    trait, negated}. These are `complex_trigger_modifier { trigger = count_owned_pop_amount …
-    limit { has_trait = … } }` with a `max` cap (e.g. counter_familial, counter_noxious)."""
+_MULT_VALUE_RE = re.compile(r'(?:\w+\.)?value:(\w+)')
+
+
+def _load_scaling_values(install_dir: Path) -> dict[str, dict]:
+    """Script `value:` multipliers used to scale a trait modifier, each capped by `max`:
+    name → {max, divide, granularity, unit}. Two kinds — pop counters
+    (`complex_trigger_modifier { trigger = count_owned_pop_amount, limit { has_trait } }`,
+    shown per 100 pops, e.g. counter_familial/counter_noxious) and colony-age values
+    (`modifier { add = trigger:colony_age_years }`, shown per year, e.g. genetic_memory_mult)."""
     out: dict[str, dict] = {}
     sdir = install_dir / 'common' / 'script_values'
     if not sdir.is_dir():
@@ -1616,27 +1640,33 @@ def _load_pop_counters(install_dir: Path) -> dict[str, dict]:
         for name, blk in data.items():
             if not isinstance(blk, dict):
                 continue
-            ctm = next((b for b in _as_blocks(blk.get('complex_trigger_modifier'))), None)
-            if not isinstance(ctm, dict) or ctm.get('trigger') != 'count_owned_pop_amount':
-                continue
             mx = _resolve_modifier_float(blk.get('max'))
             if mx is None:
                 continue
-            params = ctm.get('parameters')
-            limit = params.get('limit') if isinstance(params, dict) else None
-            trait, negated = None, False
-            if isinstance(limit, dict):
-                if isinstance(limit.get('has_trait'), str):
-                    trait = limit['has_trait']
-                elif isinstance(limit.get('NOT'), dict) and isinstance(limit['NOT'].get('has_trait'), str):
-                    trait, negated = limit['NOT']['has_trait'], True
-            out[name] = {'max': mx, 'divide': _resolve_modifier_float(blk.get('divide')) or 1.0,
-                         'trait': trait, 'negated': negated}
+            div = _resolve_modifier_float(blk.get('divide')) or 1.0
+            ctm = next((b for b in _as_blocks(blk.get('complex_trigger_modifier'))), None)
+            if isinstance(ctm, dict) and ctm.get('trigger') == 'count_owned_pop_amount':
+                params = ctm.get('parameters')
+                limit = params.get('limit') if isinstance(params, dict) else None
+                trait, negated = None, False
+                if isinstance(limit, dict):
+                    if isinstance(limit.get('has_trait'), str):
+                        trait = limit['has_trait']
+                    elif isinstance(limit.get('NOT'), dict) and isinstance(limit['NOT'].get('has_trait'), str):
+                        trait, negated = limit['NOT']['has_trait'], True
+                lab = trait.replace('trait_', '').replace('_', ' ').title() if trait else ''
+                lab = ('non-' + lab) if negated else lab
+                out[name] = {'max': mx, 'divide': div, 'granularity': 100.0,
+                             'unit': f"100 {lab} pops".replace('  ', ' ')}
+            elif any('colony_age_years' in str(m.get('add', '')) for m in _as_blocks(blk.get('modifier'))):
+                out[name] = {'max': mx, 'divide': div, 'granularity': 1.0,
+                             'unit': 'year of colony age'}
     return out
 
 
 def _block_counter(block: dict) -> str | None:
-    """The pop-counter name a block scales by (`mult = …value:counter_X`), or None."""
+    """The pop-counter name a block scales by (`mult = …value:counter_X`), or None — used to
+    drop these from the flat extraction (their real effect is the scaling, handled separately)."""
     if isinstance(block, dict):
         m = block.get('mult')
         if isinstance(m, str):
@@ -1646,26 +1676,35 @@ def _block_counter(block: dict) -> str | None:
     return None
 
 
-def _trait_scaling_effects(tdef: dict, variables: dict[str, float], counters: dict[str, dict]
-                           ) -> list[tuple[str, float, float, str | None]]:
-    """[(modifier_key, value_per_100_pops, value_at_cap, count_label)] for a trait's per-pop
-    scaling modifiers (a block scaled by a pop-counter value:counter_*). e.g. Familial →
-    (pop_happiness, 0.001, 0.2, 'Familial') → '+0.1% Happiness per 100 Familial pops (max +20%)'."""
-    out: list[tuple[str, float, float, str | None]] = []
+def _block_scaling_value(block: dict) -> str | None:
+    """The script value name a block scales by (`mult = …value:X`, any X), or None."""
+    if isinstance(block, dict):
+        m = block.get('mult')
+        if isinstance(m, str):
+            mm = _MULT_VALUE_RE.match(m.strip())
+            if mm:
+                return mm.group(1)
+    return None
+
+
+def _trait_scaling_effects(tdef: dict, variables: dict[str, float], scaling: dict[str, dict]
+                           ) -> list[tuple[str, float, float, str]]:
+    """[(modifier_key, rate_per_unit, value_at_cap, unit)] for a trait's scaling modifiers (a
+    block scaled by a capped script value). Familial → (pop_happiness, 0.001, 0.2, '100
+    Familial pops'); Genetic Memory → (pop_environment_tolerance, 0.005, 0.25, 'year of
+    colony age') → '+0.5% Habitability per year of colony age (max +25%)'."""
+    out: list[tuple[str, float, float, str]] = []
     for bk in ('modifier', 'triggered_species_modifier', 'triggered_pop_group_modifier',
                'triggered_planet_growth_habitability_modifier'):
         for block in _as_blocks(tdef.get(bk)):
-            cname = _block_counter(block)
-            c = counters.get(cname) if cname else None
-            if not c:
+            vname = _block_scaling_value(block)
+            sv = scaling.get(vname) if vname else None
+            if not sv:
                 continue
-            div = c['divide'] or 1.0
-            label = None
-            if c['trait']:
-                pretty = c['trait'].replace('trait_', '').replace('_', ' ').title()
-                label = ('non-' + pretty) if c['negated'] else pretty
+            div = sv['divide'] or 1.0
             for k, base in _block_modifier_values(block, variables):
-                out.append((k, round(base * 100 / div, 6), round(base * c['max'], 6), label))
+                out.append((k, round(base * sv['granularity'] / div, 6),
+                            round(base * sv['max'], 6), sv['unit']))
     return out
 
 
@@ -1691,6 +1730,12 @@ def _trait_modifier_pairs(tdef: dict, variables: dict[str, float], idx: dict[str
     for block in _as_blocks(tdef.get('modifier')):
         add(block)
     for block in _as_blocks(tdef.get('triggered_planet_growth_habitability_modifier')):
+        # Inherent only when gated by the species' own type (has_trait, always true for it,
+        # e.g. Egg Laying) — NOT by a planet condition (Lithoid's extra +50% needs a lithoid
+        # crater deposit, so it must not stack onto the unconditional base +50%).
+        pot = block.get('potential')
+        if pot is not None and not all(p.startswith('has_trait=') for p in _signals(pot, idx)[0]):
+            continue
         add(block)
     for key in ('triggered_species_modifier', 'triggered_pop_group_modifier'):
         for block in _as_blocks(tdef.get(key)):
@@ -1724,7 +1769,7 @@ def _trait_modifier_pairs(tdef: dict, variables: dict[str, float], idx: dict[str
 
 def extract_trait_modifiers(data: dict, source_file: str, loc: dict[str, str],
                             variables_base: dict[str, float], idx: dict[str, dict],
-                            inline_scripts_dir: Path, counters: dict[str, dict],
+                            inline_scripts_dir: Path, scaling: dict[str, dict],
                             w: Writer, verbose: bool):
     # File-local @vars layered on the global scripted_variables base.
     variables = dict(variables_base)
@@ -1762,13 +1807,13 @@ def extract_trait_modifiers(data: dict, source_file: str, loc: dict[str, str],
             if verbose:
                 print(f"  Modifier: {trait_key} | {mod_key} = {value}")
 
-        for order, (mod_key, per100, cap, count_label) in enumerate(
-                _trait_scaling_effects(trait_data, variables, counters)):
+        for order, (mod_key, rate, cap, unit) in enumerate(
+                _trait_scaling_effects(trait_data, variables, scaling)):
             w.execute(
                 """INSERT OR IGNORE INTO trait_scaling_modifier
-                       (trait_key, modifier_key, per_hundred, cap, count_label, sort_order)
+                       (trait_key, modifier_key, rate, cap, unit, sort_order)
                    VALUES (?, ?, ?, ?, ?, ?)""",
-                (trait_key, mod_key, per100, cap, count_label, order),
+                (trait_key, mod_key, rate, cap, unit, order),
             )
             _write_modifier_label(w, loc, mod_key)
 
@@ -4698,14 +4743,14 @@ Examples:
     # triggered_species/pop_group_modifier blocks through the scripted_triggers index.
     trait_vars = _load_scripted_variables(install_dir)
     trait_idx = _scripted_trigger_index(install_dir)
-    pop_counters = _load_pop_counters(install_dir)
+    scaling_values = _load_scaling_values(install_dir)
     for f in tr_files:
         print(f"  Reading: {f.name}", file=progress)
         try:
             data = parse_file(f)
             extract_traits(data, f.name, loc, w, args.verbose)
             extract_trait_modifiers(data, f.name, loc, trait_vars, trait_idx,
-                                    inline_scripts_dir, pop_counters, w, args.verbose)
+                                    inline_scripts_dir, scaling_values, w, args.verbose)
         except Exception as e:
             print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
 
