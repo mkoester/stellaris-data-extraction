@@ -1701,13 +1701,17 @@ def _trait_modifier_pairs(tdef: dict, variables: dict[str, float], idx: dict[str
     # (`assembly_score` is deliberately NOT read: it's an internal biogenesis pop-assembly
     # *scoring* weight present on many ordinary traits — Intelligent, Strong, … — not a
     # player-facing "+N pop assembly" modifier.)
-    # Pops produce resources (e.g. lithoid byproducts): per-pop produces; a `value:` scope
+    # Pop resources: produces (e.g. lithoid byproducts) shown +, upkeep (e.g. the base
+    # traits' food/minerals/energy/alloys pop cost) shown −. The first block per kind is the
+    # default/base variant (later ones are phototrophic/voidling/… cases); a `value:` scope
     # mult is treated as its base of 1 (lithoid_trait_mult / budding_multiplier are base 1).
     res = tdef.get('resources')
     if isinstance(res, dict):
-        for pblk in _as_blocks(res.get('produces')):
-            mv = _resolve_modifier_float(pblk.get('mult'))
-            add(pblk, mv if mv is not None else 1.0)
+        for kind, sign in (('produces', 1.0), ('upkeep', -1.0)):
+            first = next((b for b in _as_blocks(res.get(kind))), None)
+            if first is not None:
+                mv = _resolve_modifier_float(first.get('mult'))
+                add(first, (mv if mv is not None else 1.0) * sign)
     isc = tdef.get('inline_script')
     for sn in (isc if isinstance(isc, list) else [isc]):
         if isinstance(sn, str) and sn not in seen:
