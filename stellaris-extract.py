@@ -335,6 +335,15 @@ CREATE TABLE IF NOT EXISTS species_class_attribute (
     FOREIGN KEY(species_class_key) REFERENCES species_class(key)
 );
 
+-- Drop the trait family up-front (children before parent): these older tables use
+-- CREATE IF NOT EXISTS, so without an explicit DROP they accumulate stale rows across
+-- runs (renamed/removed modifier keys would otherwise linger).
+DROP TABLE IF EXISTS trait_modifier;
+DROP TABLE IF EXISTS trait_tag;
+DROP TABLE IF EXISTS trait_opposite;
+DROP TABLE IF EXISTS trait_species_class;
+DROP TABLE IF EXISTS trait_archetype;
+DROP TABLE IF EXISTS trait;
 CREATE TABLE IF NOT EXISTS trait (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     key          TEXT UNIQUE NOT NULL,
@@ -1573,19 +1582,24 @@ def _load_scripted_variables(install_dir: Path) -> dict[str, float]:
 
 def _trait_modifier_pairs(tdef: dict, variables: dict[str, float], idx: dict[str, dict],
                           load_script, seen: set[str] | None = None) -> dict[str, float]:
-    """{modifier_key: summed value} a trait grants in a plain empire: its top-level `modifier`
-    block plus `triggered_species_modifier` / `triggered_pop_group_modifier` blocks whose
-    `potential` imposes no positive special requirement (the base variant — same gating as
-    job swaps), following `inline_script` references (e.g. traits/psionic_effects)."""
+    """{modifier_key: summed value} a trait grants in a plain empire. Sources, in order:
+    the top-level `modifier` block; `triggered_planet_growth_habitability_modifier` (the
+    species' inherent growth/habitability — its `potential` only re-checks the species' own
+    type + no-deficit, so it's taken unconditionally); `triggered_species_modifier` /
+    `triggered_pop_group_modifier` (base variant — potential with no positive special
+    requirement, like job swaps); `assembly_score` (pop-assembly → planet_pop_assembly_add);
+    the `resources` block (pops produce, e.g. lithoid byproducts); and `inline_script` refs."""
     if seen is None:
         seen = set()
     out: dict[str, float] = {}
 
-    def add(block: dict) -> None:
+    def add(block: dict, scale: float = 1.0) -> None:
         for k, v in _block_modifier_values(block, variables):
-            out[k] = round(out.get(k, 0.0) + v, 4)
+            out[k] = round(out.get(k, 0.0) + v * scale, 4)
 
     for block in _as_blocks(tdef.get('modifier')):
+        add(block)
+    for block in _as_blocks(tdef.get('triggered_planet_growth_habitability_modifier')):
         add(block)
     for key in ('triggered_species_modifier', 'triggered_pop_group_modifier'):
         for block in _as_blocks(tdef.get(key)):
@@ -1593,6 +1607,16 @@ def _trait_modifier_pairs(tdef: dict, variables: dict[str, float], idx: dict[str
             if pot is not None and _signals(pot, idx)[0]:
                 continue  # gated by a positive special condition → not the base variant
             add(block)
+    # (`assembly_score` is deliberately NOT read: it's an internal biogenesis pop-assembly
+    # *scoring* weight present on many ordinary traits — Intelligent, Strong, … — not a
+    # player-facing "+N pop assembly" modifier.)
+    # Pops produce resources (e.g. lithoid byproducts): per-pop produces; a `value:` scope
+    # mult is treated as its base of 1 (lithoid_trait_mult / budding_multiplier are base 1).
+    res = tdef.get('resources')
+    if isinstance(res, dict):
+        for pblk in _as_blocks(res.get('produces')):
+            mv = _resolve_modifier_float(pblk.get('mult'))
+            add(pblk, mv if mv is not None else 1.0)
     isc = tdef.get('inline_script')
     for sn in (isc if isinstance(isc, list) else [isc]):
         if isinstance(sn, str) and sn not in seen:
