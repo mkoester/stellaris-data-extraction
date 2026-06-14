@@ -1529,6 +1529,27 @@ INVERTED_MODIFIERS: frozenset[str] = frozenset({
     'negative_leader_traits_species',
 })
 
+# Authoritative good/bad for modifiers that the game defines in common/scripted_modifiers
+# (each block may set `good = yes|no`: yes → a positive value is green, no → positive is red).
+# Engine built-in modifiers (e.g. tradition_cost_empire_size_mult) aren't here — those fall
+# back to the INVERTED_MODIFIERS set + the cost/upkeep/crime heuristic. Populated in main().
+_SCRIPTED_MOD_GOOD: dict[str, bool] = {}
+
+
+def _load_scripted_modifier_meta(install_dir: Path) -> None:
+    """Populate _SCRIPTED_MOD_GOOD from common/scripted_modifiers/*.txt (explicit `good` only)."""
+    sdir = install_dir / 'common' / 'scripted_modifiers'
+    if not sdir.is_dir():
+        return
+    for f in sorted(sdir.glob('*.txt')):
+        try:
+            data = parse_file(f)
+        except Exception:
+            continue
+        for key, block in data.items():
+            if isinstance(block, dict) and 'good' in block:
+                _SCRIPTED_MOD_GOOD[key] = str(block['good']).strip() == 'yes'
+
 
 def extract_trait_modifiers(data: dict, source_file: str, loc: dict[str, str],
                              w: Writer, verbose: bool):
@@ -3239,13 +3260,16 @@ def _write_modifier_label(w: Writer, loc: dict[str, str], mod_key: str):
     if not label.strip():
         label = re.sub(r'^(planet|pop|country|army|ship|species|leader)_', '', mod_key)
         label = re.sub(r'_(add|mult|perc)$', '', label).replace('_', ' ').title()
-    # Lower is better for any cost/upkeep modifier (a negative value is *good*, shown
-    # green) — the curated set plus every `*_cost_*` / `*_upkeep_*` key (e.g.
-    # planet_structures_cost_mult −15% is a saving, not a penalty). Crime is the same:
-    # less crime is better, so `planet_crime_*` reductions also read as good.
-    inverted = (mod_key in INVERTED_MODIFIERS
-                or re.search(r'(?:_cost|_upkeep)_(?:mult|add)$|crime', mod_key))
-    pig = 0 if inverted else 1
+    # Good/bad colour: prefer the game's own `good` flag (common/scripted_modifiers) where it
+    # defines the modifier. Otherwise fall back: lower is better for any cost/upkeep/fee key —
+    # the curated set plus every `_cost_`/`_upkeep_` anywhere (e.g. tradition_cost_empire_size_mult
+    # −25% is a saving, not a penalty) — and for crime (less crime is better).
+    if mod_key in _SCRIPTED_MOD_GOOD:
+        pig = 1 if _SCRIPTED_MOD_GOOD[mod_key] else 0
+    else:
+        inverted = (mod_key in INVERTED_MODIFIERS
+                    or re.search(r'_(cost|upkeep|fee)(_|$)|crime', mod_key))
+        pig = 0 if inverted else 1
     w.execute(
         """INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES (?, ?, ?)""",
@@ -4464,6 +4488,8 @@ Examples:
         loc = load_localisation(loc_dir)
     else:
         print(f"  WARNING: localisation dir not found: {loc_dir}", file=progress)
+    # Authoritative good/bad modifier flags (before any _write_modifier_label runs).
+    _load_scripted_modifier_meta(install_dir)
     archetype_base_traits: dict[str, str] = {'ROBOT': _ROBOT_BASE_TRAIT}
     for f in sc_files:
         print(f"  Reading: {f.name}", file=progress)
