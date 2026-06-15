@@ -368,6 +368,7 @@ CREATE TABLE trait (
     hidden       INTEGER DEFAULT 0,     -- 0=no, 1=yes
     required_dlc TEXT,                  -- NULL = base game; FK to dlc.name
     description  TEXT,                  -- cleaned flavour text from trait_<key>_desc loc
+    effect       TEXT,                  -- non-numeric behavioural lines from custom_tooltip (e.g. Rooted's "Pops will not Automatically Resettle"); numeric lines dropped (those are modifier chips)
     source_file  TEXT,
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
 );
@@ -420,16 +421,16 @@ CREATE TABLE trait_modifier (
     FOREIGN KEY (trait_key) REFERENCES trait(key)
 );
 
--- Scaling effects (Familial, Noxious, Genetic Memory): a modifier scaled by a script
--- `value:` with a cap — per 100 pops of a kind, or per year of colony age. e.g.
--- "+0.1% Happiness per 100 Familial pops (max +20%)", "+0.5% Habitability per year of
--- colony age (max +25%)".
+-- Scaling effects (Familial, Noxious, Genetic Memory, Invasive Species): a modifier scaled
+-- by a script `value:` — per 100 pops of a kind, per year of colony age, or per negative
+-- trait. e.g. "+0.1% Happiness per 100 Familial pops (max +20%)", "+5% Pop Growth Speed per
+-- negative trait" (cap NULL = uncapped).
 CREATE TABLE trait_scaling_modifier (
     trait_key    TEXT NOT NULL,
     modifier_key TEXT NOT NULL,        -- e.g. "pop_happiness"
-    rate         REAL NOT NULL,        -- value per one display unit (per 100 pops / per year)
-    cap          REAL NOT NULL,        -- value at the scaling value's max
-    unit         TEXT NOT NULL,        -- the "per X" unit, e.g. "100 Familial pops", "year of colony age"
+    rate         REAL NOT NULL,        -- value per one display unit (per 100 pops / per year / per trait)
+    cap          REAL,                 -- value at the scaling value's max; NULL when uncapped
+    unit         TEXT NOT NULL,        -- the "per X" unit, e.g. "100 Familial pops", "negative trait"
     sort_order   INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (trait_key, modifier_key),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
@@ -1521,12 +1522,26 @@ def extract_traits(data: dict, source_file: str, loc: dict[str, str], w: Writer,
         required_dlc = trait_data.get('host_has_dlc') or None
         raw_desc     = loc.get(trait_key + '_desc')
         description  = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
+        # Behavioural effect from custom_tooltip: keep only the non-numeric lines (the numeric
+        # "Label: ±N%" lines just restate modifiers, already shown as chips). Surfaces things
+        # like Rooted's "Pops will not Automatically Resettle" that aren't a modifier. Split the
+        # RAW loc on its \n first (else _clean_loc folds an indented "- …" sub-item up into the
+        # line above, re-introducing the number); drop numeric lines and dangling ":" headers.
+        ct_key = trait_data.get('custom_tooltip') or trait_data.get('custom_tooltip_with_modifiers')
+        effect = None
+        if isinstance(ct_key, str) and loc.get(ct_key):
+            kept = []
+            for raw_line in loc[ct_key].split('\\n'):
+                ln = (_clean_loc(raw_line, loc) or '').strip().lstrip('-').strip()
+                if ln and not ln.endswith(':') and not any(c.isdigit() for c in ln):
+                    kept.append(ln)
+            effect = '\n'.join(kept) or None
 
         w.execute("""
             INSERT OR IGNORE INTO trait
-                (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (trait_key, cost, category, initial, randomized, hidden, required_dlc, description, source_file))
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (trait_key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file))
 
         for arch in _to_list(trait_data.get('allowed_archetypes')):
             w.execute(
@@ -1656,9 +1671,6 @@ def _load_scripted_variables(install_dir: Path) -> dict[str, float]:
     return out
 
 
-_COUNTER_RE = re.compile(r'(?:\w+\.)?value:(counter_\w+)')
-
-
 _MULT_VALUE_RE = re.compile(r'(?:\w+\.)?value:(\w+)')
 
 
@@ -1680,12 +1692,13 @@ def _load_scaling_values(install_dir: Path) -> dict[str, dict]:
         for name, blk in data.items():
             if not isinstance(blk, dict):
                 continue
-            mx = _resolve_modifier_float(blk.get('max'))
-            if mx is None:
-                continue
+            mx = _resolve_modifier_float(blk.get('max'))   # may be None (uncapped)
             div = _resolve_modifier_float(blk.get('divide')) or 1.0
             ctm = next((b for b in _as_blocks(blk.get('complex_trigger_modifier'))), None)
-            if isinstance(ctm, dict) and ctm.get('trigger') == 'count_owned_pop_amount':
+            trig = ctm.get('trigger') if isinstance(ctm, dict) else None
+            if trig == 'count_owned_pop_amount':
+                if mx is None:
+                    continue
                 params = ctm.get('parameters')
                 limit = params.get('limit') if isinstance(params, dict) else None
                 trait, negated = None, False
@@ -1698,22 +1711,15 @@ def _load_scaling_values(install_dir: Path) -> dict[str, dict]:
                 lab = ('non-' + lab) if negated else lab
                 out[name] = {'max': mx, 'divide': div, 'granularity': 100.0,
                              'unit': f"100 {lab} pops".replace('  ', ' ')}
-            elif any('colony_age_years' in str(m.get('add', '')) for m in _as_blocks(blk.get('modifier'))):
+            elif trig == 'num_negative_traits':
+                # Invasive Species: scaled per negative trait, with no `max` (uncapped).
+                out[name] = {'max': mx, 'divide': div, 'granularity': 1.0,
+                             'unit': 'negative trait'}
+            elif mx is not None and any('colony_age_years' in str(m.get('add', ''))
+                                        for m in _as_blocks(blk.get('modifier'))):
                 out[name] = {'max': mx, 'divide': div, 'granularity': 1.0,
                              'unit': 'year of colony age'}
     return out
-
-
-def _block_counter(block: dict) -> str | None:
-    """The pop-counter name a block scales by (`mult = …value:counter_X`), or None — used to
-    drop these from the flat extraction (their real effect is the scaling, handled separately)."""
-    if isinstance(block, dict):
-        m = block.get('mult')
-        if isinstance(m, str):
-            mm = _COUNTER_RE.match(m.strip())
-            if mm:
-                return mm.group(1)
-    return None
 
 
 def _block_scaling_value(block: dict) -> str | None:
@@ -1728,12 +1734,13 @@ def _block_scaling_value(block: dict) -> str | None:
 
 
 def _trait_scaling_effects(tdef: dict, variables: dict[str, float], scaling: dict[str, dict]
-                           ) -> list[tuple[str, float, float, str]]:
-    """[(modifier_key, rate_per_unit, value_at_cap, unit)] for a trait's scaling modifiers (a
-    block scaled by a capped script value). Familial → (pop_happiness, 0.001, 0.2, '100
-    Familial pops'); Genetic Memory → (pop_environment_tolerance, 0.005, 0.25, 'year of
-    colony age') → '+0.5% Habitability per year of colony age (max +25%)'."""
-    out: list[tuple[str, float, float, str]] = []
+                           ) -> list[tuple[str, float, float | None, str]]:
+    """[(modifier_key, rate_per_unit, value_at_cap_or_None, unit)] for a trait's scaling
+    modifiers (a block scaled by a script value). Familial → (pop_happiness, 0.001, 0.2, '100
+    Familial pops'); Genetic Memory → (pop_environment_tolerance, 0.005, 0.25, 'year of colony
+    age'); Invasive Species → (logistic_growth_mult, 0.05, None, 'negative trait') →
+    '+5% Pop Growth Speed per negative trait' (uncapped, so no max)."""
+    out: list[tuple[str, float, float | None, str]] = []
     for bk in ('modifier', 'triggered_species_modifier', 'triggered_pop_group_modifier',
                'triggered_planet_growth_habitability_modifier'):
         for block in _as_blocks(tdef.get(bk)):
@@ -1743,13 +1750,23 @@ def _trait_scaling_effects(tdef: dict, variables: dict[str, float], scaling: dic
                 continue
             div = sv['divide'] or 1.0
             for k, base in _block_modifier_values(block, variables):
-                out.append((k, round(base * sv['granularity'] / div, 6),
-                            round(base * sv['max'], 6), sv['unit']))
+                cap = round(base * sv['max'], 6) if sv['max'] is not None else None
+                out.append((k, round(base * sv['granularity'] / div, 6), cap, sv['unit']))
+    # Budding-style growth: a `triggered_planet_pop_group_modifier_for_species` block with
+    # `divide_over_pop_groups = no` applies its modifier per pop, shown per 100 pops (uncapped),
+    # e.g. Plantoid/Lithoid Budding's `bonus_pop_growth = 0.02` → "+0.02 … per 100 pops". The
+    # divide=no filter also excludes Lithoid Budding's conditional crater block (no such flag).
+    for block in _as_blocks(tdef.get('triggered_planet_pop_group_modifier_for_species')):
+        if str(block.get('divide_over_pop_groups', '')).strip().lower() != 'no':
+            continue
+        for k, base in _block_modifier_values(block, variables):
+            out.append((k, round(base, 6), None, '100 pops'))
     return out
 
 
 def _trait_modifier_pairs(tdef: dict, variables: dict[str, float], idx: dict[str, dict],
-                          load_script, seen: set[str] | None = None) -> dict[str, float]:
+                          load_script, scaling: dict[str, dict],
+                          seen: set[str] | None = None) -> dict[str, float]:
     """{modifier_key: summed value} a trait grants in a plain empire. Sources, in order:
     the top-level `modifier` block; `triggered_planet_growth_habitability_modifier` (the
     species' inherent growth/habitability — its `potential` only re-checks the species' own
@@ -1762,8 +1779,9 @@ def _trait_modifier_pairs(tdef: dict, variables: dict[str, float], idx: dict[str
     out: dict[str, float] = {}
 
     def add(block: dict, scale: float = 1.0) -> None:
-        if _block_counter(block):
-            return  # per-pop scaling block → handled by _trait_scaling_effects, not a flat row
+        if _block_scaling_value(block) in scaling:
+            return  # scaled block (per pop / per year / per negative trait) → handled by
+            #          _trait_scaling_effects as a "per X" row, not a flat modifier
         for k, v in _block_modifier_values(block, variables):
             out[k] = round(out.get(k, 0.0) + v * scale, 4)
 
@@ -1802,7 +1820,7 @@ def _trait_modifier_pairs(tdef: dict, variables: dict[str, float], idx: dict[str
         if isinstance(sn, str) and sn not in seen:
             seen.add(sn)
             for k, v in _trait_modifier_pairs(load_script(sn), variables, idx,
-                                              load_script, seen).items():
+                                              load_script, scaling, seen).items():
                 out[k] = round(out.get(k, 0.0) + v, 4)
     return {k: v for k, v in out.items() if v != 0}
 
@@ -1833,7 +1851,7 @@ def extract_trait_modifiers(data: dict, source_file: str, loc: dict[str, str],
     for trait_key, trait_data in data.items():
         if trait_key.startswith('@') or not isinstance(trait_data, dict):
             continue
-        pairs = _trait_modifier_pairs(trait_data, variables, idx, load_script)
+        pairs = _trait_modifier_pairs(trait_data, variables, idx, load_script, scaling)
         for order, (mod_key, value) in enumerate(pairs.items()):
             w.execute(
                 """INSERT OR IGNORE INTO trait_modifier
