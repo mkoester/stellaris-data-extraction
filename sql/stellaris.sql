@@ -28,6 +28,7 @@ CREATE TABLE species_class (
     label                TEXT,                   -- display name from localisation, e.g. "Mammalian"
     archetype            TEXT,                   -- e.g. "BIOLOGICAL"
     base_trait           TEXT,                   -- the class's auto-included base trait, e.g. trait_organic / trait_infernal (Thermophile / INF)
+    playable             INTEGER DEFAULT 1,      -- 0 when `playable = { always = no }` (NPC-only: Swarm, AI, Paragon, all PRE_*)
     graphical_culture    TEXT,                   -- e.g. "mammalian_01"
     move_pop_sound_effect TEXT,
     portrait_modding      INTEGER DEFAULT 1,     -- boolean (0/1), default yes per game docs
@@ -41,6 +42,7 @@ CREATE TABLE portrait_set (
     species_class_key TEXT,                      -- e.g. "MAM" (from species_class = MAM)
     portrait_id       TEXT NOT NULL,             -- e.g. "mam1", "rep3"
     required_dlc      TEXT,                      -- NULL = base game; FK to dlc.name
+    selectable        INTEGER NOT NULL DEFAULT 1,-- 0 when the block's `playable = { always = no }` (randomizable/NPC-only)
     source_file       TEXT,
     UNIQUE(set_key, portrait_id),
     FOREIGN KEY(species_class_key) REFERENCES species_class(key),
@@ -59,6 +61,7 @@ CREATE TABLE species_class_attribute (
 -- CREATE IF NOT EXISTS, so without an explicit DROP they accumulate stale rows across
 -- runs (renamed/removed modifier keys would otherwise linger).
 DROP TABLE IF EXISTS trait_scaling_modifier;
+DROP TABLE IF EXISTS trait_portrait_override;
 DROP TABLE IF EXISTS trait_modifier;
 DROP TABLE IF EXISTS trait_tag;
 DROP TABLE IF EXISTS trait_opposite;
@@ -97,6 +100,17 @@ CREATE TABLE trait_opposite (
     trait_key    TEXT NOT NULL,
     opposite_key TEXT NOT NULL,       -- mutually exclusive trait
     PRIMARY KEY (trait_key, opposite_key),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+-- Specific portraits that may pick this trait even though their species class normally
+-- wouldn't grant it (the trait's `portrait_override` list). This is how individual portraits
+-- get cross-phenotype "bonus" traits — e.g. plantoid pla17 / lithoid lith_human get the
+-- Humanoid traits, aquatic aqu7 gets Budding, humanoid_hp_16 gets the psionic traits.
+CREATE TABLE trait_portrait_override (
+    trait_key   TEXT NOT NULL,
+    portrait_id TEXT NOT NULL,
+    PRIMARY KEY (trait_key, portrait_id),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
 );
 
@@ -907,125 +921,101 @@ INSERT OR IGNORE INTO dlc (name, steam_id, affects_gameplay)
 INSERT OR IGNORE INTO dlc (name, steam_id, affects_gameplay)
             VALUES ('Infernals Species Pack', '3283220', 1);
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('HUM', 'Humanoid', 'BIOLOGICAL', 'trait_organic', 'humanoid_01', 'moving_pop_confirmation', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '00_species_classes.txt');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('HUM', 'Humanoid', 'BIOLOGICAL', 'trait_organic', 1, 'humanoid_01', 'moving_pop_confirmation', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '00_species_classes.txt');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PRE_MAM', 'Mammalian', 'PRESAPIENT', 'trait_organic', 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_MAM', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PRE_MAM', 'Mammalian', 'PRESAPIENT', 'trait_organic', 0, 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_MAM', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_MAM', 'uplifted_into', 'MAM');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PRE_REP', 'Reptilian', 'PRESAPIENT', 'trait_organic', 'reptilian_01', 'reptilian_pops_move', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_REP', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PRE_REP', 'Reptilian', 'PRESAPIENT', 'trait_organic', 0, 'reptilian_01', 'reptilian_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_REP', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_REP', 'uplifted_into', 'REP');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PRE_AVI', 'Avian', 'PRESAPIENT', 'trait_organic', 'avian_01', 'avian_pops_move', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_AVI', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PRE_AVI', 'Avian', 'PRESAPIENT', 'trait_organic', 0, 'avian_01', 'avian_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_AVI', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_AVI', 'uplifted_into', 'AVI');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PRE_ART', 'Arthropoid', 'PRESAPIENT', 'trait_organic', 'arthropoid_01', 'arthopoid_pops_move', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_ART', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PRE_ART', 'Arthropoid', 'PRESAPIENT', 'trait_organic', 0, 'arthropoid_01', 'arthopoid_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_ART', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_ART', 'uplifted_into', 'ART');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PRE_MOL', 'Molluscoid', 'PRESAPIENT', 'trait_organic', 'molluscoid_01', 'molluscoid_pops_move', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_MOL', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PRE_MOL', 'Molluscoid', 'PRESAPIENT', 'trait_organic', 0, 'molluscoid_01', 'molluscoid_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_MOL', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_MOL', 'uplifted_into', 'MOL');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PRE_FUN', 'Fungoid', 'PRESAPIENT', 'trait_organic', 'fungoid_01', 'fungoid_pops_move', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_FUN', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PRE_FUN', 'Fungoid', 'PRESAPIENT', 'trait_organic', 0, 'fungoid_01', 'fungoid_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_FUN', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_FUN', 'uplifted_into', 'FUN');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PRE_PLANT', 'Plantoid', 'PRESAPIENT', 'trait_organic', 'plantoid_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_PLANT', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PRE_PLANT', 'Plantoid', 'PRESAPIENT', 'trait_organic', 0, 'plantoid_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_PLANT', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_PLANT', 'uplifted_into', 'PLANT');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PRE_LITHOID', 'Lithoid', 'PRESAPIENT', 'trait_lithoid', 'lithoid_01', 'reptilian_pops_move', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_LITHOID', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PRE_LITHOID', 'Lithoid', 'PRESAPIENT', 'trait_lithoid', 0, 'lithoid_01', 'reptilian_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_LITHOID', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_LITHOID', 'uplifted_into', 'LITHOID');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PRE_AQUATIC', 'Aquatic', 'PRESAPIENT', 'trait_organic', 'aquatic_01', 'molluscoid_pops_move', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_AQUATIC', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PRE_AQUATIC', 'Aquatic', 'PRESAPIENT', 'trait_organic', 0, 'aquatic_01', 'molluscoid_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_AQUATIC', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_AQUATIC', 'uplifted_into', 'AQUATIC');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PRE_TOX', 'Toxoid', 'PRESAPIENT', 'trait_organic', 'toxoid_01', 'molluscoid_pops_move', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_TOX', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PRE_TOX', 'Toxoid', 'PRESAPIENT', 'trait_organic', 0, 'toxoid_01', 'molluscoid_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_TOX', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_TOX', 'uplifted_into', 'TOX');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PRE_INF', 'Thermophile', 'PRESAPIENT', 'trait_infernal', 'infernal_01', 'molluscoid_pops_move', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PRE_INF', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PRE_INF', 'Thermophile', 'PRESAPIENT', 'trait_infernal', 0, 'infernal_01', 'molluscoid_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_INF', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PRE_INF', 'uplifted_into', 'INF');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('AI', NULL, NULL, NULL, 'ai_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('AI', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('AI', NULL, NULL, NULL, 0, 'ai_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('AI', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -1033,31 +1023,25 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('AI', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('SWARM', 'Swarm', 'OTHER', NULL, 'swarm_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('SWARM', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('SWARM', 'Swarm', 'OTHER', NULL, 0, 'swarm_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SWARM', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SWARM', 'gender', 'no');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('EXD', 'Extradimensionals', 'OTHER', 'trait_exd', 'extra_dimensional_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('EXD', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('EXD', 'Extradimensionals', 'OTHER', 'trait_exd', 0, 'extra_dimensional_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('EXD', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('EXD', 'gender', 'no');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('ROBOT', 'Mechanical', 'ROBOT', NULL, 'ai_01', 'robot_pops_move', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('ROBOT', 'playable', '{''has_global_flag'': ''game_started''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('ROBOT', 'Mechanical', 'ROBOT', NULL, 1, 'ai_01', 'robot_pops_move', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('ROBOT', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -1071,9 +1055,9 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('ROBOT', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('MACHINE', 'Machine', 'MACHINE', 'trait_machine_unit', 'synthetics_01', 'robot_pops_move', 1, '{''AND'': [{''limit'': {''has_machine_age_dlc'': ''yes''}, ''authority'': {''NOT'': {''value'': ''auth_hive_mind''}}}, {''limit'': {''has_machine_age_dlc'': ''no''}, ''authority'': {''NOR'': {''value'': [''auth_democratic'', ''auth_oligarchic'', ''auth_dictatorial'', ''auth_imperial'', ''auth_hive_mind'', ''auth_ancient_machine_intelligence'', ''auth_corporate''], ''text'': ''SPECIES_CLASS_MUST_USE_MACHINE_INTELLIGENCE''}}, ''ethics'': {''NOR'': {''value'': [''ethic_fanatic_authoritarian'', ''ethic_authoritarian'', ''ethic_fanatic_egalitarian'', ''ethic_egalitarian'', ''ethic_fanatic_xenophobe'', ''ethic_xenophobe'', ''ethic_fanatic_xenophile'', ''ethic_xenophile'', ''ethic_fanatic_militarist'', ''ethic_militarist'', ''ethic_fanatic_pacifist'', ''ethic_pacifist'', ''ethic_fanatic_spiritualist'', ''ethic_spiritualist'', ''ethic_fanatic_materialist'', ''ethic_materialist''], ''text'': ''SPECIES_CLASS_MUST_USE_GESTALT_CONSCIOUSNESS''}}}]}', '00_species_classes.txt');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('MACHINE', 'Machine', 'MACHINE', 'trait_machine_unit', 1, 'synthetics_01', 'robot_pops_move', 1, '{''AND'': [{''limit'': {''has_machine_age_dlc'': ''yes''}, ''authority'': {''NOT'': {''value'': ''auth_hive_mind''}}}, {''limit'': {''has_machine_age_dlc'': ''no''}, ''authority'': {''NOR'': {''value'': [''auth_democratic'', ''auth_oligarchic'', ''auth_dictatorial'', ''auth_imperial'', ''auth_hive_mind'', ''auth_ancient_machine_intelligence'', ''auth_corporate''], ''text'': ''SPECIES_CLASS_MUST_USE_MACHINE_INTELLIGENCE''}}, ''ethics'': {''NOR'': {''value'': [''ethic_fanatic_authoritarian'', ''ethic_authoritarian'', ''ethic_fanatic_egalitarian'', ''ethic_egalitarian'', ''ethic_fanatic_xenophobe'', ''ethic_xenophobe'', ''ethic_fanatic_xenophile'', ''ethic_xenophile'', ''ethic_fanatic_militarist'', ''ethic_militarist'', ''ethic_fanatic_pacifist'', ''ethic_pacifist'', ''ethic_fanatic_spiritualist'', ''ethic_spiritualist'', ''ethic_fanatic_materialist'', ''ethic_materialist''], ''text'': ''SPECIES_CLASS_MUST_USE_GESTALT_CONSCIOUSNESS''}}}]}', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MACHINE', 'possible_secondary', '{''always'': ''no'', ''text'': ''SECONDARY_SPECIES_CLASS_INVALID''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -1093,125 +1077,107 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MACHINE', 'preferred_ethics_weight', '{''base'': ''6.5''}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('SALVAGER', 'Mammalian', 'BIOLOGICAL', NULL, 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('SALVAGER', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('SALVAGER', 'Mammalian', 'BIOLOGICAL', NULL, 0, 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SALVAGER', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SALVAGER', 'gender', 'no');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('SHROUDWALKER', 'Enigma', 'BIOLOGICAL', NULL, 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('SHROUDWALKER', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('SHROUDWALKER', 'Enigma', 'BIOLOGICAL', NULL, 0, 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SHROUDWALKER', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SHROUDWALKER', 'gender', 'no');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('MINDWARDEN_ENCLAVE', 'Mindwarden', 'BIOLOGICAL', NULL, 'mindwarden_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('MINDWARDEN_ENCLAVE', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('MINDWARDEN_ENCLAVE', 'Mindwarden', 'BIOLOGICAL', NULL, 0, 'mindwarden_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MINDWARDEN_ENCLAVE', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MINDWARDEN_ENCLAVE', 'gender', 'no');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PARAGON', NULL, 'BIOLOGICAL', NULL, 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PARAGON', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PARAGON', NULL, 'BIOLOGICAL', NULL, 0, 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PARAGON', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PARAGON', 'gender', 'no');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('MSI_SLAVER', 'Olinbar', 'BIOLOGICAL', 'trait_organic', 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('MSI_SLAVER', 'playable', '{''always'': ''no''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('MSI_SLAVER', 'Olinbar', 'BIOLOGICAL', 'trait_organic', 0, 'mammalian_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MSI_SLAVER', 'randomized', 'no');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MSI_SLAVER', 'gender', 'yes');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('SOLARPUNK', 'Solarpunk', 'BIOLOGICAL', NULL, 'solarpunk_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('SOLARPUNK', 'playable', '{''has_first_contact_dlc'': ''yes''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('SOLARPUNK', 'Solarpunk', 'BIOLOGICAL', NULL, 1, 'solarpunk_01', 'moving_pop_confirmation', 1, '', '00_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SOLARPUNK', 'randomized', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('SOLARPUNK', 'generate_shipset', 'no');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('MAM', 'Mammalian', 'BIOLOGICAL', 'trait_organic', 'mammalian_01', 'moving_pop_confirmation', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('MAM', 'Mammalian', 'BIOLOGICAL', 'trait_organic', 1, 'mammalian_01', 'moving_pop_confirmation', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MAM', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('REP', 'Reptilian', 'BIOLOGICAL', 'trait_organic', 'reptilian_01', 'reptilian_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('REP', 'Reptilian', 'BIOLOGICAL', 'trait_organic', 1, 'reptilian_01', 'reptilian_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('REP', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('AVI', 'Avian', 'BIOLOGICAL', 'trait_organic', 'avian_01', 'avian_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('AVI', 'Avian', 'BIOLOGICAL', 'trait_organic', 1, 'avian_01', 'avian_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('AVI', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('ART', 'Arthropoid', 'BIOLOGICAL', 'trait_organic', 'arthropoid_01', 'arthopoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('ART', 'Arthropoid', 'BIOLOGICAL', 'trait_organic', 1, 'arthropoid_01', 'arthopoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('ART', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('MOL', 'Molluscoid', 'BIOLOGICAL', 'trait_organic', 'molluscoid_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('MOL', 'Molluscoid', 'BIOLOGICAL', 'trait_organic', 1, 'molluscoid_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('FUN', 'Fungoid', 'BIOLOGICAL', 'trait_organic', 'fungoid_01', 'fungoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('FUN', 'Fungoid', 'BIOLOGICAL', 'trait_organic', 1, 'fungoid_01', 'fungoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('FUN', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PLANT', 'Plantoid', 'BIOLOGICAL', 'trait_organic', 'plantoid_01', NULL, 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PLANT', 'playable', '{''OR'': {''host_has_dlc'': ''Plantoids Species Pack'', ''local_has_dlc'': ''Ancient Relics Story Pack''}}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PLANT', 'Plantoid', 'BIOLOGICAL', 'trait_organic', 1, 'plantoid_01', NULL, 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PLANT', 'gender', 'yes');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PLANT', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('LITHOID', 'Lithoid', 'LITHOID', 'trait_lithoid', 'lithoid_01', 'reptilian_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('LITHOID', 'playable', '{''has_lithoids'': ''yes''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('LITHOID', 'Lithoid', 'LITHOID', 'trait_lithoid', 1, 'lithoid_01', 'reptilian_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('LITHOID', 'randomized', '{''has_lithoids'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('LITHOID', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('NECROID', 'Necroid', 'BIOLOGICAL', 'trait_organic', 'necroid_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('NECROID', 'playable', '{''OR'': {''has_necroids'': ''yes'', ''has_vipra_the_vapor_dlc'': ''yes''}}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('NECROID', 'Necroid', 'BIOLOGICAL', 'trait_organic', 1, 'necroid_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('NECROID', 'randomized', '{''has_necroids'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -1219,19 +1185,15 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('NECROID', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('IMPERIAL', 'Imperial', NULL, NULL, 'nemesis_01', NULL, 1, '', '01_base_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('IMPERIAL', 'playable', '{''has_nemesis'': ''yes''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('IMPERIAL', 'Imperial', NULL, NULL, 1, 'nemesis_01', NULL, 1, '', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('IMPERIAL', 'randomized', '{''always'': ''no''}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('AQUATIC', 'Aquatic', 'BIOLOGICAL', 'trait_organic', 'aquatic_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('AQUATIC', 'playable', '{''OR'': {''has_aquatics'': ''yes'', ''has_shroud_dlc'': ''yes''}}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('AQUATIC', 'Aquatic', 'BIOLOGICAL', 'trait_organic', 1, 'aquatic_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('AQUATIC', 'randomized', '{''OR'': {''has_aquatics'': ''yes'', ''has_shroud_dlc'': ''yes''}}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -1239,11 +1201,9 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('AQUATIC', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('TOX', 'Toxoid', 'BIOLOGICAL', 'trait_organic', 'toxoid_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('TOX', 'playable', '{''has_toxoids'': ''yes''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('TOX', 'Toxoid', 'BIOLOGICAL', 'trait_organic', 1, 'toxoid_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('TOX', 'randomized', '{''has_toxoids'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -1251,25 +1211,21 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('TOX', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('CYBERNETIC', 'Cybernetic', NULL, NULL, 'cybernetics_01', NULL, 1, '', '01_base_species_classes.txt');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('CYBERNETIC', 'Cybernetic', NULL, NULL, 1, 'cybernetics_01', NULL, 1, '', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('CYBERNETIC', 'randomized', '{''always'': ''no''}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('BIOGENESIS_02', 'Shellcraft', NULL, NULL, 'biogenesis_02', NULL, 1, '', '01_base_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('BIOGENESIS_02', 'playable', '{''has_biogenesis_dlc'': ''yes''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('BIOGENESIS_02', 'Shellcraft', NULL, NULL, 1, 'biogenesis_02', NULL, 1, '', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('BIOGENESIS_02', 'randomized', '{''always'': ''no''}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('BIOGENESIS_01', 'Spinovore', 'BIOLOGICAL', 'trait_organic', 'biogenesis_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('BIOGENESIS_01', 'playable', '{''has_biogenesis_dlc'': ''yes''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('BIOGENESIS_01', 'Spinovore', 'BIOLOGICAL', 'trait_organic', 1, 'biogenesis_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('BIOGENESIS_01', 'randomized', '{''has_biogenesis_dlc'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -1277,29 +1233,23 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('BIOGENESIS_01', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('WILDERNESS', 'Wilderness', NULL, NULL, 'wilderness_01', NULL, 1, '', '01_base_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('WILDERNESS', 'playable', '{''has_biogenesis_dlc'': ''yes''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('WILDERNESS', 'Wilderness', NULL, NULL, 1, 'wilderness_01', NULL, 1, '', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('WILDERNESS', 'randomized', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('WILDERNESS', 'generate_shipset', 'no');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('PSIONIC', 'Psionic', NULL, NULL, 'psionic_01', NULL, 1, '', '01_base_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('PSIONIC', 'playable', '{''has_shroud_dlc'': ''yes''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('PSIONIC', 'Psionic', NULL, NULL, 1, 'psionic_01', NULL, 1, '', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('PSIONIC', 'randomized', '{''always'': ''no''}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('MINDWARDEN', 'Mindwarden', 'BIOLOGICAL', 'trait_organic', 'mindwarden_01', 'moving_pop_confirmation', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('MINDWARDEN', 'playable', '{''has_shroud_dlc'': ''yes''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('MINDWARDEN', 'Mindwarden', 'BIOLOGICAL', 'trait_organic', 1, 'mindwarden_01', 'moving_pop_confirmation', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MINDWARDEN', 'randomized', '{''always'': ''no''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -1307,11 +1257,9 @@ INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('MINDWARDEN', 'resources', '{}');
 INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES ('INF', 'Thermophile', 'BIOLOGICAL', 'trait_infernal', 'infernal_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
-INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
-                VALUES ('INF', 'playable', '{''has_infernals'': ''yes''}');
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES ('INF', 'Thermophile', 'BIOLOGICAL', 'trait_infernal', 1, 'infernal_01', 'molluscoid_pops_move', 1, '{''authority'': {''NOT'': {''value'': ''auth_machine_intelligence'', ''text'': ''SPECIES_CLASS_MUST_NOT_USE_MACHINE_INTELLIGENCE''}}}', '01_base_species_classes.txt');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
                 VALUES ('INF', 'randomized', '{''has_infernals'': ''yes''}');
 INSERT INTO species_class_attribute (species_class_key, attribute_key, attribute_value)
@@ -1351,770 +1299,1100 @@ INSERT OR REPLACE INTO species_archetype
                  inherit_trait_points_from, base_trait, source_file)
             VALUES ('OTHER', NULL, NULL, 0, NULL, 'trait_exd', '00_species_archetypes.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam5', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam5', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam13', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam10', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam10', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam14', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam14', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam4', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam4', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam9', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam11', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam11', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam6', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam6', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam3', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam3', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam12', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam7', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam7', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam15', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam15', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam2', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam2', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam8', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam8', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam1', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam16', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam16', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam_rat', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam_rat', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mam17', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mam17', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mammalian_ar_01', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mammalian_ar_01', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mammalian_ar_02', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mammalian_ar_02', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mammalian_ar_03', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mammalian_ar_03', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mammalian_ar_04', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mammalian_ar_04', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mammalian_ar_05', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mammalian_ar_05', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mammalian_ar_06', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mammalian_ar_06', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mammalian_ar_07', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mammalian_ar_07', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mammalian_ar_08', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mammalian_ar_08', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mammalian_ar_09', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mammalian_ar_09', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mammalians', 'MAM', 'mammalian_ar_10', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mammalians', 'MAM', 'mammalian_ar_10', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep2', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep2', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep10', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep10', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep14', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep14', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep3', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep3', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep7', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep7', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep12', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep9', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep11', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep11', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep6', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep6', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep13', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep1', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep8', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep8', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep4', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep4', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep15', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep15', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep5', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep5', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep16', 'Leviathans Story Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep16', 'Leviathans Story Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('reptilians', 'REP', 'rep17', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('reptilians', 'REP', 'rep17', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi1', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi8', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi8', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi13', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi10', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi10', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi15', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi15', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi4', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi4', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi7', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi7', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi5', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi5', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi9', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi6', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi6', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi11', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi11', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi3', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi3', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi14', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi14', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi2', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi2', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi12', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi16', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi16', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi17', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi17', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('avians', 'AVI', 'avi18', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('avians', 'AVI', 'avi18', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art14', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art14', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art7', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art7', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art12', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art6', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art6', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art1', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art13', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art8', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art8', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art3', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art3', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art5', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art5', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art9', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art10', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art10', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art11', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art11', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art15', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art15', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art19', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art19', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art18', 'Leviathans Story Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art18', 'Leviathans Story Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art16', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art16', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art20', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art20', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('arthropoids', 'ART', 'art17', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('arthropoids', 'ART', 'art17', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol3', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol3', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol7', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol7', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol13', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol2', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol2', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol14', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol14', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol4', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol4', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol8', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol8', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol1', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol11', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol11', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol12', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol5', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol5', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol6', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol6', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol15', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol15', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('molluscoids', 'MOL', 'mol16', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol16', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun2', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol17', 'Leviathans Story Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun4', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('molluscoids', 'MOL', 'mol18', 'Leviathans Story Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun3', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun2', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun13', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun4', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun12', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun3', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun6', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun15', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun7', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun6', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun1', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun15', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun9', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun7', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun11', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun8', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun14', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun11', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun10', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun8', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('fungoids', 'FUN', 'fun16', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun14', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla17', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun10', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla2', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun16', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla6', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('fungoids', 'FUN', 'fun17', 'Leviathans Story Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla1', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla17', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla11', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla2', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla3', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla6', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla13', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla1', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla7', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla11', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla15', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla3', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla10', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla13', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla5', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla7', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla9', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla15', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla14', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla10', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla4', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla5', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla8', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla9', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla12', 'Plantoids Species Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla14', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('plantoids', 'PLANT', 'pla16_baol', 'Ancient Relics Story Pack', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla4', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec1', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla8', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec2', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla12', 'Plantoids Species Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec3', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('plantoids', 'PLANT', 'pla16_baol', 'Ancient Relics Story Pack', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec4', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith_human', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec5', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec6', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith2', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec7', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith3', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec8', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith4', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec9', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith5', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec10', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith6', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec11', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith7', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec12', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith8', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec13', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec14', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith10', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'nec15', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith11', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('necroids', 'NECROID', 'season_10_portrait', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humans', 'HUM', 'human', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humans', 'HUM', 'human_legacy', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith14', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_02', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoids', 'LITHOID', 'lith15', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_03', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_04', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec2', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_05', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec3', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_hp_01', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec4', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_hp_02', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec5', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_hp_06', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec6', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_hp_07', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec7', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_hp_08', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec8', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_hp_09', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_hp_10', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec10', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_hp_11', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec11', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_hp_12', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_hp_13', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_hp_14', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec14', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_elf', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'nec15', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('humanoids', 'HUM', 'humanoid_hp_16', 'Astral Planes', '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('necroids', 'NECROID', 'season_10_portrait', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_mammalians', 'PRE_MAM', 'pre_mam6', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_mammalians', 'PRE_MAM', 'pre_mam13', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu2', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_reptilians', 'PRE_REP', 'pre_rep09', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu3', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_reptilians', 'PRE_REP', 'pre_rep12', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu4', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_avians', 'PRE_AVI', 'pre_avi1', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu5', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_avians', 'PRE_AVI', 'pre_avi12', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu6', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_arthropoids', 'PRE_ART', 'pre_art1', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu7', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_arthropoids', 'PRE_ART', 'pre_art11', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu8', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_arthropoids', 'PRE_ART', 'pre_art12', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_arthropoids', 'PRE_ART', 'pre_art13', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu10', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_arthropoids', 'PRE_ART', 'pre_art14', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu11', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_arthropoids', 'PRE_ART', 'pre_art15', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_molluscoids', 'PRE_MOL', 'pre_mol1', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_molluscoids', 'PRE_MOL', 'pre_mol3', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu14', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_fungoids', 'PRE_FUN', 'pre_fun9', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('aquatics', 'AQUATIC', 'aqu15', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_fungoids', 'PRE_FUN', 'pre_fun13', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_plantoids', 'PRE_PLANT', 'pre_pla2', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox2', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_plantoids', 'PRE_PLANT', 'pre_pla14', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox3', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_lithoids', 'PRE_LITHOID', 'pre_lith5', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox4', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_lithoids', 'PRE_LITHOID', 'pre_lith9', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox5', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_aquatics', 'PRE_AQUATIC', 'pre_aqu7', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox6', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_aquatics', 'PRE_AQUATIC', 'pre_aqu9', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox7', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_toxoids', 'PRE_TOX', 'pre_tox4', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox8', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_toxoids', 'PRE_TOX', 'pre_tox5', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_infernals', 'PRE_INF', 'pre_inf1', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox10', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_infernals', 'PRE_INF', 'pre_inf5', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox11', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_infernals', 'PRE_INF', 'pre_inf9', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('pre_infernals', 'PRE_INF', 'pre_inf10', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('artificial_intelligences', 'AI', 'hum_robot_red', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox14', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('swarms', 'SWARM', 'swarm', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('toxoids', 'TOX', 'tox15', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('extradimensionals', 'EXD', 'exd1', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humans', 'HUM', 'human', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('extradimensionals', 'EXD', 'exd2', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humans', 'HUM', 'human_legacy', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('extradimensionals', 'EXD', 'exd3', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_02', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('extradimensionals', 'EXD', 'exd4', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_03', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'sd_hum_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_04', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'sd_mam_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_05', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'sd_rep_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_hp_01', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'sd_avi_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_hp_02', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'sd_art_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_hp_06', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'sd_mol_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_hp_07', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'sd_fun_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_hp_08', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'sd_pla_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_hp_09', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'lith_machine', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_hp_10', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'nec_machine', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_hp_11', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'aqu_machine', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_hp_12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'tox_machine', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_hp_13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'synth_machine_01', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_hp_14', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'synth_machine_02', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_elf', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'synth_machine_03', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('humanoids', 'HUM', 'humanoid_hp_16', 'Astral Planes', 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'synth_machine_04', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('infernals', 'INF', 'inf1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'synth_machine_05', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('infernals', 'INF', 'inf2', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'synth_machine_06', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('infernals', 'INF', 'inf3', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'synth_machine_07', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('infernals', 'INF', 'inf4', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'synth_machine_08', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('infernals', 'INF', 'inf5', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'synth_machine_09', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('infernals', 'INF', 'inf6', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'cyb_machine', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('infernals', 'INF', 'inf7', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('robots', 'ROBOT', 'default_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('infernals', 'INF', 'inf8', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'sd_hum_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('infernals', 'INF', 'inf9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'sd_mam_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('infernals', 'INF', 'inf10', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'sd_rep_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoid_infernals', 'INF', 'lith_human_inf', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'sd_avi_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('lithoid_infernals', 'INF', 'lith2_inf', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'sd_art_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_mammalians', 'PRE_MAM', 'pre_mam6', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'sd_mol_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_mammalians', 'PRE_MAM', 'pre_mam13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'sd_fun_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_reptilians', 'PRE_REP', 'pre_rep09', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'sd_pla_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_reptilians', 'PRE_REP', 'pre_rep12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'lith_machine', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_avians', 'PRE_AVI', 'pre_avi1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'nec_machine', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_avians', 'PRE_AVI', 'pre_avi12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'aqu_machine', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_arthropoids', 'PRE_ART', 'pre_art1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'tox_machine', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_arthropoids', 'PRE_ART', 'pre_art11', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'synth_machine_01', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_arthropoids', 'PRE_ART', 'pre_art12', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'synth_machine_02', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_arthropoids', 'PRE_ART', 'pre_art13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'synth_machine_03', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_arthropoids', 'PRE_ART', 'pre_art14', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'synth_machine_04', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_arthropoids', 'PRE_ART', 'pre_art15', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'synth_machine_05', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_molluscoids', 'PRE_MOL', 'pre_mol1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'synth_machine_06', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_molluscoids', 'PRE_MOL', 'pre_mol3', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'synth_machine_07', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_fungoids', 'PRE_FUN', 'pre_fun9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'synth_machine_08', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_fungoids', 'PRE_FUN', 'pre_fun13', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'synth_machine_09', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_plantoids', 'PRE_PLANT', 'pre_pla2', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'cyb_machine', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_plantoids', 'PRE_PLANT', 'pre_pla14', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('machines', 'MACHINE', 'default_robot', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_lithoids', 'PRE_LITHOID', 'pre_lith5', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('salvagers', 'SALVAGER', 'salvager01', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_lithoids', 'PRE_LITHOID', 'pre_lith9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('salvagers', 'SALVAGER', 'salvager02', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_aquatics', 'PRE_AQUATIC', 'pre_aqu7', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('salvagers', 'SALVAGER', 'salvager03', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_aquatics', 'PRE_AQUATIC', 'pre_aqu9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('shroudwalkers', 'SHROUDWALKER', 'shroudwalker01', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_toxoids', 'PRE_TOX', 'pre_tox4', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('shroudwalkers', 'SHROUDWALKER', 'shroudwalker02', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_toxoids', 'PRE_TOX', 'pre_tox5', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('shroudwalkers', 'SHROUDWALKER', 'shroudwalker03', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_infernals', 'PRE_INF', 'pre_inf1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('mindwarden_enclave', 'MINDWARDEN_ENCLAVE', 'mindwarden_01', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_infernals', 'PRE_INF', 'pre_inf5', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('paragons', 'PARAGON', 'paragon01', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_infernals', 'PRE_INF', 'pre_inf9', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('paragons', 'PARAGON', 'paragon02', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pre_infernals', 'PRE_INF', 'pre_inf10', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('paragons', 'PARAGON', 'paragon03', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('artificial_intelligences', 'AI', 'hum_robot_red', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('paragons', 'PARAGON', 'paragon_exakeides_artifact_1', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('swarms', 'SWARM', 'swarm', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('msi_slavers', 'MSI_SLAVER', 'msi_slaver1_male', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('extradimensionals', 'EXD', 'exd1', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES ('msi_slavers', 'MSI_SLAVER', 'msi_slaver1_female', NULL, '00_portrait_sets.txt');
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('extradimensionals', 'EXD', 'exd2', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('extradimensionals', 'EXD', 'exd3', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('extradimensionals', 'EXD', 'exd4', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'sd_hum_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'sd_mam_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'sd_rep_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'sd_avi_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'sd_art_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'sd_mol_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'sd_fun_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'sd_pla_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'lith_machine', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'nec_machine', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'aqu_machine', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'tox_machine', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'synth_machine_01', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'synth_machine_02', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'synth_machine_03', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'synth_machine_04', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'synth_machine_05', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'synth_machine_06', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'synth_machine_07', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'synth_machine_08', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'synth_machine_09', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'cyb_machine', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('robots', 'ROBOT', 'default_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'sd_hum_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'sd_mam_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'sd_rep_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'sd_avi_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'sd_art_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'sd_mol_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'sd_fun_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'sd_pla_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'lith_machine', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'nec_machine', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'aqu_machine', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'tox_machine', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'synth_machine_01', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'synth_machine_02', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'synth_machine_03', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'synth_machine_04', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'synth_machine_05', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'synth_machine_06', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'synth_machine_07', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'synth_machine_08', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'synth_machine_09', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'cyb_machine', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('machines', 'MACHINE', 'default_robot', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('salvagers', 'SALVAGER', 'salvager01', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('salvagers', 'SALVAGER', 'salvager02', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('salvagers', 'SALVAGER', 'salvager03', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('shroudwalkers', 'SHROUDWALKER', 'shroudwalker01', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('shroudwalkers', 'SHROUDWALKER', 'shroudwalker02', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('shroudwalkers', 'SHROUDWALKER', 'shroudwalker03', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mindwarden_enclave', 'MINDWARDEN_ENCLAVE', 'mindwarden_01', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('paragons', 'PARAGON', 'paragon01', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('paragons', 'PARAGON', 'paragon02', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('paragons', 'PARAGON', 'paragon03', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('paragons', 'PARAGON', 'paragon_exakeides_artifact_1', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('msi_slavers', 'MSI_SLAVER', 'msi_slaver1_male', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('msi_slavers', 'MSI_SLAVER', 'msi_slaver1_female', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('cybernetic_mammalians', 'MAM', 'cyb1', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('cybernetic_mammalians', 'MAM', 'cyb2', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('cybernetic_mammalians', 'MAM', 'cyb3', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('cybernetic_mammalians', 'MAM', 'cyb6', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('cybernetic_mammalians', 'MAM', 'cyb7', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('cybernetic_reptilians', 'REP', 'cyb4', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('cybernetic_reptilians', 'REP', 'cyb10', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('cybernetic_reptilians', 'REP', 'cyb11', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('cybernetic_avians', 'AVI', 'cyb5', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('cybernetic_arthropoids', 'ART', 'cyb9', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('cybernetic_humans', 'HUM', 'cyb12', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('cybernetic_humanoids', 'HUM', 'cyb8', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('cybernetic_fungoids', 'FUN', 'cyb13', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('synthetic_humanoids', 'HUM', 'synth04', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('synthetic_humanoids', 'HUM', 'synth07', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('synthetic_avians', 'AVI', 'synth01', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('synthetic_arthropoids', 'ART', 'synth02', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('synthetic_arthropoids', 'ART', 'synth08', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('synthetic_arthropoids', 'ART', 'synth09', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('synthetic_molluscoids', 'MOL', 'synth03', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('synthetic_molluscoids', 'MOL', 'synth05', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('synthetic_aquatics', 'AQUATIC', 'synth06', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('ep9_exclusive_molluscoid', 'MOL', 'stargazer_01', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('biogenesis_molluscoids', 'MOL', 'ant1', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('biogenesis_molluscoids', 'MOL', 'bio6', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('biogenesis_molluscoids', 'MOL', 'bio11', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('biogenesis_aquatic', 'AQUATIC', 'pro1', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('biogenesis_aquatic', 'AQUATIC', 'bio8', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('biogenesis_avians', 'AVI', 'bio4', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('biogenesis_reptilians', 'REP', 'pro2', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('biogenesis_reptilians', 'REP', 'bio9', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('biogenesis_plantoids', 'PLANT', 'bio5', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('biogenesis_arthropoids', 'ART', 'bio7', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('biogenesis_mammalians', 'MAM', 'bio10', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('biogenesis_machines', 'MACHINE', 'bio12', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('psionic_fungoids', 'FUN', 'psionic_02', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('psionic_humanoids', 'HUM', 'psionic_03', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('psionic_humanoids', 'HUM', 'psionic_06', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('psionic_humanoids', 'HUM', 'psionic_09', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('psionic_humanoids', 'HUM', 'psionic_10', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('psionic_aquatics', 'AQUATIC', 'psionic_04', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('psionic_aquatics', 'AQUATIC', 'psionic_07', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('psionic_molluscoids', 'MOL', 'psionic_01', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('psionic_avians', 'AVI', 'psionic_08', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('psionic_arthropoids', 'ART', 'psionic_05', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('psionic_mammalians', 'MAM', 'psionic_12', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('psionic_machines', 'MACHINE', 'psionic_11', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('mindwarden', 'MINDWARDEN', 'mindwarden_01', NULL, 1, '00_portrait_sets.txt');
+INSERT OR IGNORE INTO portrait_set
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES ('pdx_signup_reptilian', 'REP', 'pdx_signup_portrait_01', NULL, 1, '00_portrait_sets.txt');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_pc_desert_preference', NULL, NULL, 1, 1, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', '01_species_traits_habitability.txt');
@@ -5559,6 +5837,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_budding
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_budding', 'fungoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_budding', 'pop_growth');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_plantoid_budding', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_plantoid_budding', 'aqu7');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_plantoid_budding', 'nec3');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_invasive', 2, NULL, 1, 0, 0, 'Plantoids Species Pack', 'Rapid reproduction. High dispersal ability. Zero useful capabilities.', '04_species_traits.txt');
@@ -9772,6 +10052,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 'av
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 'reptilian');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 'aquatic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_egg_laying', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_egg_laying', 'mam16');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_egg_laying', 'mindwarden_01');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_seasonal_dormancy', 2, NULL, 1, 1, 0, 'BioGenesis', 'This species has evolved on a planet with cyclical seasons that support hibernation. In the modern age, these seasonal triggers can be artificially simulated to efficiently store less productive members of society.', '15_biogenesis_species_traits.txt');
@@ -9788,6 +10070,9 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_seasonal_dormanc
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_seasonal_dormancy', 'mammalian');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_seasonal_dormancy', 'reptilian');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_seasonal_dormancy', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_seasonal_dormancy', 'fun16');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_seasonal_dormancy', 'fun4');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_seasonal_dormancy', 'mindwarden_01');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_hollow_bones', -3, NULL, 1, 1, 0, 'BioGenesis', 'The fragile bones of this species allow them to move elegantly and with ease. However, they are also more susceptible to the gravitational effects of their world.', '15_biogenesis_species_traits.txt');
@@ -9820,6 +10105,9 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rooted', 'migrat
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rooted', 'fungoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rooted', 'plantoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_rooted', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_rooted', 'aqu7');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_rooted', 'lith6');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_rooted', 'nec3');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_acidic_vascularity', 1, NULL, 1, 1, 0, 'BioGenesis', 'The internal fluids of this species serve as their most potent defense. Highly corrosive and lethal, these liquids ensure that any enemies regret poking holes.', '15_biogenesis_species_traits.txt');
@@ -9854,6 +10142,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'housi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'necroid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'molluscoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_shelled', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_shelled', 'rep14');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_shelled', 'pro2');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_camouflage', 1, NULL, 1, 1, 0, 'BioGenesis', 'Masters of disguise, this species seamlessly merges with their surroundings, rendering themselves nearly invisible to predators and prey alike. Their innate understanding of optics gives them an edge in guerilla warfare.', '15_biogenesis_species_traits.txt');
@@ -9874,6 +10164,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'aq
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'arthropoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'reptilian');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_camouflage', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_camouflage', 'tox12');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_camouflage', 'mindwarden_01');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_chromalogs', 4, NULL, 1, 1, 0, 'BioGenesis', 'Harnessing the artistry of color, this species has transcended mere camouflage, evolving to communicate through the vibrant and intricate patterns displayed on their bodies.', '15_biogenesis_species_traits.txt');
@@ -9895,6 +10187,9 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'aq
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'arthropoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'reptilian');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_chromalogs', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_chromalogs', 'avi18');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_chromalogs', 'tox12');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_chromalogs', 'mindwarden_01');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_brittle', -3, NULL, 1, 1, 0, 'BioGenesis', 'Plagued by inherent fragility, this species must exercise extreme caution in daily activities to avoid cracking up during even the most mundane tasks.', '15_biogenesis_species_traits.txt');
@@ -9924,6 +10219,12 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'mamm
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'avian');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'individual');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_familial', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_familial', 'fun16');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_familial', 'fun4');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_familial', 'lith_human');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_familial', 'lith_human_inf');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_familial', 'pla17');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_familial', 'aqu5');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_permeable_skin', -1, NULL, 1, 1, 0, 'BioGenesis', 'Specially developed skin that requires ideal conditions coats this species. As long as this species does not stray far from their home climate that shouldn''t be a problem.', '15_biogenesis_species_traits.txt');
@@ -9955,6 +10256,12 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory', 'mammalian');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory', 'necroid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_genetic_memory', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_genetic_memory', 'fun16');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_genetic_memory', 'fun4');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_genetic_memory', 'lith_human');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_genetic_memory', 'lith_human_inf');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_genetic_memory', 'pla17');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_genetic_memory', 'aqu5');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_nascent_stage', -2, NULL, 1, 1, 0, 'BioGenesis', 'This species gives birth at an early stage of development, resulting in a prolonged period where the young are incapable of contributing to society. During this time, they remain blissfully unaware of the responsibilities and burdens that come with sapience.', '15_biogenesis_species_traits.txt');
@@ -9979,6 +10286,13 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 'reptilian');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 'arthropoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_nascent_stage', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_nascent_stage', 'fun16');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_nascent_stage', 'fun4');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_nascent_stage', 'lith_human');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_nascent_stage', 'lith_human_inf');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_nascent_stage', 'pla17');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_nascent_stage', 'aqu5');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_nascent_stage', 'mindwarden_01');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_flight', 2, NULL, 1, 1, 0, 'BioGenesis', 'This species soars above the constraints of the earth, freely navigating the skies. Their cities feature unique, dense layouts, optimized for aerial inhabitants. In conflict, they prove to be elusive and difficult targets.', '15_biogenesis_species_traits.txt');
@@ -9994,6 +10308,9 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'leader
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'avian');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'arthropoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_flight', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_flight', 'mam1');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_flight', 'rep17');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_flight', 'bio10');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_spatial_mastery', 4, NULL, 1, 1, 0, 'BioGenesis', 'Not only capable of flight, this species possesses unique cerebral adaptations, enabling them to instinctively process and navigate three-dimensional spaces. These abilities make them unparalleled in planning battles, surveying planets, and managing cities.', '15_biogenesis_species_traits.txt');
@@ -10012,6 +10329,9 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery', 'avian');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery', 'arthropoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spatial_mastery', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_spatial_mastery', 'mam1');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_spatial_mastery', 'rep17');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_spatial_mastery', 'bio10');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_spare_organs', 2, NULL, 1, 1, 0, 'BioGenesis', 'This species evolved redundant organs to survive even the most grievous injuries - a successful adaptation, as evidenced by their continued existence.', '15_biogenesis_species_traits.txt');
@@ -10912,6 +11232,10 @@ INSERT OR IGNORE INTO trait
             VALUES ('trait_tankbound', NULL, NULL, 0, 0, 0, 'Shadows of the Shroud', 'This species lives out its existence suspended in a vat of specialized bio-fluids. As such, they are heavily reliant on assistive equipment and incapable of engaging directly in physical work.', '17_shroud_species_traits.txt');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tankbound', 'trait_weak');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_tankbound', 'trait_hollow_bones');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_tankbound', 'nec9');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_tankbound', 'tox13');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_tankbound', 'psionic_07');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_tankbound', 'inf4');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_uncanny_intuition', 3, 'psionic', 1, 1, 0, 'Shadows of the Shroud', 'This species exhibits an inexplicable ability to navigate through complex problems on its first attempt.', '17_shroud_species_traits.txt');
@@ -10922,6 +11246,19 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uncanny_intuitio
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uncanny_intuition', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uncanny_intuition', 'psionic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_uncanny_intuition', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_uncanny_intuition', 'psionic_01');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_uncanny_intuition', 'psionic_02');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_uncanny_intuition', 'psionic_03');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_uncanny_intuition', 'psionic_04');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_uncanny_intuition', 'psionic_05');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_uncanny_intuition', 'psionic_06');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_uncanny_intuition', 'psionic_07');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_uncanny_intuition', 'psionic_08');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_uncanny_intuition', 'psionic_09');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_uncanny_intuition', 'psionic_10');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_uncanny_intuition', 'psionic_12');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_uncanny_intuition', 'mindwarden_01');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_uncanny_intuition', 'mam_rat');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_cranial_hypertrophy', 2, 'psionic', 1, 1, 0, 'Shadows of the Shroud', 'The frame of this species'' neural encasement has inflated to the point where its physical capabilities have become somewhat limited.', '17_shroud_species_traits.txt');
@@ -10935,6 +11272,26 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_hypertro
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_hypertrophy', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_hypertrophy', 'psionic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_hypertrophy', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'psionic_01');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'psionic_02');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'psionic_03');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'psionic_04');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'psionic_05');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'psionic_06');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'psionic_07');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'psionic_08');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'psionic_09');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'psionic_10');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'psionic_12');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'mindwarden_01');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'humanoid_hp_16');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'fun8');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'nec6');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'tox10');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'aqu12');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'mol7');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'tox13');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_hypertrophy', 'mam_rat');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_cranial_megatrophy', 4, 'psionic', 1, 1, 0, 'Shadows of the Shroud', 'The frame of this species'' neural encasement has inflated to its ultimate biological limit.', '17_shroud_species_traits.txt');
@@ -10948,6 +11305,26 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_megatrop
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_megatrophy', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_megatrophy', 'psionic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cranial_megatrophy', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'psionic_01');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'psionic_02');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'psionic_03');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'psionic_04');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'psionic_05');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'psionic_06');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'psionic_07');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'psionic_08');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'psionic_09');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'psionic_10');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'psionic_12');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'mindwarden_01');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'humanoid_hp_16');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'fun8');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'nec6');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'tox10');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'aqu12');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'mol7');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'tox13');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_cranial_megatrophy', 'mam_rat');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_haunting_visions', -2, 'psionic', 1, 1, 0, 'Shadows of the Shroud', 'Entities from other dimensions send maddening visions into the minds of this species, affecting their ability to perform complex tasks.', '17_shroud_species_traits.txt');
@@ -10959,6 +11336,19 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_haunting_visions
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_haunting_visions', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_haunting_visions', 'psionic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_haunting_visions', 'species');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_haunting_visions', 'psionic_01');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_haunting_visions', 'psionic_02');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_haunting_visions', 'psionic_03');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_haunting_visions', 'psionic_04');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_haunting_visions', 'psionic_05');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_haunting_visions', 'psionic_06');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_haunting_visions', 'psionic_07');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_haunting_visions', 'psionic_08');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_haunting_visions', 'psionic_09');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_haunting_visions', 'psionic_10');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_haunting_visions', 'psionic_12');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_haunting_visions', 'mindwarden_01');
+INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_haunting_visions', 'mam_rat');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, source_file)
             VALUES ('trait_blindness', NULL, NULL, 0, 0, 0, 'Shadows of the Shroud', 'Where we are going, we won''t need to see.', '17_shroud_species_traits.txt');
@@ -35584,23 +35974,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'blazewright', 'Blazewright', 9);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazewright', 'base', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazewright', 'base', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazewright', 'swapped', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazewright', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazewright', 'Blazewright', 10);
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazewright', 'Blazewright', 9);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'politician', 'blazewright', 'base', 'produces', 'unity', '5.0');
@@ -35616,7 +35990,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'blazewright', 'Blazewright', 11);
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'politician', 'Politician', 'blazewright', 'Blazewright', 10);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'base', 'produces', 'unity', '5.0');
@@ -35629,6 +36003,22 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_superstitious_beliefs', 'politician', 'blazewright', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'blazewright', 'Blazewright', 11);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazewright', 'base', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazewright', 'base', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazewright', 'swapped', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazewright', 'swapped', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -35664,23 +36054,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 14);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'pyrocrat', 'base', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'pyrocrat', 'base', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'pyrocrat', 'swapped', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'pyrocrat', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 15);
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 14);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'politician', 'pyrocrat', 'base', 'produces', 'unity', '5.0');
@@ -35693,6 +36067,22 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'politician', 'pyrocrat', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'pyrocrat', 'Pyrocrat', 15);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'pyrocrat', 'base', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'pyrocrat', 'base', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'pyrocrat', 'swapped', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'pyrocrat', 'swapped', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -35712,23 +36102,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'ashbroker', 'Ashbroker', 17);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'ashbroker', 'base', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'ashbroker', 'base', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'ashbroker', 'swapped', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_pyrolatry', 'politician', 'ashbroker', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'ashbroker', 'Ashbroker', 18);
+                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'ashbroker', 'Ashbroker', 17);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_merchant_guilds', 'politician', 'ashbroker', 'base', 'produces', 'unity', '5.0');
@@ -35744,28 +36118,23 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 19);
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'ashbroker', 'Ashbroker', 18);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'base', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_pyrolatry', 'politician', 'ashbroker', 'base', 'produces', 'unity', '5.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'base', 'upkeep', 'consumer_goods', '3.0');
+                                   VALUES ('civic_pyrolatry', 'politician', 'ashbroker', 'base', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'swapped', 'produces', 'unity', '7.0');
+                                   VALUES ('civic_pyrolatry', 'politician', 'ashbroker', 'swapped', 'produces', 'unity', '5.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'swapped', 'planet_stability_add', '0.02');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_stability_add', 'Stability', 1);
+                                   VALUES ('civic_pyrolatry', 'politician', 'ashbroker', 'swapped', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 20);
+                           VALUES ('civic', 'civic_pyrolatry', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 19);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'base', 'produces', 'unity', '5.0');
@@ -35781,6 +36150,27 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_pyrolatry', 'politician', 'blazing_harbinger', 'swapped', 'planet_stability_add', '0.02');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'blazing_harbinger', 'Blazing Harbinger', 20);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'base', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'base', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'swapped', 'produces', 'unity', '7.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'blazing_harbinger', 'swapped', 'planet_stability_add', '0.02');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
@@ -35807,37 +36197,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'noble_researcher', 'Noble Scientist', 22);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'base', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'base', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'unity', '4.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'physics_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'society_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'engineering_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'planet_stability_add', '0.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_stability_add', 'Stability', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_technocracy', 'politician', 'Politician', 'noble_researcher', 'Noble Scientist', 23);
+                           VALUES ('civic', 'civic_technocracy', 'politician', 'Politician', 'noble_researcher', 'Noble Scientist', 22);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_technocracy', 'politician', 'noble_researcher', 'base', 'produces', 'unity', '5.0');
@@ -35862,6 +36222,36 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_technocracy', 'politician', 'noble_researcher', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'noble_researcher', 'Noble Scientist', 23);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'base', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'base', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'unity', '4.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'physics_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'society_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'produces', 'engineering_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_researcher', 'swapped', 'planet_stability_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
@@ -35995,32 +36385,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'visionary', 'Tech Visionary', 31);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'base', 'produces', 'unity', '5.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'base', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'unity', '4.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'physics_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'society_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'engineering_research', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_technocracy', 'politician', 'Politician', 'visionary', 'Tech Visionary', 32);
+                           VALUES ('civic', 'civic_technocracy', 'politician', 'Politician', 'visionary', 'Tech Visionary', 31);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_technocracy', 'politician', 'visionary', 'base', 'produces', 'unity', '5.0');
@@ -36045,28 +36410,32 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'noble_merchant', 'Patrician', 33);
+                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'visionary', 'Tech Visionary', 32);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'base', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'base', 'produces', 'unity', '5.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'base', 'upkeep', 'consumer_goods', '3.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'base', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'swapped', 'produces', 'unity', '5.0');
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'unity', '4.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'swapped', 'upkeep', 'consumer_goods', '3.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'swapped', 'planet_stability_add', '0.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_stability_add', 'Stability', 1);
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'physics_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'society_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'produces', 'engineering_research', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_merchant_guilds', 'politician', 'visionary', 'swapped', 'upkeep', 'consumer_goods', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'noble_merchant', 'Patrician', 34);
+                           VALUES ('civic', 'civic_merchant_guilds', 'politician', 'Politician', 'noble_merchant', 'Patrician', 33);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'base', 'produces', 'unity', '5.0');
@@ -36082,6 +36451,27 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_merchant_guilds', 'politician', 'noble_merchant', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'politician', 'Politician', 'noble_merchant', 'Patrician', 34);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'base', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'base', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'swapped', 'produces', 'unity', '5.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'swapped', 'upkeep', 'consumer_goods', '3.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_aristocratic_elite', 'politician', 'noble_merchant', 'swapped', 'planet_stability_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
@@ -36355,33 +36745,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_aristocratic_elite', 'bureaucrat', 'Bureaucrat', 'pyromancer', 'Pyromancer', 45);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'base', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'base', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'swapped', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'swapped', 'planet_amenities_add', '2.0');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'swapped', 'planet_stability_add', '0.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_stability_add', 'Stability', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_pyrolatry', 'bureaucrat', 'Bureaucrat', 'pyromancer', 'Pyromancer', 46);
+                           VALUES ('civic', 'civic_pyrolatry', 'bureaucrat', 'Bureaucrat', 'pyromancer', 'Pyromancer', 45);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_pyrolatry', 'bureaucrat', 'pyromancer', 'base', 'produces', 'unity', '3.0');
@@ -36402,6 +36766,32 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_pyrolatry', 'bureaucrat', 'pyromancer', 'swapped', 'planet_stability_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_aristocratic_elite', 'bureaucrat', 'Bureaucrat', 'pyromancer', 'Pyromancer', 46);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'base', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'base', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'swapped', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'swapped', 'planet_amenities_add', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_aristocratic_elite', 'bureaucrat', 'pyromancer', 'swapped', 'planet_stability_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
@@ -36667,23 +37057,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 59);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'base', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'swapped', 'produces', 'unity', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'swapped', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 60);
+                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 59);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
@@ -36699,23 +37073,23 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 61);
+                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 60);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'base', 'upkeep', 'consumer_goods', '2.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'base', 'upkeep', 'consumer_goods', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'swapped', 'produces', 'unity', '3.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'swapped', 'produces', 'unity', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_reader', 'swapped', 'upkeep', 'consumer_goods', '2.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 62);
+                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 61);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
@@ -36731,26 +37105,23 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 63);
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_reader', 'Corpse Reader', 62);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'base', 'produces', 'unity', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'base', 'upkeep', 'consumer_goods', '2.0');
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'base', 'upkeep', 'consumer_goods', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'unity', '3.0');
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'swapped', 'produces', 'unity', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'trade', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_reader', 'swapped', 'upkeep', 'consumer_goods', '2.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 64);
+                           VALUES ('civic', 'civic_death_cult_corporate', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 63);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_death_cult_corporate', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
@@ -36769,26 +37140,26 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 65);
+                           VALUES ('civic', 'civic_death_cult', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 64);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'base', 'upkeep', 'consumer_goods', '2.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'base', 'upkeep', 'consumer_goods', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'unity', '3.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'unity', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'trade', '2.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'trade', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+                                   VALUES ('civic_death_cult', 'bureaucrat', 'corpse_broker', 'swapped', 'upkeep', 'consumer_goods', '2.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 66);
+                           VALUES ('civic', 'civic_corporate_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 65);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
@@ -36804,6 +37175,25 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_superstitious_beliefs', 'bureaucrat', 'Bureaucrat', 'corpse_broker', 'Corpse Broker', 66);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'base', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'base', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'swapped', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_superstitious_beliefs', 'bureaucrat', 'corpse_broker', 'swapped', 'upkeep', 'consumer_goods', '2.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -36912,33 +37302,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_storm_callers_megacorp', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 70);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'produces', 'unity', '0.5');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'upkeep', 'consumer_goods', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'produces', 'unity', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'planet_amenities_add', '12.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'planet_amenities_add', '12.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_storm_callers', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 71);
+                           VALUES ('civic', 'civic_storm_callers', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 70);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'base', 'produces', 'unity', '0.5');
@@ -36959,6 +37323,32 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_storm_callers', 'entertainer', 'storm_dancer', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_storm_callers_megacorp', 'entertainer', 'Entertainer', 'storm_dancer', 'Storm Dancer', 71);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'produces', 'unity', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'upkeep', 'consumer_goods', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'produces', 'unity', '2.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'upkeep', 'consumer_goods', '2.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_dancer', 'swapped', 'planet_amenities_add', '12.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
@@ -37022,33 +37412,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_storm_callers_megacorp', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 74);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'base', 'produces', 'unity', '0.5');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'base', 'upkeep', 'consumer_goods', '1.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'produces', 'unity', '2.5');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'upkeep', 'alloys', '1.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'base', 'planet_amenities_add', '12.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'planet_amenities_add', '12.5');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_storm_callers', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 75);
+                           VALUES ('civic', 'civic_storm_callers', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 74);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_storm_callers', 'entertainer', 'storm_duelist', 'base', 'produces', 'unity', '0.5');
@@ -37074,7 +37438,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 76);
+                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 75);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_warrior_culture', 'entertainer', 'storm_duelist', 'base', 'produces', 'unity', '0.5');
@@ -37100,36 +37464,33 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 77);
+                           VALUES ('civic', 'civic_storm_callers_megacorp', 'entertainer', 'Entertainer', 'storm_duelist', 'Storm Duelist', 76);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'base', 'produces', 'unity', '0.5');
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'base', 'produces', 'unity', '0.5');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'base', 'upkeep', 'consumer_goods', '1.0');
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'base', 'upkeep', 'consumer_goods', '1.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'produces', 'unity', '1.0');
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'produces', 'unity', '2.5');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'produces', 'society_research', '0.5');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'upkeep', 'alloys', '1.0');
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'upkeep', 'alloys', '1.0');
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'base', 'planet_amenities_add', '12.5');
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'base', 'planet_amenities_add', '12.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'planet_amenities_add', '12.5');
+                                   VALUES ('civic_storm_callers_megacorp', 'entertainer', 'storm_duelist', 'swapped', 'planet_amenities_add', '12.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 78);
+                           VALUES ('civic', 'civic_corporate_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 77);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_galactic_curators', 'entertainer', 'reenactor', 'base', 'produces', 'unity', '0.5');
@@ -37158,7 +37519,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 79);
+                           VALUES ('civic', 'civic_warrior_culture', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 78);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_warrior_culture', 'entertainer', 'reenactor', 'base', 'produces', 'unity', '0.5');
@@ -37187,23 +37548,36 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_catalytic_processing', 'foundry', 'Metallurgist', 'catalytic_technician', 'Catalytic Technician', 80);
+                           VALUES ('civic', 'civic_galactic_curators', 'entertainer', 'Entertainer', 'reenactor', 'Historic Reenactor', 79);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'base', 'produces', 'alloys', '3.0');
+                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'base', 'produces', 'unity', '0.5');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'base', 'upkeep', 'minerals', '6.0');
+                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'base', 'upkeep', 'consumer_goods', '1.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'swapped', 'produces', 'alloys', '3.75');
+                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'produces', 'unity', '1.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'swapped', 'upkeep', 'food', '9.0');
+                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'produces', 'society_research', '0.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'upkeep', 'alloys', '1.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'base', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_galactic_curators', 'entertainer', 'reenactor', 'swapped', 'planet_amenities_add', '12.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_catalytic_processing', 'foundry', 'Metallurgist', 'catalytic_technician', 'Catalytic Technician', 81);
+                           VALUES ('civic', 'civic_corporate_catalytic_processing', 'foundry', 'Metallurgist', 'catalytic_technician', 'Catalytic Technician', 80);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_catalytic_processing', 'foundry', 'catalytic_technician', 'base', 'produces', 'alloys', '3.0');
@@ -37219,26 +37593,23 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 82);
+                           VALUES ('civic', 'civic_catalytic_processing', 'foundry', 'Metallurgist', 'catalytic_technician', 'Catalytic Technician', 81);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_crafters', 'artisan', 'artificer', 'base', 'produces', 'consumer_goods', '6.0');
+                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'base', 'produces', 'alloys', '3.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_crafters', 'artisan', 'artificer', 'base', 'upkeep', 'minerals', '6.0');
+                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'base', 'upkeep', 'minerals', '6.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_crafters', 'artisan', 'artificer', 'swapped', 'produces', 'consumer_goods', '8.0');
+                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'swapped', 'produces', 'alloys', '3.75');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_crafters', 'artisan', 'artificer', 'swapped', 'produces', 'trade', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_crafters', 'artisan', 'artificer', 'swapped', 'upkeep', 'minerals', '6.0');
+                                   VALUES ('civic_catalytic_processing', 'foundry', 'catalytic_technician', 'swapped', 'upkeep', 'food', '9.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 83);
+                           VALUES ('civic', 'civic_corporate_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 82);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_crafters', 'artisan', 'artificer', 'base', 'produces', 'consumer_goods', '6.0');
@@ -37257,29 +37628,26 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_anglers', 'artisan', 'Artisan', 'pearl_diver', 'Pearl Diver', 84);
+                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'artificer', 'Artificer', 83);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_diver', 'base', 'produces', 'consumer_goods', '6.0');
+                                   VALUES ('civic_crafters', 'artisan', 'artificer', 'base', 'produces', 'consumer_goods', '6.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_diver', 'base', 'upkeep', 'minerals', '6.0');
+                                   VALUES ('civic_crafters', 'artisan', 'artificer', 'base', 'upkeep', 'minerals', '6.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_diver', 'swapped', 'produces', 'consumer_goods', '6.0');
+                                   VALUES ('civic_crafters', 'artisan', 'artificer', 'swapped', 'produces', 'consumer_goods', '8.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_diver', 'swapped', 'produces', 'trade', '2.0');
+                                   VALUES ('civic_crafters', 'artisan', 'artificer', 'swapped', 'produces', 'trade', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_diver', 'swapped', 'upkeep', 'minerals', '4.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_diver', 'swapped', 'upkeep', 'food', '3.0');
+                                   VALUES ('civic_crafters', 'artisan', 'artificer', 'swapped', 'upkeep', 'minerals', '6.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_anglers', 'artisan', 'Artisan', 'pearl_diver', 'Pearl Diver', 85);
+                           VALUES ('civic', 'civic_anglers', 'artisan', 'Artisan', 'pearl_diver', 'Pearl Diver', 84);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_anglers', 'artisan', 'pearl_diver', 'base', 'produces', 'consumer_goods', '6.0');
@@ -37301,51 +37669,29 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_anglers', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 86);
+                           VALUES ('civic', 'civic_corporate_anglers', 'artisan', 'Artisan', 'pearl_diver', 'Pearl Diver', 85);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_diver', 'base', 'produces', 'consumer_goods', '6.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'base', 'upkeep', 'minerals', '6.0');
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_diver', 'base', 'upkeep', 'minerals', '6.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'consumer_goods', '8.0');
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_diver', 'swapped', 'produces', 'consumer_goods', '6.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'trade', '4.0');
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_diver', 'swapped', 'produces', 'trade', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'minerals', '4.0');
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_diver', 'swapped', 'upkeep', 'minerals', '4.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'food', '3.0');
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_diver', 'swapped', 'upkeep', 'food', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_anglers', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 87);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'base', 'upkeep', 'minerals', '6.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'consumer_goods', '8.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'trade', '4.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'minerals', '4.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'food', '3.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 88);
+                           VALUES ('civic', 'civic_crafters', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 86);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_crafters', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
@@ -37367,7 +37713,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_crafters', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 89);
+                           VALUES ('civic', 'civic_corporate_crafters', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 87);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_crafters', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
@@ -37386,6 +37732,50 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_corporate_crafters', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'food', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_anglers', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 88);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'base', 'upkeep', 'minerals', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'consumer_goods', '8.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'trade', '4.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'minerals', '4.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'food', '3.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_anglers', 'artisan', 'Artisan', 'pearl_crafter', 'Pearl Crafter', 89);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'base', 'produces', 'consumer_goods', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'base', 'upkeep', 'minerals', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'consumer_goods', '8.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'produces', 'trade', '4.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'minerals', '4.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_anglers', 'artisan', 'pearl_crafter', 'swapped', 'upkeep', 'food', '3.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -37438,20 +37828,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_corporate_anglers', 'farmer', 'Farmer', 'angler', 'Angler', 91);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'farmer', 'angler', 'base', 'produces', 'food', '6.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'farmer', 'angler', 'swapped', 'produces', 'food', '6.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_corporate_anglers', 'farmer', 'angler', 'swapped', 'produces', 'trade', '2.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_anglers', 'farmer', 'Farmer', 'angler', 'Angler', 92);
+                           VALUES ('civic', 'civic_anglers', 'farmer', 'Farmer', 'angler', 'Angler', 91);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_anglers', 'farmer', 'angler', 'base', 'produces', 'food', '6.0');
@@ -37461,6 +37838,19 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_anglers', 'farmer', 'angler', 'swapped', 'produces', 'trade', '2.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_corporate_anglers', 'farmer', 'Farmer', 'angler', 'Angler', 92);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_anglers', 'farmer', 'angler', 'base', 'produces', 'food', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_anglers', 'farmer', 'angler', 'swapped', 'produces', 'food', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_corporate_anglers', 'farmer', 'angler', 'swapped', 'produces', 'trade', '2.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
@@ -37509,33 +37899,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_machine_galactic_curators', 'evaluator', 'Evaluator', 'curator_drone', 'Curator Drone', 95);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'base', 'produces', 'unity', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'base', 'upkeep', 'energy', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'produces', 'unity', '2.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'upkeep', 'energy', '2.0');
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'base', 'planet_amenities_no_happiness_add', '3.0');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap_modifier
-                                       (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'planet_amenities_no_happiness_add', '3.0');
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_hive_galactic_curators', 'evaluator', 'Evaluator', 'curator_drone', 'Curator Drone', 96);
+                           VALUES ('civic', 'civic_hive_galactic_curators', 'evaluator', 'Evaluator', 'curator_drone', 'Curator Drone', 95);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_hive_galactic_curators', 'evaluator', 'curator_drone', 'base', 'produces', 'unity', '2.0');
@@ -37561,28 +37925,33 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_hive_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 97);
+                           VALUES ('civic', 'civic_machine_galactic_curators', 'evaluator', 'Evaluator', 'curator_drone', 'Curator Drone', 96);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'base', 'produces', 'unity', '3.0');
+                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'base', 'produces', 'unity', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'base', 'upkeep', 'energy', '4.0');
+                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'base', 'upkeep', 'energy', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'produces', 'unity', '3.5');
+                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'produces', 'unity', '2.0');
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'upkeep', 'energy', '4.0');
+                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'upkeep', 'energy', '2.0');
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
-                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'planet_stability_add', '0.2');
+                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'base', 'planet_amenities_no_happiness_add', '3.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_stability_add', 'Stability', 1);
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_machine_galactic_curators', 'evaluator', 'curator_drone', 'swapped', 'planet_amenities_no_happiness_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_machine_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 98);
+                           VALUES ('civic', 'civic_machine_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 97);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'base', 'produces', 'unity', '3.0');
@@ -37598,6 +37967,27 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_machine_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'planet_stability_add', '0.2');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_hive_memorialist', 'coordinator', 'Coordinator', 'chronicle_drone', 'Chronicle Drone', 98);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'base', 'produces', 'unity', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'base', 'upkeep', 'energy', '4.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'produces', 'unity', '3.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'upkeep', 'energy', '4.0');
+INSERT OR IGNORE INTO job_swap_modifier
+                                       (source_key, base_job, swapped_job, side, modifier, value)
+                                   VALUES ('civic_hive_memorialist', 'coordinator', 'chronicle_drone', 'swapped', 'planet_stability_add', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO job_swap
@@ -37667,23 +38057,7 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_machine_catalytic_processing', 'fabricator', 'Fabricator', 'catalytic_drone', 'Catalytic Drone', 103);
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'base', 'produces', 'alloys', '3.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'base', 'upkeep', 'minerals', '6.0');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'swapped', 'produces', 'alloys', '3.75');
-INSERT OR IGNORE INTO job_swap_resource
-                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
-                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'swapped', 'upkeep', 'food', '9.0');
-INSERT OR IGNORE INTO job_swap
-                               (source_kind, source_key, base_job, base_name,
-                                swapped_job, swapped_name, sort_order)
-                           VALUES ('civic', 'civic_hive_catalytic_processing', 'fabricator', 'Fabricator', 'catalytic_drone', 'Catalytic Drone', 104);
+                           VALUES ('civic', 'civic_hive_catalytic_processing', 'fabricator', 'Fabricator', 'catalytic_drone', 'Catalytic Drone', 103);
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_hive_catalytic_processing', 'fabricator', 'catalytic_drone', 'base', 'produces', 'alloys', '3.0');
@@ -37696,6 +38070,22 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('civic_hive_catalytic_processing', 'fabricator', 'catalytic_drone', 'swapped', 'upkeep', 'food', '9.0');
+INSERT OR IGNORE INTO job_swap
+                               (source_kind, source_key, base_job, base_name,
+                                swapped_job, swapped_name, sort_order)
+                           VALUES ('civic', 'civic_machine_catalytic_processing', 'fabricator', 'Fabricator', 'catalytic_drone', 'Catalytic Drone', 104);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'base', 'produces', 'alloys', '3.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'base', 'upkeep', 'minerals', '6.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'swapped', 'produces', 'alloys', '3.75');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_machine_catalytic_processing', 'fabricator', 'catalytic_drone', 'swapped', 'upkeep', 'food', '9.0');
 INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)

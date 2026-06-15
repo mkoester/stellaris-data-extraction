@@ -318,6 +318,7 @@ CREATE TABLE species_class (
     label                TEXT,                   -- display name from localisation, e.g. "Mammalian"
     archetype            TEXT,                   -- e.g. "BIOLOGICAL"
     base_trait           TEXT,                   -- the class's auto-included base trait, e.g. trait_organic / trait_infernal (Thermophile / INF)
+    playable             INTEGER DEFAULT 1,      -- 0 when `playable = { always = no }` (NPC-only: Swarm, AI, Paragon, all PRE_*)
     graphical_culture    TEXT,                   -- e.g. "mammalian_01"
     move_pop_sound_effect TEXT,
     portrait_modding      INTEGER DEFAULT 1,     -- boolean (0/1), default yes per game docs
@@ -331,6 +332,7 @@ CREATE TABLE portrait_set (
     species_class_key TEXT,                      -- e.g. "MAM" (from species_class = MAM)
     portrait_id       TEXT NOT NULL,             -- e.g. "mam1", "rep3"
     required_dlc      TEXT,                      -- NULL = base game; FK to dlc.name
+    selectable        INTEGER NOT NULL DEFAULT 1,-- 0 when the block's `playable = { always = no }` (randomizable/NPC-only)
     source_file       TEXT,
     UNIQUE(set_key, portrait_id),
     FOREIGN KEY(species_class_key) REFERENCES species_class(key),
@@ -349,6 +351,7 @@ CREATE TABLE species_class_attribute (
 -- CREATE IF NOT EXISTS, so without an explicit DROP they accumulate stale rows across
 -- runs (renamed/removed modifier keys would otherwise linger).
 DROP TABLE IF EXISTS trait_scaling_modifier;
+DROP TABLE IF EXISTS trait_portrait_override;
 DROP TABLE IF EXISTS trait_modifier;
 DROP TABLE IF EXISTS trait_tag;
 DROP TABLE IF EXISTS trait_opposite;
@@ -387,6 +390,17 @@ CREATE TABLE trait_opposite (
     trait_key    TEXT NOT NULL,
     opposite_key TEXT NOT NULL,       -- mutually exclusive trait
     PRIMARY KEY (trait_key, opposite_key),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+-- Specific portraits that may pick this trait even though their species class normally
+-- wouldn't grant it (the trait's `portrait_override` list). This is how individual portraits
+-- get cross-phenotype "bonus" traits — e.g. plantoid pla17 / lithoid lith_human get the
+-- Humanoid traits, aquatic aqu7 gets Budding, humanoid_hp_16 gets the psionic traits.
+CREATE TABLE trait_portrait_override (
+    trait_key   TEXT NOT NULL,
+    portrait_id TEXT NOT NULL,
+    PRIMARY KEY (trait_key, portrait_id),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
 );
 
@@ -1324,7 +1338,7 @@ KNOWN_TOP_KEYS = {
 # Keys handled explicitly and excluded from the generic attribute table
 EXTRACTED_KEYS = {
     'archetype', 'trait', 'graphical_culture', 'move_pop_sound_effect',
-    'portrait_modding', 'possible',
+    'portrait_modding', 'possible', 'playable',
 }
 
 
@@ -1344,14 +1358,19 @@ def extract_species_classes(data: dict, source_file: str, loc: dict[str, str],
         # LITHOID → trait_lithoid) — class-specific, so it overrides the archetype default.
         base_trait        = class_data.get('trait')
         base_trait        = str(base_trait).strip('"') if base_trait else None
+        # Player-selectable at empire creation unless `playable = { always = no }` (NPC-only:
+        # Swarm, AI, Paragon, Enclaves, all PRE_* pre-sapients). DLC/flag gates stay playable.
+        playable_raw      = class_data.get('playable')
+        playable          = 0 if (isinstance(playable_raw, dict)
+                                  and str(playable_raw.get('always', '')).lower() == 'no') else 1
 
         w.execute("""
             INSERT OR REPLACE INTO species_class
-                (key, label, archetype, base_trait, graphical_culture, move_pop_sound_effect,
-                 portrait_modding, possible_block, source_file)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (class_key, label, archetype, base_trait, graphical_culture, move_pop_sound,
-              portrait_modding, possible_raw, source_file))
+                (key, label, archetype, base_trait, playable, graphical_culture,
+                 move_pop_sound_effect, portrait_modding, possible_block, source_file)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (class_key, label, archetype, base_trait, playable, graphical_culture,
+              move_pop_sound, portrait_modding, possible_raw, source_file))
 
         if verbose:
             print(f"  Class: {class_key} | archetype: {archetype} | culture: {graphical_culture}")
@@ -1375,12 +1394,12 @@ def extract_species_classes(data: dict, source_file: str, loc: dict[str, str],
 # ---------------------------------------------------------------------------
 
 def _portrait_set_insert(w: Writer, set_key: str, species_class_key, portrait_id: str,
-                         required_dlc, source_file: str):
+                         required_dlc, selectable: int, source_file: str):
     w.execute("""
         INSERT OR IGNORE INTO portrait_set
-            (set_key, species_class_key, portrait_id, required_dlc, source_file)
-        VALUES (?, ?, ?, ?, ?)
-    """, (set_key, species_class_key, portrait_id, required_dlc, source_file))
+            (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (set_key, species_class_key, portrait_id, required_dlc, selectable, source_file))
 
 
 def _dlc_from_condition(cond_block: dict) -> str | None:
@@ -1394,6 +1413,13 @@ def _dlc_from_condition(cond_block: dict) -> str | None:
     return None
 
 
+def _block_selectable(block: dict) -> bool:
+    """A conditional_portraits block is player-selectable unless its `playable` is always=no
+    (those are randomizable/NPC-only variants)."""
+    pl = block.get('playable')
+    return not (isinstance(pl, dict) and str(pl.get('always', '')).lower() == 'no')
+
+
 def extract_portrait_sets(data: dict, source_file: str, w: Writer, verbose: bool):
     for set_key, set_data in data.items():
         if not isinstance(set_data, dict):
@@ -1401,25 +1427,33 @@ def extract_portrait_sets(data: dict, source_file: str, w: Writer, verbose: bool
 
         species_class_key = set_data.get('species_class') or None
 
-        # Base portraits (no DLC required)
+        # Base portraits (no DLC required, always player-selectable)
         base_portraits = _to_list(set_data.get('portraits'))
         for pid in base_portraits:
-            _portrait_set_insert(w, set_key, species_class_key, pid, None, source_file)
+            _portrait_set_insert(w, set_key, species_class_key, pid, None, 1, source_file)
 
-        # DLC-gated portraits inside conditional_portraits blocks
+        # conditional_portraits is ONE dict when a set has a single block, or a list of dicts
+        # when it has several (duplicate keys). Normalise to a flat list of dict blocks —
+        # `_to_list` mishandles the single-dict case (returns its keys), which silently
+        # dropped every DLC-gated set (Aquatic/Toxoid/Lithoid/Infernal/cybernetic/psionic).
         cond_raw = set_data.get('conditional_portraits')
-        cond_blocks = _to_list(cond_raw) if cond_raw else []
+        cond_blocks: list[dict] = []
+        for b in (cond_raw if isinstance(cond_raw, list) else [cond_raw]):
+            if isinstance(b, list):
+                cond_blocks.extend(x for x in b if isinstance(x, dict))
+            elif isinstance(b, dict):
+                cond_blocks.append(b)
+
+        n_cond = 0
         for block in cond_blocks:
-            if not isinstance(block, dict):
-                continue
             required_dlc = _dlc_from_condition(block)
+            selectable = 1 if _block_selectable(block) else 0
             for pid in _to_list(block.get('portraits')):
-                _portrait_set_insert(w, set_key, species_class_key, pid, required_dlc, source_file)
+                _portrait_set_insert(w, set_key, species_class_key, pid, required_dlc, selectable, source_file)
+                n_cond += 1
 
         if verbose:
-            n_base = len(base_portraits)
-            n_cond = sum(len(_to_list(b.get('portraits'))) for b in cond_blocks if isinstance(b, dict))
-            print(f"  Set: {set_key} | class: {species_class_key} | {n_base} base + {n_cond} conditional portrait(s)")
+            print(f"  Set: {set_key} | class: {species_class_key} | {len(base_portraits)} base + {n_cond} conditional portrait(s)")
 
     w.commit()
 
@@ -1513,6 +1547,12 @@ def extract_traits(data: dict, source_file: str, loc: dict[str, str], w: Writer,
             w.execute(
                 "INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES (?, ?)",
                 (trait_key, tag))
+
+        # Portraits explicitly allowed to pick this trait beyond its species_class gating.
+        for pid in _to_list(trait_data.get('portrait_override')):
+            w.execute(
+                "INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES (?, ?)",
+                (trait_key, pid))
 
         if verbose:
             archs = _to_list(trait_data.get('allowed_archetypes'))
