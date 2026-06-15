@@ -33,6 +33,8 @@ import argparse
 from pathlib import Path
 from io import StringIO
 
+__version__ = '0.1.0'
+
 _LOC_INLINE_REF = re.compile(r'\$(\w+)\$')
 _LOC_FMT_CODE   = re.compile(r'§.')          # §X / §! colour codes
 _LOC_ICON       = re.compile(r'£(\w+?)(?:\|\w+)?£')  # £icon£ (or £icon|frame£)
@@ -4641,7 +4643,7 @@ def extract_precursor_systems(initializers: dict, static_mods: dict,
 
 def main():
     ap = argparse.ArgumentParser(
-        description='Stellaris Data Extractor -> SQL / SQLite',
+        description=f'Stellaris Data Extractor v{__version__} -> SQL / SQLite',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -4666,6 +4668,7 @@ Examples:
                     help='Write directly to this SQLite database')
     ap.add_argument('--verbose', '-v', action='store_true',
                     help='Verbose output')
+    ap.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     args = ap.parse_args()
 
     install_dir = Path(args.install_dir)
