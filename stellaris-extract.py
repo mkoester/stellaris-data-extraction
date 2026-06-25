@@ -1144,6 +1144,28 @@ CREATE TABLE precursor_megastructure (
     PRIMARY KEY (precursor_key, initializer, type),
     FOREIGN KEY (precursor_key) REFERENCES precursor(key)
 );
+
+DROP TABLE IF EXISTS tech_repeatable_modifier;
+DROP TABLE IF EXISTS tech_repeatable;
+CREATE TABLE tech_repeatable (
+    key          TEXT PRIMARY KEY,
+    label        TEXT,
+    description  TEXT,
+    area         TEXT NOT NULL,          -- physics / society / engineering
+    area_label   TEXT,                   -- Physics / Society / Engineering
+    category     TEXT,                   -- field key, e.g. "industry"
+    category_label TEXT,                 -- localised, e.g. "Industry"
+    levels       INTEGER,                -- -1 = unlimited
+    sort_order   INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE tech_repeatable_modifier (
+    tech_key       TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (tech_key, modifier_key),
+    FOREIGN KEY (tech_key) REFERENCES tech_repeatable(key)
+);
 """
 
 
@@ -3466,6 +3488,124 @@ _GENERIC_RELIC_TOOLTIPS = frozenset({
 })
 
 
+# ---------------------------------------------------------------------------
+# Extraction: repeatable technologies
+# ---------------------------------------------------------------------------
+
+_AREA_LABELS = {'physics': 'Physics', 'society': 'Society', 'engineering': 'Engineering'}
+
+_AREA_SORT = {'physics': 0, 'society': 1, 'engineering': 2}
+
+_CATEGORY_SORT = {
+    # Physics
+    'field_manipulation': 0, 'particles': 1, 'computing': 2, 'psionics': 3,
+    # Society
+    'biology': 0, 'military_theory': 1, 'new_worlds': 2, 'statecraft': 3,
+    # Engineering
+    'industry': 0, 'materials': 1, 'propulsion': 2, 'voidcraft': 3,
+}
+
+
+def extract_repeatable_techs(
+    technologies: dict,
+    loc: dict[str, str],
+    scripted_vars: dict[str, float],
+    w: Writer,
+    verbose: bool,
+) -> None:
+    sort_order = 0
+    # Group by area then category for a stable order
+    entries: list[tuple] = []
+
+    for key, data in technologies.items():
+        if not isinstance(data, dict):
+            continue
+        # Must have weight_groups containing "repeatable"
+        wg = data.get('weight_groups')
+        is_repeatable = False
+        if isinstance(wg, list):
+            is_repeatable = 'repeatable' in wg
+        elif isinstance(wg, dict):
+            is_repeatable = 'repeatable' in wg
+        if not is_repeatable:
+            continue
+
+        area = data.get('area')
+        if not isinstance(area, str):
+            continue
+        area = area.strip('"').lower()
+
+        # category is a block list, e.g. category = { industry }
+        cat_raw = data.get('category')
+        category = None
+        if isinstance(cat_raw, list) and cat_raw:
+            category = str(cat_raw[0]).strip('"')
+        elif isinstance(cat_raw, str):
+            category = cat_raw.strip('"')
+
+        levels_raw = data.get('levels')
+        try:
+            levels = int(str(levels_raw).strip())
+        except (ValueError, TypeError):
+            levels = None
+
+        label_raw = loc.get(key)
+        label = _clean_loc(label_raw, loc) if label_raw else None
+        desc_raw = loc.get(key + '_desc')
+        description = _clean_loc(desc_raw, loc) if desc_raw else None
+
+        area_label = _AREA_LABELS.get(area, area.capitalize())
+        cat_label_raw = loc.get(category) if category else None
+        category_label = _clean_loc(cat_label_raw, loc) if cat_label_raw else None
+
+        entries.append((area, category, key, label, description, area_label, category_label, levels, data))
+
+    # Sort: area order → category order → key
+    entries.sort(key=lambda e: (
+        _AREA_SORT.get(e[0], 99),
+        _CATEGORY_SORT.get(e[1] or '', 99),
+        e[2],
+    ))
+
+    for area, category, key, label, description, area_label, category_label, levels, data in entries:
+        w.execute(
+            """INSERT OR REPLACE INTO tech_repeatable
+               (key, label, description, area, area_label, category, category_label, levels, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, label, description, area, area_label, category, category_label, levels, sort_order),
+        )
+
+        modifier_block = data.get('modifier')
+        if isinstance(modifier_block, dict):
+            for mod_order, (mod_key, mod_val) in enumerate(modifier_block.items()):
+                if isinstance(mod_val, list):
+                    mod_val = mod_val[-1]
+                s = str(mod_val).strip()
+                value = scripted_vars.get(s) if s.startswith('@') else None
+                if value is None:
+                    try:
+                        value = float(s)
+                    except (ValueError, TypeError):
+                        continue
+
+                w.execute(
+                    """INSERT OR REPLACE INTO tech_repeatable_modifier
+                       (tech_key, modifier_key, modifier_value, sort_order)
+                       VALUES (?, ?, ?, ?)""",
+                    (key, mod_key, value, mod_order),
+                )
+                _write_modifier_label(w, loc, mod_key)
+
+                if verbose:
+                    print(f"  {key} | {mod_key} = {value}")
+
+        if verbose:
+            print(f"  {key} ({area}/{category}) levels={levels}")
+        sort_order += 1
+
+    w.commit()
+
+
 def _resolve_modifier_float(raw) -> float | None:
     if raw is None:
         return None
@@ -5058,6 +5198,10 @@ Examples:
     print(f"\n[job-swaps] {install_dir / 'common' / 'pop_jobs'}", file=progress)
     extract_job_swaps(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
 
+    # --- repeatable technologies ---
+    print(f"\n[repeatable-techs] {technology_dir}", file=progress)
+    extract_repeatable_techs(technologies, loc, scripted_vars, w, args.verbose)
+
     w.close()
 
     # --- Summary ---
@@ -5094,6 +5238,8 @@ Examples:
         n_prec_planet   = tmp.execute("SELECT COUNT(*) FROM precursor_planet").fetchone()[0]
         n_prec_pdep     = tmp.execute("SELECT COUNT(*) FROM precursor_planet_deposit").fetchone()[0]
         n_prec_mega     = tmp.execute("SELECT COUNT(*) FROM precursor_megastructure").fetchone()[0]
+        n_rep_techs     = tmp.execute("SELECT COUNT(*) FROM tech_repeatable").fetchone()[0]
+        n_rep_tech_mods = tmp.execute("SELECT COUNT(*) FROM tech_repeatable_modifier").fetchone()[0]
         tmp.close()
         print(f"""
 +------------------------------------------+
@@ -5130,6 +5276,8 @@ Examples:
 |  Precursor planets  : {n_prec_planet:<20}|
 |  Precursor planet dep: {n_prec_pdep:<19}|
 |  Precursor megastruct: {n_prec_mega:<19}|
+|  Repeatable techs   : {n_rep_techs:<20}|
+|  Repeatable tech mods: {n_rep_tech_mods:<19}|
 +------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size
