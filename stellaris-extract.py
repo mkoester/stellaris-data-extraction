@@ -1145,6 +1145,19 @@ CREATE TABLE precursor_megastructure (
     FOREIGN KEY (precursor_key) REFERENCES precursor(key)
 );
 
+DROP TABLE IF EXISTS tech_fallen_empire;
+CREATE TABLE tech_fallen_empire (
+    key          TEXT PRIMARY KEY,
+    label        TEXT,
+    description  TEXT,
+    area         TEXT NOT NULL,
+    area_label   TEXT,
+    category     TEXT,
+    category_label TEXT,
+    building_key TEXT,               -- FK to building.key; NULL for ship-component techs
+    sort_order   INTEGER NOT NULL DEFAULT 0
+);
+
 DROP TABLE IF EXISTS tech_repeatable_modifier;
 DROP TABLE IF EXISTS tech_repeatable;
 CREATE TABLE tech_repeatable (
@@ -3606,6 +3619,80 @@ def extract_repeatable_techs(
     w.commit()
 
 
+_BUILDING_LOC_REF = re.compile(r'^\s*\$(\w+)\$\s*$')
+
+# Keys from 00_fallen_empire_tech.txt that are NOT FE-player techs (ship component
+# dark matter tech that uses NOR { fallen/awakened } weight_modifier — still shown).
+# Actually we want all of them, so no exclusion list.
+
+def extract_fallen_empire_techs(
+    technologies: dict,
+    fe_tech_keys: set[str],
+    fe_building_refs: dict[str, str],
+    loc: dict[str, str],
+    w: Writer,
+    verbose: bool,
+) -> None:
+    """Extract the techs from 00_fallen_empire_tech.txt (identified by fe_tech_keys).
+
+    fe_building_refs maps tech_key → building_key for entries whose raw loc label
+    was a sole $building_xxx$ reference (computed before loc resolution in main()).
+    """
+    sort_order = 0
+    entries: list[tuple] = []
+
+    for key in fe_tech_keys:
+        data = technologies.get(key)
+        if not isinstance(data, dict):
+            continue
+
+        area = data.get('area')
+        if not isinstance(area, str):
+            continue
+        area = area.strip('"').lower()
+
+        cat_raw = data.get('category')
+        category = None
+        if isinstance(cat_raw, list) and cat_raw:
+            category = str(cat_raw[0]).strip('"')
+        elif isinstance(cat_raw, str):
+            category = cat_raw.strip('"')
+
+        raw_label = loc.get(key)
+        label = _clean_loc(raw_label, loc) if raw_label else None
+
+        desc_raw = loc.get(key + '_desc')
+        description = _clean_loc(desc_raw, loc) if desc_raw else None
+
+        area_label = _AREA_LABELS.get(area, area.capitalize())
+        cat_label_raw = loc.get(category) if category else None
+        category_label = _clean_loc(cat_label_raw, loc) if cat_label_raw else None
+
+        # building_key was pre-computed from the raw (pre-resolution) loc in main().
+        building_key = fe_building_refs.get(key)
+
+        entries.append((area, category, key, label, description, area_label, category_label, building_key))
+
+    entries.sort(key=lambda e: (
+        _AREA_SORT.get(e[0], 99),
+        _CATEGORY_SORT.get(e[1] or '', 99),
+        e[2],
+    ))
+
+    for area, category, key, label, description, area_label, category_label, building_key in entries:
+        w.execute(
+            """INSERT OR REPLACE INTO tech_fallen_empire
+               (key, label, description, area, area_label, category, category_label, building_key, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, label, description, area, area_label, category, category_label, building_key, sort_order),
+        )
+        if verbose:
+            print(f"  {key} ({area}/{category}) building={building_key}")
+        sort_order += 1
+
+    w.commit()
+
+
 def _resolve_modifier_float(raw) -> float | None:
     if raw is None:
         return None
@@ -5037,10 +5124,16 @@ Examples:
             print(f"  WARNING: {bdir} not found", file=progress)
     # Technology definitions (the precursor "Secrets of …" techs live here).
     technologies: dict = {}
+    fe_tech_keys: set[str] = set()
     if technology_dir.exists():
         for f in sorted(technology_dir.glob('*.txt')):
             try:
-                technologies.update(parse_file(f))
+                parsed = parse_file(f)
+                technologies.update(parsed)
+                # Collect keys from the fallen empire tech file specifically.
+                if f.name == '00_fallen_empire_tech.txt':
+                    fe_tech_keys = {k for k, v in parsed.items()
+                                    if isinstance(v, dict) and not k.startswith('@')}
             except Exception as e:
                 print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
     else:
@@ -5202,6 +5295,21 @@ Examples:
     print(f"\n[repeatable-techs] {technology_dir}", file=progress)
     extract_repeatable_techs(technologies, loc, scripted_vars, w, args.verbose)
 
+    # --- fallen empire technologies ---
+    # Build a raw-loc mapping (before $KEY$ resolution) for the fallen empire loc file so
+    # we can detect which tech keys reference a building key directly ($building_xxx$).
+    fe_building_refs: dict[str, str] = {}
+    fe_loc_file = install_dir / 'localisation' / 'english' / 'fallen_empire_l_english.yml'
+    if fe_loc_file.exists():
+        raw_text = fe_loc_file.read_text(encoding='utf-8-sig', errors='replace')
+        for m in _LOC_ENTRY.finditer(raw_text):
+            _key, _, _lbl = m.group(1), m.group(2), m.group(3)
+            ref = _LOC_REF.match(_lbl)
+            if ref and ref.group(1).startswith('building_'):
+                fe_building_refs[_key] = ref.group(1)
+    print(f"\n[fallen-empire-techs] {technology_dir / '00_fallen_empire_tech.txt'}", file=progress)
+    extract_fallen_empire_techs(technologies, fe_tech_keys, fe_building_refs, loc, w, args.verbose)
+
     w.close()
 
     # --- Summary ---
@@ -5240,6 +5348,7 @@ Examples:
         n_prec_mega     = tmp.execute("SELECT COUNT(*) FROM precursor_megastructure").fetchone()[0]
         n_rep_techs     = tmp.execute("SELECT COUNT(*) FROM tech_repeatable").fetchone()[0]
         n_rep_tech_mods = tmp.execute("SELECT COUNT(*) FROM tech_repeatable_modifier").fetchone()[0]
+        n_fe_techs      = tmp.execute("SELECT COUNT(*) FROM tech_fallen_empire").fetchone()[0]
         tmp.close()
         print(f"""
 +------------------------------------------+
@@ -5278,6 +5387,7 @@ Examples:
 |  Precursor megastruct: {n_prec_mega:<19}|
 |  Repeatable techs   : {n_rep_techs:<20}|
 |  Repeatable tech mods: {n_rep_tech_mods:<19}|
+|  Fallen empire techs: {n_fe_techs:<20}|
 +------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size
