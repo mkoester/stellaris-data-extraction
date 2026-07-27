@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""Unit tests for localisation loading and text cleanup."""
+import tempfile
+import unittest
+from pathlib import Path
+
+from extractor.localisation import _clean_loc, _dedup_adjacent, _fmt_scripted, load_localisation
+
+
+class TestFmtScripted(unittest.TestCase):
+    def test_percent_zero_decimals(self):
+        self.assertEqual(_fmt_scripted(-0.25, '%0'), '-25%')
+
+    def test_decimal_places(self):
+        self.assertEqual(_fmt_scripted(1.5, '1'), '1.5')
+
+    def test_forced_sign(self):
+        self.assertEqual(_fmt_scripted(2, '+0'), '+2')
+
+    def test_default_two_decimals(self):
+        self.assertEqual(_fmt_scripted(1.5, None), '1.50')
+
+
+class TestDedupAdjacent(unittest.TestCase):
+    def test_single_word_repeat(self):
+        self.assertEqual(_dedup_adjacent('Official Official Capacity'),
+                         'Official Capacity')
+
+    def test_multi_word_repeat(self):
+        self.assertEqual(_dedup_adjacent('Consumer Goods Consumer Goods'),
+                         'Consumer Goods')
+
+    def test_no_repeat_untouched(self):
+        self.assertEqual(_dedup_adjacent('Energy Credits from Jobs'),
+                         'Energy Credits from Jobs')
+
+
+class TestCleanLoc(unittest.TestCase):
+    def test_key_expansion(self):
+        self.assertEqual(_clean_loc('$greeting$ world', {'greeting': 'Hello'}),
+                         'Hello world')
+
+    def test_colour_codes_stripped(self):
+        self.assertEqual(_clean_loc('§YShiny§! text', {}), 'Shiny text')
+
+    def test_command_tags_dropped(self):
+        self.assertEqual(_clean_loc('[This.GetName] rules', {}), 'rules')
+
+    def test_resource_icon_rendered(self):
+        self.assertEqual(_clean_loc('£unity£ Produced per 100', {}),
+                         'Unity Produced per 100')
+
+    def test_decoration_icon_dropped(self):
+        self.assertEqual(_clean_loc('£trigger_yes£ Allowed', {}), 'Allowed')
+
+    def test_icon_name_deduped_against_label(self):
+        self.assertEqual(_clean_loc('£official£ Official Capacity', {}),
+                         'Official Capacity')
+
+    def test_concept_tag_resolves_via_loc(self):
+        loc = {'tech_lasers': 'Lasers'}
+        self.assertEqual(_clean_loc("['technology:tech_lasers'] unlocked", loc),
+                         'Lasers unlocked')
+
+    def test_scripted_variable_formatting(self):
+        out = _clean_loc('Costs $@cost|%0$', {}, variables={'@cost': -0.25})
+        self.assertEqual(out, 'Costs -25%')
+
+    def test_keep_newlines_separates_rules(self):
+        out = _clean_loc('- Rule one\\n- Rule two', {}, keep_newlines=True)
+        self.assertEqual(out, 'Rule one\nRule two')
+
+
+class TestLoadLocalisation(unittest.TestCase):
+    def write_and_load(self, content: str) -> dict[str, str]:
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / 'test_l_english.yml').write_text(content, encoding='utf-8')
+            return load_localisation(Path(d))
+
+    def test_basic_entries(self):
+        labels = self.write_and_load('l_english:\n key1:0 "Label One"\n key2:1 "Label Two"\n')
+        self.assertEqual(labels['key1'], 'Label One')
+        self.assertEqual(labels['key2'], 'Label Two')
+
+    def test_lowest_version_wins(self):
+        labels = self.write_and_load('l_english:\n key:1 "Newer"\n key:0 "Original"\n')
+        self.assertEqual(labels['key'], 'Original')
+
+    def test_single_ref_resolved_one_level(self):
+        labels = self.write_and_load('l_english:\n alias:0 "$target$"\n target:0 "Real Label"\n')
+        self.assertEqual(labels['alias'], 'Real Label')
+
+    def test_unresolvable_ref_dropped(self):
+        labels = self.write_and_load('l_english:\n alias:0 "$missing$"\n')
+        self.assertNotIn('alias', labels)
+
+
+if __name__ == '__main__':
+    unittest.main()

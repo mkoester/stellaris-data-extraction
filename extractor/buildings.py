@@ -1,0 +1,211 @@
+"""Extraction: building reference data and building effect helpers."""
+
+from pathlib import Path
+import re
+import sys
+from .clausewitz import parse_file
+from .localisation import _clean_loc
+from .values import _as_blocks, _flatten_text, _resolve_modifier_float, _resolve_var
+from .writer import Writer
+
+
+def extract_buildings_ref(install_dir: Path, loc: dict[str, str],
+                          scripted_vars: dict[str, float], inline_scripts_dir: Path,
+                          w: Writer, verbose: bool) -> None:
+    """Extract common/buildings → building (+ building_resource, building_job): each
+    building's category, description, build/upkeep resources and the jobs it provides.
+    Reuses the precursor building helpers (`_building_resources`, `_building_inline_jobs`)."""
+    bdir = install_dir / 'common' / 'buildings'
+    if not bdir.is_dir():
+        print(f"  WARNING: {bdir} not found", file=sys.stderr)
+        return
+    order = 0
+    for f in sorted(bdir.glob('*.txt')):
+        try:
+            data = parse_file(f)
+        except Exception as e:
+            print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+            continue
+        variables = dict(scripted_vars)
+        for k, v in data.items():
+            if k.startswith('@'):
+                fv = _resolve_modifier_float(v)
+                if fv is not None:
+                    variables[k] = fv
+        for key, bdef in data.items():
+            if key.startswith('@') or not isinstance(bdef, dict):
+                continue
+            raw_name = loc.get(key)
+            if not raw_name:
+                continue  # skip un-named/internal building entries
+            name = _clean_loc(raw_name, loc)
+            raw_desc = loc.get(key + '_desc')
+            desc = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
+            category = bdef.get('category')
+            category = category if isinstance(category, str) else None
+            w.execute(
+                "INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES (?, ?, ?, ?, ?)",
+                (key, name, category, desc, order))
+            order += 1
+            for r_order, (kind, resource, amt) in enumerate(_building_resources(bdef, variables)):
+                w.execute(
+                    """INSERT OR IGNORE INTO building_resource
+                           (building_key, kind, resource, amount, sort_order) VALUES (?, ?, ?, ?, ?)""",
+                    (key, kind, resource, amt, r_order))
+            for j_order, (jk, amt) in enumerate(_building_inline_jobs(bdef, variables, inline_scripts_dir)):
+                job = re.sub(r'^job_', '', re.sub(r'_add$', '', jk))
+                w.execute(
+                    "INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES (?, ?, ?, ?)",
+                    (key, job, amt, j_order))
+    w.commit()
+    if verbose:
+        print(f"  buildings: {order}")
+
+
+def _building_cap(raw, variables: dict[str, float]) -> int | None:
+    """A building build-cap → int, or None when uncapped. Accepts a flat value
+    (`base_cap_amount = 1`) or a block whose `base` is the baseline cap
+    (`empire_limit = { base = 1 … }`)."""
+    if isinstance(raw, list):
+        raw = next((b for b in reversed(raw) if isinstance(b, dict)), raw[-1] if raw else None)
+    if isinstance(raw, dict):
+        raw = raw.get('base')
+    v = _resolve_var(raw, variables)
+    return int(v) if v is not None else None
+
+
+def _building_resources(bdef: dict, variables: dict[str, float]
+                        ) -> list[tuple[str, str, float]]:
+    """A building's resources block → [(kind, resource, amount)] for
+    kind in cost/upkeep/produces, resolving @vars. Where a kind has several blocks
+    (e.g. a conditional `is_wilderness_empire` cost), the unconditional one (no
+    `trigger`) is the primary; the gated variants are skipped."""
+    rows: list[tuple[str, str, float]] = []
+    res = bdef.get('resources')
+    if isinstance(res, list):
+        res = next((b for b in reversed(res) if isinstance(b, dict)), None)
+    if not isinstance(res, dict):
+        return rows
+    for kind in ('cost', 'upkeep', 'produces'):
+        blocks = _as_blocks(res.get(kind))
+        block = next((b for b in blocks if 'trigger' not in b), blocks[0] if blocks else None)
+        if not isinstance(block, dict):
+            continue
+        for resource, raw in block.items():
+            if resource in ('category', 'trigger'):
+                continue
+            amt = _resolve_var(raw, variables)
+            if amt is not None:
+                rows.append((kind, resource, amt))
+    return rows
+
+
+# Building modifier sources: (scope tag, field, is_triggered). The `triggered_`
+# variants carry a `potential` gate — we keep their value but tag the condition.
+_BUILDING_MOD_FIELDS = (
+    ('planet', 'planet_modifier', False),
+    ('country', 'country_modifier', False),
+    ('planet', 'triggered_planet_modifier', True),
+    ('country', 'triggered_country_modifier', True),
+    ('system', 'triggered_system_modifier', True),
+    ('station', 'triggered_station_modifier', True),
+)
+_BUILDING_MOD_SKIP = frozenset({'potential', 'trigger', 'multiplier', 'mult', 'category',
+                                'modifier', 'desc', 'replace'})
+
+
+_AE_PERK = 'ap_archaeoengineers'
+
+
+def _perk_gate(block: dict) -> tuple[str, bool] | None:
+    """A triggered modifier's ascension-perk gate as (perk_key, negated), or None
+    when it has no such gate. `negated` is True for a NOT-wrapped requirement (the
+    'base, only without the perk' variant)."""
+    txt = _flatten_text(block.get('potential'))
+    m = re.search(r'has_ascension_perk\s*=\s*(ap_\w+)', txt)
+    if not m:
+        return None
+    pre = txt[:m.start()].rstrip()
+    negated = bool(re.search(r'NO[RT]\s*=$', pre)) or bool(re.search(r'\bNO[RT]\b[^=]{0,16}$', pre))
+    return (m.group(1), negated)
+
+
+def _building_modifiers(bdef: dict, variables: dict[str, float]
+                        ) -> list[tuple[str, str, float, float | None, str | None]]:
+    """A building's modifiers, aggregated per (scope, key) into
+    [(scope, key, base_value, ae_value, condition)].
+
+    base_value is the value with no ascension perks; ae_value is the *total* with
+    Archaeo-Engineers (None when unchanged). A block gated `NOT archaeoengineers`
+    contributes to base only (it's replaced under the perk); an un-perk-gated block
+    contributes to both (the AE bonus stacks on it); an `archaeoengineers` block
+    contributes to the AE total only. Blocks gated by a *different* perk become their
+    own rows tagged with that perk key in `condition`."""
+    # acc[(scope, key)] = {'base': float, 'ae': float, 'ae_seen': bool, 'other': {perk: float}}
+    acc: dict[tuple[str, str], dict] = {}
+
+    def slot(scope, key):
+        return acc.setdefault((scope, key),
+                              {'base': 0.0, 'ae': 0.0, 'ae_seen': False, 'other': {}})
+
+    for scope, field, triggered in _BUILDING_MOD_FIELDS:
+        for block in _as_blocks(bdef.get(field)):
+            gate = _perk_gate(block) if triggered else None
+            for key, raw in block.items():
+                if key in _BUILDING_MOD_SKIP:
+                    continue
+                val = _resolve_var(raw, variables)
+                if val is None:
+                    continue
+                s = slot(scope, key)
+                if gate is None:                       # always applies (base and AE)
+                    s['base'] += val
+                    s['ae'] += val
+                elif gate[0] == _AE_PERK and gate[1]:  # base only (NOT archaeoengineers)
+                    s['base'] += val
+                elif gate[0] == _AE_PERK:              # the Archaeo-Engineers value
+                    s['ae'] += val
+                    s['ae_seen'] = True
+                else:                                  # gated by a different perk
+                    s['other'][gate[0]] = s['other'].get(gate[0], 0.0) + val
+
+    rows: list[tuple[str, str, float, float | None, str | None]] = []
+    for (scope, key), s in acc.items():
+        if s['ae_seen'] or s['base']:
+            ae = s['ae'] if s['ae_seen'] and abs(s['ae'] - s['base']) > 1e-9 else None
+            rows.append((scope, key, s['base'], ae, None))
+        for perk, v in s['other'].items():
+            rows.append((scope, key, v, None, perk))
+    return rows
+
+
+def _building_inline_jobs(bdef: dict, variables: dict[str, float], inline_scripts_dir
+                          ) -> list[tuple[str, float]]:
+    """Jobs a building adds via its `jobs/*` inline_scripts → [(job_<x>_add, amount)].
+
+    Each jobs script branches by empire type; the first triggered_planet_modifier
+    is the regular-empire variant (gestalt/FE empires get calculator/archivist
+    equivalents of the same count). The building supplies the count as `AMOUNT`."""
+    rows: list[tuple[str, float]] = []
+    for ref in _as_blocks(bdef.get('inline_script')):
+        script = ref.get('script')
+        if not isinstance(script, str) or not script.startswith('jobs/'):
+            continue
+        amount = _resolve_var(ref.get('AMOUNT'), variables)
+        if amount is None:
+            continue
+        path = inline_scripts_dir / (script + '.txt')
+        if not path.exists():
+            continue
+        try:
+            blocks = _as_blocks(parse_file(path).get('triggered_planet_modifier'))
+        except Exception:
+            continue
+        if not blocks:
+            continue
+        first = blocks[0]
+        modblock = first.get('modifier') if isinstance(first.get('modifier'), dict) else first
+        for k in modblock:
+            if k.startswith('job_') and k.endswith('_add'):
+                rows.append((k, amount))
+    return rows

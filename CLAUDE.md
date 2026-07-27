@@ -32,11 +32,11 @@ python3 stellaris-extract.py /path/to/Stellaris --sqlite a.db
 python3 stellaris-extract.py /path/to/Stellaris --out a.sql --sqlite a.db
 ```
 
-Game install: `/home/mk/.local/share/Steam/steamapps/common/Stellaris`
+Game install: `~/.local/share/Steam/steamapps/common/Stellaris`
 
 Regenerate the DB consumed by the planner:
 ```bash
-python3 stellaris-extract.py /home/mk/.local/share/Steam/steamapps/common/Stellaris --sqlite sqlite/stellaris.sqlite
+python3 stellaris-extract.py ~/.local/share/Steam/steamapps/common/Stellaris --sqlite sqlite/stellaris.sqlite
 ```
 
 ---
@@ -44,31 +44,81 @@ python3 stellaris-extract.py /home/mk/.local/share/Steam/steamapps/common/Stella
 ## Project Layout
 
 ```
-stellaris-extract.py     main script
+stellaris-extract.py     thin CLI entry point (implementation lives in extractor/)
+extractor/
+  __init__.py            __version__
+  cli.py                 main(): arg parsing, pipeline order, summary box
+  clausewitz.py          tokenize + Parser + parse_file
+  localisation.py        loc loading (load_localisation) + _clean_loc text cleanup
+  schema.py              SCHEMA (all CREATE/DROP TABLE statements)
+  writer.py              Writer — SQL dump and/or SQLite from the same INSERTs
+  values.py              generic value/block helpers (_to_list, _as_blocks, _resolve_*, …)
+  modifiers.py           modifier labels/direction, scripted variables & scaling values
+  triggers.py            scripted-trigger index, requirement/swap-signal evaluation
+  misc.py                DLC metadata, named colors, planet classes
+  species.py             species classes, archetypes, portrait sets
+  traits.py              traits, trait modifiers, trait categories
+  government.py          ethics, policy restrictions, civics, authorities, origins
+  jobs.py                pop jobs, job swaps
+  buildings.py           building reference data + building-effect helpers
+  empires.py             prescripted empires, initializers, rooms, flag assets
+  precursors.py          precursors, relics, deposits, home systems
+tests/                   unit tests (stdlib unittest) for the pure helpers
+scripts/test             test-runner wrapper (`python3 -m unittest discover`)
+build-sqlite.sh          rebuild sqlite/ from the committed dump (no game files needed)
 sql/                     SQL dump output (checked into Git)
 sqlite/                  SQLite DB output (gitignored)
 ```
 
+Cross-module imports keep the original (underscore-prefixed) helper names; the
+package is internal, `stellaris-extract.py` is the only public entry point.
+
+## Tests & Determinism
+
+- `scripts/test` runs the unit tests (pure helpers: parser, loc cleanup, value
+  helpers, SQL escaping). No dependencies beyond stdlib. Extend them when
+  touching those helpers.
+- Output is **deterministic**: two runs produce byte-identical dumps. Job-swap
+  sources iterate `sorted(...)` (extractor/jobs.py) because set order varies with
+  Python's hash seed — spurious diffs would pollute stellaris-data-comparison.
+  Keep any new "pick/iterate from a set" extraction code sorted, and verify with
+  two runs + `cmp` when in doubt.
+
 ---
 
-## Extraction Steps
+## Extraction Steps (pipeline order in `extractor/cli.py`)
 
-| Step   | What                        | Source dir                        |
-|--------|-----------------------------|-----------------------------------|
-| —      | Game version (`meta`)       | `launcher-settings.json` (`version` / `rawVersion`) |
-| [0/7]  | DLC metadata                | `dlc_metadata/dlc_info.txt`       |
-| [1/7]  | Species classes + loc       | `common/species_classes/`         |
-| [2/7]  | Species archetypes          | `common/species_archetypes/`      |
-| [3/7]  | Portrait sets               | `common/portrait_sets/`           |
-| [4/7]  | Traits + modifiers          | `common/traits/`                  |
-| [5/7]  | Named colors + categories   | `common/named_colors/`            |
-| [6/7]  | Ethics + tags               | `common/ethics/`                  |
-| [7/7]  | Policy restrictions         | `common/policies/`                |
-| [8/8]  | Precursors + rewards        | `common/precursor_civilizations/`, `common/relics/`, `common/static_modifiers/` |
-| [9/10] | Deposits (dictionary)       | `common/deposits/`                |
-| [10/10]| Precursor home systems      | `common/solar_system_initializers/` |
+| What                        | Source                                              |
+|-----------------------------|-----------------------------------------------------|
+| Game version (`meta`)       | `launcher-settings.json` (`version` / `rawVersion`) |
+| DLC metadata                | `dlc_metadata/dlc_info.txt`                         |
+| Species classes + loc       | `common/species_classes/`                           |
+| Species archetypes          | `common/species_archetypes/`                        |
+| Portrait sets               | `common/portrait_sets/`                             |
+| Traits + modifiers          | `common/traits/` (species-trait files only)         |
+| Named colors + categories   | `common/named_colors/`                              |
+| Ethics + tags               | `common/ethics/`                                    |
+| Policy restrictions         | `common/policies/`                                  |
+| Precursors + rewards        | `common/precursor_civilizations/`, `common/relics/`, `common/static_modifiers/`, `common/technology/`, `events/precursor_*` |
+| Deposits (dictionary)       | `common/deposits/`                                  |
+| Precursor home systems      | `common/solar_system_initializers/`                 |
+| Civics                      | `common/governments/civics/0[0-3]_*.txt`            |
+| Authorities                 | `common/governments/authorities/`                   |
+| Origins                     | `common/governments/civics/00/01_origins*.txt`      |
+| Planet classes              | `common/planet_classes/`                            |
+| Prescripted empires         | `prescripted_countries/`                            |
+| Initializers + flags + rooms| `common/solar_system_initializers/`, `flags/`, rooms regex-scanned from `prescripted_countries/` |
+| Jobs                        | `common/pop_jobs/` (+ `common/inline_scripts/`)     |
+| Buildings reference         | `common/buildings/`                                 |
+| Job swaps                   | `common/pop_jobs/` + `common/scripted_triggers/`    |
 
 Localisation: `localisation/english/*.yml`
+
+Shared loop helpers in `cli.py`: `_iter_parsed(files, progress)` (per-file parse
+with warning on failure) and `_merge_dir(dir, progress)` (merge all `*.txt` of a
+dir into one dict, later files win). Note their scope: only *parse* failures are
+downgraded to warnings; an exception inside an `extract_*` call now propagates
+(extractor bugs should be loud, not swallowed).
 
 ---
 
@@ -100,7 +150,7 @@ DROP TABLE IF EXISTS ethic_tag_label;
 DROP TABLE IF EXISTS modifier_label;
 ```
 
-Full schema: see `SCHEMA` string at top of `stellaris-extract.py`.
+Full schema: see the `SCHEMA` string in `extractor/schema.py`.
 
 ---
 
@@ -438,6 +488,49 @@ League homeworld's +10 society/physics/engineering research).
 
 ---
 
+## Authorities Extraction (`extract_authorities`, government.py)
+
+`common/governments/authorities/` → `authority` (+ `authority_modifier`,
+`authority_requirement` via `_authority_requirements`/`_trigger_values` — same
+require/forbid/require_any shape as civics). `required_dlc` partly hand-mapped
+via `_AUTH_DLC`.
+
+## Jobs Extraction (`extract_jobs`, jobs.py)
+
+`common/pop_jobs/` → `job` (+ `job_resource`, `job_modifier`): category, flavour
+description, base produces/upkeep, and non-resource effects (amenities, crime, …)
+for the plain-empire state. Many jobs keep their figures in an `output/*`
+**inline script** (foundry/researcher/…) — `load_script` expands those (cached,
+possibly nested). Per-file `@vars` overlay the global `scripted_vars`.
+
+## Buildings Reference (`extract_buildings_ref`, buildings.py)
+
+`common/buildings/` → `building` (+ `building_resource`, `building_job`): category,
+description, build cost/upkeep and provided jobs. Reuses the precursor building
+helpers (`_building_resources`, `_building_inline_jobs`).
+
+## Job Swaps (`extract_job_swaps`, jobs.py)
+
+Per base job, each `swap_type` variant + trigger → which civic/origin/… forces the
+swap → `job_swap`, plus effective resources/modifiers on both sides →
+`job_swap_resource` / `job_swap_modifier`. Trigger conditions resolve through the
+`common/scripted_triggers/` index (`_scripted_trigger_index`; `_collect_swap_sources`
+finds the forcing source, `_signals` the positive/negative gates). Gestalt-only
+civics are attributed only to gestalt jobs (`attribute_ok`). Swap sources iterate
+**sorted** — see Tests & Determinism.
+
+## Empire Assets (empires.py)
+
+- `extract_prescripted_empires` — see its section above.
+- `extract_initializers` — `common/solar_system_initializers/` → `initializer`
+  (key + loc name), for the empire builder's home-system pick.
+- `extract_flag_assets` — scans `flags/` (`flag_asset`: icon files per category +
+  backgrounds; .dds names are what `empire_flag` blocks reference).
+- `extract_rooms` — distinct `room = "…"` values regex-scanned from
+  `prescripted_countries/` → `room` (rooms are gfx entities with no loc).
+
+---
+
 ## Modifier Label Lookup Order
 
 For any modifier key, label is looked up as:
@@ -498,6 +591,6 @@ Unresolved `$KEY$` inline references in labels are discarded (label not stored i
 ## Companion repo: Stellaris Modding Insights
 
 A sibling repo collects hard-won, poorly-documented Stellaris findings — engine quirks, parser/format gotchas, things only obvious in hindsight:
-`../stellaris-modding-insights` (`/home/mk/Projects/stellaris-modding-insights`, https://github.com/mkoester/stellaris-modding-insights). It's community-facing notes organised as `docs/NN-topic.md` with a TL;DR index in `README.md`. Especially relevant here: how the game scripts (`common/`, `events/`, `localisation/`) are structured and parsed.
+`../stellaris-modding-insights` (sibling checkout, https://github.com/mkoester/stellaris-modding-insights). It's community-facing notes organised as `docs/NN-topic.md` with a TL;DR index in `README.md`. Especially relevant here: how the game scripts (`common/`, `events/`, `localisation/`) are structured and parsed.
 
 **When you discover something noteworthy** while working in this repo — a surprising Clausewitz-script/localisation parsing quirk, an undocumented file-format detail, a non-obvious gotcha, or anything that cost real time to figure out — proactively suggest recording it in the insights repo. Don't write there silently: propose what to add (which `docs/` file, a one-line TL;DR) and let the user confirm, since it's a separate, published repo. Keep project-specific extraction mechanics in this file; route generally-useful Stellaris modding knowledge to the insights repo.
