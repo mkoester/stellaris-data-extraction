@@ -84,6 +84,14 @@ package is internal, `stellaris-extract.py` is the only public entry point.
   Python's hash seed — spurious diffs would pollute stellaris-data-comparison.
   Keep any new "pick/iterate from a set" extraction code sorted, and verify with
   two runs + `cmp` when in doubt.
+- **Prove determinism with explicit hash seeds, not repeated runs.** Two plain runs
+  only *probably* draw different seeds, so a pass proves little. Instead diff
+  `PYTHONHASHSEED=1` against `PYTHONHASHSEED=2` — that is a test which can actually
+  fail. Confirmed 2026-07-27: the pre-refactor monolith diverges between the two
+  seeds (job_swap row order), the `extractor/` package does not, so the `sorted(...)`
+  iteration is what fixed it. Expect a **one-off `sql/stellaris.sql` diff** in
+  job_swap ordering versus any dump generated before that fix — it is the fix
+  landing, not a regression.
 
 ---
 
