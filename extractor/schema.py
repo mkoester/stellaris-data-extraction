@@ -857,4 +857,39 @@ CREATE TABLE precursor_megastructure (
     PRIMARY KEY (precursor_key, initializer, type),
     FOREIGN KEY (precursor_key) REFERENCES precursor(key)
 );
+
+DROP TABLE IF EXISTS tech_fallen_empire;
+CREATE TABLE tech_fallen_empire (
+    key          TEXT PRIMARY KEY,
+    label        TEXT,
+    description  TEXT,
+    area         TEXT NOT NULL,
+    area_label   TEXT,
+    category     TEXT,
+    category_label TEXT,
+    building_key TEXT,               -- FK to building.key; NULL for ship-component techs
+    sort_order   INTEGER NOT NULL DEFAULT 0
+);
+
+DROP TABLE IF EXISTS tech_repeatable_modifier;
+DROP TABLE IF EXISTS tech_repeatable;
+CREATE TABLE tech_repeatable (
+    key          TEXT PRIMARY KEY,
+    label        TEXT,
+    description  TEXT,
+    area         TEXT NOT NULL,          -- physics / society / engineering
+    area_label   TEXT,                   -- Physics / Society / Engineering
+    category     TEXT,                   -- field key, e.g. "industry"
+    category_label TEXT,                 -- localised, e.g. "Industry"
+    levels       INTEGER,                -- -1 = unlimited
+    sort_order   INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE tech_repeatable_modifier (
+    tech_key       TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (tech_key, modifier_key),
+    FOREIGN KEY (tech_key) REFERENCES tech_repeatable(key)
+);
 """

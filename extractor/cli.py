@@ -11,11 +11,12 @@ from .clausewitz import parse_file
 from .empires import extract_flag_assets, extract_initializers, extract_prescripted_empires, extract_rooms
 from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_ethics, extract_origins, extract_policy_restrictions
 from .jobs import extract_job_swaps, extract_jobs
-from .localisation import load_localisation
+from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation
 from .misc import extract_dlc, extract_named_colors, extract_planet_classes
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
 from .precursors import extract_deposits, extract_precursor_systems, extract_precursors
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
+from .tech import extract_fallen_empire_techs, extract_repeatable_techs
 from .traits import TRAIT_CATEGORIES, extract_trait_categories, extract_trait_modifiers, extract_traits, is_species_trait_file
 from .triggers import _scripted_trigger_index
 from .values import _as_blocks, _resolve_modifier_float
@@ -241,7 +242,18 @@ Examples:
     for bdir in (buildings_dir, starbase_buildings_dir):
         buildings.update(_merge_dir(bdir, progress))
     # Technology definitions (the precursor "Secrets of …" techs live here).
-    technologies = _merge_dir(technology_dir, progress)
+    # Merged like _merge_dir, but per-file so the fallen-empire tech keys can be
+    # picked out of their own file (they're not otherwise distinguishable).
+    technologies: dict = {}
+    fe_tech_keys: set[str] = set()
+    if technology_dir.exists():
+        for f, parsed in _iter_parsed(sorted(technology_dir.glob('*.txt')), progress):
+            technologies.update(parsed)
+            if f.name == '00_fallen_empire_tech.txt':
+                fe_tech_keys = {k for k, v in parsed.items()
+                                if isinstance(v, dict) and not k.startswith('@')}
+    else:
+        print(f"  WARNING: {technology_dir} not found", file=progress)
     # Global scripted variables (e.g. @activation_cost, @triumph_duration) used to
     # resolve relic triumph costs/cooldowns.
     scripted_vars: dict[str, float] = {}
@@ -359,6 +371,25 @@ Examples:
     print(f"\n[job-swaps] {install_dir / 'common' / 'pop_jobs'}", file=progress)
     extract_job_swaps(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
 
+    # --- repeatable technologies ---
+    print(f"\n[repeatable-techs] {technology_dir}", file=progress)
+    extract_repeatable_techs(technologies, loc, scripted_vars, w, args.verbose)
+
+    # --- fallen empire technologies ---
+    # Build a raw-loc mapping (before $KEY$ resolution) for the fallen empire loc file so
+    # we can detect which tech keys reference a building key directly ($building_xxx$).
+    fe_building_refs: dict[str, str] = {}
+    fe_loc_file = install_dir / 'localisation' / 'english' / 'fallen_empire_l_english.yml'
+    if fe_loc_file.exists():
+        raw_text = fe_loc_file.read_text(encoding='utf-8-sig', errors='replace')
+        for m in _LOC_ENTRY.finditer(raw_text):
+            _key, _lbl = m.group(1), m.group(3)
+            ref = _LOC_REF.match(_lbl)
+            if ref and ref.group(1).startswith('building_'):
+                fe_building_refs[_key] = ref.group(1)
+    print(f"\n[fallen-empire-techs] {technology_dir / '00_fallen_empire_tech.txt'}", file=progress)
+    extract_fallen_empire_techs(technologies, fe_tech_keys, fe_building_refs, loc, w, args.verbose)
+
     w.close()
 
     # --- Summary ---
@@ -395,6 +426,9 @@ Examples:
         n_prec_planet   = tmp.execute("SELECT COUNT(*) FROM precursor_planet").fetchone()[0]
         n_prec_pdep     = tmp.execute("SELECT COUNT(*) FROM precursor_planet_deposit").fetchone()[0]
         n_prec_mega     = tmp.execute("SELECT COUNT(*) FROM precursor_megastructure").fetchone()[0]
+        n_rep_techs     = tmp.execute("SELECT COUNT(*) FROM tech_repeatable").fetchone()[0]
+        n_rep_tech_mods = tmp.execute("SELECT COUNT(*) FROM tech_repeatable_modifier").fetchone()[0]
+        n_fe_techs      = tmp.execute("SELECT COUNT(*) FROM tech_fallen_empire").fetchone()[0]
         tmp.close()
         print(f"""
 +------------------------------------------+
@@ -431,6 +465,9 @@ Examples:
 |  Precursor planets  : {n_prec_planet:<20}|
 |  Precursor planet dep: {n_prec_pdep:<19}|
 |  Precursor megastruct: {n_prec_mega:<19}|
+|  Repeatable techs   : {n_rep_techs:<20}|
+|  Repeatable tech mods: {n_rep_tech_mods:<19}|
+|  Fallen empire techs: {n_fe_techs:<20}|
 +------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size
