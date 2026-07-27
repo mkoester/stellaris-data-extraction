@@ -63,6 +63,7 @@ extractor/
   buildings.py           building reference data + building-effect helpers
   empires.py             prescripted empires, initializers, rooms, flag assets
   precursors.py          precursors, relics, deposits, home systems
+  tech.py                repeatable + fallen-empire technologies
 tests/                   unit tests (stdlib unittest) for the pure helpers
 scripts/test             test-runner wrapper (`python3 -m unittest discover`)
 build-sqlite.sh          rebuild sqlite/ from the committed dump (no game files needed)
@@ -111,6 +112,8 @@ package is internal, `stellaris-extract.py` is the only public entry point.
 | Jobs                        | `common/pop_jobs/` (+ `common/inline_scripts/`)     |
 | Buildings reference         | `common/buildings/`                                 |
 | Job swaps                   | `common/pop_jobs/` + `common/scripted_triggers/`    |
+| Repeatable techs            | `common/technology/`                                |
+| Fallen empire techs         | `common/technology/00_fallen_empire_tech.txt` + `localisation/english/fallen_empire_l_english.yml` |
 
 Localisation: `localisation/english/*.yml`
 
@@ -138,7 +141,8 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`,
+`tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`
 
 Drop order matters for FK integrity:
 ```sql
@@ -585,6 +589,30 @@ Unresolved `$KEY$` inline references in labels are discarded (label not stored i
 | Precursor planet deposits | 56   |
 | Precursor planet modifiers | 3   |
 | Precursor megastructures  | 2    |
+| Repeatable techs          | 24   |
+| Repeatable tech modifiers | 24   |
+| Fallen empire techs       | 35   |
+
+---
+
+## Technologies (`extract_repeatable_techs`, `extract_fallen_empire_techs`, tech.py)
+
+Two tech slices the planner shows on their own pages; both share `_tech_common`
+(area/category/label/description resolution) and `_sort_key` (area → category → key,
+via `_AREA_SORT`/`_CATEGORY_SORT`), so extend those rather than either function.
+
+- **`tech_repeatable`** (+ `tech_repeatable_modifier`) — identified by
+  `weight_groups` containing `repeatable` (not by key prefix). `levels = -1` means
+  unlimited. Modifier values resolve `@scripted_vars`; a list-valued modifier takes
+  the **last** definition (game load order), and `_write_modifier_label` is reused so
+  labels come for free. 24 techs / 24 modifiers.
+- **`tech_fallen_empire`** — the techs defined in `00_fallen_empire_tech.txt`. There
+  is no flag marking them, so `cli.main` loads `common/technology/` **per file**
+  (not via `_merge_dir`) purely to capture that file's keys as `fe_tech_keys`.
+  `building_key` is resolved from the **raw, pre-resolution** loc: many FE tech
+  labels are a sole `$building_xxx$` reference, so `main` re-scans
+  `fallen_empire_l_english.yml` with `_LOC_ENTRY`/`_LOC_REF` before `$KEY$`
+  resolution collapses them into the building's display name. 35 techs.
 
 ---
 
