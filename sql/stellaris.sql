@@ -15295,6 +15295,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_arcane_replicator', 'Arcane Replicator', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_arcane_replicator', 'produces', 'alloys', '20.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_arcane_generator', 'Arcane Generator', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -15905,6 +15907,10 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_astral_threads_deposit_3', 'produces', 'astral_threads', '3.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_crystal_rift', 'Unity +10 and Physics +10', 'orbital_research_deposits', 0, NULL, '11_astral_planes_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_crystal_rift', 'produces', 'unity', '10.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_crystal_rift', 'produces', 'physics_research', '10.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_physics_25', 'Physics +25', 'orbital_research_deposits', 0, NULL, '11_astral_planes_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -16373,8 +16379,16 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_arc_furnace_2', 'produces', 'minerals', '2.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_arc_furnace_3', 'Arc Furnace: Mohole Extractors', 'orbital_mining_deposits', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_arc_furnace_3', 'produces', 'minerals', '2.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_arc_furnace_3', 'produces', 'alloys', '1.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_arc_furnace_4', 'Arc Furnace', 'orbital_mining_deposits', 0, NULL, '13_machine_age_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_arc_furnace_4', 'produces', 'minerals', '2.0');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_arc_furnace_4', 'produces', 'alloys', '2.0');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_radioactive_ruins', 'Blocker Radioactive Ruins', 'deposit_cat_blockers', 1, 120, '14_grand_archive_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -16887,6 +16901,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_deep_sleep_cryo_pods', 'Deprecated Cryo Pods', 'deposit_cat_blockers', 1, 360, '17_nomads_deposits.txt');
+INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
+                       VALUES ('d_deep_sleep_cryo_pods', 'cost', 'alloys', '1000.0');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_deep_sleep_cryo_pods', 'planet_housing_add', '-200.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -30790,11 +30806,8 @@ INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('wilderness_room', 
 INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('personality_xenophobic_isolationists_room', 'Xenophobic Isolationists', 28);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('civilian', 'Civilian', 'civilian', 'The segment of our population not currently engaged in employment, education or training. Will travel for work.', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('civilian', 'produces', 'trade', '1.0', 0);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('civilian', 'upkeep', 'consumer_goods', '0.25', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('civilian', 'produces', 'trade', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('civilian', 'planet_amenities_add', '0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -30805,12 +30818,6 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_overseer', 'Overseer', 'worker', 'These relatively privileged slaves keep their less fortunate brethren in line.', 2);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('slave_overseer', 'produces', 'unity', '1.0', 0);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('slave_overseer', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('slave_overseer', 'planet_crime_add', '-25.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -30826,36 +30833,36 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('organic_battery', 'Grid Amalgamated', 'worker', 'Their organic energy will be absorbed, until they expire.', 4);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('organic_battery', 'produces', 'energy', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('organic_battery', 'produces', 'energy', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock', 'Livestock', 'worker', 'They have but one purpose: to become feed for their betters.', 5);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('livestock', 'produces', 'food', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('livestock', 'produces', 'food', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_infernal', 'Livestock', 'worker', 'They have but one purpose: to become feed for their betters.', 6);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('livestock_infernal', 'produces', 'alloys', '0.75', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('livestock_infernal', 'produces', 'alloys', '0.75', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_zoo_animal', 'Protected Fauna', 'pre_sapients', 'These xenos are cared for and studied in a controlled environment, ensuring their conservation.', 7);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('livestock_zoo_animal', 'upkeep', 'food', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('livestock_zoo_animal', 'upkeep', 'food', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('livestock_zoo_animal', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_zoo_beast', 'Gladiatorial Xeno', 'pre_sapients', 'These xenos are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 8);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('livestock_zoo_beast', 'upkeep', 'food', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('livestock_zoo_beast', 'upkeep', 'food', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('livestock_zoo_beast', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bio_trophy', 'Bio-Trophy', 'bio_trophy', 'Their only job is to be themselves.', 9);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('bio_trophy', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('bio_trophy', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('bio_trophy', 'pop_cat_complex_drone_bonus_workforce_mult', '0.01', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -30870,12 +30877,12 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('branch_office_criminal_syndicate_value_add', 'Criminal Branch Office Trade', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('deviant_drone', 'Deviant Drone', 'deviant_drone', 'These deviants no longer obey the Hive Mind.', 14);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('deviant_drone', 'upkeep', 'energy', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('deviant_drone', 'upkeep', 'energy', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('corrupt_drone', 'Corrupt Drone', 'corrupt_drone', 'These drones have been corrupted and no longer obey the directives of the core intelligence.', 15);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('corrupt_drone', 'upkeep', 'energy', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('corrupt_drone', 'upkeep', 'energy', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fotd_protectors', 'Protector', 'worker', 'So that the majority can rest peacefully and enjoy their lives of extravagance, these rough individuals stand ready in the night to visit violence on those who would do them harm.', 16);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('fotd_protectors', 'planet_crime_add', '-5.0', 0);
@@ -30891,86 +30898,89 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('organic_exhibit', 'Organic Specimen', 'bio_trophy', 'The uplifted organics enhance our drones'' life-creation subroutines, infusing new perspectives and lessons into future projects.', 17);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('organic_exhibit', 'produces', 'unity', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('organic_exhibit', 'produces', 'unity', '0.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('organic_exhibit', 'upkeep', 'food', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('organic_exhibit', 'upkeep', 'food', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_lithoid', 'Livestock', 'worker', 'They have but one purpose: to become feed for their betters.', 18);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('livestock_lithoid', 'produces', 'minerals', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('livestock_lithoid', 'produces', 'minerals', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_zoo_animal_lithoid', 'Protected Fauna', 'pre_sapients', 'These xenos are cared for and studied in a controlled environment, ensuring their conservation.', 19);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('livestock_zoo_animal_lithoid', 'upkeep', 'minerals', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('livestock_zoo_animal_lithoid', 'upkeep', 'minerals', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('livestock_zoo_animal_lithoid', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('livestock_zoo_beast_lithoid', 'Gladiatorial Xeno', 'pre_sapients', 'These xenos are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 20);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('livestock_zoo_beast_lithoid', 'upkeep', 'minerals', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('livestock_zoo_beast_lithoid', 'upkeep', 'minerals', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('livestock_zoo_beast_lithoid', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_lithoid', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 21);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('purge_lithoid', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_robot', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 22);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('purge_robot', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_processing', 'Processing', 'purge', NULL, 23);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('purge_processing', 'produces', 'food', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('purge_processing', 'produces', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_processing_lithoid', 'Processing', 'purge', NULL, 24);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('purge_processing_lithoid', 'produces', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('purge_processing_lithoid', 'produces', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_processing_infernal', 'Processing', 'purge', NULL, 25);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('purge_processing_infernal', 'produces', 'alloys', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('purge_processing_infernal', 'produces', 'alloys', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_processing_robot', 'Processing', 'purge', NULL, 26);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('purge_processing_robot', 'produces', 'alloys', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('purge_processing_robot', 'produces', 'alloys', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_labor_camps', 'Forced Labor', 'purge', NULL, 27);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('purge_labor_camps', 'produces', 'food', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('purge_labor_camps', 'produces', 'food', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('purge_labor_camps', 'produces', 'minerals', '3.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('purge_labor_camps', 'produces', 'minerals', '3.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_matrix', 'Chemical Processing', 'purge', NULL, 28);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('purge_matrix', 'produces', 'energy', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('purge_matrix', 'produces', 'energy', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('purge_sacrifice', 'Sacrifice', 'purge', 'The Eater craves more than conflict alone. The bodies of our enemies are fitting tribute.', 29);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('purge_sacrifice', 'produces', 'unity', '2.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('purge_sacrifice', 'produces', 'unity', '2.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bio_trophy_unemployment', 'Neglected Bio-Trophy', 'bio_trophy_unemployment', 'These Bio-Trophies are neglected and without our care, exposing them to the cruelty of the galaxy. Their existence is our failure.', 30);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_unemployment', 'Unemployed Slaves', 'slave_unemployment', 'These slaves are currently not assigned to any task.', 31);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('politician', 'Politician', 'ruler', 'The government of an entire colony is a daunting task that requires dedicated and highly trained individuals.', 32);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('politician', 'produces', 'unity', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('politician', 'produces', 'unity', '5.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('politician', 'upkeep', 'consumer_goods', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('politician', 'upkeep', 'consumer_goods', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('knight_commander', 'Lord Commander', 'ruler', 'The knights are worthy and honorable - the best our society has to offer. But even they need leadership. Where the Lord Commander leads, there shall the knights follow.', 33);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('knight_commander', 'produces', 'unity', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('knight_commander', 'produces', 'unity', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('knight_commander', 'upkeep', 'alloys', '200.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('knight_commander', 'produces', 'physics_research', '1.0', 1);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('knight_commander', 'produces', 'engineering_research', '1.0', 2);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('knight_commander', 'produces', 'society_research', '1.0', 3);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('knight_commander', 'upkeep', 'alloys', '200.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('knight_commander', 'country_naval_cap_add', '600.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -30989,6 +30999,12 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('dystopian_telepath', 'Telepath', 'ruler', 'Members of the Psi Corps, a unit of psionically-gifted crime fighters.', 35);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('dystopian_telepath', 'produces', 'unity', '4.5', 0);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('dystopian_telepath', 'upkeep', 'energy', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('dystopian_telepath', 'planet_defense_armies_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31005,33 +31021,33 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('warden', 'Planetary Warden', 'ruler', 'Overseeing an entire penal colony as its warden demands individuals who are highly skilled and wholly committed to the task at hand.', 41);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('physicist', 'Physicist', 'specialist', 'The eternal mystery of the world is its comprehensibility.', 42);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('physicist', 'produces', 'physics_research', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('physicist', 'produces', 'physics_research', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('physicist', 'upkeep', 'consumer_goods', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('physicist', 'upkeep', 'consumer_goods', '1.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('biologist', 'Biologist', 'specialist', 'The eternal mystery of the world is its comprehensibility.', 43);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('biologist', 'produces', 'society_research', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('biologist', 'produces', 'society_research', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('biologist', 'upkeep', 'consumer_goods', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('biologist', 'upkeep', 'consumer_goods', '1.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('engineer', 'Engineer', 'specialist', 'The eternal mystery of the world is its comprehensibility.', 44);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('engineer', 'produces', 'engineering_research', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('engineer', 'produces', 'engineering_research', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('engineer', 'upkeep', 'consumer_goods', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('engineer', 'upkeep', 'consumer_goods', '1.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_keeper', 'Zookeeper', 'specialist', 'These zookeepers look after the needs of the fauna under their care.', 45);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bureaucrat', 'Bureaucrat', 'specialist', 'Fulfilling the bureaucratic demands of an empire is a daunting task that requires dedicated and highly trained individuals.', 46);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('bureaucrat', 'produces', 'unity', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('bureaucrat', 'produces', 'unity', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('bureaucrat', 'upkeep', 'consumer_goods', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('bureaucrat', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('enforcer', 'Enforcer', 'specialist', 'Law enforcement officers are responsible for upholding the law and maintaining peace.', 47);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('enforcer', 'planet_crime_add', '-25.0', 0);
@@ -31047,6 +31063,12 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('educator', 'Educator', 'specialist', 'Dedicated to preparing the youth, these tireless champions of knowledge perform the irreplaceable service of ensuring that every citizen is ready to face the galaxy.', 48);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('telepath', 'Telepath', 'specialist', 'Members of the Psi Corps, a unit of psionically-gifted crime fighters.', 49);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('telepath', 'produces', 'unity', '4.5', 0);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('telepath', 'upkeep', 'energy', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('telepath', 'planet_defense_armies_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31057,11 +31079,11 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_add', 'Crime', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('entertainer', 'Entertainer', 'specialist', 'It is said there are only two types of lifeforms in the galaxy: the entertainers, and the entertained.', 50);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('entertainer', 'produces', 'unity', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('entertainer', 'produces', 'unity', '0.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('entertainer', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('entertainer', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('entertainer', 'planet_amenities_add', '12.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31070,51 +31092,48 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('unifier', 'Unification Officer', 'specialist', 'The administrative corps of our newly unified colony, these officers ensure that amenities are delivered to those in need.', 52);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('chemist', 'Chemist', 'specialist', 'The synthetic development of volatile motes by chemical processes is left to these specialists.', 53);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('chemist', 'produces', 'volatile_motes', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('chemist', 'produces', 'volatile_motes', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('chemist', 'upkeep', 'minerals', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('chemist', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('translucer', 'Translucer', 'specialist', 'These specialists transform minerals into rare crystals in a laboratory environment.', 54);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('translucer', 'produces', 'rare_crystals', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('translucer', 'produces', 'rare_crystals', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('translucer', 'upkeep', 'minerals', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('translucer', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gas_refiner', 'Gas Refiner', 'specialist', 'Managing the complex chain of reactions required to refine gas from minerals effectively requires advanced machinery and highly-trained experts.', 55);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('gas_refiner', 'produces', 'exotic_gases', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('gas_refiner', 'produces', 'exotic_gases', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('gas_refiner', 'upkeep', 'minerals', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('gas_refiner', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('roboticist', 'Roboticist', 'specialist', 'These technicians build robots, that the robots may build for the nation.', 56);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('roboticist', 'upkeep', 'alloys', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('roboticist', 'upkeep', 'alloys', '2.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('roboticist', 'planet_pop_assembly_add', '2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pop_assembly_add', 'Monthly Mechanical Pop Assembly', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('healthcare', 'Medical Worker', 'specialist', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', 57);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('healthcare', 'produces', 'society_research', '1.75', 0);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('healthcare', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('healthcare', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('healthcare', 'planet_amenities_add', '7.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('trader', 'Trader', 'specialist', 'These proud deal-makers boost the value of everyday commodities, and expedite the movement of goods to where they are most needed or desired.', 58);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('trader', 'produces', 'trade', '8.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('trader', 'produces', 'trade', '8.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('trader', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('trader', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('numistic_priest', 'Numistic Priest', 'specialist', 'These zealous facilitators of commerce have vowed to squeeze every last drop of value from deals carried out in Numa''s name.', 59);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('preacher', 'Prosperity Preacher', 'specialist', 'Prosperity Preachers spread the good word to the masses that they, too, can prosper, if only they will part with a small donation to the cause.', 60);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('manager', 'Manager', 'specialist', 'The endless struggle to balance conflicting demands from the middle of the managerial hierarchy is envied by few.', 61);
@@ -31123,11 +31142,11 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('death_chronicler', 'Death Chronicler', 'specialist', 'Entropy is the domain of these scholars, who observe and record death and its effects in all their various expressions.', 64);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('necro_apprentice', 'Necrophyte', 'specialist', 'Through years of hard work culminating in a lavish Elevation Ritual, those unfortunates not born into the ruling caste can be subsumed into it.', 65);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('necro_apprentice', 'produces', 'unity', '0.75', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('necro_apprentice', 'produces', 'unity', '0.75', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('necro_apprentice', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('necro_apprentice', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('necro_apprentice', 'fake_pop_growth_mod', '0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31138,36 +31157,33 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('foundry', 'Metallurgist', 'specialist', 'Highly trained workers are needed to turn raw minerals into the durable alloys that are used in a wide variety of advanced construction.', 66);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('foundry', 'produces', 'alloys', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('foundry', 'produces', 'alloys', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('foundry', 'upkeep', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('foundry', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('catalytic_technician', 'Catalytic Technician', 'specialist', 'Highly trained workers are needed to turn raw organic matter into durable alloys necessary for advanced construction.', 67);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('artisan', 'Artisan', 'specialist', 'Skilled craft workers that manufacture domestic and luxury goods of various types.', 68);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('artisan', 'produces', 'consumer_goods', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('artisan', 'produces', 'consumer_goods', '6.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('artisan', 'upkeep', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('artisan', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('artificer', 'Artificer', 'specialist', 'Skilled and creative craft workers that manufacture domestic and luxury goods of stunning quality.', 69);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('pearl_diver', 'Pearl Diver', NULL, 'Concerning cultivation and farming more than diving, these specialists still bring back a large variety of treasures from the depths.', 70);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('reassigner', 'Reassigner', 'specialist', 'Reassigners ensure that once a Megacorporation''s citizen has passed on, their remains will stay at work until the fulfillment of their contract.', 71);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('reassigner', 'upkeep', 'consumer_goods', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('reassigner', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('reassigner', 'fake_pop_growth_mod', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant', 'Spa Attendant', 'specialist', 'Trained Attendants for the Mutagenic Spas. Their purpose in life is to ensure their clients'' continued health through a variety of services, including intemperate detoxification and carefully curated genotype degeneration.', 72);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('bath_attendant', 'produces', 'trade', '2.0', 0);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('bath_attendant', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('bath_attendant', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('bath_attendant', 'planet_amenities_add', '5.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31175,14 +31191,23 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant_individual_machine', 'Lubrication Terminal', 'specialist', 'Lubrication Terminals turn Alloys into new Pop Machine Pops but increase Amenities Usage.', 73);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('knight', 'Knight', 'specialist', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 74);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('knight', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('knight', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('knight', 'upkeep', 'alloys', '1.15', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('knight', 'produces', 'physics_research', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('knight', 'upkeep', 'consumer_goods', '0.15', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('knight', 'produces', 'engineering_research', '1.0', 2);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('knight', 'produces', 'society_research', '1.0', 3);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('knight', 'upkeep', 'alloys', '1.15', 0);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('knight', 'upkeep', 'consumer_goods', '0.15', 1);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('knight', 'planet_defense_armies_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31198,14 +31223,14 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('archaeoengineers', 'Archaeo-Engineer', 'specialist', 'Sometimes, it belongs in a warship, not a museum.', 75);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('resort_worker', 'Resort Worker', 'specialist', 'Skilled artisans of hospitality who are dedicated to creating an unforgettable experience. They work hard, so you don''t have to.', 76);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('resort_worker', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('resort_worker', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('resort_worker', 'produces', 'trade', '4.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('resort_worker', 'produces', 'trade', '4.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('resort_worker', 'upkeep', 'consumer_goods', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('resort_worker', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('resort_worker', 'pop_amenities_usage_mult', '-0.01', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31216,40 +31241,34 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_trade_produces_mult', 'Trade from Living Standards', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('polytechnic_mentor', 'Thermotechnic Mentor', 'specialist', 'With a diverse background of skills, this mentor helps bridge disciplinary gaps to boost the efficiency of specialized workers.', 77);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('polytechnic_mentor', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('polytechnic_mentor', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('polytechnic_mentor', 'produces', 'physics_research', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('polytechnic_mentor', 'produces', 'physics_research', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('polytechnic_mentor', 'produces', 'society_research', '1.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('polytechnic_mentor', 'produces', 'society_research', '1.0', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('polytechnic_mentor', 'produces', 'engineering_research', '1.0', 3);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('polytechnic_mentor', 'produces', 'engineering_research', '1.0', 3);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('polytechnic_mentor', 'upkeep', 'consumer_goods', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('polytechnic_mentor', 'upkeep', 'consumer_goods', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('offworld_prospector', 'Offworld Prospector', 'specialist', 'Enterprising prospectors travel offworld to hunt for Volatile Motes and Living Metal on Molten Worlds.', 78);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('offworld_prospector', 'produces', 'sr_living_metal', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('offworld_prospector', 'produces', 'sr_living_metal', '1.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('offworld_prospector', 'produces', 'volatile_motes', '0.25', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('offworld_prospector', 'produces', 'volatile_motes', '0.25', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('offworld_prospector', 'upkeep', 'energy', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('offworld_prospector', 'upkeep', 'energy', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('soldier', 'Soldier', 'specialist', 'Military professionals are needed to train a steady stream of new recruits for army and naval operations.', 79);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('soldier', 'produces', 'society_research', '0.5', 0);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('soldier', 'produces', 'engineering_research', '0.5', 1);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('soldier', 'upkeep', 'consumer_goods', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('soldier', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('soldier', 'country_naval_cap_add', '4.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31264,8 +31283,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('battle_thrall', 'Battle Thrall', 'specialist', 'Elite slave warriors, trained from birth, who fight with unparalleled zeal and ferocity. Their loyalty and dedication make them formidable on the front lines.', 80);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('battle_thrall', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('battle_thrall', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('battle_thrall', 'country_naval_cap_add', '4.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31281,8 +31300,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('colonist', 'Colonist', NULL, 'The settling of a new world is no easy undertaking.', 81);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('clerk', 'Clerk', 'worker', 'White-collar workers perform the various administrative office tasks that are crucial to any sufficiently complex working environment. A hopelessly outdated profession.', 82);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('clerk', 'produces', 'trade', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('clerk', 'produces', 'trade', '3.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('clerk', 'planet_jobs_trade_produces_mult', '0.01', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31293,29 +31312,26 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('technician', 'Technician', 'worker', 'Power plants require plenty of warm bodies to operate equipment and oversee operations.', 83);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('technician', 'produces', 'energy', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('technician', 'produces', 'energy', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('miner', 'Miner', 'worker', 'With modern power drills and other advanced tools, mining may not be the back-breaking profession it once was, but it is still far from easy.', 84);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('miner', 'produces', 'minerals', '4.0', 0);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('miner', 'upkeep', 'energy', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('miner', 'produces', 'minerals', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('crystal_miner', 'Crystal Miner', 'worker', 'Specialist miners are employed for the careful extraction and refinement of rare crystals.', 85);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gas_extractor', 'Gas Extractor', 'worker', 'Advanced hydraulic fracking methods are employed by Gas Extractors in order to free rare, exotic gases from promising rock beds.', 86);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mote_harvester', 'Mote Harvester', 'worker', 'One of the most dangerous professions, mote harvesting involves trapping and sealing volatile motes to be used as fuel or explosives.', 87);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('farmer', 'Farmer', 'worker', 'Farming looks mighty easy when your plow is a pencil and you''re a thousand miles from the corn field.', 88);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('farmer', 'produces', 'food', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('farmer', 'produces', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mortal_initiate', 'Mortal Initiate', 'worker', 'These most devout pupils of their faith dedicate the remaining portion of their lives to the betterment of their society - a study which concludes with their willing, fatal sacrifice.', 89);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('mortal_initiate', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('mortal_initiate', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('mortal_initiate', 'produces', 'society_research', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('mortal_initiate', 'produces', 'society_research', '0.5', 1);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('mortal_initiate', 'planet_amenities_add', '2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31325,8 +31341,8 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('ranger', 'Ranger', 'worker', 'Special individuals tasked with ensuring that our colonies remain clean and natural.', 92);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('squire', 'Squire', 'worker', 'Becoming a knight takes years of training. Those seeking admission into the Order must first serve a knight, learning from their example even as they strive to make their noble lives more comfortable.', 93);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('squire', 'upkeep', 'alloys', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('squire', 'upkeep', 'alloys', '0.5', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('squire', 'planet_defense_armies_add', '0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31349,39 +31365,36 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('foundry_prison_worker', 'Penal Metallurgist', 'worker', 'Trained prisoners are used to turn raw minerals into durable alloys used in various advanced construction.', 94);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('foundry_prison_worker', 'produces', 'alloys', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('foundry_prison_worker', 'produces', 'alloys', '1.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('foundry_prison_worker', 'upkeep', 'minerals', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('foundry_prison_worker', 'upkeep', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('catalytic_technician_prison_worker', 'Penal Catalytic Technician', 'worker', 'These trained prisoners turn raw organic matter into durable alloys for advanced construction.', 95);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('catalytic_technician_prison_worker', 'produces', 'alloys', '1.875', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('catalytic_technician_prison_worker', 'produces', 'alloys', '1.875', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('catalytic_technician_prison_worker', 'upkeep', 'food', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('catalytic_technician_prison_worker', 'upkeep', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('artisan_prison_worker', 'Penal Artisan', 'worker', 'These trained prisoners manufacture domestic and luxury goods of various types.', 96);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('artisan_prison_worker', 'produces', 'consumer_goods', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('artisan_prison_worker', 'produces', 'consumer_goods', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('artisan_prison_worker', 'upkeep', 'minerals', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('artisan_prison_worker', 'upkeep', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('artificer_prison_worker', 'Penal Artificer', 'worker', 'Skilled prisoners that manufacture domestic and luxury goods of stunning quality.', 97);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('artificer_prison_worker', 'produces', 'consumer_goods', '3.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('artificer_prison_worker', 'produces', 'consumer_goods', '3.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('artificer_prison_worker', 'upkeep', 'minerals', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('artificer_prison_worker', 'upkeep', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('spawning_drone', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 98);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('spawning_drone', 'produces', 'society_research', '1.75', 0);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('spawning_drone', 'upkeep', 'food', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('spawning_drone', 'upkeep', 'food', '5.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('spawning_drone', 'fake_pop_growth_mod', '2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31389,116 +31402,116 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('offspring_drone', 'Offspring Drone', 'complex_drone', 'The administrator of the entire planet resides here. It is through Offspring drones that the Progenitor enacts their grand design.', 99);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('replicator', 'Replicator', 'complex_drone', 'A machine that builds a machine that builds a machine that...', 100);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('replicator', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('replicator', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('replicator', 'planet_pop_assembly_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pop_assembly_add', 'Monthly Mechanical Pop Assembly', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gestation_drone', 'Gestation Drone', 'complex_drone', 'Designed to nurture, these specialized drones oversee the growth of young biologicals, preparing them to become integral cybernetic contributors to the collective.', 101);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('gestation_drone', 'produces', 'society_research', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('gestation_drone', 'produces', 'society_research', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('gestation_drone', 'produces', 'engineering_research', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('gestation_drone', 'produces', 'engineering_research', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('gestation_drone', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('gestation_drone', 'upkeep', 'alloys', '1.0', 0);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('gestation_drone', 'upkeep', 'food', '5.0', 1);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('gestation_drone', 'logistic_growth_mult', '0.1', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('evaluator', 'Evaluator', 'complex_drone', 'Signals to and from the Drones must be amplified, analyzed and cleaned of deviancy.', 102);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('evaluator', 'produces', 'unity', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('evaluator', 'produces', 'unity', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('evaluator', 'upkeep', 'energy', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('evaluator', 'upkeep', 'energy', '2.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('evaluator', 'planet_amenities_no_happiness_add', '3.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('coordinator', 'Coordinator', 'complex_drone', 'Signals to and from the Core must be amplified, boosted, and cleaned of static and data corruption.', 103);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('coordinator', 'produces', 'unity', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('coordinator', 'produces', 'unity', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('coordinator', 'upkeep', 'food', '2.0', 0);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('coordinator', 'upkeep', 'energy', '2.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('coordinator', 'upkeep', 'energy', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('synapse_drone', 'Synapse Drone', 'complex_drone', 'The macroscopic embodiment of a synapse, these drones focus on amplifying the overmind''s ceaseless messages, and cleaning them of distortions.', 104);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('chronicle_drone', 'Chronicle Drone', 'complex_drone', 'These specialized drones turn their thoughts to entropy, researching terminal decay as a counterpoint to our own, continued existence.', 105);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('calculator_physicist', 'Physics Subroutine', 'complex_drone', 'Endlessly processing equations, probabilities, and testing new functions, Calculators lead the technological development of the Machine Intelligence.', 106);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('calculator_physicist', 'produces', 'physics_research', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('calculator_physicist', 'produces', 'physics_research', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('calculator_physicist', 'upkeep', 'energy', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('calculator_physicist', 'upkeep', 'energy', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('brain_drone_physicist', 'Physics Brain Drone', 'complex_drone', 'Scientists, researchers, and inventors: Brain Drones are responsible for the technological development of the nation.', 107);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('calculator_biologist', 'Biology Subroutine', 'complex_drone', 'Endlessly processing equations, probabilities, and testing new functions, Calculators lead the technological development of the Machine Intelligence.', 108);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('calculator_biologist', 'produces', 'society_research', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('calculator_biologist', 'produces', 'society_research', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('calculator_biologist', 'upkeep', 'energy', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('calculator_biologist', 'upkeep', 'energy', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('brain_drone_biologist', 'Biology Brain Drone', 'complex_drone', 'Scientists, researchers, and inventors: Brain Drones are responsible for the technological development of the nation.', 109);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('archaeo_drone', 'Archaeo-Engineering Drone', 'complex_drone', 'For a Hive, cultural preservation doesn''t hold as much power as an archaeolaser.', 110);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('archaeo_unit', 'Archaeo-Engineering Unit', 'complex_drone', 'Specialized drones for the careful manipulation and study of ancient artifacts.', 111);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('calculator_engineer', 'Engineering Subroutine', 'complex_drone', 'Endlessly processing equations, probabilities, and testing new functions, Calculators lead the technological development of the Machine Intelligence.', 112);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('calculator_engineer', 'produces', 'engineering_research', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('calculator_engineer', 'produces', 'engineering_research', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('calculator_engineer', 'upkeep', 'energy', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('calculator_engineer', 'upkeep', 'energy', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('brain_drone_engineer', 'Engineering Brain Drone', 'complex_drone', 'Scientists, researchers, and inventors: Brain Drones are responsible for the technological development of the nation.', 113);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('artisan_drone', 'Artisan Drone', 'complex_drone', 'A variety of consumable goods and necessities are manufactured by these artisanal drones. Additionally, the occasional aesthetic creation is not entirely without merits.', 114);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('artisan_drone', 'produces', 'consumer_goods', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('artisan_drone', 'produces', 'consumer_goods', '10.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('artisan_drone', 'upkeep', 'minerals', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('artisan_drone', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fabricator', 'Fabricator', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Fabricators.', 115);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('fabricator', 'produces', 'alloys', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('fabricator', 'produces', 'alloys', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('fabricator', 'upkeep', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('fabricator', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('alloy_drone', 'Foundry Drone', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Foundry Drones.', 116);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('catalytic_drone', 'Catalytic Drone', 'complex_drone', 'Valuable organic compounds are processed into durable alloys for naval development and advanced construction by highly-specialized Catalytic Drones.', 117);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('chemist_drone', 'Chem-Drone', 'complex_drone', 'Rather than maintain systems of mote traps, Chem-Drones distill volatile motes directly from minerals through a series of complex chemical processes.', 118);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('chemist_drone', 'produces', 'volatile_motes', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('chemist_drone', 'produces', 'volatile_motes', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('chemist_drone', 'upkeep', 'minerals', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('chemist_drone', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('translucer_drone', 'Lensing Drone', 'complex_drone', 'Those rare crystals that cannot be found can be manufactured via translucing instead. Lensing Drones specialize in just that.', 119);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('translucer_drone', 'produces', 'rare_crystals', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('translucer_drone', 'produces', 'rare_crystals', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('translucer_drone', 'upkeep', 'minerals', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('translucer_drone', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gas_refiner_drone', 'Refinery Drone', 'complex_drone', 'The management and operation of exotic gas refineries is handled by these drones.', 120);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('gas_refiner_drone', 'produces', 'exotic_gases', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('gas_refiner_drone', 'produces', 'exotic_gases', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('gas_refiner_drone', 'upkeep', 'minerals', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('gas_refiner_drone', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('patrol_drone', 'Hunter-Seeker Drone', 'complex_drone', 'Deviancy and function corruption that threatens the stability of the collective must be remedied.', 121);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('patrol_drone', 'produces', 'unity', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('patrol_drone', 'produces', 'unity', '0.5', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('patrol_drone', 'planet_crime_no_happiness_add', '-20.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31512,36 +31525,33 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gas_extraction_drone', 'Gas Extraction Drone', 'complex_drone', 'These specialized drones employ advanced hydraulic fracking methods to free rare, exotic gases from promising rock beds.', 124);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('logistics_drone', 'Logistic Drone', 'complex_drone', 'These drones serve as the arteries of the collective''s supply lines, ensuring every other drone receives required resources.', 125);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('logistics_drone', 'produces', 'trade', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('logistics_drone', 'produces', 'trade', '6.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('logistics_drone', 'upkeep', 'energy', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('logistics_drone', 'upkeep', 'energy', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mining_drone', 'Mining Drone', 'simple_drone', 'Equipped with modern power drills and advanced machinery, these drones extract and prepare valuable minerals for industrial, military, and consumer use.', 126);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('mining_drone', 'produces', 'minerals', '4.0', 0);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('mining_drone', 'upkeep', 'energy', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('mining_drone', 'produces', 'minerals', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('scrap_miner_drone', 'Scrap Miner Drone', 'simple_drone', 'Scrap Miner Drones explore the depths of the shattered ring world for materials suitable for construction.', 127);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('agri_drone', 'Agri-Drone', 'simple_drone', 'Food production requires a variety of workers, from operators of planting and harvesting machinery, to watering, fertilizer and pesticide systems managers, to livestock handlers.', 128);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('agri_drone', 'produces', 'food', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('agri_drone', 'produces', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('technician_drone', 'Tech-Drone', 'simple_drone', 'The machinists, operators, and technicians who manage and oversee power plant operations.', 129);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('technician_drone', 'produces', 'energy', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('technician_drone', 'produces', 'energy', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('maintenance_drone', 'Maintenance Drone', 'maintenance_drone', 'The machinery, systems and infrastructure that serve our needs must be constantly maintained. As must other drones.', 130);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('maintenance_drone', 'produces', 'trade', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('maintenance_drone', 'produces', 'trade', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('wilderness_maintenance_drone', 'Pliable Biomass', 'wilderness_heart_strata', 'Biomass brimming with potential, stored and maintained until it is needed.', 131);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('warrior_drone', 'Warrior Drone', 'complex_drone', 'Military experts who specialize in the training of new army drones and naval crew.', 132);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('warrior_drone', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('warrior_drone', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('warrior_drone', 'country_naval_cap_add', '4.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31556,8 +31566,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant_machine', 'Lubrication Terminal', 'simple_drone', 'Lubrication Terminals are specially programmed drones, overseeing the submerged production of new shells, carefully monitoring the lubricant conditions during the process.', 133);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('bath_attendant_machine', 'upkeep', 'minerals', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('bath_attendant_machine', 'upkeep', 'minerals', '4.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('bath_attendant_machine', 'planet_amenities_no_happiness_add', '5.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -31565,128 +31575,128 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant_hive', 'Permutation Attendance Drone', 'simple_drone', 'Specialized Drones, grown for the sole purpose of overseeing the Permutation Process during the creation of new biological drones for the hive.', 134);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('polytechnic_drone', 'Pyroclastic Drone', 'complex_drone', 'With a diverse background of skills, this drone helps bridge disciplinary gaps to boost the efficiency of specialized workers.', 135);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('polytechnic_drone', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('polytechnic_drone', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('polytechnic_drone', 'produces', 'physics_research', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('polytechnic_drone', 'produces', 'physics_research', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('polytechnic_drone', 'produces', 'society_research', '1.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('polytechnic_drone', 'produces', 'society_research', '1.0', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('polytechnic_drone', 'produces', 'engineering_research', '1.0', 3);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('polytechnic_drone', 'produces', 'engineering_research', '1.0', 3);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('polytechnic_drone', 'upkeep', 'minerals', '7.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('polytechnic_drone', 'upkeep', 'minerals', '7.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('offworld_prospector_drone', 'Offworld Prospector Drone', 'complex_drone', 'Long-range drones are deployed to nearby Molten Worlds to identify and harvest Volatile Motes and Living Metal.', 136);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('offworld_prospector_drone', 'produces', 'sr_living_metal', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('offworld_prospector_drone', 'produces', 'sr_living_metal', '1.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('offworld_prospector_drone', 'produces', 'volatile_motes', '0.25', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('offworld_prospector_drone', 'produces', 'volatile_motes', '0.25', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('offworld_prospector_drone', 'upkeep', 'energy', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('offworld_prospector_drone', 'upkeep', 'energy', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('pre_sapient', 'Pre-Sapient', 'pre_sapients', 'Simple beasts to an extent, and yet their behavior betrays some degree of intelligence...', 137);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('pre_sapient_nascent', 'Pre-Sapient', 'pre_sapients', 'Spawns of sapient species, soon to grow into their intelligence.', 138);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hunted_pre_sapient', 'Hunted Pre-Sapient', 'pre_sapients', 'Simple beasts to an extent, and yet their behavior betrays some degree of intelligence...', 139);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('hunted_pre_sapient', 'produces', 'food', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('hunted_pre_sapient', 'produces', 'food', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hunted_pre_sapient_lithoid', 'Hunted Pre-Sapient', 'pre_sapients', NULL, 140);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('hunted_pre_sapient_lithoid', 'produces', 'minerals', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('hunted_pre_sapient_lithoid', 'produces', 'minerals', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_animal', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 141);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('xeno_zoo_animal', 'upkeep', 'food', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('xeno_zoo_animal', 'upkeep', 'food', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('xeno_zoo_animal', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_animal_nascent', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 142);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('xeno_zoo_animal_nascent', 'upkeep', 'food', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('xeno_zoo_animal_nascent', 'upkeep', 'food', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('xeno_zoo_animal_nascent', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_animal_lithoid', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 143);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('xeno_zoo_animal_lithoid', 'upkeep', 'minerals', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('xeno_zoo_animal_lithoid', 'upkeep', 'minerals', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('xeno_zoo_animal_lithoid', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_animal_lithoid_nascent', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 144);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('xeno_zoo_animal_lithoid_nascent', 'upkeep', 'minerals', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('xeno_zoo_animal_lithoid_nascent', 'upkeep', 'minerals', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('xeno_zoo_animal_lithoid_nascent', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_beast', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 145);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('xeno_zoo_beast', 'upkeep', 'food', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('xeno_zoo_beast', 'upkeep', 'food', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('xeno_zoo_beast', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_beast_nascent', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 146);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('xeno_zoo_beast_nascent', 'upkeep', 'food', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('xeno_zoo_beast_nascent', 'upkeep', 'food', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('xeno_zoo_beast_nascent', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_beast_lithoid', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 147);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('xeno_zoo_beast_lithoid', 'upkeep', 'minerals', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('xeno_zoo_beast_lithoid', 'upkeep', 'minerals', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('xeno_zoo_beast_lithoid', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('xeno_zoo_beast_lithoid_nascent', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 148);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('xeno_zoo_beast_lithoid_nascent', 'upkeep', 'minerals', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('xeno_zoo_beast_lithoid_nascent', 'upkeep', 'minerals', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('xeno_zoo_beast_lithoid_nascent', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hunter_gatherer', 'Hunter-Gatherer', 'worker', 'These semi-nomadic explorers survive by foraging and hunting. There is evidence of early tool use.', 149);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('hunter_gatherer', 'produces', 'food', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('hunter_gatherer', 'produces', 'food', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('hunter_gatherer', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hunter_gatherer_lithoid', 'Hunter-Gatherer', 'worker', 'These semi-nomadic explorers survive by foraging and hunting. There is evidence of early tool use.', 150);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('hunter_gatherer_lithoid', 'produces', 'minerals', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('hunter_gatherer_lithoid', 'produces', 'minerals', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('hunter_gatherer_lithoid', 'planet_amenities_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('peasant', 'Peasant', 'worker', 'The peasants toil endlessly in the fields, so that those perceived as their betters might prosper.', 151);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('peasant', 'produces', 'food', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('peasant', 'produces', 'food', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('peasant_lithoid', 'Peasant', 'worker', 'The peasants toil endlessly in the fields, so that those perceived as their betters might prosper.', 152);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('peasant_lithoid', 'produces', 'minerals', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('peasant_lithoid', 'produces', 'minerals', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_warrior', 'Warrior', 'specialist', 'Members of a combative warrior class. These fighters rely on bladed weapons, spears or various blunt instruments to see them through combat.', 153);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('primitive_warrior', 'planet_defense_armies_add', '3.0', 0);
@@ -31694,61 +31704,61 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_noble', 'Feudal Noble', 'ruler', 'The landed nobility rule from their stone castles and keeps.', 154);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_noble', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_noble', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_researcher', 'Scholar', 'specialist', 'The learned of this society, often relying on oral tradition to pass knowledge between generations.', 155);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_researcher', 'produces', 'physics_research', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_researcher', 'produces', 'physics_research', '0.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_researcher', 'produces', 'engineering_research', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_researcher', 'produces', 'engineering_research', '0.5', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_researcher', 'produces', 'society_research', '0.5', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_researcher', 'produces', 'society_research', '0.5', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_priest', 'Cleric', 'specialist', 'Spiritual leaders and preachers who conduct religious ceremonies and oversee all matters concerning faith.', 156);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_priest', 'produces', 'unity', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_priest', 'produces', 'unity', '0.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_laborer', 'Manufacturers', 'specialist', 'These early industrial manufacturers toil away in factories, which can now be operated day and night thanks to recent advances in electricity.', 157);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_laborer', 'produces', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_laborer', 'produces', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_laborer', 'produces', 'consumer_goods', '2.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_laborer', 'produces', 'consumer_goods', '2.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_laborer', 'upkeep', 'minerals', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_laborer', 'upkeep', 'minerals', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_miner', 'Miner', 'worker', 'Dangerous and sometimes lethal work in the dark bowels of the planet.', 158);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_miner', 'produces', 'minerals', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_miner', 'produces', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_technician', 'Technician', 'worker', 'These technicians shuffle coal or maintain primitive nuclear generators.', 159);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_technician', 'produces', 'energy', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_technician', 'produces', 'energy', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_farmer', 'Farmer', 'worker', 'These farmers work the land, typically with the help of primitive but effective farming equipment.', 160);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_farmer', 'produces', 'food', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_farmer', 'produces', 'food', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_researcher_2', 'Researcher', 'specialist', 'Researchers employing scientific methodology to advance the rapidly expanding knowledge base of their civilization.', 161);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_researcher_2', 'produces', 'physics_research', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_researcher_2', 'produces', 'physics_research', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_researcher_2', 'produces', 'engineering_research', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_researcher_2', 'produces', 'engineering_research', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_researcher_2', 'produces', 'society_research', '1.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_researcher_2', 'produces', 'society_research', '1.0', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_researcher_2', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_researcher_2', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_priest_2', 'Priest', 'specialist', 'Religious leaders who occupy various priestly offices.', 162);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_priest_2', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_priest_2', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_entertainer', 'Entertainer', 'specialist', 'Celebrities and media personalities that provide entertainment and distraction from day-to-day life.', 163);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_warrior_2', 'Soldier', 'specialist', 'Professional soldiers, typically armed with early projectile weapons powered by exothermic combustion.', 164);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
@@ -31757,39 +31767,39 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_bureaucrat', 'Bureaucrat', 'ruler', 'Many early industrialist and post-industrialist societies are governed by an ever-expanding class of civil servants.', 165);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_bureaucrat', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_bureaucrat', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('solarpunk_anarchist', 'Content Terraformer', 'ruler', 'Having achieved their utopia these world sculptors are glad to rest.', 166);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('solarpunk_anarchist', 'produces', 'unity', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('solarpunk_anarchist', 'produces', 'unity', '3.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('solarpunk_anarchist', 'planet_stability_add', '0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_administrator', 'Administrator', 'specialist', 'These paper-pushers ensure that the bureaucracy exists.', 167);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_administrator', 'produces', 'unity', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_administrator', 'produces', 'unity', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_administrator', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_administrator', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hive_sustenance_drone', 'Sustenance Drone', 'simple_drone', 'The difference between a successful hivemind and a starved one comes down to how successful their resource procurement is.', 168);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('hive_sustenance_drone', 'produces', 'food', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('hive_sustenance_drone', 'produces', 'food', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hive_sustenance_drone_lithoid', 'Sustenance Drone', 'simple_drone', 'The difference between a successful hivemind and a starved one comes down to how successful their resource procurement is.', 169);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('hive_sustenance_drone_lithoid', 'produces', 'minerals', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('hive_sustenance_drone_lithoid', 'produces', 'minerals', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hive_basic_agri_drone', 'Basic Agricultural Drone', 'simple_drone', 'Simple and unspecialized drones work the fields, their consciousness aware that food can be grown, but the task has yet to be optimized.', 170);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('hive_basic_agri_drone', 'produces', 'food', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('hive_basic_agri_drone', 'produces', 'food', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('hive_basic_agri_drone_lithoid', 'Basic Agricultural Drone', 'simple_drone', 'Simple and unspecialized drones work the fields, their consciousness aware that food can be grown, but the task has yet to be optimized.', 171);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('hive_basic_agri_drone_lithoid', 'produces', 'minerals', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('hive_basic_agri_drone_lithoid', 'produces', 'minerals', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_warrior', 'Simple Warrior Drone', 'simple_drone', 'Having yet to fully come to grips with genetic specialization, these drones are grown bulkier to protect their hive. They have yet to evolve any specialized weapon appendages.', 172);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('primitive_hive_warrior', 'planet_defense_armies_add', '3.0', 0);
@@ -31797,47 +31807,47 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_synapse_drone', 'Nascent Synapse Drone', 'complex_drone', 'The budding Overmind formed between the local drones has found a need to extend their consciousness further. These more cerebral Synapse Drones mainly facilitate this.', 173);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_hive_synapse_drone', 'produces', 'unity', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_hive_synapse_drone', 'produces', 'unity', '0.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_cerebellum_drone', 'Cerebellum Drone', 'complex_drone', 'Analyzing and discovering solutions to new difficulties is the hallmark of any flourishing society - these drones focus on finding solutions for other drones'' problems and avoiding future pitfalls', 174);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_hive_cerebellum_drone', 'produces', 'physics_research', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_hive_cerebellum_drone', 'produces', 'physics_research', '0.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_hive_cerebellum_drone', 'produces', 'engineering_research', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_hive_cerebellum_drone', 'produces', 'engineering_research', '0.5', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_hive_cerebellum_drone', 'produces', 'society_research', '0.5', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_hive_cerebellum_drone', 'produces', 'society_research', '0.5', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_factory_drone', 'Factory Drone', 'simple_drone', 'Drones that are more or less part of the very factory they work in. These specialized laborers assemble everything from weapons to vehicles at an astounding rate.', 175);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_hive_factory_drone', 'produces', 'alloys', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_hive_factory_drone', 'produces', 'alloys', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_hive_factory_drone', 'upkeep', 'minerals', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_hive_factory_drone', 'upkeep', 'minerals', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_miner', 'Mining Drone', 'simple_drone', 'Sacrificing safety for success, these drones delve deep beneath the earth to feed the ever-hungry engine that is society.', 176);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_hive_miner', 'produces', 'minerals', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_hive_miner', 'produces', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_technician', 'Tech-Drone', 'simple_drone', 'Operating dirty energy generators is not a job any living being can do forever. Still, these drones are enhanced with superior lungs as well as inherent radioactive resistance, so they last longer than most.', 177);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_hive_technician', 'produces', 'energy', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_hive_technician', 'produces', 'energy', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_farmer', 'Agri-Drone', 'simple_drone', 'Food production overseen by a continent spanning hive-mind is a marvel of logistics and agronomy, every section of the designated agricultural area is used to its fullest.', 178);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_hive_farmer', 'produces', 'food', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_hive_farmer', 'produces', 'food', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_brain_drone', 'Brain Drone', 'complex_drone', 'Drones employing the scientific method are capable of taking massive leaps in their consciousness knowledge base. Often too large.', 179);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_hive_brain_drone', 'produces', 'physics_research', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_hive_brain_drone', 'produces', 'physics_research', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_hive_brain_drone', 'produces', 'engineering_research', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_hive_brain_drone', 'produces', 'engineering_research', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_hive_brain_drone', 'produces', 'society_research', '1.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_hive_brain_drone', 'produces', 'society_research', '1.0', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_spawning_drone', 'Spawning Drone', 'complex_drone', 'Having each member of a society reproduce is vastly inefficient. These drones specialize in generating whatever new drones the Hive needs.', 180);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_warrior_2', 'Warrior Drone', 'simple_drone', 'Specialized for war, these hulking drones have multiple specialized appendages perfected for crushing their own species.', 181);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
@@ -31846,179 +31856,173 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('primitive_hive_synapse_drone_2', 'Synapse Drone', 'complex_drone', 'Administrating and coordinating an entire country is no easier if you are a single individual. These drones ensure that every drone has an appropriate task.', 182);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('primitive_hive_synapse_drone_2', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('primitive_hive_synapse_drone_2', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('event_purge', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 183);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('event_purge', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('ratling_scavenger', 'Scavenger', 'worker', 'They scurry amongst the scrapyards, collecting discarded machinery and ancient electronics for repurposing.', 184);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('ratling_scavenger', 'produces', 'food', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('ratling_scavenger', 'produces', 'food', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('ratling_scavenger', 'produces', 'minerals', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('ratling_scavenger', 'produces', 'minerals', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('ratling_scavenger', 'produces', 'consumer_goods', '1.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('ratling_scavenger', 'produces', 'consumer_goods', '1.0', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('odd_factory_worker', 'Odd Factory Worker', 'worker', 'These workers labor in the ancient and mysterious factory of unknown origin. What could go wrong?', 185);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('odd_factory_worker', 'produces', 'alloys', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('odd_factory_worker', 'produces', 'alloys', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('odd_factory_drone', 'Odd Factory Drone', 'simple_drone', 'These drones labor in the ancient and mysterious factory of unknown origin. What could go wrong?', 186);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('odd_factory_drone', 'produces', 'alloys', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('odd_factory_drone', 'produces', 'alloys', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('underground_trade_worker', 'Subterranean Liaison', 'specialist', 'These Liaisons live underground and work for closer relations and improved trade with the Subterranean Civilization.', 187);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('underground_contact_drone', 'Subterranean Liaison Drone', 'simple_drone', 'These Drones live underground, transferring resources to and from the Subterranean Civilization.', 188);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('dimensional_portal_researcher', 'Dimensional Portal Researcher', 'specialist', 'Researchers who risk their very existence and sanity to study the mysteries of the Dimensional Portal.', 189);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('dimensional_portal_researcher', 'produces', 'physics_research', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('dimensional_portal_researcher', 'produces', 'physics_research', '6.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('dimensional_portal_researcher', 'upkeep', 'consumer_goods', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('dimensional_portal_researcher', 'upkeep', 'consumer_goods', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('dimensional_portal_researcher_gestalt', 'Dimensional Portal Drone', 'complex_drone', 'Drones at risk of destruction or subversion which study the mysteries of the Dimensional Portal.', 190);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('dimensional_portal_researcher_gestalt', 'produces', 'physics_research', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('dimensional_portal_researcher_gestalt', 'produces', 'physics_research', '6.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('dimensional_portal_researcher_gestalt', 'upkeep', 'energy', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('dimensional_portal_researcher_gestalt', 'upkeep', 'energy', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('space_time_anomaly_researcher', 'Space-Time Anomaly Researcher', 'specialist', 'Researchers who study the curious properties of the stable space-time anomaly.', 191);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('space_time_anomaly_researcher', 'produces', 'physics_research', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('space_time_anomaly_researcher', 'produces', 'physics_research', '4.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('space_time_anomaly_researcher', 'produces', 'engineering_research', '2.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('space_time_anomaly_researcher', 'produces', 'engineering_research', '2.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('space_time_anomaly_researcher', 'produces', 'sr_dark_matter', '0.2', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('space_time_anomaly_researcher', 'produces', 'sr_dark_matter', '0.2', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('space_time_anomaly_researcher', 'upkeep', 'consumer_goods', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('space_time_anomaly_researcher', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('space_time_anomaly_researcher_gestalt', 'Space-Time Anomaly Drone', 'complex_drone', 'Drones which study the curious properties of the stable space-time anomaly.', 192);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('space_time_anomaly_researcher_gestalt', 'produces', 'physics_research', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('space_time_anomaly_researcher_gestalt', 'produces', 'physics_research', '4.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('space_time_anomaly_researcher_gestalt', 'produces', 'engineering_research', '2.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('space_time_anomaly_researcher_gestalt', 'produces', 'engineering_research', '2.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('space_time_anomaly_researcher_gestalt', 'produces', 'sr_dark_matter', '0.2', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('space_time_anomaly_researcher_gestalt', 'produces', 'sr_dark_matter', '0.2', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('space_time_anomaly_researcher_gestalt', 'upkeep', 'energy', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('space_time_anomaly_researcher_gestalt', 'upkeep', 'energy', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gas_plant_engineer', 'Gas Plant Engineer', 'specialist', 'These workers operate the massive filter facilities built over Cave Mushroom spore exhausts.', 193);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('gas_plant_engineer', 'produces', 'exotic_gases', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('gas_plant_engineer', 'produces', 'exotic_gases', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('gas_plant_engineer', 'upkeep', 'minerals', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('gas_plant_engineer', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('gas_plant_engineer_gestalt', 'Gas Plant Drone', 'complex_drone', 'These drones maintain and operate the massive filter facilities built on top of Cave Mushroom spore exhausts.', 194);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('gas_plant_engineer_gestalt', 'produces', 'exotic_gases', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('gas_plant_engineer_gestalt', 'produces', 'exotic_gases', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('gas_plant_engineer_gestalt', 'upkeep', 'minerals', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('gas_plant_engineer_gestalt', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cave_cleaner', 'Cave Cleaner', NULL, 'These workers clear out burned-out Cave Mushroom passages to unearth mineral veins.', 195);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cave_cleaner_gestalt', 'Cave Cleaner Drone', 'simple_drone', 'These workers clear out burned-out Cave Mushroom passages to unearth mineral veins.', 196);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cave_cleaner_gestalt', 'produces', 'minerals', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cave_cleaner_gestalt', 'produces', 'minerals', '5.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cave_cleaner_gestalt', 'upkeep', 'energy', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cave_cleaner_gestalt', 'upkeep', 'energy', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('titan_hunter', 'Titan Hunter', 'worker', 'Fearless individuals who hunt the planet''s titanic lifeforms for food. Their bones, teeth and tusks also make impressive - and valuable - trophies.', 197);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('robot_caretaker', 'Robot Caretaker', 'specialist', 'A caretaker maintains the robot who has become something of a mascot for the planet.', 198);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('robot_caretaker', 'produces', 'unity', '2.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('robot_caretaker', 'produces', 'unity', '2.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('robot_caretaker', 'produces', 'engineering_research', '2.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('robot_caretaker', 'produces', 'engineering_research', '2.5', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('turtle_miner', 'Nemma Miner', 'worker', 'Using powerful drills, we can harvest both the mineral shell and the biological innards of the giant native Nemmas.', 199);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('turtle_miner_gestalt', 'Nemma Mining Drone', 'simple_drone', 'Using powerful drills, we can harvest both the mineral shell and the biological innards of the giant native Nemmas.', 200);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('turtle_miner_gestalt', 'produces', 'minerals', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('turtle_miner_gestalt', 'produces', 'minerals', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('turtle_miner_gestalt', 'produces', 'food', '2.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('turtle_miner_gestalt', 'produces', 'food', '2.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('turtle_miner_gestalt', 'upkeep', 'energy', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('turtle_miner_gestalt', 'upkeep', 'energy', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('machine_nurse', 'Bio-Assistant', 'bio_trophy', 'Biological assistants tasked with helping malfunctioning drones perform simple tasks.', 201);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('machine_nurse', 'produces', 'unity', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('machine_nurse', 'produces', 'unity', '1.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('machine_nurse', 'upkeep', 'energy', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('machine_nurse', 'upkeep', 'energy', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('manufactorium_specialist', 'Operator', 'specialist', 'These highly skilled workers operate delicate and ancient machinery, creating resources at a fraction of the usual cost.', 202);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('manufactorium_specialist', 'produces', 'alloys', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('manufactorium_specialist', 'produces', 'alloys', '5.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('manufactorium_specialist', 'upkeep', 'minerals', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('manufactorium_specialist', 'upkeep', 'minerals', '5.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('manufactorium_complex_drone', 'Operator Drone', 'complex_drone', 'These highly specialized drones operate delicate and ancient machinery, creating resources at a fraction of the usual cost.', 203);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('manufactorium_complex_drone', 'produces', 'alloys', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('manufactorium_complex_drone', 'produces', 'alloys', '6.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('manufactorium_complex_drone', 'upkeep', 'minerals', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('manufactorium_complex_drone', 'upkeep', 'minerals', '5.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('manufactorium_scraper', 'Dismantler', NULL, 'Breaking the ancient machinery apart is a risky but rewarding task. These workers will have a lot on their hands, given the size of the facility.', 204);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('manufactorium_scraper_drone', 'Drone Dismantler', 'simple_drone', 'Breaking the ancient machinery apart is a risky but rewarding task. These drones will have a lot on their hands, given the size of the facility.', 205);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('manufactorium_scraper_drone', 'produces', 'minerals', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('manufactorium_scraper_drone', 'produces', 'minerals', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('manufactorium_scraper_drone', 'produces', 'alloys', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('manufactorium_scraper_drone', 'produces', 'alloys', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('manufactorium_scraper_drone', 'produces', 'engineering_research', '0.25', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('manufactorium_scraper_drone', 'produces', 'engineering_research', '0.25', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('archivist', 'Archivist', 'specialist', 'Under Keides'' careful guidance, these Archivists are responsible for cataloging data in accordance with Vagrosian standards.', 206);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('archivist', 'produces', 'physics_research', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('archivist', 'produces', 'physics_research', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('archivist', 'produces', 'engineering_research', '3.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('archivist', 'produces', 'engineering_research', '3.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('archivist', 'produces', 'society_research', '3.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('archivist', 'produces', 'society_research', '3.0', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('archivist', 'upkeep', 'consumer_goods', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('archivist', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('puddle_technician', 'Puddle Technician', 'worker', 'Diversification of food production is a worthwhile endeavor.', 207);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('puddle_technician', 'produces', 'food', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('puddle_technician', 'produces', 'food', '6.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('puddle_technician', 'produces', 'alloys', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('puddle_technician', 'produces', 'alloys', '1.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('puddle_technician_drone', 'Puddle Technician Drone', 'simple_drone', 'Utilizing the unique meteorology to harvest additional resources will benefit the collective.', 208);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('puddle_technician_drone', 'produces', 'food', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('puddle_technician_drone', 'produces', 'food', '6.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('puddle_technician_drone', 'produces', 'alloys', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('puddle_technician_drone', 'produces', 'alloys', '1.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stasis_warden', 'Stasis Warden', 'specialist', 'Wardens maintain the stasis prison, along with marking citizens for disappearance.', 209);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('stasis_warden', 'produces', 'physics_research', '2.0', 0);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('stasis_warden', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('stasis_warden', 'produces', 'physics_research', '2.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('stasis_warden', 'planet_crime_add', '-25.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32029,92 +32033,92 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stasis_warden_drone', 'Stasis Warden Drone', 'complex_drone', 'Warden drones maintain the stasis prison, along with marking deviants for disappearance.', 210);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('stasis_warden_drone', 'produces', 'physics_research', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('stasis_warden_drone', 'produces', 'physics_research', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('stasis_warden_drone', 'produces', 'unity', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('stasis_warden_drone', 'produces', 'unity', '0.5', 1);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('stasis_warden_drone', 'planet_crime_no_happiness_add', '-20.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astrogarbage_collector', 'Astrogarbage Collector', 'worker', 'A special unit responsible for collecting space debris from planetary orbit.', 211);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astrogarbage_collector', 'produces', 'alloys', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astrogarbage_collector', 'produces', 'alloys', '2.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('astrogarbage_collector', 'pop_environment_tolerance', '0.025', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astrogarbage_collector_gestalt', 'Astrogarbage Drone', 'simple_drone', 'A special drone unit responsible for collecting space debris from planetary orbit.', 212);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astrogarbage_collector_gestalt', 'produces', 'alloys', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astrogarbage_collector_gestalt', 'produces', 'alloys', '3.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('astrogarbage_collector_gestalt', 'pop_environment_tolerance', '0.015', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('myrmeku_power_farmer', 'Myrmeku Power Farmer', 'specialist', 'Technicians that harness energy from Myrmeku colonies.', 213);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('myrmeku_power_farmer', 'produces', 'energy', '12.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('myrmeku_power_farmer', 'produces', 'energy', '12.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('myrmeku_power_farmer', 'upkeep', 'minerals', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('myrmeku_power_farmer', 'upkeep', 'minerals', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('myrmeku_power_farmer', 'upkeep', 'alloys', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('myrmeku_power_farmer', 'upkeep', 'alloys', '0.5', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('myrmeku_power_farmer_gestalt', 'Myrmeku Power Drone', 'complex_drone', 'Tech-Drones that harness energy from Myrmeku colonies.', 214);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('myrmeku_power_farmer_gestalt', 'produces', 'energy', '12.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('myrmeku_power_farmer_gestalt', 'produces', 'energy', '12.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('myrmeku_power_farmer_gestalt', 'upkeep', 'minerals', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('myrmeku_power_farmer_gestalt', 'upkeep', 'minerals', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('myrmeku_power_farmer_gestalt', 'upkeep', 'alloys', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('myrmeku_power_farmer_gestalt', 'upkeep', 'alloys', '0.5', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stratovent_researcher', 'Vent Researcher', 'specialist', 'Researchers specialized in studying spaceborne fauna and guiding travelers to see them.', 215);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('stratovent_researcher', 'produces', 'society_research', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('stratovent_researcher', 'produces', 'society_research', '1.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('stratovent_researcher', 'produces', 'trade', '3.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('stratovent_researcher', 'produces', 'trade', '3.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('stratovent_researcher', 'upkeep', 'consumer_goods', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('stratovent_researcher', 'upkeep', 'consumer_goods', '3.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('stratovent_researcher', 'planet_amenities_add', '3.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stratovent_refiner', 'Vent Refiner', 'specialist', 'Workers specialized in gathering and refining precious gases from the Stratospheric Vents.', 216);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('stratovent_refiner', 'produces', 'exotic_gases', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('stratovent_refiner', 'produces', 'exotic_gases', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stratovent_refiner_upg', 'Expanded Vent Refiner', 'specialist', 'Researchers specialized in studying spaceborne fauna and educating travelers on their behavior.', 217);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('stratovent_refiner_upg', 'produces', 'exotic_gases', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('stratovent_refiner_upg', 'produces', 'exotic_gases', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('stratovent_refiner_minerals', 'Collapsed Vent Refiner', 'specialist', 'Workers specialized in gathering and refining precious gases from the Stratospheric Vents.', 218);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('stratovent_refiner_minerals', 'produces', 'exotic_gases', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('stratovent_refiner_minerals', 'produces', 'exotic_gases', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('stratovent_refiner_minerals', 'produces', 'minerals', '2.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('stratovent_refiner_minerals', 'produces', 'minerals', '2.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mineral_diver', 'Deep Sea Diver', NULL, 'Deep sea experts who recover sunken minerals from the ocean depths.', 219);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mineral_diver_drone', 'Underwater Drone', 'simple_drone', 'Mining Drones that can withstand great pressure to collect sunken minerals from the ocean depths.', 220);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('mineral_diver_drone', 'produces', 'minerals', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('mineral_diver_drone', 'produces', 'minerals', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('mineral_diver_drone', 'produces', 'alloys', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('mineral_diver_drone', 'produces', 'alloys', '1.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('alien_hunter', 'Alien Hunter', 'worker', 'A special task force assigned to hunt alien fauna.', 221);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('alien_hunter', 'produces', 'food', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('alien_hunter', 'produces', 'food', '2.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('alien_hunter', 'pop_environment_tolerance', '0.025', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32149,30 +32153,30 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_archivist', 'Archivist', 'precursor', 'Each data fragment must be filed, cataloged, and indexed precisely according to the ancient rites established eons ago by the First Librarian.', 226);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('fe_archivist', 'produces', 'society_research', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('fe_archivist', 'produces', 'society_research', '5.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('fe_archivist', 'produces', 'physics_research', '5.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('fe_archivist', 'produces', 'physics_research', '5.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('fe_archivist', 'produces', 'engineering_research', '5.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('fe_archivist', 'produces', 'engineering_research', '5.0', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_acolyte_farm', 'Acolyte of the Plow', 'precursor', 'Was it, not the plow, this noblest of instruments, that Kazargiel used to sever the poisonous tail of the thrice-cursed demon and stave off famine?', 227);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('fe_acolyte_farm', 'produces', 'food', '8.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('fe_acolyte_farm', 'produces', 'food', '8.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_acolyte_mine', 'Acolyte of the Hammer', 'precursor', 'And with one mighty blow, Saint Mazakudal used her burning hammer to split the skull of the First Wraith in two, opening up the path to the crystals.', 228);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('fe_acolyte_mine', 'produces', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('fe_acolyte_mine', 'produces', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_acolyte_generator', 'Acolyte of the Hyperspanner', 'precursor', 'Remember also the hyper spanner and how it was used by Bazagg the Shining to tame the sun when it seemed like darkness would overtake the world.', 229);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('fe_acolyte_generator', 'produces', 'energy', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('fe_acolyte_generator', 'produces', 'energy', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_augur', 'Augur of the Shroud', 'precursor', 'It speaks, but not in words. To divine any meaning, one must hover on the precipice of madness.', 230);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('fe_augur', 'produces', 'unity', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('fe_augur', 'produces', 'unity', '5.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_xeno_keeper', 'Xeno-Keeper', 'precursor', 'These precursor zookeepers look after the needs of the Xeno-Wards under their care.', 231);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('fe_xeno_keeper', 'planet_crime_add', '-20.0', 0);
@@ -32184,63 +32188,63 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_xeno_ward', 'Xeno-Ward', 'xeno_ward', 'These specimens have been gathered here, in settings that approximate their natural environments, to ensure the preservation of their species in an often chaotic and destructive galaxy.', 232);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('fe_xeno_ward', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('fe_xeno_ward', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_hedonist', 'Hedonist', 'precursor', 'A life of total opulence, where every possible material need or desire can be satisfied.', 233);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('fe_hedonist', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('fe_hedonist', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_acolyte_artisan', 'Acolyte of the Workshop', 'precursor', 'And so Aznakha said to the acolytes, ''Go to the workshops, and form with your crafts the future you seek''.', 234);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('fe_acolyte_artisan', 'produces', 'consumer_goods', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('fe_acolyte_artisan', 'produces', 'consumer_goods', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('fe_maintenance_bot', 'Caretaker', 'precursor', 'These ancient machines tirelessly maintain and repair the decaying machinery of the ringworld on which they reside.', 235);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_propagandist', 'Overlord Propagandist', 'specialist', 'Propagandists working for the local ministry are experts at infiltrating and defusing situations among the locals.', 236);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_propagandist', 'upkeep', 'unity', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_propagandist', 'upkeep', 'unity', '0.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_propagandist_drone', 'Overlord Propagandist', 'complex_drone', 'Diplomatically equipped drones who are experts at defusing rebellious thoughts and ideas.', 237);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_propagandist_drone', 'upkeep', 'unity', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_propagandist_drone', 'upkeep', 'unity', '0.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_academic', 'Overlord Academic', 'specialist', 'Academics who work with specialists from several empires, conducting particular experiments and research that can benefit them all.', 238);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_academic', 'produces', 'physics_research', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_academic', 'produces', 'physics_research', '0.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_academic', 'produces', 'engineering_research', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_academic', 'produces', 'engineering_research', '0.5', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_academic', 'produces', 'society_research', '0.5', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_academic', 'produces', 'society_research', '0.5', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_academic', 'upkeep', 'consumer_goods', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_academic', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_academic_drone', 'Overlord Academic', 'complex_drone', 'Specifically equipped drones who utilize resources from several empires to conduct unique experiments and research.', 239);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_academic_drone', 'produces', 'physics_research', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_academic_drone', 'produces', 'physics_research', '0.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_academic_drone', 'produces', 'engineering_research', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_academic_drone', 'produces', 'engineering_research', '0.5', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_academic_drone', 'produces', 'society_research', '0.5', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_academic_drone', 'produces', 'society_research', '0.5', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_academic_drone', 'upkeep', 'energy', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_academic_drone', 'upkeep', 'energy', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_trader', 'Overlord Trader', 'specialist', 'Traders who specialize in selling foreign goods at the local domestic market.', 240);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_trader', 'upkeep', 'trade', '7.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_trader', 'upkeep', 'trade', '7.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_trader', 'planet_amenities_add', '10.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_trader_drone', 'Distribution Drone', 'complex_drone', 'A distribution drone which specializes in redistributing foreign goods among its peers for maximum efficiency.', 241);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_trader_drone', 'upkeep', 'energy', '7.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_trader_drone', 'upkeep', 'energy', '7.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('aid_worker', 'Aid Worker', 'worker', 'Aid workers bring foreign knowledge and goods to improve the lives of the local population, in ways often overlooked by the domestic government.', 242);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('aid_worker', 'planet_amenities_add', '5.0', 0);
@@ -32249,100 +32253,88 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('aid_worker_drone', 'Aid Worker', 'simple_drone', 'Aid workers bring foreign knowledge and goods to improve the lives of the local population, in ways often overlooked by the domestic government.', 243);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_breeder', 'Overlord Breeder', 'specialist', 'Feeding the Offspring is a vital job to ensure stability on the planet. It''s also a fairly well paid job.', 244);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_breeder', 'upkeep', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_breeder', 'upkeep', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_breeder_drone', 'Overlord Breeder', 'complex_drone', 'Feeding the newborn drones is an important part of ensuring the young spawn can grow correctly, quickly, and effectively.', 245);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_breeder_drone', 'upkeep', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_breeder_drone', 'upkeep', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mind_thrall', 'Mind Thrall', 'worker', 'The thralls come together in large groups to temporarily serve the machine network''s need, renting out their minds for processing needs.', 246);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('mind_thrall_drone', 'Mind Thrall', 'simple_drone', 'The thralls come together in large groups to temporarily serve the machine network''s need, renting out their minds for processing needs.', 247);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_offspring_drone_feeder', 'Offspring Drone Feeder', 'specialist', 'It is a prestigious responsibility to keep the Offspring safe and comfortable, even if the role often involves merely gathering food for it.', 248);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_offspring_drone_feeder', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_offspring_drone_feeder', 'planet_jobs_worker_produces_mult', '0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_offspring_drone_feeder_drone', 'Offspring Drone Feeder', 'complex_drone', 'Feeding the Offspring is a vital job to ensure stability on the planet.', 249);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_offspring_drone_feeder_drone', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_offspring_drone_feeder_drone', 'planet_jobs_simple_drone_produces_mult', '0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_simple_drone_produces_mult', 'Menial Drone Output', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_metallurgist', 'Overlord Metallurgist', 'specialist', 'Highly trained workers are needed to turn raw minerals into the durable alloys that are used in a wide variety of advanced construction.', 250);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_metallurgist', 'upkeep', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_metallurgist', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_foundry_drone', 'Overlord Foundry Drone', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Foundry Drones.', 251);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_foundry_drone', 'upkeep', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_foundry_drone', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_fabricator', 'Overlord Fabricator', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Fabricators.', 252);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_fabricator', 'upkeep', 'minerals', '8.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_fabricator', 'upkeep', 'minerals', '8.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_catalytic_technician', 'Overlord Catalytic Technician', 'specialist', 'Highly trained workers are needed to turn raw organic matter into durable alloys necessary for advanced construction.', 253);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_catalytic_technician', 'upkeep', 'food', '9.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_catalytic_technician', 'upkeep', 'food', '9.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_catalytic_drone', 'Overlord Catalytic Drone', 'complex_drone', 'Valuable organic compounds are processed into durable alloys for naval development and advanced construction by highly-specialized Catalytic Drones.', 254);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_catalytic_drone', 'upkeep', 'food', '9.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_catalytic_drone', 'upkeep', 'food', '9.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_beholder', 'Overlord Beholder', 'specialist', 'Military overseers working with a larger network of command centers to calculate the best possible defense routes for their contractor.', 255);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_beholder', 'upkeep', 'alloys', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_beholder_drone', 'Overlord Beholder', 'complex_drone', 'Military drones working within a larger synaptic network to calculate the best possible means of defense.', 256);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_beholder_drone', 'upkeep', 'alloys', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_necromancer', 'Overlord Necromancer', 'specialist', 'Skilled practitioners of the secrets art, from our Overlord, have shared the secrets of reanimation to a chosen few.', 257);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_necromancer', 'upkeep', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_necromancer', 'upkeep', 'food', '6.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_necromancer', 'planet_defense_armies_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_necromancer_drone', 'Overlord Necromancer Drone', 'complex_drone', 'Skilled practitioners of the secrets art, from our Overlord, have shared the secrets of reanimation to a chosen few.', 258);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_necromancer_drone', 'upkeep', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_necromancer_drone', 'upkeep', 'food', '6.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_necromancer_drone', 'planet_defense_armies_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_reassigner', 'Overlord Reassigner', 'specialist', 'The Overlord has made sure that their employees will never be out of a job and have now extended that courtesy to their vassals.', 259);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_reassigner', 'upkeep', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_reassigner', 'upkeep', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_reassigner_drone', 'Overlord Reassigner Drone', 'complex_drone', 'The Overlord has made sure that their employees will never be out of a job and have now extended that courtesy to their vassals.', 260);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_reassigner_drone', 'upkeep', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_reassigner_drone', 'upkeep', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_recruiter', 'Overlord Recruiter', 'specialist', 'The Overlord desires for the Vassal to be able to defend themselves. That is at least what they say before they ship the fresh recruits off-world.', 261);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_recruiter', 'upkeep', 'energy', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_recruiter', 'upkeep', 'energy', '5.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_recruiter', 'upkeep', 'unity', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_recruiter', 'upkeep', 'unity', '1.0', 1);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_recruiter', 'planet_defense_armies_add', '1.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_recruiter_drone', 'Overlord Recruiter Drone', 'complex_drone', 'The Overlord desires for the Vassal to be able to defend themselves. That is at least what they say before they ship the fresh recruits off-world.', 262);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_recruiter_drone', 'upkeep', 'energy', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_recruiter_drone', 'upkeep', 'energy', '5.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_recruiter_drone', 'upkeep', 'unity', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_recruiter_drone', 'upkeep', 'unity', '1.0', 1);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_recruiter_drone', 'planet_defense_armies_add', '1.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32355,56 +32347,56 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_ranger_drone', 'Overlord Ranger Drone', 'simple_drone', 'Tasked with ensuring that nature is always present in some form on the planet, the Ranger is on the lookout for anything that could endanger the area sectioned off by the Overlord.', 264);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_arborist', 'Overlord Arborist', 'worker', 'On this world, the Overlord planted a sapling from their world tree. It is our responsibility to ensure it never withers, lest we face their wrath.', 265);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_arborist', 'upkeep', 'food', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_arborist', 'upkeep', 'food', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_arborist_drone', 'Overlord Arborist Drone', 'simple_drone', 'On this world, the Overlord planted a sapling from their world tree. It is our responsibility to ensure it never withers, lest we face their wrath.', 266);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_arborist_drone', 'upkeep', 'food', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_arborist_drone', 'upkeep', 'food', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_bio_trophy', 'Overlord Bio-Trophy', 'worker', 'Worried that we might lack for anything or even be hurt, our Overlord has provided a lucky few with the opportunity to experience what they call', 267);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_bio_trophy', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_bio_trophy', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_bio_trophy', 'pop_happiness', '0.01', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_bio_trophy_drone', 'Overlord Bio-Trophy Drone', 'simple_drone', 'The drones our Overlord directed to this structure are told to', 268);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_bio_trophy_drone', 'produces', 'unity', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_bio_trophy_drone', 'produces', 'unity', '0.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_manager', 'Overlord Manager', 'specialist', 'Middle managers that optimize the behavior of the local white-collar workers to synergize with the Overlord''s long-term corporate trajectory.', 269);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_manager', 'produces', 'unity', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_manager', 'produces', 'unity', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_manager', 'produces', 'trade', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_manager', 'produces', 'trade', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_manager', 'upkeep', 'consumer_goods', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_manager', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_mortal_initiate', 'Overlord Mortal Initiate', 'worker', 'The customs of our Overlord may seem strange and mysterious, but our way forward is by accepting them. Only those who are willing will be asked to make the ultimate sacrifice.', 270);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_mortal_initiate', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_mortal_initiate', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_mortal_initiate', 'produces', 'society_research', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_mortal_initiate', 'produces', 'society_research', '0.5', 1);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_mortal_initiate', 'planet_amenities_add', '2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_mortal_initiate_drone', 'Overlord Mortal Initiate Drone', 'simple_drone', 'The customs of our Overlord may seem strange and mysterious, yet we are to be a part of them. A few of our drones have been designated to join what the Overlord calls ''a study of life'', one which concludes with their willing sacrifice.', 271);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_mortal_initiate_drone', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_mortal_initiate_drone', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_mortal_initiate_drone', 'produces', 'society_research', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_mortal_initiate_drone', 'produces', 'society_research', '0.5', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_knight', 'Overlord Knight', 'specialist', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 272);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_knight', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_knight', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_knight', 'planet_stability_add', '3.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32415,8 +32407,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_knight_drone', 'Overlord Knight', 'complex_drone', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 273);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_knight_drone', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_knight_drone', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_knight_drone', 'planet_stability_add', '3.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32427,11 +32419,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_healthcare', 'Medical Worker', 'specialist', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', 274);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_healthcare', 'produces', 'trade', '4.0', 0);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_healthcare', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_healthcare', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_healthcare', 'logistic_growth_mult', '0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32450,88 +32439,88 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_replicator', 'Replicator', 'complex_drone', 'A machine that builds a machine that builds a machine that...', 275);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_replicator', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_replicator', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_replicator', 'planet_pop_assembly_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pop_assembly_add', 'Monthly Mechanical Pop Assembly', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_spawning_drone', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 276);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_spawning_drone', 'upkeep', 'food', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_spawning_drone', 'upkeep', 'food', '5.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_spawning_drone', 'fake_pop_growth_mod', '2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('overlord_spawning_drone_lithoid', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 277);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('overlord_spawning_drone_lithoid', 'upkeep', 'minerals', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('overlord_spawning_drone_lithoid', 'upkeep', 'minerals', '5.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_spawning_drone_lithoid', 'fake_pop_growth_mod', '2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_laborer', 'Laborer', 'worker', 'As assets they were worked to the bone. With freedom has come renewed purpose, and a vigor that no slave could ever hope to match.', 278);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_laborer', 'produces', 'consumer_goods', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_laborer', 'produces', 'consumer_goods', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_laborer', 'produces', 'alloys', '1.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_laborer', 'produces', 'alloys', '1.5', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_miner', 'Prospector', 'worker', 'Stubborn, ill-mannered, indomitable; these former indentured miners are as solid as scrap metal.', 279);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_miner', 'produces', 'minerals', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_miner', 'produces', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_technician', 'Reactor Engineer', 'worker', 'Aboard their masters'' vessels, indentured engineers were often assigned the lowliest and most dangerous jobs. This hardship only sharpened their skills.', 280);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_technician', 'produces', 'energy', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_technician', 'produces', 'energy', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_farmer', 'Homesteader', 'worker', 'The agri-worlds of our former masters were scenes of brutal oppression. Now, our homesteaders are free to enjoy the fruits of their labor.', 281);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_farmer', 'produces', 'food', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_farmer', 'produces', 'food', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_researcher', 'Scientist', 'specialist', 'Our former masters ignored our gifts and downplayed our intelligence. Now, the keenest minds among us are free to follow their ambition.', 282);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_researcher', 'produces', 'physics_research', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_researcher', 'produces', 'physics_research', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_researcher', 'produces', 'engineering_research', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_researcher', 'produces', 'engineering_research', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_researcher', 'produces', 'society_research', '1.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_researcher', 'produces', 'society_research', '1.0', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_researcher', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_researcher', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_priest', 'Preacher', 'specialist', 'Our preachers remind us that freedom is a divine right; united in faith, we find our common strength.', 283);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_priest', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_priest', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_priest', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_priest', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('low_tech_priest', 'planet_amenities_add', '2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_bureaucrat', 'Administrator', 'specialist', 'Our former masters delegated much of their empire''s day-to-day administration to indentured assets. The result was a class of highly trained logistics personnel.', 284);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_bureaucrat', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_bureaucrat', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_bureaucrat', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_bureaucrat', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_manager', 'Supervisor', 'specialist', 'Our former masters delegated much of their empire''s day-to-day administration to indentured assets. The result was a class of highly trained managers.', 285);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_manager', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_manager', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_manager', 'produces', 'trade', '2.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_manager', 'produces', 'trade', '2.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('low_tech_manager', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('low_tech_manager', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('low_tech_warrior', 'Militia', 'specialist', 'Indentured soldiers were mainly used as cannon fodder; the fortunate few who survived have volunteered to protect our newfound freedom with their lives.', 286);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('low_tech_warrior', 'planet_crime_add', '-10.0', 0);
@@ -32543,17 +32532,17 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('broken_shackles_scavenger', 'Scavenger', 'worker', 'Scavengers explore the ruins of the Crashed Slaver Ship for anything of value.', 287);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('broken_shackles_scavenger', 'produces', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('broken_shackles_scavenger', 'produces', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('broken_shackles_scavenger', 'produces', 'physics_research', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('broken_shackles_scavenger', 'produces', 'physics_research', '0.5', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('broken_shackles_scavenger', 'produces', 'engineering_research', '0.5', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('broken_shackles_scavenger', 'produces', 'engineering_research', '0.5', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('broken_shackles_scavenger', 'produces', 'society_research', '0.5', 3);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('broken_shackles_scavenger', 'produces', 'society_research', '0.5', 3);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('broken_shackles_scavenger', 'planet_amenities_add', '2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32573,106 +32562,106 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('none', 'None', NULL, NULL, 300);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('munitions_decommissioner', 'Munitions Decommissioner', 'specialist', 'These practical researchers inspect and reverse-engineer ancient weapons to fit our modern specifications.', 301);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('munitions_decommissioner', 'produces', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('munitions_decommissioner', 'produces', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('munitions_decommissioner', 'produces', 'engineering_research', '5.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('munitions_decommissioner', 'produces', 'engineering_research', '5.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('munitions_decommissioner', 'upkeep', 'consumer_goods', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('munitions_decommissioner', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('munitions_decommissioning_unit', 'Munitions Decommissioning Unit', 'complex_drone', 'Specialized units for the disassembly and analysis of ancient weapons.', 302);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('munitions_decommissioning_unit', 'produces', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('munitions_decommissioning_unit', 'produces', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('munitions_decommissioning_unit', 'produces', 'engineering_research', '5.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('munitions_decommissioning_unit', 'produces', 'engineering_research', '5.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('munitions_decommissioning_unit', 'upkeep', 'food', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('munitions_decommissioning_unit', 'upkeep', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('munitions_decommissioning_unit_lithoid', 'Munitions Decommissioning Unit', 'complex_drone', 'Specialized units for the disassembly and analysis of ancient weapons.', 303);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('munitions_decommissioning_unit_lithoid', 'produces', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('munitions_decommissioning_unit_lithoid', 'produces', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('munitions_decommissioning_unit_lithoid', 'produces', 'engineering_research', '5.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('munitions_decommissioning_unit_lithoid', 'produces', 'engineering_research', '5.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('munitions_decommissioning_unit_lithoid', 'upkeep', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('munitions_decommissioning_unit_lithoid', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('munitions_decommissioning_drone', 'Munitions Decommissioning Drone', 'complex_drone', 'These drones efficiently disassemble ancient weapons to fit our modern specifications.', 304);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('munitions_decommissioning_drone', 'produces', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('munitions_decommissioning_drone', 'produces', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('munitions_decommissioning_drone', 'produces', 'engineering_research', '5.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('munitions_decommissioning_drone', 'produces', 'engineering_research', '5.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('munitions_decommissioning_drone', 'upkeep', 'energy', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('munitions_decommissioning_drone', 'upkeep', 'energy', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astral_researcher', 'Astral Researcher', 'specialist', 'The strands of space-time contain the secrets of every dimension, including our own. These researchers work tirelessly to decipher their significance while minimizing paradoxes.', 305);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_researcher', 'produces', 'physics_research', '2.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_researcher', 'produces', 'physics_research', '2.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_researcher', 'produces', 'engineering_research', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_researcher', 'produces', 'engineering_research', '0.5', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_researcher', 'produces', 'society_research', '0.5', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_researcher', 'produces', 'society_research', '0.5', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_researcher', 'produces', 'astral_threads', '0.3', 3);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_researcher', 'produces', 'astral_threads', '0.3', 3);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_researcher', 'upkeep', 'consumer_goods', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_researcher', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astral_drone', 'Astral Drone', 'complex_drone', 'The strands of space-time contain the secrets of every dimension, including our own. These drones are tasked with deciphering their significance while minimizing paradoxes.', 306);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_drone', 'produces', 'physics_research', '2.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_drone', 'produces', 'physics_research', '2.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_drone', 'produces', 'engineering_research', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_drone', 'produces', 'engineering_research', '0.5', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_drone', 'produces', 'society_research', '0.5', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_drone', 'produces', 'society_research', '0.5', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_drone', 'produces', 'astral_threads', '0.3', 3);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_drone', 'produces', 'astral_threads', '0.3', 3);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_drone', 'upkeep', 'minerals', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_drone', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astral_unit', 'Astral Unit', 'complex_drone', 'The strands of space-time contain the secrets of every dimension, including our own. These units attempt to decipher their significance while avoiding paradoxes at all costs.', 307);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_unit', 'produces', 'physics_research', '2.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_unit', 'produces', 'physics_research', '2.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_unit', 'produces', 'engineering_research', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_unit', 'produces', 'engineering_research', '0.5', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_unit', 'produces', 'society_research', '0.5', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_unit', 'produces', 'society_research', '0.5', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_unit', 'produces', 'astral_threads', '0.3', 3);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_unit', 'produces', 'astral_threads', '0.3', 3);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('astral_unit', 'upkeep', 'energy', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('astral_unit', 'upkeep', 'energy', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astrometeorologist', 'Astrometeorologist', 'specialist', 'Astrometeorologists are specialized in researching cosmic environmental effects.', 308);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astrometeorologist_hive', 'Astrometeorologist Drone', 'complex_drone', 'These research drones are specialized to detect and catalog the effects of cosmic storms.', 309);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('astrometeorologist_machine', 'Astrometeorologist Unit', 'complex_drone', 'These research units painstakingly detail every astronomical event as to learn more from it.', 310);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('haruspex', 'Haruspex', 'specialist', 'Evangelical mechanics and surgeons of the divine, rendering unworthy and replacing it with holy cybernetics.
 This Job requires the Pop to have the Ritualistic Implants of any Cybernetic Creed or Cybernetic trait.', 311);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('haruspex', 'produces', 'unity', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('haruspex', 'produces', 'unity', '1.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('haruspex', 'produces', 'engineering_research', '1.25', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('haruspex', 'produces', 'engineering_research', '1.25', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('haruspex', 'upkeep', 'consumer_goods', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('haruspex', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('haruspex', 'planet_amenities_add', '2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32680,76 +32669,76 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('technophant', 'Technophant', 'ruler', 'Exalted interpreters of divine wetware. They guide the people toward a perfect fusion of and machine.
 This Job requires the Pop to have the Ritualistic Implants of any Cybernetic Creed or Cybernetic trait.', 312);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('technophant', 'produces', 'unity', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('technophant', 'produces', 'unity', '5.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('technophant', 'produces', 'engineering_research', '2.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('technophant', 'produces', 'engineering_research', '2.5', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('technophant', 'upkeep', 'consumer_goods', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('technophant', 'upkeep', 'consumer_goods', '3.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('technophant', 'planet_amenities_add', '5.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('neural_chip', 'Neural Chip', 'chip_slave', 'A single Neural Chip is inconsequential. Once connected, their processing capabilities increase exponentially.', 313);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('neural_chip', 'produces', 'society_research', '0.375', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('neural_chip', 'produces', 'society_research', '0.375', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('neural_chip', 'produces', 'engineering_research', '0.375', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('neural_chip', 'produces', 'engineering_research', '0.375', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('neural_chip', 'produces', 'physics_research', '0.375', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('neural_chip', 'produces', 'physics_research', '0.375', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('neural_chip', 'produces', 'advanced_logic', '0.025', 3);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('neural_chip', 'produces', 'advanced_logic', '0.025', 3);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('neural_chip', 'upkeep', 'energy', '4.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('neural_chip', 'upkeep', 'energy', '4.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('augmentor', 'Augmentor', 'specialist', 'Augmentors are skilled technicians who alter the organic form with cybernetic enhancement.', 314);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('augmentor', 'produces', 'society_research', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('augmentor', 'produces', 'society_research', '1.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('augmentor', 'produces', 'engineering_research', '1.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('augmentor', 'produces', 'engineering_research', '1.5', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('augmentor', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('augmentor', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('augmentor', 'planet_amenities_add', '5.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('augmentor_drone', 'Augmentor Drone', 'complex_drone', 'Augmentor Drones research and design cybernetic implants.', 315);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('augmentor_drone', 'produces', 'society_research', '1.75', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('augmentor_drone', 'produces', 'society_research', '1.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('augmentor_drone', 'produces', 'engineering_research', '1.75', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('augmentor_drone', 'produces', 'engineering_research', '1.5', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('augmentor_drone', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('augmentor_drone', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('identity_designer', 'Identity Designer', 'specialist', 'Identity Designers intricately create new synthetic minds.', 316);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('identity_designer', 'produces', 'engineering_research', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('identity_designer', 'produces', 'engineering_research', '2.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('identity_designer', 'upkeep', 'alloys', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('identity_designer', 'upkeep', 'alloys', '2.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('identity_designer', 'planet_amenities_add', '5.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cyberdome_duelist', 'Hyper-Gladiator', 'specialist', 'Hyper-Gladiators face off in the Cyberdome, utilizing cutting-edge cybernetic implants.', 317);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cyberdome_duelist', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cyberdome_duelist', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cyberdome_duelist', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cyberdome_duelist', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('cyberdome_duelist', 'pop_happiness', '0.02', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32760,110 +32749,110 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cyberdome_spectator', 'Spectator', 'worker', 'Spectators enjoy games in the Cyberdome. When witnessed via cyberbrain, even the cheapest seats provide a spectacle, but when neurocasting is enabled it''s possible to experience gladiatorial combat in first person.', 318);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cyberdome_spectator', 'produces', 'energy', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cyberdome_spectator', 'produces', 'energy', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cyberdome_spectator', 'produces', 'trade', '2.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cyberdome_spectator', 'produces', 'trade', '2.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('clip_maximizer', 'Material', 'purge', 'Suitably broken down and reconfigured, they can serve to fill the quota', 319);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('clip_maximizer', 'produces', 'consumer_goods', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('clip_maximizer', 'produces', 'consumer_goods', '5.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('clip_maximizer', 'upkeep', 'energy', '0.1', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('clip_maximizer', 'upkeep', 'energy', '0.1', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('nanotech_research_unit', 'Nanotech Research Unit', 'complex_drone', 'Nanotech Research Units meticulously engineer never before seen materials, pieced together atom by atom.', 320);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('nanotech_research_unit', 'produces', 'physics_research', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('nanotech_research_unit', 'produces', 'physics_research', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('nanotech_research_unit', 'produces', 'engineering_research', '3.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('nanotech_research_unit', 'produces', 'engineering_research', '3.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('nanotech_research_unit', 'produces', 'society_research', '1.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('nanotech_research_unit', 'produces', 'society_research', '1.0', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('nanotech_research_unit', 'upkeep', 'energy', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('nanotech_research_unit', 'upkeep', 'energy', '4.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('nanotech_research_unit', 'upkeep', 'nanites', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('nanotech_research_unit', 'upkeep', 'nanites', '1.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('nanotech_researcher', 'Nanotech Researcher', 'specialist', 'Nanotech Researchers meticulously engineer never before seen materials, pieced together atom by atom.', 321);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('nanotech_researcher', 'produces', 'physics_research', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('nanotech_researcher', 'produces', 'physics_research', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('nanotech_researcher', 'produces', 'engineering_research', '3.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('nanotech_researcher', 'produces', 'engineering_research', '3.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('nanotech_researcher', 'produces', 'society_research', '1.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('nanotech_researcher', 'produces', 'society_research', '1.0', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('nanotech_researcher', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('nanotech_researcher', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('nanotech_researcher', 'upkeep', 'nanites', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('nanotech_researcher', 'upkeep', 'nanites', '1.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('treasure_gatherer', 'Treasure Curator', 'specialist', 'Trained to appraise all manner of rare and valuable goods, they can extract the highest value from treasures found across the galaxy.', 322);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('treasure_gatherer', 'produces', 'energy', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('treasure_gatherer', 'produces', 'energy', '10.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('treasure_gatherer', 'produces', 'minerals', '4.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('treasure_gatherer', 'produces', 'minerals', '4.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('treasure_gatherer', 'produces', 'unity', '2.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('treasure_gatherer', 'produces', 'unity', '2.0', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('treasure_gatherer', 'produces', 'society_research', '0.5', 3);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('treasure_gatherer', 'produces', 'society_research', '0.5', 3);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('treasure_gatherer', 'produces', 'trade', '3.0', 4);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('treasure_gatherer', 'produces', 'trade', '3.0', 4);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('treasure_gatherer', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('treasure_gatherer', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('wrangler', 'Wrangler', 'specialist', 'The proper preservation, study, and management of local fauna is vital to the success of our worlds.', 323);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('wrangler', 'produces', 'society_research', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('wrangler', 'produces', 'society_research', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('wrangler', 'produces', 'unity', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('wrangler', 'produces', 'unity', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('wrangler', 'upkeep', 'consumer_goods', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('wrangler', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('drone_wrangler', 'Wrangler Drone', 'complex_drone', 'The proper preservation, study, and management of local fauna is vital to the success of our worlds.', 324);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('drone_wrangler', 'produces', 'society_research', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('drone_wrangler', 'produces', 'society_research', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('drone_wrangler', 'produces', 'unity', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('drone_wrangler', 'produces', 'unity', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('drone_wrangler', 'upkeep', 'minerals', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('drone_wrangler', 'upkeep', 'minerals', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('treasure_gatherer_gestalt', 'Treasure Drone', 'complex_drone', 'Able to appraise all manner of rare and valuable goods, they can extract the highest possible utility from treasures found across the galaxy.', 325);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('treasure_gatherer_gestalt', 'produces', 'energy', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('treasure_gatherer_gestalt', 'produces', 'energy', '10.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('treasure_gatherer_gestalt', 'produces', 'minerals', '4.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('treasure_gatherer_gestalt', 'produces', 'minerals', '4.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('treasure_gatherer_gestalt', 'produces', 'unity', '2.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('treasure_gatherer_gestalt', 'produces', 'unity', '2.0', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('treasure_gatherer_gestalt', 'produces', 'society_research', '0.5', 3);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('treasure_gatherer_gestalt', 'produces', 'society_research', '0.5', 3);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('treasure_gatherer_gestalt', 'upkeep', 'minerals', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('treasure_gatherer_gestalt', 'upkeep', 'minerals', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('disconnected_drone', 'Disconnected Drone', 'simple_drone', 'Severed from their collective consciousness, these drones are guided by little more than base instinct.', 326);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('skywatcher', 'Skywatcher', 'specialist', 'These highly trained guardians ensure a constant and secure uplink to the Deep Space Citadel.', 327);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('skywatcher', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('skywatcher', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('skywatcher', 'planet_stability_add', '1.15', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32878,8 +32867,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('skywatcher_drone', 'Skywatcher Drone', 'complex_drone', 'These specialized drones ensure a constant and secure uplink to the Deep Space Citadel.', 328);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('skywatcher_drone', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('skywatcher_drone', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('skywatcher_drone', 'planet_stability_add', '1.15', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32896,11 +32885,11 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('genomic_drone', 'Genomic Drone', 'complex_drone', 'Genomic Drones conduct research into our genetic future.', 330);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('transference_volunteer', 'Transference Volunteer', 'specialist', 'For many, the mindlink with the Beast is but an afterthought. Constant, but remote. For some however, the need to merge with it is irrepressible. These volunteers act as a conduit as their minds are slowly absorbed into the beastly collective.', 331);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('transference_volunteer', 'produces', 'unity', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('transference_volunteer', 'produces', 'unity', '1.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('transference_volunteer', 'upkeep', 'food', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('transference_volunteer', 'upkeep', 'food', '5.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('transference_volunteer', 'planet_stability_add', '0.75', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32915,11 +32904,11 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('transference_drone', 'Transference Drone', 'complex_drone', 'While the mindlink established a permanent connection between the Beast and us, the transference is a slow process. Without these precautions we risk shattering both psyches and ruin everything.', 332);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('transference_drone', 'produces', 'unity', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('transference_drone', 'produces', 'unity', '1.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('transference_drone', 'upkeep', 'food', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('transference_drone', 'upkeep', 'food', '5.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('transference_drone', 'planet_stability_add', '0.75', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32934,47 +32923,53 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('sand_whisperer', 'Sand Whisperer', 'specialist', 'When communicating with the psionic Sand Whisperers can collect a small amount of Zro from them.', 333);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('sand_whisperer', 'produces', 'sr_zro', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('sand_whisperer', 'produces', 'sr_zro', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('sand_whisperer', 'upkeep', 'energy', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('sand_whisperer', 'upkeep', 'energy', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('sand_caretaker', 'Sand Caretaker', 'specialist', 'When communicating with the psionic Sand Caretakers can collect a small amount of Zro from them.', 334);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('sand_caretaker', 'produces', 'sr_zro', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('sand_caretaker', 'produces', 'sr_zro', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('sand_caretaker', 'upkeep', 'energy', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('sand_caretaker', 'upkeep', 'energy', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('drone_sand_whisperer', 'Sand Whisperer drone', 'complex_drone', 'When communicating with the psionic Sand Whisperers can collect a small amount of Zro from them.', 335);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('drone_sand_whisperer', 'produces', 'sr_zro', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('drone_sand_whisperer', 'produces', 'sr_zro', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('drone_sand_whisperer', 'upkeep', 'energy', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('drone_sand_whisperer', 'upkeep', 'energy', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('drone_sand_caretaker', 'Sand Caretaker drone', 'complex_drone', 'When communicating with the psionic Sand Caretakers can collect a small amount of Zro from them.', 336);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('drone_sand_caretaker', 'produces', 'sr_zro', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('drone_sand_caretaker', 'produces', 'sr_zro', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('drone_sand_caretaker', 'upkeep', 'energy', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('drone_sand_caretaker', 'upkeep', 'energy', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('space_junk_collector', 'Space Junk Collector', 'specialist', 'Orbital space junk periodically enters this planet''s atmosphere. Whatever doesn''t burn up on entry can be collected and recycled.', 337);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('space_junk_collector', 'produces', 'alloys', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('space_junk_collector', 'produces', 'alloys', '5.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('space_junk_collector', 'upkeep', 'energy', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('space_junk_collector', 'upkeep', 'energy', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('drone_space_junk_collector', 'Space Junk Collector drone', 'complex_drone', 'Orbital space junk periodically enters this planet''s atmosphere. Whatever doesn''t burn up on entry can be collected and recycled.', 338);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('drone_space_junk_collector', 'produces', 'alloys', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('drone_space_junk_collector', 'produces', 'alloys', '5.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('drone_space_junk_collector', 'upkeep', 'energy', '10.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('drone_space_junk_collector', 'upkeep', 'energy', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('telepath_drone', 'Telepath Drone', 'complex_drone', 'Operatives of the Psi Corps, a unit of psionically-advanced drones dedicated to reducing deviancy.', 339);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('telepath_drone', 'produces', 'unity', '4.5', 0);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('telepath_drone', 'upkeep', 'energy', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('telepath_drone', 'planet_defense_armies_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32985,11 +32980,11 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_add', 'Crime', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('physician_drone', 'Physician Drone', 'complex_drone', 'A specialized drone capable of diagnosing and repairing both artificial and organic entities. It meticulously catalogs everything it comes across, storing the data for use by the collective.', 340);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('physician_drone', 'produces', 'unity', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('physician_drone', 'produces', 'unity', '3.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('physician_drone', 'upkeep', 'energy', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('physician_drone', 'upkeep', 'energy', '4.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('physician_drone', 'planet_amenities_no_happiness_add', '5.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -32997,29 +32992,29 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('observator_drone', 'Observator Drone', 'complex_drone', 'A drone put in charge of observing the Shroud, Zro, and the effects the two have on observable reality.', 341);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('energy_thrall', 'Energy Thrall', 'worker', 'Excess energies of the population can be put to better use in sustaining quality leadership. Each Energy Thrall is implanted with a specially calibrated siphoning device which collects their essence into easy-to-transfer power cells.', 342);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('energy_thrall', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('energy_thrall', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('drone_energy_thrall', 'Energy Drone', 'simple_drone', 'Idle consciousnesses can be put to better use in sustaining quality leadership nodes. Each Energy Drone is implanted with a specially calibrated siphoning device which collects their unused energy into easy-to-transfer power cells.', 343);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('drone_energy_thrall', 'produces', 'unity', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('drone_energy_thrall', 'produces', 'unity', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('drone_energy_thrall', 'planet_amenities_no_happiness_add', '3.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('test_subject', 'Test Subject', 'criminal', 'Convicted of criminal activity, these individuals have been put to productive use as live test subjects in technological experiments.', 344);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('test_subject', 'produces', 'engineering_research', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('test_subject', 'produces', 'engineering_research', '0.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('test_subject', 'produces', 'physics_research', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('test_subject', 'produces', 'physics_research', '0.5', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('test_subject', 'produces', 'society_research', '1.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('test_subject', 'produces', 'society_research', '1.0', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('test_subject', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('test_subject', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('test_subject', 'branch_office_criminal_syndicate_value_add', '7.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -33030,47 +33025,47 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('test_subject_drone', 'Test Subject Drone', 'deviant_drone', 'After straying from the will of the collective, these deviants have been put to productive use as live test subjects in technological experiments.', 345);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('test_subject_drone', 'produces', 'engineering_research', '0.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('test_subject_drone', 'produces', 'engineering_research', '0.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('test_subject_drone', 'produces', 'physics_research', '0.5', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('test_subject_drone', 'produces', 'physics_research', '0.5', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('test_subject_drone', 'produces', 'society_research', '1.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('test_subject_drone', 'produces', 'society_research', '1.0', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('test_subject_drone', 'upkeep', 'energy', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('test_subject_drone', 'upkeep', 'energy', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('test_subject_drone', 'planet_amenities_add', '3.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('experiment_engineer', 'Experiment Engineer', 'specialist', 'These elite researchers carry out experiments on live test subjects drawn from the criminal population, with no qualms about the severity of their methodologies.', 346);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('experiment_engineer', 'produces', 'physics_research', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('experiment_engineer', 'produces', 'physics_research', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('experiment_engineer', 'produces', 'engineering_research', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('experiment_engineer', 'produces', 'engineering_research', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('experiment_engineer', 'produces', 'society_research', '1.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('experiment_engineer', 'produces', 'society_research', '1.0', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('experiment_engineer', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('experiment_engineer', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('experiment_engineer_drone', 'Experiment Engineer Drone', 'complex_drone', 'These research drones carry out experiments on live test subjects drawn from the deviant population. No methodology is too harsh if it benefits the collective.', 347);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('experiment_engineer_drone', 'produces', 'physics_research', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('experiment_engineer_drone', 'produces', 'physics_research', '1.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('experiment_engineer_drone', 'produces', 'engineering_research', '1.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('experiment_engineer_drone', 'produces', 'engineering_research', '1.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('experiment_engineer_drone', 'produces', 'society_research', '1.0', 2);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('experiment_engineer_drone', 'produces', 'society_research', '1.0', 2);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('experiment_engineer_drone', 'upkeep', 'minerals', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('experiment_engineer_drone', 'upkeep', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('slave_orderly', 'Orderly', 'worker', 'These workers are responsible for the day-to-day care of those subjected to experimental procedures that often render them unable to care for themselves.', 348);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('slave_orderly', 'pop_experiment_engineer_bonus_workforce_mult', '0.025', 0);
@@ -33086,11 +33081,11 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('production_overseer', 'Production Overseer', 'specialist', 'Production Overseers work to eliminate inefficiencies and maximize the outputs from complex manufacturing processes.', 349);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('production_overseer', 'produces', 'engineering_research', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('production_overseer', 'produces', 'engineering_research', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('production_overseer', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('production_overseer', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('production_overseer', 'bonus_automated_workforce_mult', '0.02', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -33103,43 +33098,40 @@ INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('extradimensional_research_unit', 'Extra-dimensional Research Unit', 'complex_drone', 'Dedicated research units focused on studies into the dimensions of thought.', 351);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('shroud_trader', 'Empathic Marketer', 'specialist', 'These experts attune to the emotional zeitgeist in the local markets, striking deals and hosting seminars on current trends in thought leadership.', 352);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('shroud_trader', 'produces', 'trade', '6.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('shroud_trader', 'produces', 'trade', '6.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('shroud_trader', 'upkeep', 'consumer_goods', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('shroud_trader', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('shroud_trader', 'category_psionics_draw_chance_mult', '0.01', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('category_psionics_draw_chance_mult', 'Chance for Psionics Research Options', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cruise_passenger', 'First Class Passenger', 'cruise_passenger', 'First Class Passengers enjoy the highest level of comfort and service.', 353);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cruise_passenger', 'produces', 'unity', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cruise_passenger', 'produces', 'unity', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cruise_passenger', 'upkeep', 'consumer_goods', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cruise_passenger', 'upkeep', 'consumer_goods', '1.5', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('cruise_passenger', 'pop_cat_specialist_bonus_workforce_mult', '0.01', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_cat_specialist_bonus_workforce_mult', 'Job Efficiency for Specialists', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cruise_passenger_unemployment', 'Economy Class Passenger', 'cruise_passenger_unemployment', 'Economy Class Passengers enjoy the stars from shared quarters while eyeing the First Class manors with envy.', 354);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cruise_passenger_unemployment', 'produces', 'unity', '0.5', 0);
-INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cruise_passenger_unemployment', 'upkeep', 'consumer_goods', '0.33', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cruise_passenger_unemployment', 'upkeep', 'consumer_goods', '0.33', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cruise_crew_overseer', 'Activity Manager', 'ruler', 'Activity Managers ensure that all crew is working at maximal efficiency to satisfy every minute need of the passengers.', 355);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cruise_crew_overseer', 'produces', 'unity', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cruise_crew_overseer', 'produces', 'unity', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cruise_crew_overseer', 'produces', 'trade', '2.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cruise_crew_overseer', 'produces', 'trade', '2.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cruise_crew_overseer', 'upkeep', 'consumer_goods', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cruise_crew_overseer', 'upkeep', 'consumer_goods', '3.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('cruise_crew_overseer', 'pop_cat_worker_bonus_workforce_mult', '0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -33150,14 +33142,14 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_cat_specialist_bonus_workforce_mult', 'Job Efficiency for Specialists', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('cruise_crew_overseer_drone', 'Activity Management Drone', 'complex_drone', 'Activity Management Drones ensure that all drones operate at maximal efficiency to satisfy every minute need of the passengers.', 356);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cruise_crew_overseer_drone', 'produces', 'unity', '2.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cruise_crew_overseer_drone', 'produces', 'unity', '2.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cruise_crew_overseer_drone', 'produces', 'trade', '2.0', 1);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cruise_crew_overseer_drone', 'produces', 'trade', '2.0', 1);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('cruise_crew_overseer_drone', 'upkeep', 'minerals', '8.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('cruise_crew_overseer_drone', 'upkeep', 'minerals', '8.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('cruise_crew_overseer_drone', 'pop_cat_simple_drone_bonus_workforce_mult', '0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -33168,22 +33160,22 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_artisan_drone_bonus_workforce_mult', 'Job Efficiency for Artisan Drones', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('ark_waystation_trader', 'Waystation Comptroller', 'specialist', 'The remote management of stations is a thankless task of endless logistic needs, but someone must handle it.', 357);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('ark_waystation_trader', 'produces', 'trade', '5.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('ark_waystation_trader', 'produces', 'trade', '5.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('ark_waystation_trader', 'upkeep', 'consumer_goods', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('ark_waystation_trader', 'upkeep', 'consumer_goods', '1.5', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('ark_waystation_trader', 'country_starbase_capacity_mult', '0.03', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_starbase_capacity_mult', 'Station Capacity', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('ark_harvester', 'Astro-Harvester', 'specialist', 'Astro-Harvesters facilitate the collection of orbital deposits and their processing, greatly increasing resource yield.', 358);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('ark_harvester', 'produces', 'minerals', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('ark_harvester', 'produces', 'minerals', '1.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('ark_harvester', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('ark_harvester', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('ark_harvester', 'arkship_harvest_resources_produces_mult', '0.025', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -33194,22 +33186,22 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('arkship_action_speed', 'Arkship Action Speed', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('ark_waystation_trader_gestalt', 'Trade Coordination Drone', 'complex_drone', 'A processing unit assigned to coordinate the flow of goods between our Waystations and the wider market. Efficiency is its only directive.', 359);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('ark_waystation_trader_gestalt', 'produces', 'trade', '4.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('ark_waystation_trader_gestalt', 'produces', 'trade', '4.0', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('ark_waystation_trader_gestalt', 'upkeep', 'energy', '3.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('ark_waystation_trader_gestalt', 'upkeep', 'energy', '3.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('ark_waystation_trader_gestalt', 'country_starbase_capacity_mult', '0.03', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_starbase_capacity_mult', 'Station Capacity', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('ark_harvester_gestalt', 'Astro-Harvester Drone', 'complex_drone', 'Astro-Harvester Drones are engineered for spacewalk operations, facilitating the collection of orbital deposits from outside of the Ark.', 360);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('ark_harvester_gestalt', 'produces', 'minerals', '1.5', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('ark_harvester_gestalt', 'produces', 'minerals', '1.5', 0);
 INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES ('ark_harvester_gestalt', 'upkeep', 'alloys', '1.0', 0);
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('ark_harvester_gestalt', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('ark_harvester_gestalt', 'arkship_harvest_resources_produces_mult', '0.025', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -37010,6 +37002,21 @@ INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
                            VALUES ('civic', 'civic_civil_education', 'dystopian_telepath', 'Telepath', 'educator_telepath', 'Psionic Mentor', 36);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_civil_education', 'dystopian_telepath', 'educator_telepath', 'base', 'produces', 'unity', '4.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_civil_education', 'dystopian_telepath', 'educator_telepath', 'base', 'upkeep', 'energy', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_civil_education', 'dystopian_telepath', 'educator_telepath', 'swapped', 'produces', 'unity', '7.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_civil_education', 'dystopian_telepath', 'educator_telepath', 'swapped', 'upkeep', 'energy', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_civil_education', 'dystopian_telepath', 'educator_telepath', 'swapped', 'upkeep', 'consumer_goods', '1.0');
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_civil_education', 'dystopian_telepath', 'educator_telepath', 'base', 'planet_defense_armies_add', '1.0');
@@ -37767,6 +37774,21 @@ INSERT OR IGNORE INTO job_swap
                                (source_kind, source_key, base_job, base_name,
                                 swapped_job, swapped_name, sort_order)
                            VALUES ('civic', 'civic_civil_education', 'telepath', 'Telepath', 'educator_telepath', 'Psionic Mentor', 70);
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_civil_education', 'telepath', 'educator_telepath', 'base', 'produces', 'unity', '4.5');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_civil_education', 'telepath', 'educator_telepath', 'base', 'upkeep', 'energy', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_civil_education', 'telepath', 'educator_telepath', 'swapped', 'produces', 'unity', '7.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_civil_education', 'telepath', 'educator_telepath', 'swapped', 'upkeep', 'energy', '1.0');
+INSERT OR IGNORE INTO job_swap_resource
+                                       (source_key, base_job, swapped_job, side, kind, resource, amount)
+                                   VALUES ('civic_civil_education', 'telepath', 'educator_telepath', 'swapped', 'upkeep', 'consumer_goods', '1.0');
 INSERT OR IGNORE INTO job_swap_modifier
                                        (source_key, base_job, swapped_job, side, modifier, value)
                                    VALUES ('civic_civil_education', 'telepath', 'educator_telepath', 'base', 'planet_defense_armies_add', '1.0');
