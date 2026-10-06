@@ -39,6 +39,14 @@ INVERTED_MODIFIERS: frozenset[str] = frozenset({
     # Administrative burden / empire size
     'species_empire_size_mult',
     'empire_size_pops_mult',
+    'empire_size_mult',
+    'empire_size_branch_office_mult',
+    'empire_size_colonies_mult',
+    'empire_size_districts_mult',
+    'empire_size_systems_mult',
+    'empire_size_penalty_mult',
+    # Factions (the game pairs −unmet with +met as a bonus; +unmet is a civic drawback)
+    'faction_demands_unmet_mult',
     # Influence costs
     'country_claim_influence_cost_mult',
     'country_starbase_influence_cost_mult',
