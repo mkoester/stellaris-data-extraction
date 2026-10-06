@@ -18348,7 +18348,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_parliamentary_system', 'faction_demands_unmet_mult', '0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('faction_demands_unmet_mult', 'Disapproval from Unmet Faction Demands', 1);
+           VALUES ('faction_demands_unmet_mult', 'Disapproval from Unmet Faction Demands', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_parliamentary_system', 'add_attunement_the_cradle_of_souls', '60.0', 2);
@@ -19654,17 +19654,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_sovereign_guardianship', 'empire_size_colonies_mult', '0.75', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 1);
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_sovereign_guardianship', 'empire_size_branch_office_mult', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_branch_office_mult', 'Empire Size from Branch Offices', 1);
+           VALUES ('empire_size_branch_office_mult', 'Empire Size from Branch Offices', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_sovereign_guardianship', 'empire_size_systems_mult', '1.5', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 1);
+           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_sovereign_guardianship', 'empire_size_pops_mult', '-0.25', 3);
@@ -19674,7 +19674,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_sovereign_guardianship', 'empire_size_districts_mult', '-0.5', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 1);
+           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_sovereign_guardianship', 'diplo_weight_mult', '0.2', 5);
@@ -21080,7 +21080,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_fragmented_command', 'empire_size_mult', '2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_mult', 'Empire Size', 1);
+           VALUES ('empire_size_mult', 'Empire Size', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_fragmented_command', 'authority', 'require', 'auth_hive_mind', 0);
@@ -21136,7 +21136,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_restored_mind', 'empire_size_penalty_mult', '-0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 1);
+           VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_restored_mind', 'bonus_automated_workforce_mult', '5.0', 1);
@@ -21643,7 +21643,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_divided_attention', 'empire_size_penalty_mult', '-0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 1);
+           VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_divided_attention', 'add_attunement_the_composer_of_strands', '60.0', 2);
@@ -22227,12 +22227,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_sovereign_guardianship', 'empire_size_colonies_mult', '0.75', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 1);
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_sovereign_guardianship', 'empire_size_systems_mult', '1.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 1);
+           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_sovereign_guardianship', 'empire_size_pops_mult', '-0.25', 2);
@@ -22242,7 +22242,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_sovereign_guardianship', 'empire_size_districts_mult', '-0.5', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 1);
+           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_sovereign_guardianship', 'diplo_weight_mult', '0.2', 4);
@@ -23678,12 +23678,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_sovereign_guardianship', 'empire_size_colonies_mult', '0.75', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 1);
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_sovereign_guardianship', 'empire_size_systems_mult', '1.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 1);
+           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_sovereign_guardianship', 'empire_size_pops_mult', '-0.25', 2);
@@ -23693,7 +23693,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_sovereign_guardianship', 'empire_size_districts_mult', '-0.5', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 1);
+           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_sovereign_guardianship', 'diplo_weight_mult', '0.2', 4);
@@ -24342,7 +24342,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_media_conglomerate', 'faction_demands_unmet_mult', '0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('faction_demands_unmet_mult', 'Disapproval from Unmet Faction Demands', 1);
+           VALUES ('faction_demands_unmet_mult', 'Disapproval from Unmet Faction Demands', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_media_conglomerate', 'refugee_attraction', '0.1', 2);
@@ -24417,12 +24417,12 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_prospectors', 'empire_size_systems_mult', '-0.15', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 1);
+           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_prospectors', 'empire_size_colonies_mult', '-0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 1);
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_prospectors', 'add_attunement_the_composer_of_strands', '60.0', 2);
@@ -25316,17 +25316,17 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_sovereign_guardianship', 'empire_size_colonies_mult', '0.75', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 1);
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_sovereign_guardianship', 'empire_size_branch_office_mult', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_branch_office_mult', 'Empire Size from Branch Offices', 1);
+           VALUES ('empire_size_branch_office_mult', 'Empire Size from Branch Offices', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_sovereign_guardianship', 'empire_size_systems_mult', '1.5', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 1);
+           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_sovereign_guardianship', 'empire_size_pops_mult', '-0.25', 3);
@@ -25336,7 +25336,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_sovereign_guardianship', 'empire_size_districts_mult', '-0.5', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 1);
+           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_corporate_sovereign_guardianship', 'diplo_weight_mult', '0.2', 5);
@@ -26281,7 +26281,7 @@ INSERT OR IGNORE INTO authority_modifier
                            (authority_key, modifier_key, modifier_value, sort_order)
                        VALUES ('auth_hive_mind', 'empire_size_penalty_mult', '-0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 1);
+           VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 0);
 INSERT OR IGNORE INTO authority_requirement
                        (authority_key, kind, operator, value, group_id)
                    VALUES ('auth_hive_mind', 'ethic', 'require', 'ethic_gestalt_consciousness', 0);
@@ -26337,7 +26337,7 @@ INSERT OR IGNORE INTO authority_modifier
                            (authority_key, modifier_key, modifier_value, sort_order)
                        VALUES ('auth_corporate', 'empire_size_colonies_mult', '0.5', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 1);
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 0);
 INSERT OR IGNORE INTO authority_modifier
                            (authority_key, modifier_key, modifier_value, sort_order)
                        VALUES ('auth_corporate', 'envoys_add', '1.0', 3);
