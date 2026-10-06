@@ -271,7 +271,7 @@ CREATE TABLE civic_modifier (
 -- grouped by `group_id`); `value` is the constrained key.
 CREATE TABLE civic_requirement (
     civic_key  TEXT NOT NULL,
-    kind       TEXT NOT NULL,        -- 'authority' | 'ethic' | 'civic' | 'origin'
+    kind       TEXT NOT NULL,        -- 'authority' | 'ethic' | 'civic' | 'origin' | 'ship_type' | 'gameplay'
     operator   TEXT NOT NULL,        -- 'require' | 'forbid' | 'require_any'
     value      TEXT NOT NULL,        -- e.g. 'auth_corporate', 'ethic_materialist'
     group_id   INTEGER NOT NULL DEFAULT 0,  -- ties 'require_any' values from one OR set together

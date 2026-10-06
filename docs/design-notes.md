@@ -229,6 +229,8 @@ Reads `common/governments/civics/00_origins.txt` (playable) + `01_origins_non_pl
 
 **Ship-type gate (origins + civics):** `_CIVIC_GATE_KINDS` includes `graphical_culture → ship_type`; a `possible.graphical_culture` `NOR`/`OR` of the biological cultures (`biogenesis_01/02`) is collapsed to a single `organic` value, so an origin/civic carries `ship_type forbid organic` (most) or `ship_type require_any organic` (e.g. Wilderness, the gestalt bio-civics). 7 origins / 9 civics forbid, a few force.
 
+**Nomadic gate (origins + civics):** a top-level `is_nomadic = yes|no` in `potential`/`possible` becomes `gameplay require nomadic` (nomads only: Voidfarers, Forever Cruise, Heirs of the Khan, The Sacred Path, 13 civics) or `gameplay forbid nomadic` (settled only). No row means both — since 4.5 that includes Knights of the Toxic God and Storm Chasers, which show nomads a `swap_type` description variant instead.
+
 ## Planet Classes Extraction (`extract_planet_classes`)
 
 Merges `common/planet_classes/*.txt` → `planet_class(key, name, climate, colonizable, is_standard)`. Keeps the **colonizable** worlds (the standard climates + special/engineered types) plus a curated set of standard **uninhabitable** bodies (`_STANDARD_UNINHABITABLE`: barren/molten/toxic/frozen/gas_giant/asteroid) for home-system context; stars and one-off event worlds are skipped. `climate` (wet/dry/cold) is null for special/uninhabitable; `is_standard = initial = yes` (the default startable climates). Habitability is species-preference-based, not per-class, so it isn't stored. ~30 classes.

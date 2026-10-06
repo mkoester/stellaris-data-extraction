@@ -263,6 +263,14 @@ def _civic_requirements(cdef: dict) -> list[tuple[str, str, str, int]]:
                         continue
                     seen.add((kind, op, v))
                     rows.append((kind, op, v, gid))
+        # Nomadic gameplay: `is_nomadic = yes` → nomads only, `= no` → settled only,
+        # absent → both (Knights of the Toxic God and Storm Chasers since 4.5).
+        nomadic = block.get('is_nomadic')
+        if nomadic in ('yes', 'no'):
+            row = ('gameplay', 'require' if nomadic == 'yes' else 'forbid', 'nomadic')
+            if row not in seen:
+                seen.add(row)
+                rows.append((*row, 0))
     return rows
 
 
