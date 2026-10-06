@@ -765,8 +765,48 @@ def _write_precursor_building(w: Writer, precursor_key: str, building_key: str, 
 # Extraction: deposits (dictionary for home-system planet deposits)
 # ---------------------------------------------------------------------------
 
+def _default_overclocks(megastructures: dict, overclock_types: dict,
+                        variables: dict[str, float]) -> set[str]:
+    """Each megastructure's starting overclock mode: the highest flat `ai_weight` (a plain
+    number or a block's `base`; 100 when absent), ties to the first listed — the rule in
+    megastructure_overclock_types/99_README_OVERCLOCKS.txt."""
+    def weight(mode: str) -> float:
+        aw = (overclock_types.get(mode) or {}).get('ai_weight')
+        if isinstance(aw, dict):
+            aw = aw.get('base')
+        v = _resolve_var(aw, variables)
+        return 100.0 if v is None else v
+
+    out: set[str] = set()
+    for m in megastructures.values():
+        modes = _to_list(m.get('overclock_types')) if isinstance(m, dict) else []
+        if modes:
+            out.add(max(modes, key=weight))   # max keeps the first of equal weights
+    return out
+
+
+def _primary_resource_block(blocks: list, signals, default_overclocks: set[str]) -> dict | None:
+    """The one block of a deposit's produces/cost/upkeep to show: a lone block as is, else
+    the unconditional ones merged (Crystal Rift: unity + physics), else the one gated on a
+    megastructure's starting overclock mode (Arc Furnace: balanced smelting). Deposits
+    whose blocks are all otherwise gated (nanites, living metal, …) give None. `signals`
+    maps a trigger to its (positive, negative) condition tokens."""
+    dicts = [b for b in blocks if isinstance(b, dict)]
+    if len(dicts) == 1:
+        return dicts[0]
+    plain = [b for b in dicts if 'trigger' not in b]
+    if plain:
+        return {k: v for b in plain for k, v in b.items()}
+    want = {'has_overclock=' + m for m in default_overclocks}
+    return next((b for b in dicts if signals(b['trigger'])[0] & want), None)
+
+
 def extract_deposits(data: dict, source_file: str, loc: dict[str, str],
+                     variables: dict[str, float], signals, default_overclocks: set[str],
                      w: Writer, verbose: bool):
+    variables = {**variables, **{k: v for k, v in
+                                 ((k, _resolve_modifier_float(v)) for k, v in data.items()
+                                  if k.startswith('@')) if v is not None}}
     for key, d in data.items():
         if key.startswith('@') or not isinstance(d, dict) or not key.startswith('d_'):
             continue
@@ -791,11 +831,12 @@ def extract_deposits(data: dict, source_file: str, loc: dict[str, str],
         )
 
         for kind in ('produces', 'cost', 'upkeep'):
-            block = resources.get(kind)
-            if not isinstance(block, dict):
+            block = _primary_resource_block(_as_blocks(resources.get(kind)), signals,
+                                            default_overclocks)
+            if block is None:
                 continue
             for res, amt in block.items():
-                value = _resolve_modifier_float(amt)
+                value = _resolve_var(amt, variables)
                 if value is None:
                     continue
                 w.execute(

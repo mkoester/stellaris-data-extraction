@@ -31,6 +31,47 @@ def _block_numeric(block, variables: dict[str, float]) -> list[tuple[str, float]
     return out
 
 
+def _is_scaled(block: dict) -> bool:
+    """A block whose output is scaled by a script value (`mult = value:…`)."""
+    return str(block.get('mult', '')).startswith('value:')
+
+
+def _drop_scaled_duplicates(blocks: list) -> list:
+    """Drop unconditional script-value-scaled blocks whose resources an unconditional plain
+    block already gives — a stockpile-scaled bonus on top of a base output (polytechnic),
+    not the base itself. A scaled block that is the only source (knights) is kept."""
+    plain = {k for b in blocks if isinstance(b, dict) and 'trigger' not in b and not _is_scaled(b)
+             for k in b}
+    return [b for b in blocks
+            if not (isinstance(b, dict) and 'trigger' not in b and _is_scaled(b)
+                    and set(b) - {'mult'} <= plain)]
+
+
+# Condition tokens that split empires into types, each paying its own variant.
+_EMPIRE_TYPE_TOKENS = ('is_archetype=', 'has_trait=', 'has_authority=')
+
+# The condition token a gestalt (hive / machine) empire guarantees.
+_GESTALT_TOKEN = 'has_ethic=ethic_gestalt_consciousness'
+
+
+def _fallback_block(blocks: list, signals) -> dict | None:
+    """When every block is gated and none applies, the variant to show if they are
+    alternatives one of which every empire pays: the first branch of an explicit `= no`
+    complement (servitor / not), else the first of two or more blocks gated purely on
+    empire type (organic/lithoid/infernal, hive/machine). Independent extras — a single
+    gated block (Pleasure Seekers' civilian upkeep) or civic/flag bonuses (enforcer
+    unity) — give None. `signals` maps a trigger to its (positive, negative) tokens."""
+    dicts = [b for b in blocks if isinstance(b, dict)]
+    if len(dicts) < 2 or not all('trigger' in b for b in dicts):
+        return None
+    sigs = [signals(b['trigger']) for b in dicts]
+    if any(neg for _, neg in sigs):
+        return dicts[0]
+    typed = [b for b, (pos, _) in zip(dicts, sigs)
+             if pos and all(t.startswith(_EMPIRE_TYPE_TOKENS) for t in pos)]
+    return typed[0] if len(typed) >= 2 else None
+
+
 def _collect_res_dict(resd, load_script, out: dict[str, list]) -> None:
     """Accumulate produces/upkeep blocks from a `resources` dict into `out`, following any
     `inline_script` it references (a job's resources can be nested two levels deep:
@@ -53,11 +94,17 @@ def _job_resource_blocks(jdef: dict, load_script) -> dict[str, list]:
     carries a `resources` block — so jobs whose figures live in shared inline scripts
     (enforcer/telepath/foundry/…) are fully resolved, conditional blocks included."""
     out: dict[str, list] = {'produces': [], 'upkeep': []}
-    _collect_res_dict(jdef.get('resources'), load_script, out)
-    isc = jdef.get('inline_script')
-    for sn in (isc if isinstance(isc, list) else [isc]):
-        if isinstance(sn, str):
-            _collect_res_dict(load_script(sn).get('resources'), load_script, out)
+    seen: set[str] = set()
+
+    def follow(node: dict) -> None:
+        _collect_res_dict(node.get('resources'), load_script, out)
+        isc = node.get('inline_script')
+        for sn in (isc if isinstance(isc, list) else [isc]):
+            if isinstance(sn, str) and sn not in seen:   # job_telepath → job_telepath_resources
+                seen.add(sn)
+                follow(load_script(sn))
+
+    follow(jdef)
     return out
 
 
@@ -111,28 +158,24 @@ def extract_jobs(install_dir: Path, loc: dict[str, str],
                 "INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES (?, ?, ?, ?, ?)",
                 (key, name, category, desc, order))
             order += 1
-            res = jdef.get('resources')
-            if isinstance(res, dict):
-                blocks = {'produces': res.get('produces'), 'upkeep': res.get('upkeep')}
-                # Resources often live in an `output/*` inline script instead.
-                isc = res.get('inline_script')
-                for sn in (isc if isinstance(isc, list) else [isc]):
-                    if not isinstance(sn, str):
-                        continue
-                    sdata = load_script(sn)
-                    for kind in ('produces', 'upkeep'):
-                        if blocks[kind] is None:
-                            blocks[kind] = sdata.get(kind)
-                for kind in ('produces', 'upkeep'):
-                    first = blocks[kind]
-                    if isinstance(first, list):
-                        first = next((b for b in first if isinstance(b, dict)), None)
-                    for r_order, (rk, rv) in enumerate(_block_numeric(first, variables)):
-                        w.execute(
-                            """INSERT OR IGNORE INTO job_resource
-                                   (job_key, kind, resource, amount, sort_order)
-                               VALUES (?, ?, ?, ?, ?)""",
-                            (key, kind, rk, rv, r_order))
+            # Base-empire figures: unconditional blocks plus those whose trigger a plain
+            # empire meets, following resources- and job-level inline scripts alike.
+            blocks = {k: _drop_scaled_duplicates(v)
+                      for k, v in _job_resource_blocks(jdef, load_script).items()}
+            # Drone jobs only exist in gestalt empires, so evaluate them as one.
+            state = {_GESTALT_TOKEN} if (category or '').endswith('_drone') else set()
+            res_rows = _eval_job_resources(blocks, state, idx, variables)
+            for kind in ('produces', 'upkeep'):
+                rows = [(r, a) for k, r, a in res_rows if k == kind]
+                if not rows:
+                    rows = _block_numeric(
+                        _fallback_block(blocks[kind], lambda t: _signals(t, idx)), variables)
+                for r_order, (rk, rv) in enumerate(rows):
+                    w.execute(
+                        """INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES (?, ?, ?, ?, ?)""",
+                        (key, kind, rk, rv, r_order))
             # Non-resource effects (Amenities, Crime, Stability, …): base-empire state.
             mod_blocks = _collect_modifier_blocks(jdef, load_script)
             for m_order, (mk, mv) in enumerate(_eval_job_modifiers(mod_blocks, set(), idx, variables)):

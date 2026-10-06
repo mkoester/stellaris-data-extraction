@@ -14,11 +14,11 @@ from .jobs import extract_job_swaps, extract_jobs
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation
 from .misc import extract_dlc, extract_named_colors, extract_planet_classes
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
-from .precursors import extract_deposits, extract_precursor_systems, extract_precursors
+from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
 from .tech import extract_fallen_empire_techs, extract_repeatable_techs
 from .traits import TRAIT_CATEGORIES, extract_trait_categories, extract_trait_modifiers, extract_traits, is_species_trait_file
-from .triggers import _scripted_trigger_index
+from .triggers import _scripted_trigger_index, _signals
 from .values import _as_blocks, _resolve_modifier_float
 from .writer import Writer
 
@@ -289,8 +289,14 @@ Examples:
     # --- deposits (dictionary for home-system planet deposits) ---
     dep_files = sorted(deposits_dir.glob('*.txt')) if deposits_dir.exists() else []
     print(f"\n[9/10] deposits: {len(dep_files)} file(s)", file=progress)
+    # Arc Furnace output is split per smelting (overclock) mode; show the starting one.
+    default_overclocks = _default_overclocks(
+        _merge_dir(install_dir / 'common' / 'megastructures', progress),
+        _merge_dir(install_dir / 'common' / 'megastructure_overclock_types', progress),
+        trait_vars)
     for f, data in _iter_parsed(dep_files, progress):
-        extract_deposits(data, f.name, loc, w, args.verbose)
+        extract_deposits(data, f.name, loc, trait_vars, lambda t: _signals(t, trait_idx),
+                         default_overclocks, w, args.verbose)
 
     # --- precursor home systems (planets, deposits, megastructures) ---
     print(f"\n[10/10] precursor home systems", file=progress)
