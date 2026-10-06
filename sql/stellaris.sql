@@ -266,7 +266,7 @@ CREATE TABLE civic_modifier (
 -- grouped by `group_id`); `value` is the constrained key.
 CREATE TABLE civic_requirement (
     civic_key  TEXT NOT NULL,
-    kind       TEXT NOT NULL,        -- 'authority' | 'ethic' | 'civic' | 'origin'
+    kind       TEXT NOT NULL,        -- 'authority' | 'ethic' | 'civic' | 'origin' | 'ship_type' | 'gameplay'
     operator   TEXT NOT NULL,        -- 'require' | 'forbid' | 'require_any'
     value      TEXT NOT NULL,        -- e.g. 'auth_corporate', 'ethic_materialist'
     group_id   INTEGER NOT NULL DEFAULT 0,  -- ties 'require_any' values from one OR set together
@@ -17900,6 +17900,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmentalist', 'civic', 'forbid', 'civic_corporate_relentless_industrialists', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmentalist', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_slaver_guilds', 'Slaver Guilds', NULL, 'normal', NULL, 1, 0, NULL, 12);
@@ -18330,6 +18333,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_mining_guilds', 'civic', 'forbid', 'civic_tankbound', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_mining_guilds', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_parliamentary_system', 'Parliamentary System', 'Factions will form in your empire shortly after the game starts, but Faction Output is reduced for the first ten years.', 'normal', NULL, 1, 0, NULL, 22);
@@ -18429,6 +18435,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_nationalistic_zeal', 'ethic', 'require_any', 'ethic_fanatic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_nationalistic_zeal', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_functional_architecture', 'Functional Architecture', 'Waives Technology requirements for Zone Basic District Specializations', 'normal', NULL, 1, 0, NULL, 25);
@@ -18994,6 +19003,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_idyllic_bloom', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_anglers', 'Anglers', 'On Ocean Worlds, Agriculture Districts are uncapped.
@@ -19021,6 +19033,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_anglers', 'origin', 'forbid', 'origin_void_dwellers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_anglers', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_anglers', 'Marine Machines', 'On Ocean Worlds, Agriculture Districts are uncapped.
@@ -19045,6 +19060,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_anglers', 'origin', 'forbid', 'origin_void_machines', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_anglers', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_pompous_purists', 'Pompous Purists', 'Can only engage in Diplomacy with other empires if they are the proposer.', 'normal', NULL, 1, 0, NULL, 42);
@@ -19172,6 +19190,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_relentless_industrialists', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_relentless_industrialists', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_scavengers', 'Scavengers', 'Researching Debris grants both Physics Society Engineering Research and a portion of other Resource Costs of the destroyed fleet
@@ -19717,6 +19738,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_sovereign_guardianship', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_sovereign_guardianship', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_guided_sapience', 'Genesis Guides', 'Available Colony Ships: Genesis Ark
@@ -19774,6 +19798,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_guided_sapience', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_guided_sapience', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_toxic_baths_individual_machine', 'Lubrication Tanks', 'Available Buildings: Hyper Lubrication Basin
@@ -19997,6 +20024,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmental_architects', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_galactic_curators', 'Galactic Curators', 'Guaranteed Research Options: Society Research Galactic Archivism
@@ -20680,6 +20710,9 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_world_forgers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_world_forgers', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_world_forgers', 'civic', 'forbid', 'civic_idyllic_bloom', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
@@ -20714,6 +20747,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_pyrolatry', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pyrolatry', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_pyrolatry', 'ethic', 'require_any', 'ethic_spiritualist', 1);
@@ -20787,6 +20823,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_caravan_masters', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_caravan_masters', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_deep_sleep', 'Deep Sleep', 'Initial Pops: +3000
@@ -20800,6 +20839,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_deep_sleep', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_deep_sleep', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_void_reavers', 'Void Reavers', 'Unlocks the Plundering bombardment stance, which allows us to steal resources produced on a planet.
@@ -20849,6 +20891,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_void_reavers', 'origin', 'forbid', 'origin_forever_cruise', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_void_reavers', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_flight_schools', 'Flight Schools', 'Additional Starting Technologies: Engineering Carrier Operations', 'normal', NULL, 1, 0, NULL, 84);
@@ -20892,6 +20937,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hired_guns', 'ethic', 'require_any', 'ethic_militarist', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hired_guns', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_star_seekers', 'Star Seekers', 'Available Situation Approach: Celebration
@@ -20907,6 +20955,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_star_seekers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_star_seekers', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_remnants', 'Fallen Machine Intelligence', 'Unable to construct new ships.', 'special', NULL, 0, 1, 'gfx/interface/icons/governments/civics/civic_machine_remnants.dds', 87);
@@ -21678,6 +21729,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_subsumed_will', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_subsumed_will', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_pooled_knowledge', 'Pooled Knowledge', NULL, 'gestalt', NULL, 1, 0, NULL, 147);
@@ -21918,6 +21972,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_idyllic_bloom', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_idyllic_bloom', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_toxic_baths', 'Permutation Pools', 'Available Buildings: Mutagenic Permutation Pool
@@ -22123,6 +22180,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_void_hive', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_void_hive', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_hyperspace_specialty', 'Hyperspace Synchronicity', 'Physics Hyperlane Breach Points is Guaranteed Research Option.
@@ -22212,6 +22272,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_sovereign_guardianship', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_sovereign_guardianship', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_natural_design', 'Innate Design', 'Available Buildings: Genomic Safeguard Warren', 'gestalt', NULL, 1, 1, NULL, 162);
@@ -22280,6 +22343,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_guided_sapience', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_guided_sapience', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_beastmasters', 'Wild Swarm', 'Additional Starting Technologies: Physics Gravity Snares, Society Artificial Breeding
@@ -22411,6 +22477,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmental_architects_hive', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_hive', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_galactic_curators', 'Caretaker Network', 'Guaranteed Research Options: Society Research Galactic Archivism
@@ -22538,6 +22607,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_aerospace_adaptation', 'ship_type', 'require_any', 'organic', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_aerospace_adaptation', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_bodysnatcher', 'Bodysnatcher', 'Start the game with 1000 assimilated Pops and the ability to Assimilate organics into the hive mind.
@@ -22835,6 +22907,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_world_forgers', 'ship_type', 'forbid', 'organic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_world_forgers', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_galvanic_symbiosis', 'Galvanic Symbiosis', 'Starts with Engineering Research Living Metal already researched.
@@ -22883,6 +22958,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_deep_sleep', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_deep_sleep', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_star_seekers', 'Ever-Seeking Swarm', 'Available Situation Approach: Celebration
@@ -22900,6 +22978,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_star_seekers', 'authority', 'require', 'auth_hive_mind', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_star_seekers', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_servitor', 'Rogue Servitor', 'Start the game with 2K Pop Organic Pops with Bio-Trophy citizenship and Mandatory Pampering living standard
@@ -23145,6 +23226,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_rockbreakers', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_rockbreakers', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_zero_waste_protocols', 'Zero-Waste Protocols', NULL, 'gestalt', NULL, 1, 0, NULL, 188);
@@ -23228,6 +23312,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_ota_updates', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_ota_updates', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_warbots', 'Warbots', NULL, 'gestalt', NULL, 1, 0, NULL, 191);
@@ -23633,6 +23720,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_sovereign_guardianship', 'civic', 'forbid', 'civic_machine_terminator', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_sovereign_guardianship', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_obsessional_directive', 'Obsessional Directive', 'Commodities Consolidation situation, granting rewards upon completion if production targets are met
@@ -23774,6 +23864,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_guided_sapience', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_guided_sapience', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_spybots', 'Spyware Directives', NULL, 'gestalt', NULL, 1, 0, NULL, 210);
@@ -23937,6 +24030,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmental_architects_machine', 'origin', 'forbid', 'origin_machine', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_machine', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_galactic_curators', 'Caretaker Network', 'Guaranteed Research Options: Society Research Galactic Archivism
@@ -24013,6 +24109,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_stalwart_network', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_stalwart_network', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_entropy_drinkers_machine', 'Energy Extractors', 'Enables the following Edicts: Energy Drain, Nexus Charge, Convergence of Will
@@ -24121,6 +24220,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_world_forgers', 'ship_type', 'forbid', 'organic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_world_forgers', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_galvanic_symbiosis', 'Galvanic Retrofitting', 'Starts with Engineering Research Living Metal already researched.
@@ -24166,6 +24268,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_deep_sleep', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_deep_sleep', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_star_seekers', 'Void Surveyor', 'Available Situation Approach: Celebration
@@ -24183,6 +24288,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_star_seekers', 'authority', 'require', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_star_seekers', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_franchising', 'Franchising', 'Ignore Diplomatic Requirements when proposing Subjugation
@@ -24332,6 +24440,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_private_prospectors', 'civic', 'forbid', 'civic_machine_guided_sapience', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_private_prospectors', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_gospel_of_the_masses', 'Gospel of the Masses', 'Pop Spiritualist Pops give additional Trade on all Colonies and Branch Offices
@@ -24628,6 +24739,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_anglers', 'origin', 'forbid', 'origin_void_dwellers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_anglers', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_machine_anglers', 'Maritime Robotics', 'On Ocean Worlds, Agriculture Districts are uncapped.
@@ -24647,6 +24761,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_machine_anglers', 'origin', 'forbid', 'origin_void_machines', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_machine_anglers', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_crafters', 'Mastercraft Inc.', 'Artisans are replaced with Artificers
@@ -24740,6 +24857,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_relentless_industrialists', 'origin', 'forbid', 'origin_life_seeded', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_relentless_industrialists', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_toxic_baths', 'Mutagenic Luxury', 'Available Buildings: Mutagenic Spas
@@ -24904,6 +25024,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_privatized_exploration', 'ship_type', 'forbid', 'organic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_privatized_exploration', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_hyperspace_specialty', 'Hyperspace Trade', 'Physics Hyperlane Breach Points is Guaranteed Research Option.
@@ -25268,6 +25391,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_sovereign_guardianship', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_sovereign_guardianship', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_guided_sapience', 'Astrogenesis Technologies', 'Available Colony Ships: Genesis Ark
@@ -25320,6 +25446,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_guided_sapience', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_guided_sapience', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_toxic_baths_individual_machine', 'Luxury Lubrication Pools', 'Available Buildings: Hyper Lubrication Basin
@@ -25445,6 +25574,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_environmental_architects_megacorp', 'origin', 'forbid', 'origin_void_machines', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_environmental_architects_megacorp', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_galactic_curators', 'Antiquarian Expertise', 'Guaranteed Research Options: Society Research Galactic Archivism
@@ -25921,6 +26053,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_world_forgers', 'ship_type', 'forbid', 'organic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_world_forgers', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_galvanic_symbiosis', 'Biometallic Cartel', 'Starts with Engineering Research Living Metal already researched.
@@ -25978,6 +26113,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_caravan_masters_corporate', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_caravan_masters_corporate', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_deep_sleep', 'Frozen Assets', 'Initial Pops: +3000
@@ -25989,6 +26127,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_deep_sleep', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_deep_sleep', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_flight_schools', 'Star Liner Academy', 'Additional Starting Technologies: Engineering Carrier Operations
@@ -26034,6 +26175,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_hired_guns', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_hired_guns', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_star_seekers', 'Stellar Encounters Ltd', 'Available Situation Approach: Celebration
@@ -26043,6 +26187,9 @@ INSERT OR IGNORE INTO civic_modifier
                        VALUES ('civic_corporate_star_seekers', 'ship_speed_mult', '0.2', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_star_seekers', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO authority
                    (key, name, description, required_dlc, selectable, icon, sort_order)
                VALUES ('auth_democratic', 'Democratic', 'Democratic governments have regular elections where all citizens can vote on who should represent them.', NULL, 1, NULL, 0);
@@ -26247,6 +26394,9 @@ INSERT OR IGNORE INTO origin_modifier
                        VALUES ('origin_default_nomads', 'ship_repair_armor_mult', '0.5', 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_repair_armor_mult', 'Docked Ship Armor Repair Speed', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_default_nomads', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -26259,6 +26409,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_sacred_path', 'ethic', 'require_any', 'ethic_fanatic_spiritualist', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_sacred_path', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -26291,6 +26444,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_heirs_of_the_khan', 'ethic', 'require_any', 'ethic_fanatic_militarist', 2);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_heirs_of_the_khan', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -26334,6 +26490,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_forever_cruise', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_forever_cruise', 'gameplay', 'require', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -26379,6 +26538,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_red_giant', 'ship_type', 'forbid', 'organic', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -26435,6 +26597,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_cosmic_dawn', 'ship_type', 'forbid', 'organic', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -26468,6 +26633,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_shroud_forged', 'civic', 'forbid', 'civic_machine_chosen', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shroud_forged', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -26522,6 +26690,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_mindwardens', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mindwardens', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -26547,6 +26718,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_endbringers', 'civic', 'forbid', 'civic_augmentation_bazaars', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_endbringers', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -26627,6 +26801,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_starlit_citadel', 'ship_type', 'forbid', 'organic', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_starlit_citadel', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -26685,6 +26862,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_wilderness', 'ship_type', 'require_any', 'organic', 2);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -26970,6 +27150,9 @@ Ruler Traits: Luminary', 'Galactic Paragons', 1, NULL, NULL, NULL, 0, 'gfx/inter
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_legendary_leader', 'authority', 'require', 'auth_dictatorial', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_legendary_leader', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27063,6 +27246,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_payback', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27144,6 +27330,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27199,6 +27388,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_fear_of_the_dark', 'ship_type', 'forbid', 'organic', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fear_of_the_dark', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27335,6 +27527,9 @@ INSERT OR IGNORE INTO origin_modifier
                        VALUES ('origin_subterranean', 'planet_non_artificial_max_districts_add', '2.0', 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_non_artificial_max_districts_add', 'Max Districts (Non-artificial planets only)', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_subterranean', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27377,6 +27572,9 @@ INSERT OR IGNORE INTO origin_modifier
                        VALUES ('origin_subterranean_machines', 'planet_non_artificial_max_districts_add', '2.0', 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_non_artificial_max_districts_add', 'Max Districts (Non-artificial planets only)', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_subterranean_machines', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27397,6 +27595,9 @@ INSERT OR IGNORE INTO origin_modifier
                        VALUES ('origin_star_slingshot', 'catapult_spread_mult', '0.5', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('catapult_spread_mult', 'Catapult Accuracy', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_star_slingshot', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27445,6 +27646,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_imperial_vassal', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_imperial_vassal', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27464,6 +27668,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_here_be_dragons', 'civic', 'forbid', 'civic_hive_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_here_be_dragons', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27490,6 +27697,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_ocean_paradise', 'civic', 'forbid', 'civic_corporate_world_forgers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_ocean_paradise', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27501,6 +27711,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_ocean_machines', 'civic', 'forbid', 'civic_machine_world_forgers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_ocean_machines', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27553,6 +27766,9 @@ INSERT OR REPLACE INTO origin
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_remnants', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_remnants', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27574,6 +27790,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_shattered_ring', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shattered_ring', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27630,6 +27849,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_void_dwellers', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_dwellers', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27680,6 +27902,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_void_machines', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_machines', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27706,6 +27931,9 @@ INSERT OR REPLACE INTO origin
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_shoulders_of_giants', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shoulders_of_giants', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27779,6 +28007,9 @@ INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
                VALUES ('origin_doomsday', 'Doomsday', NULL, 'Federations', 1, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origins_doomsday.dds', 47);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_doomsday', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27813,6 +28044,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_lithoid', 'ship_type', 'forbid', 'organic', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_lithoid', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27866,6 +28100,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_corporate_world_forgers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27886,6 +28123,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_post_apocalyptic', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27906,6 +28146,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_post_apocalyptic_machines', 'civic', 'forbid', 'civic_corporate_machine_anglers', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic_machines', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27947,6 +28190,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_machine', 'civic', 'forbid', 'civic_machine_astromining_drones', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_machine', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -28058,6 +28304,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_unplugged', 'ship_type', 'forbid', 'organic', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -28146,6 +28395,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_tree_of_life', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_tree_of_life', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -28174,6 +28426,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_fruitful', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fruitful', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -28188,6 +28443,9 @@ INSERT OR IGNORE INTO origin_modifier
                        VALUES ('origin_galactic_doorstep', 'megastructure_build_speed_mult', '0.05', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('megastructure_build_speed_mult', 'Megastructure Build Speed', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_galactic_doorstep', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
