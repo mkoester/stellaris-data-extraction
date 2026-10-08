@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from extractor.clausewitz import Parser, parse_file, tokenize
+from extractor.clausewitz import Cmp, Parser, parse_file, tokenize
 
 
 class TestTokenize(unittest.TestCase):
@@ -41,6 +41,13 @@ class TestParser(unittest.TestCase):
         # Clausewitz allows `key { }` at top level (e.g. named_colors)
         data = self.parse('colors { red = { 1 0 0 } }')
         self.assertEqual(data['colors'], {'red': ['1', '0', '0']})
+
+    def test_comparison_kept_beside_assignments(self):
+        # Previously the comparison turned the block into a token list, dropping fail_text.
+        data = self.parse('t = { fail_text = "x" num_ascension_perks > 2 years_passed >= 5 }')
+        self.assertEqual(data['t'], {'fail_text': 'x',
+                                     'num_ascension_perks': Cmp('>', '2'),
+                                     'years_passed': Cmp('>=', '5')})
 
     def test_quotes_stripped_from_values(self):
         data = self.parse('name = "Great Khan"')

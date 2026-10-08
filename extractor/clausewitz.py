@@ -1,7 +1,24 @@
 """Tokenizer + recursive parser for Clausewitz script files -> nested dicts/lists."""
 
 from pathlib import Path
+from typing import NamedTuple
 import re
+
+
+class Cmp(NamedTuple):
+    """A comparison entry, e.g. `num_ascension_perks > 2` → Cmp('>', '2')."""
+    op: str
+    value: str
+
+
+class IfBlock(dict):
+    """An `if = { … }` block. `chain` holds the `else_if`/`else` blocks that directly
+    follow it, in order — duplicate-key promotion would otherwise lose which `else`
+    belongs to which `if`. A plain dict to every other reader."""
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.chain: list[tuple[str, dict]] = []
 
 
 # ---------------------------------------------------------------------------
@@ -38,6 +55,7 @@ class Parser:
         result = {}
         items_list = []
         is_list = None  # determined on first element
+        open_if: IfBlock | None = None  # the if-chain the next else_if/else continues
 
         while self.peek() not in (None, '}'):
             key = self.consume()
@@ -48,10 +66,23 @@ class Parser:
                 self.parse_block()
                 if self.peek() == '}':
                     self.consume()
-            elif self.peek() == '=':
-                self.consume()  # skip '='
+            elif self.peek() in ('=', '<', '>', '!'):
+                op = self.consume()
+                if op != '=' and self.peek() == '=':
+                    op += self.consume()  # >=, <=, !=
                 is_list = False
                 value = self.parse_value()
+                if op != '=':
+                    value = Cmp(op, value)
+                if key == 'if' and isinstance(value, dict):
+                    value = open_if = IfBlock(value)
+                elif key in ('else_if', 'else') and open_if is not None \
+                        and isinstance(value, dict):
+                    open_if.chain.append((key, value))
+                    if key == 'else':
+                        open_if = None
+                else:
+                    open_if = None
                 # Duplicate keys -> promote to list
                 if key in result:
                     if not isinstance(result[key], list):

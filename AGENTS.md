@@ -46,6 +46,10 @@ The game's script format has quirks that produce silently wrong trees rather tha
   was a bug fix: previously the stray `}` terminated the **wrong outer block**, making later keys
   unreachable — which reads as the game not defining them.
 - **`@variable` references resolve per file**, from that file's top-level `@key = value` entries.
+- **Comparisons** (`num_ascension_perks > 2`) parse as `Cmp(op, value)`. This was a bug fix: a
+  comparison used to turn its block into a token list, silently dropping the block's other keys.
+- **`if` values are `IfBlock`s** whose `.chain` keeps their own `else_if`/`else` — duplicate-key
+  promotion loses that pairing once a block has several `if`s.
 
 ## Conventions
 
