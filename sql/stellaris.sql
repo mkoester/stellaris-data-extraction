@@ -930,7 +930,7 @@ CREATE TABLE tradition (
     name           TEXT,
     description    TEXT,                   -- flavour text (loc <key>_delayed)
     possible_json  TEXT,
-    unlocks_agenda TEXT,                   -- localised agenda name
+    unlocks_agenda TEXT,                   -- council_agenda.key (base variant)
     tooltip        TEXT,                   -- custom_tooltip text (effects not expressed as modifiers)
     sort_order     INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (category_key) REFERENCES tradition_category(key)
@@ -968,8 +968,39 @@ CREATE TABLE tradition_swap (
     tooltip         TEXT,
     sort_order      INTEGER NOT NULL DEFAULT 0
 );
--- Modifiers of traditions, ascension perks and swaps (owner_key = a tradition/perk key
--- or a tradition_swap.id).
+-- Edicts and council agendas; unlocked_by_json lists the traditions/perks their potential/allow
+-- ask for (has_(active_)tradition / has_ascension_perk, scripted triggers expanded).
+DROP TABLE IF EXISTS edict;
+DROP TABLE IF EXISTS council_agenda;
+CREATE TABLE edict (
+    key            TEXT PRIMARY KEY,       -- e.g. "map_the_stars"
+    name           TEXT,
+    description    TEXT,
+    category       TEXT,                   -- resources.category: edicts / campaigns / rare_edicts …
+    length         INTEGER,                -- days; -1 = perpetual (until cancelled)
+    cost_json      TEXT,                   -- {"cost":{"unity":10},"upkeep":{"unity":10}} (before multipliers)
+    potential_json TEXT,
+    allow_json     TEXT,
+    unlocked_by_json TEXT,                 -- ["tr_…","ap_…"]: traditions/perks that unlock it
+    tooltip        TEXT,
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+-- Modifiers: owner_key = key (while enacted) and "<key>#finish" (finish_modifier, a static
+-- modifier lasting finish_days after launch) in tradition_modifier.
+CREATE TABLE council_agenda (
+    key            TEXT PRIMARY KEY,       -- e.g. "agenda_superior_colonies(_nomad)"
+    name           TEXT,
+    description    TEXT,
+    cost           REAL,                   -- agenda progress needed to launch
+    finish_days    INTEGER,                -- finish_modifier duration
+    potential_json TEXT,                   -- shown at all (empire-type variants split here)
+    allow_json     TEXT,                   -- selectable
+    unlocked_by_json TEXT,                 -- ["tr_…","ap_…"]: traditions/perks that unlock it
+    effect_tooltip TEXT,                   -- launch effect text
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+-- Modifiers of traditions, ascension perks, swaps, edicts and agendas (owner_key = their
+-- key, a tradition_swap.id, or "<agenda>#finish").
 -- potential_json is set for triggered_modifier blocks.
 CREATE TABLE tradition_modifier (
     owner_key      TEXT NOT NULL,
@@ -13115,7 +13146,7 @@ INSERT OR IGNORE INTO precursor_building_modifier
                     condition, sort_order)
                VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_sr_zro_upkeep_add', '0.5', NULL, NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_biologists_sr_zro_upkeep_add', 'Zro Upkeep per 100', 0);
+           VALUES ('planet_biologists_sr_zro_upkeep_add', 'Zro Upkeep per 100 Biologists', 0);
 INSERT OR IGNORE INTO precursor_building_modifier
                    (building_key, scope, modifier_key, modifier_value, ae_value,
                     condition, sort_order)
@@ -14742,7 +14773,7 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_crystal_kraken_body', 'planet_miners_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_miners_produces_mult', 'Resources Produced from', 1);
+           VALUES ('planet_miners_produces_mult', 'Resources Produced from Miners', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_crystal_kraken_body_bombed', 'Shattered Crystalline Remains', 'deposit_cat_rare', 0, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
@@ -15284,7 +15315,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_industrial_sector', 'planet_technician_volatile_motes_produces_add', '0.25');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_technician_volatile_motes_produces_add', 'Volatile Motes Produced per 100 Technician', 1);
+           VALUES ('planet_technician_volatile_motes_produces_add', 'Volatile Motes Produced per 100 Technicians', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_industrial_sector', 'district_farming_max_add', '6.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -15700,7 +15731,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_bluelotus', 'planet_metallurgists_energy_upkeep_add', '1.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_metallurgists_energy_upkeep_add', 'Energy Upkeep per 100', 0);
+           VALUES ('planet_metallurgists_energy_upkeep_add', 'Energy Upkeep per 100 Metallurgists', 0);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_bluelotus2', 'Blue Lotus Facility', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -15710,7 +15741,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_bluelotus2', 'planet_metallurgists_energy_upkeep_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_metallurgists_energy_upkeep_add', 'Energy Upkeep per 100', 0);
+           VALUES ('planet_metallurgists_energy_upkeep_add', 'Energy Upkeep per 100 Metallurgists', 0);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_ruin_bluelotus', 'Blue Lotus Ruin', 'deposit_cat_rare', 0, NULL, '07_federations_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -15978,7 +16009,7 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, sou
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_pulsar_scarred', 'planet_technician_energy_produces_add', '2.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_technician_energy_produces_add', 'Energy Produced per 100 Technician', 1);
+           VALUES ('planet_technician_energy_produces_add', 'Energy Produced per 100 Technicians', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_ancient_facilities', 'Ancient Facilities', 'deposit_cat_rare', 0, NULL, '10_paragon_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -16868,11 +16899,11 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_geothermal_hotspot', 'planet_technician_physics_research_produces_add', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_technician_physics_research_produces_add', 'Physics Research Produced per 100 Technician', 1);
+           VALUES ('planet_technician_physics_research_produces_add', 'Physics Research Produced per 100 Technicians', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_geothermal_hotspot', 'planet_technician_energy_produces_mult', '0.15');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_technician_energy_produces_mult', 'Energy Produced from Technician', 1);
+           VALUES ('planet_technician_energy_produces_mult', 'Energy Produced from Technicians', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_ancient_cloaking_array', 'Ancient Cloaking Array', 'deposit_cat_rare', 0, NULL, '15_strange_worlds_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -17064,7 +17095,7 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_stormfall_electric', 'planet_technician_produces_mult', '0.05');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_technician_produces_mult', 'Resources Produced from', 1);
+           VALUES ('planet_technician_produces_mult', 'Resources Produced from Technicians', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_stormfall_magnetic', 'Mag-Forges', 'deposit_cat_rare', 0, NULL, '17_nomads_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -17072,7 +17103,7 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_stormfall_magnetic', 'planet_metallurgists_produces_mult', '0.05');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_metallurgists_produces_mult', 'Resources Produced from', 1);
+           VALUES ('planet_metallurgists_produces_mult', 'Resources Produced from Metallurgists', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_stormfall_gravity', 'Chronophase Observatory', 'deposit_cat_rare', 0, NULL, '17_nomads_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -17080,7 +17111,7 @@ INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_stormfall_gravity', 'planet_physicists_produces_mult', '0.05');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_physicists_produces_mult', 'Resources Produced from', 1);
+           VALUES ('planet_physicists_produces_mult', 'Resources Produced from Physicists', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
                VALUES ('d_relic_arkship', 'Akashic Whisperings', 'deposit_cat_rare', 0, NULL, '17_nomads_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -17638,7 +17669,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_corvee_system', 'civic', 'forbid', 'civic_free_haven', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_imperial_cult', 'Imperial Cult', 'Ruler''s Home Planet has additional Jobs', 'normal', NULL, 1, 0, NULL, 1);
+               VALUES ('civic_imperial_cult', 'Imperial Cult', 'Ruler''s Home Planet has additional Priest Jobs', 'normal', NULL, 1, 0, NULL, 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_imperial_cult', 'country_edict_fund_add', '100.0', 0);
@@ -18475,7 +18506,7 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_parliamentary_system', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES ('civic_efficient_bureaucracy', 'Efficient Bureaucracy', 'Bureaucrats and provide Edict Fund scaling with their Unity production.', 'normal', NULL, 1, 0, NULL, 23);
+               VALUES ('civic_efficient_bureaucracy', 'Efficient Bureaucracy', 'Bureaucrats and Priests provide Edict Fund scaling with their Unity production.', 'normal', NULL, 1, 0, NULL, 23);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_efficient_bureaucracy', 'planet_bureaucrats_upkeep_mult', '-0.2', 0);
@@ -19691,7 +19722,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_natural_design', 'planet_doctors_society_research_produces_add', '0.5', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_doctors_society_research_produces_add', 'Society Research Produced per 100 Doctors', 1);
+           VALUES ('planet_doctors_society_research_produces_add', 'Society Research Produced per 100 Medical Workers', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_natural_design', 'authority', 'forbid', 'auth_corporate', 0);
@@ -20125,7 +20156,7 @@ INSERT OR REPLACE INTO civic
 Initial Specimens: One Common of each Collection Category
 Gain Unity each time you find a Specimen or complete an Archaeological Site
 Purchases from the Curator Enclave: -25%
-Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output
+Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Researcher Job Output
 Replaces Entertainer Jobs with Museum Curator Jobs', 'normal', NULL, 1, 0, NULL, 66);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -22578,7 +22609,7 @@ INSERT OR REPLACE INTO civic
 Initial Specimens: One Common of each Collection Category
 Gain Unity each time you find a Specimen or complete an Archaeological Site
 Purchases from the Curator Enclave: -25%
-Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output', 'gestalt', NULL, 1, 1, NULL, 167);
+Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Researcher Job Output', 'gestalt', NULL, 1, 1, NULL, 167);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_galactic_curators', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -24131,7 +24162,7 @@ INSERT OR REPLACE INTO civic
 Initial Specimens: One Common of each Collection Category
 Gain Unity each time you find a Specimen or complete an Archaeological Site
 Purchases from the Curator Enclave: -25%
-Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output', 'gestalt', NULL, 1, 1, NULL, 215);
+Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Researcher Job Output', 'gestalt', NULL, 1, 1, NULL, 215);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_galactic_curators', 'councilor_gestalt_cognitive_exp_gain', '0.25', 0);
@@ -25254,7 +25285,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_healthcare_corporate', 'planet_doctors_trade_produces_add', '4.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_doctors_trade_produces_add', 'Trade Produced per 100 Doctors', 1);
+           VALUES ('planet_doctors_trade_produces_add', 'Trade Produced per 100 Medical Workers', 1);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_private_healthcare_corporate', 'add_attunement_the_instrument_of_desire', '60.0', 2);
@@ -25675,7 +25706,7 @@ INSERT OR REPLACE INTO civic
 Initial Specimens: One Common of each Collection Category
 Gain Unity each time you find a Specimen or complete an Archaeological Site
 Purchases from the Curator Enclave: -25%
-Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Job Output
+Enables the Decentralized Research Edict, increasing Research Station Output but decreasing Researcher Job Output
 Replaces Entertainer Jobs with Museum Curator Jobs
 The Public Relations Firm Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, 264);
 INSERT OR IGNORE INTO civic_modifier
@@ -39664,7 +39695,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_adaptability', 'Adaptability', '{"leaf":"is_machine_empire","value":"no"}', NULL, 'tr_adaptability_adopt', 'tr_adaptability_finish', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_adaptability_adopt', 'tradition_adaptability', 'adopt', 'Adaptability Traditions', NULL, NULL, 'Conquer Nature', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_adaptability_adopt', 'tradition_adaptability', 'adopt', 'Adaptability Traditions', NULL, NULL, 'agenda_conquer_nature', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_adaptability_adopt', 'pop_housing_usage_mult', '-0.1', '{"leaf":"is_wilderness_empire","value":"no"}', 0);
@@ -39841,7 +39872,7 @@ INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_aptitude', '{"leaf":"is_machine_empire","value":"yes"}', 'High leadership unit proficiency increases Empire greatness potential.', 2);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_aptitude_adopt', 'tradition_aptitude', 'adopt', 'Aptitude Traditions', NULL, NULL, 'Leadership Conditioning', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_aptitude_adopt', 'tradition_aptitude', 'adopt', 'Aptitude Traditions', NULL, NULL, 'agenda_leadership_conditioning', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_aptitude_adopt', 'leader_trait_selection_options_add', '1.0', NULL, 0);
@@ -39932,7 +39963,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_archivism', 'Archivism', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 'Grand Archive', 'tr_archivism_adopt', 'tr_archivism_finish', 2);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_archivism_adopt', 'tradition_archivism', 'adopt', 'Archivism Traditions', NULL, NULL, 'Astute Observation', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_archivism_adopt', 'tradition_archivism', 'adopt', 'Archivism Traditions', NULL, NULL, 'agenda_astute_observation', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_archivism_adopt', 'country_exhibit_unlocking_cost_mult', '-0.5', NULL, 0);
@@ -40032,7 +40063,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_mercantile', 'Commerce', '{"leaf":"is_regular_empire","value":"yes"}', NULL, 'tr_mercantile_adopt', 'tr_mercantile_finish', 3);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_mercantile_adopt', 'tradition_mercantile', 'adopt', 'Commerce Traditions', NULL, NULL, 'Open Markets', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_mercantile_adopt', 'tradition_mercantile', 'adopt', 'Commerce Traditions', NULL, NULL, 'agenda_open_markets', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_mercantile_adopt', 'planet_traders_upkeep_mult', '-0.2', NULL, 0);
@@ -40123,7 +40154,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_diplomacy', 'Diplomacy', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_inwards_perfection"},{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"},{"leaf":"has_origin","value":"origin_endbringers"}]}]}', NULL, 'tr_diplomacy_adopt', 'tr_diplomacy_finish', 4);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_diplomacy_adopt', 'tradition_diplomacy', 'adopt', 'Diplomacy Traditions', NULL, NULL, 'Build Relations', 'Unlocks Edict: Diplomatic Grants', 0);
+                    tooltip, sort_order) VALUES ('tr_diplomacy_adopt', 'tradition_diplomacy', 'adopt', 'Diplomacy Traditions', NULL, NULL, 'agenda_build_relations', 'Unlocks Edict: Diplomatic Grants', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_diplomacy_adopt', 'diplomacy_influence_upkeep_mult', '-0.5', NULL, 0);
@@ -40232,7 +40263,7 @@ INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_discovery', '{"leaf":"is_machine_empire","value":"yes"}', 'Many of our long range contingency calculations break down due to insufficient data. Therefore, we must know everything.', 2);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_discovery_adopt', 'tradition_discovery', 'adopt', 'Discovery Traditions', NULL, NULL, 'Chart the Unknown', 'Unlocks Edict: Map the Stars
+                    tooltip, sort_order) VALUES ('tr_discovery_adopt', 'tradition_discovery', 'adopt', 'Discovery Traditions', NULL, NULL, 'agenda_chart_the_unknown', 'Unlocks Edict: Map the Stars
 Anomaly Research Speed increased by +20%.', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -40342,8 +40373,8 @@ INSERT INTO tradition_swap
                     weight, tooltip, sort_order) VALUES ('tr_discovery_polytechnic_education#1', 'tr_discovery_polytechnic_education', 'tr_discovery_polytechnic_education_hive', 'Hyperadaptive Evolution', 'Reducing the physical frame of our thinker to little more than a minimal life support system for their overgrown brains has proven very efficient. They are fed and cared for by other, lower order , and can focus exclusively on perfecting their area of study.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 1);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_discovery_faith_in_science', 'tradition_discovery', 'normal', 'Entertainment Labs', 'From public spectacles to household conveniences, scientific progress is measured not only in publications but also in the comfort and enrichment of everyday life.', '{"leaf":"has_tradition","value":"tr_discovery_polytechnic_education"}', NULL, 'Amenities Produced per 100 : +200
-Jobs from Zone District Specializations: +20%', 5);
+                    tooltip, sort_order) VALUES ('tr_discovery_faith_in_science', 'tradition_discovery', 'normal', 'Entertainment Labs', 'From public spectacles to household conveniences, scientific progress is measured not only in publications but also in the comfort and enrichment of everyday life.', '{"leaf":"has_tradition","value":"tr_discovery_polytechnic_education"}', NULL, 'Amenities Produced per 100 Researchers: +200
+Researchers Jobs from Zone District Specializations: +20%', 5);
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_discovery_faith_in_science', 'tr_discovery_polytechnic_education');
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
@@ -40379,12 +40410,12 @@ INSERT INTO tradition_category
                VALUES ('tradition_domestication', 'Domestication', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 'Grand Archive', 'tr_domestication_adopt', 'tr_domestication_finish', 6);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_domestication_adopt', 'tradition_domestication', 'adopt', 'Domestication Traditions', NULL, '{"leaf":"has_technology","value":"tech_alien_cloning"}', 'Galactic Trawling', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_domestication_adopt', 'tradition_domestication', 'adopt', 'Domestication Traditions', NULL, '{"leaf":"has_technology","value":"tech_alien_cloning"}', 'agenda_galactic_trawling', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_domestication_adopt', 'planet_farmers_produces_mult', '0.2', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_farmers_produces_mult', 'Resources Produced from', 1);
+           VALUES ('planet_farmers_produces_mult', 'Resources Produced from Farmers', 1);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_domestication_adopt', 'starbase_shipyard_space_fauna_build_cost_mult', '-0.1', NULL, 1);
@@ -40545,7 +40576,7 @@ INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_domination', '{"leaf":"is_machine_empire","value":"yes"}', 'We seek harmonious functionality throughout the entire galaxy. Other stellar beings resist this due to inefficient personal whims. We will remove their disorder like a malfunctioning part.', 2);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_domination_adopt', 'tradition_domination', 'adopt', 'Domination Traditions', NULL, NULL, 'Civil Exclusion', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_domination_adopt', 'tradition_domination', 'adopt', 'Domination Traditions', NULL, NULL, 'agenda_civil_exclusion', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_domination_adopt', 'planet_jobs_worker_produces_mult', '0.05', NULL, 0);
@@ -40751,7 +40782,7 @@ INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_enmity', '{"leaf":"is_machine_empire","value":"yes"}', 'The develops faster when tested by competent competition.', 1);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_enmity_adopt', 'tradition_enmity', 'adopt', 'Enmity Traditions', NULL, NULL, 'Second Strike', 'Pop Growth per neighboring Rival: +3%
+                    tooltip, sort_order) VALUES ('tr_enmity_adopt', 'tradition_enmity', 'adopt', 'Enmity Traditions', NULL, NULL, 'agenda_second_strike', 'Pop Growth per neighboring Rival: +3%
 Pop Assembly per neighboring Rival: +3%', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -40886,7 +40917,7 @@ INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_expansion', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', 'By building new Arkships and expanding our Waylines our civilization shall roam the stars forever.', 4);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_expansion_adopt', 'tradition_expansion', 'adopt', 'Expansion Traditions', NULL, NULL, 'Superior Infrastructure', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_expansion_adopt', 'tradition_expansion', 'adopt', 'Expansion Traditions', NULL, NULL, 'agenda_superior_colonies', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_expansion_adopt', 'planet_colony_development_speed_mult', '0.25', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 0);
@@ -41119,7 +41150,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_unyielding', 'Fortification', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"op":"or","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"host_has_dlc","value":"Overlord"}]}]}', NULL, 'tr_unyielding_adopt', 'tr_unyielding_finish', 10);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_unyielding_adopt', 'tradition_unyielding', 'adopt', 'Fortification Traditions', NULL, NULL, 'Impenetrable Border', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_unyielding_adopt', 'tradition_unyielding', 'adopt', 'Fortification Traditions', NULL, NULL, 'agenda_impenetrable_border', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_unyielding_adopt', 'country_starbase_capacity_add', '2.0', NULL, 0);
@@ -41344,7 +41375,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_harmony', 'Harmony', '{"leaf":"is_gestalt","value":"no"}', NULL, 'tr_harmony_adopt', 'tr_harmony_finish', 11);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_harmony_adopt', 'tradition_harmony', 'adopt', 'Harmony Traditions', NULL, NULL, 'Inner Stability', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_harmony_adopt', 'tradition_harmony', 'adopt', 'Harmony Traditions', NULL, NULL, 'agenda_inner_stability', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_harmony_adopt', 'planet_pops_upkeep_mult', '-0.1', NULL, 0);
@@ -41463,7 +41494,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_logistics', 'Logistics', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'tr_logistics_adopt', 'tr_logistics_finish', 12);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_logistics_adopt', 'tradition_logistics', 'adopt', 'Logistics Traditions', NULL, NULL, 'Open Markets', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_logistics_adopt', 'tradition_logistics', 'adopt', 'Logistics Traditions', NULL, NULL, 'agenda_open_markets', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_logistics_adopt', 'pop_logistics_drone_bonus_workforce_mult', '0.05', NULL, 0);
@@ -41528,7 +41559,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_politics', 'Politics', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"is_homicidal","value":"no"}]}', 'Federations', 'tr_politics_adopt', 'tr_politics_finish', 13);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_politics_adopt', 'tradition_politics', 'adopt', 'Politics Traditions', NULL, '{"leaf":"is_galactic_community_formed","value":"yes"}', 'Pioneer Politics', '+1 Envoy, Officials assigned to the now produce 0.1 Influence per Skill Level.', 0);
+                    tooltip, sort_order) VALUES ('tr_politics_adopt', 'tradition_politics', 'adopt', 'Politics Traditions', NULL, '{"leaf":"is_galactic_community_formed","value":"yes"}', 'agenda_pioneer_politics', '+1 Envoy, Officials assigned to the now produce 0.1 Influence per Skill Level.', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_politics_adopt', 'envoys_add', '1.0', NULL, 0);
@@ -41593,7 +41624,7 @@ INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_prosperity', '{"leaf":"is_machine_empire","value":"yes"}', 'Individual units all eventually cease functioning. Only numbers can provide the redundancy required to ensure continued existence. To build those numbers, we must have resources.', 2);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_prosperity_adopt', 'tradition_prosperity', 'adopt', 'Prosperity Traditions', NULL, NULL, 'Favored Society', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_prosperity_adopt', 'tradition_prosperity', 'adopt', 'Prosperity Traditions', NULL, NULL, 'agenda_favored_society', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_prosperity_adopt', 'station_gatherers_produces_mult', '0.2', NULL, 0);
@@ -41814,7 +41845,7 @@ INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_statecraft', '{"leaf":"is_machine_empire","value":"yes"}', 'The Assembly of Consciousness defines our empire.', 2);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_statecraft_adopt', 'tradition_statecraft', 'adopt', 'Statecraft Traditions', NULL, NULL, 'Departmental Efficiency', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_statecraft_adopt', 'tradition_statecraft', 'adopt', 'Statecraft Traditions', NULL, NULL, 'agenda_departmental_efficiency', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_statecraft_adopt', 'country_edict_fund_add', '50.0', NULL, 0);
@@ -41870,7 +41901,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_subterfuge', 'Subterfuge', '{"leaf":"host_has_dlc","value":"Nemesis"}', 'Nemesis', 'tr_subterfuge_adopt', 'tr_subterfuge_finish', 16);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_subterfuge_adopt', 'tradition_subterfuge', 'adopt', 'Subterfuge Traditions', NULL, NULL, 'Uncover Secrets', 'Subterfuge-related technologies appear at 5 times the normal rate.', 0);
+                    tooltip, sort_order) VALUES ('tr_subterfuge_adopt', 'tradition_subterfuge', 'adopt', 'Subterfuge Traditions', NULL, NULL, 'agenda_uncover_secrets', 'Subterfuge-related technologies appear at 5 times the normal rate.', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_subterfuge_adopt', 'espionage_operation_cost_mult', '-0.25', NULL, 0);
@@ -42010,7 +42041,7 @@ INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_supremacy', '{"leaf":"is_machine_empire","value":"yes"}', 'All of our theoretical models invariably collapse due to the unknown variables presented by other empires. Since our models cannot be further improved, the unknown variables must be eliminated.', 2);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_supremacy_adopt', 'tradition_supremacy', 'adopt', 'Supremacy Traditions', NULL, NULL, 'Military Buildup', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_supremacy_adopt', 'tradition_supremacy', 'adopt', 'Supremacy Traditions', NULL, NULL, 'agenda_military_buildup', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_supremacy_adopt', 'country_naval_cap_add', '20.0', NULL, 0);
@@ -42257,12 +42288,12 @@ INSERT INTO tradition_category
                VALUES ('tradition_versatility', 'Versatility', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'tr_versatility_adopt', 'tr_versatility_finish', 19);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_versatility_adopt', 'tradition_versatility', 'adopt', 'Versatility Traditions', NULL, NULL, 'Self Maintenance', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_versatility_adopt', 'tradition_versatility', 'adopt', 'Versatility Traditions', NULL, NULL, 'agenda_self_maintenance', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_versatility_adopt', 'planet_pop_assemblers_upkeep_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_pop_assemblers_upkeep_mult', 'Upkeep for Pop Assemblers', 0);
+           VALUES ('planet_pop_assemblers_upkeep_mult', 'Upkeep for Roboticists', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_versatility_universal_compatibility', 'tradition_versatility', 'normal', 'Universal Compatibility', 'A deeper analysis into the myriad stimuli and psychological factors that govern the behavior of organics and other machine intelligences will decrease diplomatic friction.', NULL, NULL, NULL, 1);
@@ -42316,7 +42347,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_versatility_finish', 'planet_pop_assemblers_energy_upkeep_add', '1.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_pop_assemblers_energy_upkeep_add', 'Energy Upkeep per 100', 0);
+           VALUES ('planet_pop_assemblers_energy_upkeep_add', 'Energy Upkeep per 100 Roboticists', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_versatility_finish', 'planet_pop_assembly_mult', '0.1', NULL, 1);
@@ -42346,7 +42377,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_cloning', 'Cloning', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', 'BioGenesis', 'tr_cloning_adopt', 'tr_cloning_finish', 20);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_cloning_adopt', 'tradition_cloning', 'adopt', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"cloning_tradition_unlocked"}', 'Replication Initiative', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep.', 0);
+                    tooltip, sort_order) VALUES ('tr_cloning_adopt', 'tradition_cloning', 'adopt', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"cloning_tradition_unlocked"}', 'agenda_cloning_replication', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep.', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_cloning_adopt#0', 'tr_cloning_adopt', 'tr_cloning_adopt_clone_army', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep., Pop Clone Soldier Pops sustained by Clone Vats: +500', 0);
@@ -42432,7 +42463,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_cybernetics', 'Cybernetics', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', NULL, 'tr_cybernetics_adopt', 'tr_cybernetics_finish', 21);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_cybernetics_adopt', 'tradition_cybernetics', 'adopt', 'Cybernetic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"leaf":"has_origin","value":"origin_unplugged"},{"op":"and","args":[{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"op":"or","args":[{"leaf":"has_country_flag","value":"is_cyberized"},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"is_cyberized"},{"leaf":"has_country_flag","value":"is_decyberized"}]}]}]}]}]}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_unplugged"}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_unplugged"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]}]}]}]}', 'Cybernetic Advantage', 'Starts a Situation to grant the founding species the Cybernetic trait', 0);
+                    tooltip, sort_order) VALUES ('tr_cybernetics_adopt', 'tradition_cybernetics', 'adopt', 'Cybernetic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"leaf":"has_origin","value":"origin_unplugged"},{"op":"and","args":[{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"op":"or","args":[{"leaf":"has_country_flag","value":"is_cyberized"},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"is_cyberized"},{"leaf":"has_country_flag","value":"is_decyberized"}]}]}]}]}]}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_unplugged"}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_unplugged"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]}]}]}]}', 'agenda_cybernetic_advantage', 'Starts a Situation to grant the founding species the Cybernetic trait', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_cybernetics_adopt#0', 'tr_cybernetics_adopt', 'tr_cybernetics_adopt_utopia', 'Cybernetic Traditions', NULL, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"is_hive_empire","value":"no"}]}', 0, '1.0', 'Unlocks a Special Project to grant all species the Cybernetic trait.', 0);
@@ -42467,7 +42498,7 @@ INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_cybernetics_metabolic_reprocessing', 'tradition_cybernetics', 'normal', 'Metabolic Reprocessing', 'Reprocessing metabolic waste into digestible chemical components reduces the required chemical upkeep for our population.', '{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"}', NULL, 'Cyborg Upkeep: -10%
 Monthly Mechanical Pop Assembly from Augmentor Jobs: +0.5, Alloys Upkeep per 100 Augmentors: +0.35
-Monthly Organic Pop Growth from Roboticist Jobs: +0.5, Alloys Upkeep per 100 : +0.35', 2);
+Monthly Organic Pop Growth from Roboticist Jobs: +0.5, Alloys Upkeep per 100 Roboticists: +0.35', 2);
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cybernetics_metabolic_reprocessing', 'tr_cybernetics_transubstantiation_synthesis');
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -42490,7 +42521,7 @@ Situation Speed: +5%
 After Cyberization
 Cyborg Upkeep: -10%
 Monthly Mechanical Pop Assembly from Augmentor Jobs: +0.5, Alloys Upkeep per 100 Augmentors: +0.35
-Monthly Organic Pop Growth from Roboticist Jobs: +0.5, Alloys Upkeep per 100 : +0.35', 1);
+Monthly Organic Pop Growth from Roboticist Jobs: +0.5, Alloys Upkeep per 100 Roboticists: +0.35', 1);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_cybernetics_metabolic_reprocessing#2', 'tr_cybernetics_metabolic_reprocessing', 'tr_cybernetics_metabolic_reprocessing_hive_situation', 'Metabolic Reprocessing', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}]}', 0, '1.0', 'During Cyberization
@@ -42677,7 +42708,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_cybernetics_assimilator', 'Cybernetics', '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"}]}', NULL, 'tr_cybernetics_assimilator_adopt', 'tr_cybernetics_assimilator_finish', 22);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_adopt', 'tradition_cybernetics_assimilator', 'adopt', 'Cybernetic Traditions', NULL, '{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}', 'Cybernetic Advantage', 'Assimilating Pop Organic Pops now generates Engineering Research.
+                    tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_adopt', 'tradition_cybernetics_assimilator', 'adopt', 'Cybernetic Traditions', NULL, '{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}', 'agenda_cybernetic_advantage_assimilator', 'Assimilating Pop Organic Pops now generates Engineering Research.
 Resources generated from Assimilating Pop Organic Pops are increased.', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
@@ -42744,7 +42775,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_genetics', 'Genetics', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"BioGenesis"}]},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]}]}', NULL, 'tr_genetics_adopt', 'tr_genetics_finish', 23);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_genetics_adopt', 'tradition_genetics', 'adopt', 'Genetic Traditions', NULL, '{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"},{"leaf":"has_technology","value":"tech_gene_tailoring"}]}', 'Genetic Pursuit', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep.', 0);
+                    tooltip, sort_order) VALUES ('tr_genetics_adopt', 'tradition_genetics', 'adopt', 'Genetic Traditions', NULL, '{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"},{"leaf":"has_technology","value":"tech_gene_tailoring"}]}', 'agenda_genetic_pursuit', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep.', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_genetics_resequencing', 'tradition_genetics', 'normal', 'Genetic Resequencing', 'No longer are we limited by the basic biological structure of a species. As the sculptor shapes clay, DNA is ours to mold.', NULL, NULL, 'Can remove Positive Traits and add Negative Traits with Species Modification', 1);
@@ -42811,12 +42842,12 @@ INSERT INTO tradition_category
                VALUES ('tradition_modularity', 'Modularity', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_nanotech_adopt"},{"leaf":"has_tradition","value":"tr_virtuality_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_modularity_adopt', 'tr_modularity_finish', 24);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_modularity_adopt', 'tradition_modularity', 'adopt', 'Modularity Traditions', NULL, '{"leaf":"has_country_flag","value":"modularity_traditions_unlocked"}', 'Reshape Form', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_modularity_adopt', 'tradition_modularity', 'adopt', 'Modularity Traditions', NULL, '{"leaf":"has_country_flag","value":"modularity_traditions_unlocked"}', 'agenda_modularity_reshape_form', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_modularity_adopt', 'planet_metallurgists_sr_living_metal_produces_add', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_metallurgists_sr_living_metal_produces_add', 'Living Metal Produced per 100 Metallurgists Sr', 1);
+           VALUES ('planet_metallurgists_sr_living_metal_produces_add', 'Living Metal Produced per 100 Metallurgists', 1);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_modularity_1', 'tradition_modularity', 'normal', 'High-Speed Replacements', 'Enhancing our protocol for rapid part replacement will markedly boost our productivity.', '{"leaf":"has_tradition","value":"tr_modularity_adopt"}', NULL, NULL, 1);
@@ -42838,7 +42869,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_modularity_2', 'planet_pop_assemblers_sr_living_metal_upkeep_add', '0.15', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_pop_assemblers_sr_living_metal_upkeep_add', 'Living Metal Upkeep per 100', 0);
+           VALUES ('planet_pop_assemblers_sr_living_metal_upkeep_add', 'Living Metal Upkeep per 100 Roboticists', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_modularity_2#0', 'tr_modularity_2', 'tr_modularity_2_gestalt', 'Liquid Metal Joints', NULL, '{"leaf":"is_gestalt","value":"yes"}', 0, '1.0', 'Mechanical Pop Assembly from Replicators: +0.5', 0);
@@ -42846,7 +42877,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_modularity_2#0', 'planet_pop_assemblers_sr_living_metal_upkeep_add', '0.15', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_pop_assemblers_sr_living_metal_upkeep_add', 'Living Metal Upkeep per 100', 0);
+           VALUES ('planet_pop_assemblers_sr_living_metal_upkeep_add', 'Living Metal Upkeep per 100 Roboticists', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_modularity_3', 'tradition_modularity', 'normal', 'Pacification Modules', 'Advanced defense technologies have significantly elevated our security bot''s capacity for maintaining order.', '{"leaf":"has_tradition","value":"tr_modularity_1"}', NULL, 'Soldiers Stability: +0.25', 3);
@@ -42876,7 +42907,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_modularity_4', 'tradition_modularity', 'normal', 'High-Level Enhancements', 'Upgraded management algorithms are set to boost performance substantially.', '{"leaf":"has_tradition","value":"tr_modularity_2"}', NULL, 'Job Output from : +2%', 4);
+                    tooltip, sort_order) VALUES ('tr_modularity_4', 'tradition_modularity', 'normal', 'High-Level Enhancements', 'Upgraded management algorithms are set to boost performance substantially.', '{"leaf":"has_tradition","value":"tr_modularity_2"}', NULL, 'Job Output from Bureaucrats: +2%', 4);
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_modularity_4', 'tr_modularity_2');
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
@@ -42919,7 +42950,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_mutation', 'Mutation', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_country_flag","value":"clone_army_full_potential"}]}]}]}', 'BioGenesis', 'tr_mutation_adopt', 'tr_mutation_finish', 25);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_mutation_adopt', 'tradition_mutation', 'adopt', 'Mutation Traditions', NULL, '{"leaf":"has_country_flag","value":"mutation_tradition_unlocked"}', 'Divergence Directive', 'Founder Species gains the Adaptive Mutations Species Trait', 0);
+                    tooltip, sort_order) VALUES ('tr_mutation_adopt', 'tradition_mutation', 'adopt', 'Mutation Traditions', NULL, '{"leaf":"has_country_flag","value":"mutation_tradition_unlocked"}', 'agenda_mutation_divergence', 'Founder Species gains the Adaptive Mutations Species Trait', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_mutation_adopt#0', 'tr_mutation_adopt', 'tr_mutation_adopt_evo_pred', 'Mutation Traditions', NULL, '{"leaf":"has_origin","value":"origin_evolutionary_predators"}', 0, '1.0', 'Unlocks Agenda: Evolutionary Directive
@@ -42987,7 +43018,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_nanotech', 'Nanotech', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_virtuality_adopt"},{"leaf":"has_tradition","value":"tr_modularity_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_nanotech_adopt', 'tr_nanotech_finish', 26);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_nanotech_adopt', 'tradition_nanotech', 'adopt', 'Nanotech Traditions', NULL, '{"leaf":"has_country_flag","value":"nanotech_traditions_unlocked"}', 'Unstoppable Swarm', 'Available Buildings: Nanite Research Facility
+                    tooltip, sort_order) VALUES ('tr_nanotech_adopt', 'tradition_nanotech', 'adopt', 'Nanotech Traditions', NULL, '{"leaf":"has_country_flag","value":"nanotech_traditions_unlocked"}', 'agenda_nanotech_unstoppable_swarm', 'Available Buildings: Nanite Research Facility
 Available Starbase Buildings: Nanite Harvester', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
@@ -43050,7 +43081,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_psionics', 'Psionics', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_mindwardens"}]}]}]}', NULL, 'tr_psionics_adopt', 'tr_psionics_finish', 27);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_psionics_adopt', 'tradition_psionics', 'adopt', 'Psionic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_country_flag","value":"ratling_country"}]},{"leaf":"has_technology","value":"tech_psionic_theory"}]},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_country_flag","value":"ratling_country"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_technology","value":"tech_psionic_theory"}]}]}]}', 'Psionic Supremacy', 'All pops from your primary species will gain the Latent Psionic trait.', 0);
+                    tooltip, sort_order) VALUES ('tr_psionics_adopt', 'tradition_psionics', 'adopt', 'Psionic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_country_flag","value":"ratling_country"}]},{"leaf":"has_technology","value":"tech_psionic_theory"}]},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_country_flag","value":"ratling_country"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_technology","value":"tech_psionic_theory"}]}]}]}', 'agenda_psionic_supremacy', 'All pops from your primary species will gain the Latent Psionic trait.', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_psionics_adopt#0', 'tr_psionics_adopt', 'tr_psionics_adopt_shroudwalker', 'Psionic Traditions', NULL, '{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"}', 0, '1.0', 'Research option gained: Society Telepathy', 0);
@@ -43111,7 +43142,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_psionics_shroud', 'Psionics', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_mindwardens"}]}]}]}', 'Shadows of the Shroud', 'tr_psionics_shroud_adopt', 'tr_psionics_shroud_finish', 28);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_psionics_shroud_adopt', 'tradition_psionics_shroud', 'adopt', 'Psionic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"has_country_flag","value":"ratling_country"},{"leaf":"has_country_flag","value":"finish_shroud_forged_liberation_flag"}]},{"leaf":"has_technology","value":"tech_psionic_theory"}]},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"has_country_flag","value":"ratling_country"},{"leaf":"has_country_flag","value":"finish_shroud_forged_liberation_flag"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_technology","value":"tech_psionic_theory"}]}]}]}', 'Psionic Supremacy', 'Starts a Situation to grant the founding species the Psionic trait.', 0);
+                    tooltip, sort_order) VALUES ('tr_psionics_shroud_adopt', 'tradition_psionics_shroud', 'adopt', 'Psionic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"has_country_flag","value":"ratling_country"},{"leaf":"has_country_flag","value":"finish_shroud_forged_liberation_flag"}]},{"leaf":"has_technology","value":"tech_psionic_theory"}]},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"has_country_flag","value":"ratling_country"},{"leaf":"has_country_flag","value":"finish_shroud_forged_liberation_flag"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_technology","value":"tech_psionic_theory"}]}]}]}', 'agenda_psionic_supremacy_shroud', 'Starts a Situation to grant the founding species the Psionic trait.', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_adopt#0', 'tr_psionics_shroud_adopt', 'tr_psionics_adopt_shroudwalker', 'Psionic Traditions', NULL, '{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"}', 0, '1.0', 'Starts a Situation to grant the founding species the Psionic trait.
@@ -43194,7 +43225,7 @@ Codebreaking: +2
 Encryption: +2', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry', 'tradition_psionics_shroud', 'normal', 'Psychometry', 'All things are charged with history. To hear it, our must learn the language of matter.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_psionics_shroud_telekinesis"},{"leaf":"has_tradition","value":"tr_psionics_shroud_clairvoyance"}]}', NULL, 'Crime from : -5', 5);
+                    tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry', 'tradition_psionics_shroud', 'normal', 'Psychometry', 'All things are charged with history. To hear it, our must learn the language of matter.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_psionics_shroud_telekinesis"},{"leaf":"has_tradition","value":"tr_psionics_shroud_clairvoyance"}]}', NULL, 'Crime from Telepaths: -5', 5);
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_psionics_shroud_psychometry', 'tr_psionics_shroud_telekinesis');
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_psionics_shroud_psychometry', 'tr_psionics_shroud_clairvoyance');
 INSERT INTO tradition_modifier
@@ -43204,7 +43235,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('psionic_specialist_pop_bonus_workforce_mult', 'Job Efficiency for Psionic', 1);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
-                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry#0', 'tr_psionics_shroud_psychometry', 'tr_psionics_shroud_psychometry_grand_archive', 'Psychometry', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Grand Archive"},{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}', 0, '1.0', 'Crime from : -5', 0);
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry#0', 'tr_psionics_shroud_psychometry', 'tr_psionics_shroud_psychometry_grand_archive', 'Psychometry', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Grand Archive"},{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}', 0, '1.0', 'Crime from Telepaths: -5', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_psionics_shroud_psychometry#0', 'psionic_specialist_pop_bonus_workforce_mult', '0.05', NULL, 0);
@@ -43219,13 +43250,13 @@ INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry#1', 'tr_psionics_shroud_psychometry', 'tr_psionics_shroud_psychometry_situation', 'Psychometry', NULL, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Grand Archive"}]},{"op":"not","args":[{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}]}', 0, '1.0', 'During Psionic Ascension
 Situation Speed: +5%
-After Psionic Ascension, Crime from : -5
+After Psionic Ascension, Crime from Telepaths: -5
 Job Efficiency for Psionic : +5%', 1);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry#2', 'tr_psionics_shroud_psychometry', 'tr_psionics_shroud_psychometry_situation_grand_achive', 'Psychometry', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Grand Archive"},{"op":"not","args":[{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}]}', 0, '1.0', 'During Psionic Ascension
 Situation Speed: +5%
-After Psionic Ascension, Crime from : -5
+After Psionic Ascension, Crime from Telepaths: -5
 Job Efficiency for Psionic : +5%
 Galactic History Specimens Output: +25%', 2);
 INSERT INTO tradition
@@ -43244,7 +43275,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_purity', 'Purity', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_country_flag","value":"clone_army_full_potential"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', 'BioGenesis', 'tr_purity_adopt', 'tr_purity_finish', 29);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_purity_adopt', 'tradition_purity', 'adopt', 'Purity Traditions', NULL, '{"leaf":"has_country_flag","value":"purity_tradition_unlocked"}', 'Perfection Protocols', NULL, 0);
+                    tooltip, sort_order) VALUES ('tr_purity_adopt', 'tradition_purity', 'adopt', 'Purity Traditions', NULL, '{"leaf":"has_country_flag","value":"purity_tradition_unlocked"}', 'agenda_purity_perfection', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_purity_adopt', 'leader_lifespan_mult', '0.2', NULL, 0);
@@ -43309,7 +43340,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_synthetics', 'Synthetics', '{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]}]}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', NULL, 'tr_synthetics_adopt', 'tr_synthetics_finish', 30);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_synthetics_adopt', 'tradition_synthetics', 'adopt', 'Synthetic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"}]},{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"is_machine_empire","value":"no"}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_age"},{"leaf":"has_technology","value":"tech_robomodding_m"}]}]}]}]}]}', 'Synthetic Yield', 'Starts a Situation to transform the founding species into a Mechanical species.', 0);
+                    tooltip, sort_order) VALUES ('tr_synthetics_adopt', 'tradition_synthetics', 'adopt', 'Synthetic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"}]},{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"is_machine_empire","value":"no"}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_age"},{"leaf":"has_technology","value":"tech_robomodding_m"}]}]}]}]}]}', 'agenda_synthetic_yield', 'Starts a Situation to transform the founding species into a Mechanical species.', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_synthetics_adopt#0', 'tr_synthetics_adopt', NULL, 'Synthetic Traditions', NULL, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"is_machine_empire","value":"no"}]}', 0, '1.0', 'Unlocks a Special Project to transfer the minds of our citizens into Synthetic bodies.
@@ -43400,14 +43431,14 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_synthetics_power_systems', 'planet_pop_assemblers_upkeep_mult', '-0.25', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('planet_pop_assemblers_upkeep_mult', 'Upkeep for Pop Assemblers', 0);
+           VALUES ('planet_pop_assemblers_upkeep_mult', 'Upkeep for Roboticists', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_synthetics_power_systems#0', 'tr_synthetics_power_systems', 'tr_synthetics_power_systems_situation', 'Efficient Power Systems', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"synthetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}]},{"leaf":"is_machine_empire","value":"no"}]}', 0, '1.0', 'During Synthesization
 Situation Speed: +5%
 After Synthesization
 Robot Upkeep: -25%
-Upkeep for : -25%', 0);
+Upkeep for Roboticists: -25%', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_synthetics_prefabricated_components', 'tradition_synthetics', 'normal', 'Prefabricated Components', 'By shipping standardized components and an assembly instruction, anyone can put their next upgrade together.', '{"leaf":"has_tradition","value":"tr_synthetics_transubstatiation_synthesis"}', NULL, 'Capital Buildings provide +100 Roboticist Jobs
@@ -43473,7 +43504,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_virtuality', 'Virtuality', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_nanotech_adopt"},{"leaf":"has_tradition","value":"tr_modularity_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_virtuality_adopt', 'tr_virtuality_finish', 31);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_virtuality_adopt', 'tradition_virtuality', 'adopt', 'Virtuality Traditions', NULL, '{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}', 'Optimized Network', 'Adds Virtual trait to main species, Pop Virtual Pops can no longer be resettled', 0);
+                    tooltip, sort_order) VALUES ('tr_virtuality_adopt', 'tradition_virtuality', 'adopt', 'Virtuality Traditions', NULL, '{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}', 'agenda_virtuality_optimized_network', 'Adds Virtual trait to main species, Pop Virtual Pops can no longer be resettled', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_virtuality_adopt', 'intel_decryption_add', '2.0', NULL, 0);
@@ -43533,7 +43564,7 @@ INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_virtuality_3', 'tr_virtuality_2');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_virtuality_4', 'tradition_virtuality', 'normal', 'Productivity Simulations', 'We can harness virtual realms to predict and boost productivity, transcending the risks and delays of real-world trials.', '{"leaf":"has_tradition","value":"tr_virtuality_3"}', NULL, 'Districts that provide , or provide additional jobs', 4);
+                    tooltip, sort_order) VALUES ('tr_virtuality_4', 'tradition_virtuality', 'normal', 'Productivity Simulations', 'We can harness virtual realms to predict and boost productivity, transcending the risks and delays of real-world trials.', '{"leaf":"has_tradition","value":"tr_virtuality_3"}', NULL, 'Districts that provide Clerk, Bureaucrat or Researchers provide additional jobs', 4);
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_virtuality_4', 'tr_virtuality_3');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
@@ -44508,3 +44539,4378 @@ INSERT INTO tradition_modifier
                    VALUES ('ap_weather_control', 'add_attunement_the_cradle_of_souls', '30.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('evacuation_protocols', 'Evacuation Protocols', 'We must establish a new home and prepare to evacuate our homeworld.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"has_origin","value":"origin_doomsday"},{"leaf":"is_nomadic","value":"no"},{"leaf":"any_owned_planet","value":"scope"}]}', '{"leaf":"any_planet_within_border","value":"scope"}', NULL, NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('evacuation_protocols', 'planet_colony_development_speed_mult', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_colony_development_speed_mult', 'Colony Development Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('evacuation_protocols', 'pop_resettlement_cost_mult', '-0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('fortify_the_border', 'Fortify the Border', 'Defense of our systems is paramount. This Edict will direct additional resources to these ends.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"leaf":"is_nomadic","value":"no"}', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('fortify_the_border', 'starbase_upgrade_speed_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_speed_mult', 'Station Upgrade Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('fortify_the_border', 'country_starbase_capacity_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('nutritional_plenitude', 'Nutritional Plenitude', 'It is the fundamental right of each of our citizens to enter hibernation with a full digestive organ. Easy access to plentiful, nutritional fare will be the fuel that spurs our growth among the stars.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"leaf":"is_gestalt","value":"no"}', NULL, NULL, NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nutritional_plenitude', 'logistic_growth_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nutritional_plenitude', 'biological_pop_happiness', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('biological_pop_happiness', 'Biological Pop Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nutritional_plenitude', 'lithoid_pop_happiness', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('lithoid_pop_happiness', 'Lithoid Pop Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nutritional_plenitude', 'planet_pops_organics_food_upkeep_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_food_upkeep_mult', 'Pop Food Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nutritional_plenitude', 'planet_pops_organics_minerals_upkeep_mult', '0.25', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_minerals_upkeep_mult', 'Pop Mineral Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nutritional_plenitude', 'planet_pops_organics_alloys_upkeep_mult', '0.25', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_alloys_upkeep_mult', 'Pop Alloy Upkeep', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('nutritional_plenitude_hive', 'Nutritional Plenitude', 'It is the fundamental right of each of our citizens to enter hibernation with a full digestive organ. Easy access to plentiful, nutritional fare will be the fuel that spurs our growth among the stars.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"leaf":"is_hive_empire","value":"yes"}', NULL, NULL, NULL, 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nutritional_plenitude_hive', 'logistic_growth_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nutritional_plenitude_hive', 'planet_pops_organics_food_upkeep_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_food_upkeep_mult', 'Pop Food Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nutritional_plenitude_hive', 'planet_pops_organics_minerals_upkeep_mult', '0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_minerals_upkeep_mult', 'Pop Mineral Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nutritional_plenitude_hive', 'planet_pops_organics_alloys_upkeep_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_alloys_upkeep_mult', 'Pop Alloy Upkeep', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('expanded_breeding_program_servitor', 'Expanded Breeding Program', 'Using gamification and point-based reward schemes, we will subtly encourage our Bio-Trophies to fill our Organic Sanctuaries.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"leaf":"has_valid_civic","value":"civic_machine_servitor"}', NULL, NULL, NULL, 4);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('expanded_breeding_program_servitor', 'logistic_growth_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('expanded_breeding_program_servitor', 'biological_pop_happiness', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('biological_pop_happiness', 'Biological Pop Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('expanded_breeding_program_servitor', 'lithoid_pop_happiness', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('lithoid_pop_happiness', 'Lithoid Pop Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('expanded_breeding_program_servitor', 'planet_pops_organics_food_upkeep_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_food_upkeep_mult', 'Pop Food Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('expanded_breeding_program_servitor', 'planet_pops_organics_minerals_upkeep_mult', '0.25', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_minerals_upkeep_mult', 'Pop Mineral Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('expanded_breeding_program_servitor', 'planet_pops_organics_alloys_upkeep_mult', '0.25', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_alloys_upkeep_mult', 'Pop Alloy Upkeep', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('fleet_supremacy', 'Fleet Supremacy', 'Our navy is our best means to project power. This Edict will prioritize them above lesser needs.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', NULL, NULL, NULL, NULL, 5);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('fleet_supremacy', 'ship_starting_experience_add', '100.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_starting_experience_add', 'Ship Starting Experience', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('fleet_supremacy', 'starbase_shipyard_build_speed_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('fleet_supremacy', 'diplo_weight_naval_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_naval_mult', 'Diplomatic Weight From Fleet Power', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('diplomatic_grants', 'Diplomatic Grants', 'This Edict initiates a diplomatic offensive in a concerted effort to improve the image of our empire.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_diplomacy_adopt"},{"leaf":"has_comms_with_alien_empire","value":"yes"}]}', NULL, '["tr_diplomacy_adopt"]', NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('diplomatic_grants', 'envoys_add', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('diplomatic_grants', 'diplo_weight_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('enhanced_surveillance', 'Enhanced Surveillance', 'Terrible threats probe our defenses, waiting for us to lower our guard. Increased resources must be sent to internal covert security departments to protect ourselves.', 'edicts', -1, '{"cost": {"unity": 20.0}, "upkeep": {"unity": 20.0}}', '{"op":"and","args":[{"leaf":"has_active_tradition","value":"tr_domination_judgment_corps"},{"leaf":"is_gestalt","value":"no"}]}', '{"leaf":"has_comms_with_alien_empire","value":"yes"}', '["tr_domination_judgment_corps"]', NULL, 7);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('enhanced_surveillance', 'planet_stability_add', '5.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('enhanced_surveillance', 'intel_encryption_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('enhanced_surveillance', 'pop_happiness', '-0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('enhanced_surveillance', 'pop_ethic_authoritarian_attraction_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_authoritarian_attraction_mult', 'Authoritarian Ethics Attraction', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('bureau_of_espionage', 'Bureau of Espionage', 'Expanding our intelligence operations and prioritizing decryption technologies is critical for the well-being of the empire.', 'edicts', -1, '{"cost": {"unity": 20.0}, "upkeep": {"unity": 20.0}}', '{"op":"and","args":[{"leaf":"has_comms_with_alien_empire","value":"yes"},{"leaf":"is_gestalt","value":"no"}]}', NULL, NULL, NULL, 8);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('bureau_of_espionage', 'envoys_add', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('bureau_of_espionage', 'intel_decryption_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('bureau_of_espionage', 'add_base_country_intel', '10.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_base_country_intel', 'Base Intel Level', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('bureau_of_espionage', 'spy_network_levels_add', '10.0', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('spy_network_levels_add', 'Maximum Infiltration Level', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('observation_instinct', 'Observation Instinct', 'Additional resources will be directed to nurturing and expanding our observation capabilities.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"has_comms_with_alien_empire","value":"yes"},{"leaf":"is_hive_empire","value":"yes"}]}', NULL, NULL, NULL, 9);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('observation_instinct', 'envoys_add', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('observation_instinct', 'intel_decryption_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('observation_instinct', 'add_base_country_intel', '10.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_base_country_intel', 'Base Intel Level', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('observation_instinct', 'spy_network_levels_add', '10.0', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('spy_network_levels_add', 'Maximum Infiltration Level', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('covert_analysis_algorithm', 'Covert Analysis Algorithm', 'A substantial portion of processing power will be diverted to investigative analysis.', 'edicts', -1, '{"cost": {"unity": 20.0}, "upkeep": {"unity": 20.0}}', '{"op":"and","args":[{"leaf":"has_comms_with_alien_empire","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]}', NULL, NULL, NULL, 10);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('covert_analysis_algorithm', 'envoys_add', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('covert_analysis_algorithm', 'intel_decryption_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('covert_analysis_algorithm', 'add_base_country_intel', '10.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_base_country_intel', 'Base Intel Level', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('covert_analysis_algorithm', 'spy_network_levels_add', '10.0', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('spy_network_levels_add', 'Maximum Infiltration Level', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('tracking_implants', 'Tracking Implants', 'Mandatory subdermal implants record movement and actions, greatly enhancing our empire''s internal security. Loyal citizens have nothing to hide from the government.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"op":"and","args":[{"leaf":"has_comms_with_alien_empire","value":"yes"},{"leaf":"is_gestalt","value":"no"}]}', NULL, NULL, NULL, 11);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tracking_implants', 'intel_encryption_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tracking_implants', 'pop_happiness', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tracking_implants', 'planet_crime_add', '-10.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tracking_implants', 'pop_ethic_authoritarian_attraction_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_authoritarian_attraction_mult', 'Authoritarian Ethics Attraction', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('thought_enforcement', 'Thought Enforcement', 'Telepaths monitoring the citizenry for incorrect thoughts will make corrections as they find them.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"leaf":"is_gestalt","value":"no"}', NULL, NULL, NULL, 12);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('thought_enforcement', 'intel_encryption_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('thought_enforcement', 'pop_happiness', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('thought_enforcement', 'pop_government_ethic_attraction', '0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('thought_enforcement_gestalt', 'Thought Pre-Emption', 'Telepath drones monitor our collective mind for deviant impulses, correcting aberrations before they emerge as conscious thought.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"leaf":"is_gestalt","value":"yes"}]}', NULL, NULL, NULL, 13);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('thought_enforcement_gestalt', 'intel_encryption_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('thought_enforcement_gestalt', 'planet_stability_add', '5.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('thought_enforcement_gestalt', 'planet_jobs_upkeep_mult', '-0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_upkeep_mult', 'Upkeep from Jobs', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('extended_shifts', 'Extended Shifts', 'We must ask our workers to toil harder. A few broken bodies do not weigh much against the Greater Good.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"leaf":"has_active_tradition","value":"tr_domination_workplace_motivators"}', NULL, '["tr_domination_workplace_motivators"]', NULL, 14);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('extended_shifts', 'pop_cat_worker_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_bonus_workforce_mult', 'Job Efficiency for Workers', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('extended_shifts', 'pop_slave_bonus_workforce_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_bonus_workforce_mult', 'Job Efficiency for Slaves', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('extended_shifts', 'pop_cat_worker_happiness', '-0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_happiness', 'Worker Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('extended_shifts', 'pop_slave_happiness', '-0.15', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_happiness', 'Slave Happiness', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('synaptic_reinforcement', 'Synaptic Reinforcement', 'By increasing the synaptic links of our maintenance drones, their ability to provide for nearby drones is improved.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"leaf":"is_hive_empire","value":"yes"}', NULL, NULL, NULL, 15);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('synaptic_reinforcement', 'planet_maintenance_drones_trade_produces_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_trade_produces_add', 'Trade per 100 Maintenance Drones', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('industrial_maintenance', 'Industrial Maintenance', 'Industrial maintenance drones are empowered to act as caretakers for the areas surrounding each district.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_tradition","value":"tr_synchronicity_finish"}]}', NULL, '["tr_synchronicity_finish"]', NULL, 16);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('industrial_maintenance', 'planet_maintenance_drones_trade_produces_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_trade_produces_add', 'Trade per 100 Maintenance Drones', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('drone_overdrive', 'Drone Overdrive', 'Our drones will be worked harder, as more resources are required.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"op":"or","args":[{"leaf":"has_active_tradition","value":"tr_domination_drone_network"},{"leaf":"has_active_tradition","value":"tr_domination_wilderness_network"}]}]}', NULL, '["tr_domination_drone_network", "tr_domination_wilderness_network"]', NULL, 17);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('drone_overdrive', 'pop_cat_simple_drone_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_simple_drone_bonus_workforce_mult', 'Job Efficiency for Menial Drones', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('drone_overdrive', 'pop_amenities_usage_no_happiness_mult', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('drone_overdrive_wilderness', 'Symbiont Overdrive', 'Our biomes will be made more competitive, as more resources are required.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"yes"},{"op":"or","args":[{"leaf":"has_active_tradition","value":"tr_domination_drone_network"},{"leaf":"has_active_tradition","value":"tr_domination_wilderness_network"}]}]}', NULL, '["tr_domination_drone_network", "tr_domination_wilderness_network"]', NULL, 18);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('drone_overdrive_wilderness', 'pop_cat_simple_drone_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_simple_drone_bonus_workforce_mult', 'Job Efficiency for Menial Drones', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('drone_overdrive_wilderness', 'pop_amenities_usage_no_happiness_mult', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('capacity_subsidies', 'Capacity Subsidies', 'This Edict allows short-term overloading of energy grids, letting power plants across our empire run at increased capacity.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"leaf":"is_wilderness_empire","value":"no"}', NULL, NULL, NULL, 19);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('capacity_subsidies', 'technician_jobs_bonus_workforce_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('technician_jobs_bonus_workforce_mult', 'Job Efficiency for Technician jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('capacity_subsidies', 'planet_technician_trade_upkeep_add', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_trade_upkeep_add', 'Trade Upkeep per 100 Technicians', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('capacity_subsidies_wilderness', 'Capacity Subsidies', 'This Edict encourages our photosynthetic symbionts to form migratory herds that follow the sun across our surface, increasing energy output.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, NULL, NULL, 20);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('capacity_subsidies_wilderness', 'planet_technician_produces_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_produces_mult', 'Resources Produced from Technicians', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('capacity_subsidies_wilderness', 'planet_technician_trade_upkeep_add', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_trade_upkeep_add', 'Trade Upkeep per 100 Technicians', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('mining_subsidies', 'Mining Subsidies', 'This Edict is a focused administrative effort to reprioritize and re-evaluate production goals, yielding a boost to mining output.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, NULL, NULL, 21);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('mining_subsidies', 'miner_jobs_bonus_workforce_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('miner_jobs_bonus_workforce_mult', 'Job Efficiency for Miner jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('mining_subsidies', 'planet_miners_trade_upkeep_add', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_trade_upkeep_add', 'Trade Upkeep per 100 Miners', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('mining_subsidies_wilderness', 'Mining Subsidies', 'This Edict reinforces our roots, allowing our burrowing symbionts to dig with less risk of structural collapse.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, NULL, NULL, 22);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('mining_subsidies_wilderness', 'planet_miners_produces_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_produces_mult', 'Resources Produced from Miners', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('mining_subsidies_wilderness', 'planet_miners_trade_upkeep_add', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_trade_upkeep_add', 'Trade Upkeep per 100 Miners', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('mining_subsidies_nomadic', 'Mining Subsidies', NULL, 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"leaf":"is_nomadic","value":"yes"}', NULL, NULL, NULL, 23);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('mining_subsidies_nomadic', 'ark_harvester_jobs_bonus_workforce_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ark_harvester_jobs_bonus_workforce_mult', 'Job Efficiency for Astro-Harvesters', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('mining_subsidies_nomadic', 'planet_ark_harvester_trade_upkeep_add', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_ark_harvester_trade_upkeep_add', 'Trade Upkeep per 100 Astro-Harvesters', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('farming_subsidies', 'Farming Subsidies', 'This Edict provides aggressive economic stimulus for positive, quantifiable impacts on food production.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"leaf":"is_wilderness_empire","value":"no"}', NULL, NULL, NULL, 24);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('farming_subsidies', 'farmer_jobs_bonus_workforce_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('farmer_jobs_bonus_workforce_mult', 'Job Efficiency for Farmer jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('farming_subsidies', 'planet_farmers_trade_upkeep_add', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_upkeep_add', 'Trade Upkeep per 100 Farmers', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('farming_subsidies_wilderness', 'Farming Subsidies', 'This Edict provides aggressive dilution of high energy chemicals in our soil to boost our nutrition output.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, NULL, NULL, 25);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('farming_subsidies_wilderness', 'planet_farmers_produces_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_produces_mult', 'Resources Produced from Farmers', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('farming_subsidies_wilderness', 'planet_farmers_trade_upkeep_add', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_upkeep_add', 'Trade Upkeep per 100 Farmers', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('industrial_subsidies', 'Industrial Subsidies', 'Success can be measured by the acquisition of things. This Edict provides our factories with additional resources so production can be increased.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"leaf":"country_uses_consumer_goods","value":"yes"}', NULL, NULL, NULL, 26);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('industrial_subsidies', 'artisan_jobs_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('artisan_jobs_bonus_workforce_mult', 'Job Efficiency for Artisan jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('industrial_subsidies', 'planet_artisans_trade_upkeep_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_upkeep_add', 'Trade Upkeep per 100 Artisans', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('forge_subsidies', 'Forge Subsidies', 'Our empire thirsts for more specialized alloys and precious metals. This Edict provides our foundries with additional resources so production can be increased.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"leaf":"is_wilderness_empire","value":"no"}', NULL, NULL, NULL, 27);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('forge_subsidies', 'foundry_jobs_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('foundry_jobs_bonus_workforce_mult', 'Job Efficiency for Metallurgist jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('forge_subsidies', 'planet_metallurgists_trade_upkeep_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_upkeep_add', 'Trade Upkeep per 100 Metallurgists', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('forge_subsidies_wilderness', 'Forge Subsidies', 'Saturating our lithotrophic algae pools with nutrients allows for seasonal blooms and increased harvest of alloy byproducts.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, NULL, NULL, 28);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('forge_subsidies_wilderness', 'planet_metallurgists_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_produces_mult', 'Resources Produced from Metallurgists', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('forge_subsidies_wilderness', 'planet_metallurgists_trade_upkeep_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_upkeep_add', 'Trade Upkeep per 100 Metallurgists', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('research_subsidies', 'Research Subsidies', 'Knowledge is power. This Edict focuses our efforts on advancing technology.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_discovery_databank_uplinks"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, '["tr_discovery_databank_uplinks"]', NULL, 29);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('research_subsidies', 'researcher_jobs_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('research_subsidies', 'planet_physicists_trade_upkeep_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_trade_upkeep_add', 'Trade Upkeep per 100 Physicists', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('research_subsidies', 'planet_biologists_trade_upkeep_add', '1.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_trade_upkeep_add', 'Trade Upkeep per 100 Biologists', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('research_subsidies', 'planet_engineers_trade_upkeep_add', '1.0', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_trade_upkeep_add', 'Trade Upkeep per 100 Engineers', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('research_subsidies_wilderness', 'Research Subsidies', 'Knowledge is power. This Edict focuses our efforts on advancing technology.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_discovery_databank_uplinks"},{"leaf":"is_wilderness_empire","value":"yes"}]}', NULL, '["tr_discovery_databank_uplinks"]', NULL, 30);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('research_subsidies_wilderness', 'planet_researchers_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_researchers_produces_mult', 'Resources Produced from Researchers', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('research_subsidies_wilderness', 'planet_physicists_trade_upkeep_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_trade_upkeep_add', 'Trade Upkeep per 100 Physicists', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('research_subsidies_wilderness', 'planet_biologists_trade_upkeep_add', '1.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_trade_upkeep_add', 'Trade Upkeep per 100 Biologists', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('research_subsidies_wilderness', 'planet_engineers_trade_upkeep_add', '1.0', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_trade_upkeep_add', 'Trade Upkeep per 100 Engineers', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('veneration_of_saints', 'Veneration of Saints', 'Rather than focusing exclusively on this temporal world, we should provide our spiritual guides with whatever they need to prepare us for the next.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"leaf":"is_spiritualist","value":"yes"}', NULL, NULL, NULL, 31);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('veneration_of_saints', 'pop_bureaucrat_bonus_workforce_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bureaucrat_bonus_workforce_mult', 'Job Efficiency for Bureaucrats', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('veneration_of_saints', 'pop_ethic_spiritualist_attraction_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_spiritualist_attraction_mult', 'Spiritualist Ethics Attraction', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('peace_festivals', 'Peace Festivals', 'This Pacifist Edict fosters a spirit of unity and good cheer through whole seasons filled with special events and festivals.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"leaf":"is_pacifist","value":"yes"}', NULL, NULL, NULL, 32);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('peace_festivals', 'pop_happiness', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('peace_festivals', 'pop_ethic_pacifist_attraction_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_pacifist_attraction_mult', 'Pacifist Ethics Attraction', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('information_quarantine', 'Information Quarantine', 'This Edict puts strict checks on the flow of information, better preserving local cultural identities.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"leaf":"is_authoritarian","value":"yes"}', NULL, NULL, NULL, 33);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('information_quarantine', 'planet_stability_add', '5.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('information_quarantine', 'pop_government_ethic_attraction', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('encourage_free_thought', 'Encourage Political Thought', 'This Edict encourages the populace to openly discuss political matters, even if the path taken may lead them astray.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"leaf":"is_egalitarian","value":"yes"}', NULL, NULL, NULL, 34);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('encourage_free_thought', 'pop_ethics_shift_speed_mult', '1.0', NULL, 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('map_the_stars', 'Map the Stars', 'This Edict pushes for further galactic exploration, to bring light to the darkness and find what wonders lie beyond.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"leaf":"has_tradition","value":"tr_discovery_adopt"}', NULL, '["tr_discovery_adopt"]', NULL, 35);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('map_the_stars', 'science_ship_survey_speed', '0.25', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('map_the_stars', 'ship_anomaly_generation_chance_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_anomaly_generation_chance_mult', 'Anomaly Discovery Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('map_the_stars', 'ship_hyperlane_range_add', '1.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hyperlane_range_add', 'Ship Hyperlane Detection Range', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('land_of_opportunity', 'Land of Opportunity', 'This Edict creates targeted PR campaigns that frame our empire as being on the cutting edge, a new social frontier - a place where anyone can thrive, a fresh start.', 'edicts', -1, '{"cost": {"unity": 20.0}, "upkeep": {"unity": 20.0}}', '{"op":"and","args":[{"leaf":"is_xenophile","value":"yes"},{"leaf":"has_comms_with_alien_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', NULL, NULL, NULL, 36);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('land_of_opportunity', 'planet_resettlement_unemployed_destination_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_destination_mult', 'Automatic Resettlement Destination Chance', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('greater_than_ourselves', 'Greater Than Ourselves', 'Encourages free unemployed pops to voluntarily resettle themselves to suitable planets with jobs and housing within our empire.', 'edicts', -1, '{"cost": {"unity": 20.0}, "upkeep": {"unity": 20.0}}', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"is_galactic_community_member","value":"yes"},{"op":"or","args":[{"leaf":"is_active_resolution","value":"resolution_greatergood_greater_than_ourselves"},{"leaf":"is_active_resolution","value":"resolution_greatergood_balance_in_the_middle"},{"leaf":"is_active_resolution","value":"resolution_greatergood_universal_prosperity_mandate"}]}]}', NULL, NULL, NULL, 37);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('greater_than_ourselves', 'planet_resettlement_unemployed_mult', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_mult', 'Automatic Resettlement Chance', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('relay_network_dummy', 'Networked Relays', 'The Relay Network can be directed to serve our colonies.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', NULL, NULL, NULL, NULL, 38);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('relay_network_stability', 'Networked Dominance', 'The Relay Network can be used to more effectively impose our will over our colonies.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Overlord"},{"leaf":"has_technology","value":"tech_hyper_relays"},{"leaf":"is_nomadic","value":"no"}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_deficit","value":"exotic_gases"}]},{"leaf":"exists","value":"capital_scope"},{"leaf":"capital_scope","value":"scope"}]}', NULL, NULL, 39);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('relay_network_stability', 'megastructures_hyper_relay_exotic_gases_upkeep_add', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_hyper_relay_exotic_gases_upkeep_add', 'Exotic Gases Upkeep of Hyper Relays', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('relay_network_movement', 'Networked Movement', 'The Relay Network can be enhanced with regular shuttle flights to encourage the internal migration of pops.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Overlord"},{"leaf":"has_technology","value":"tech_hyper_relays"},{"leaf":"is_nomadic","value":"no"}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_deficit","value":"volatile_motes"}]},{"leaf":"exists","value":"capital_scope"},{"leaf":"capital_scope","value":"scope"}]}', NULL, NULL, 40);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('relay_network_movement', 'megastructures_hyper_relay_volatile_motes_upkeep_add', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_hyper_relay_volatile_motes_upkeep_add', 'Volatile Motes Upkeep of Hyper Relays', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('relay_network_amenities', 'Networked Amenities', 'The Relay Network can be repurposed to transmit government approved entertainment to the masses.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Overlord"},{"leaf":"is_gestalt","value":"no"},{"leaf":"has_technology","value":"tech_hyper_relays"},{"leaf":"is_nomadic","value":"no"}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_deficit","value":"rare_crystals"}]},{"leaf":"exists","value":"capital_scope"},{"leaf":"capital_scope","value":"scope"}]}', NULL, NULL, 41);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('relay_network_amenities', 'megastructures_hyper_relay_rare_crystals_upkeep_add', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_hyper_relay_rare_crystals_upkeep_add', 'Rare Crystals Upkeep of Hyper Relays', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('relay_network_amenities_gestalt', 'Networked Amenities', 'Connecting the Relay Network to our logistics and supply chains improves the efficiency of maintenance operations.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Overlord"},{"leaf":"is_gestalt","value":"yes"},{"leaf":"has_technology","value":"tech_hyper_relays"},{"leaf":"is_nomadic","value":"no"}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_deficit","value":"rare_crystals"}]},{"leaf":"exists","value":"capital_scope"},{"leaf":"capital_scope","value":"scope"}]}', NULL, NULL, 42);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('relay_network_amenities_gestalt', 'megastructures_hyper_relay_rare_crystals_upkeep_add', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_hyper_relay_rare_crystals_upkeep_add', 'Rare Crystals Upkeep of Hyper Relays', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('zro_crystal', 'Zro Additives', 'The properties of Zro are mysterious. Yet if given to our leaders, it seems they obtain slight precognitive abilities, allowing them to learn faster and avoid dangers that could have ended their lives early.', 'edicts', -1, '{"cost": {"sr_zro": 0.2, "unity": 10.0}, "upkeep": {"sr_zro": 0.2, "unity": 10.0}}', '{"op":"and","args":[{"leaf":"has_relic","value":"r_zro_crystal"},{"leaf":"is_machine_empire","value":"no"}]}', '{"op":"not","args":[{"leaf":"resource_stockpile_compare","value":"scope"}]}', NULL, NULL, 43);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('zro_crystal', 'species_leader_exp_gain', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('zro_crystal', 'leader_lifespan_add', '30.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('zro_crystal_machine', 'Zro Additives', 'The properties of Zro are mysterious. Yet if sprinkled on our leader''s motherboards, it seems to grant them slight precognitive abilities, allowing them to learn faster and avoid dangers that could have ended their existence.', 'edicts', -1, '{"cost": {"sr_zro": 0.2, "unity": 10.0}, "upkeep": {"sr_zro": 0.2, "unity": 10.0}}', '{"op":"and","args":[{"leaf":"has_relic","value":"r_zro_crystal"},{"leaf":"is_machine_empire","value":"yes"}]}', '{"op":"not","args":[{"leaf":"resource_stockpile_compare","value":"scope"}]}', NULL, NULL, 44);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('zro_crystal_machine', 'species_leader_exp_gain', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('zro_crystal_machine', 'leader_lifespan_add', '30.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('damn_the_consequences', 'Damn the Consequences', 'This Edict pushes our genetic modifications to the very limit, doubling their effect but also causing an increased amount of terrible side-effects, including sudden catastrophic combustion.
+Damn the Consequences ignores Edict Fund and will always use 80% of your monthly Unity income!', 'edicts_unscaled', -1, '{"cost": {"unity": 1.0}, "upkeep": {"unity": 1.0}}', '{"leaf":"has_origin","value":"origin_overtuned"}', NULL, NULL, NULL, 45);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('damn_the_consequences', 'planet_pops_organics_upkeep_mult', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_organics_upkeep_mult', 'Organic Pop Upkeep', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('shadow_matrix', 'Shadow Matrix', 'The electronic obscurity provided by dark matter processing units generates software that even the best codebreakers must struggle with.', 'edicts', -1, '{"cost": {"sr_dark_matter": 1.0}, "upkeep": {"sr_dark_matter": 1.0}}', '{"leaf":"is_dark_consortium_empire","value":"yes"}', NULL, NULL, NULL, 46);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('shadow_matrix', 'intel_encryption_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('shadow_matrix', 'intel_decryption_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('shadow_matrix', 'spy_network_levels_add', '10.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('spy_network_levels_add', 'Maximum Infiltration Level', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('obsidian_veil', 'Obsidian Veil', 'To hide in a forest, one should wear the earth. To hide in space, one should wear the void.', 'edicts', -1, '{"cost": {"sr_dark_matter": 2.0}, "upkeep": {"sr_dark_matter": 2.0}}', '{"op":"and","args":[{"leaf":"is_dark_consortium_empire","value":"yes"},{"leaf":"host_has_dlc","value":"First Contact Story Pack"}]}', NULL, NULL, NULL, 47);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('obsidian_veil', 'ship_cloaking_strength_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_cloaking_strength_add', 'Cloaking Strength', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('obsidian_veil', 'ship_cloaking_detection_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_cloaking_detection_add', 'Detection Strength', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('dark_matter_forging', 'Dark Matter Forging', 'The unique binding properties of dark matter as a flux in our foundries increases the yield by appreciable amounts.', 'edicts', -1, '{"cost": {"sr_dark_matter": 3.0}, "upkeep": {"sr_dark_matter": 3.0}}', '{"leaf":"is_dark_consortium_empire","value":"yes"}', NULL, NULL, NULL, 48);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('dark_matter_forging', 'country_alloys_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_alloys_produces_mult', 'Monthly Alloys', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('dark_matter_unravelling', 'Dark Matter Unravelling', 'The energy contained within bonds formed by dark matter can be unraveled into a valuable output.', 'edicts', -1, '{"cost": {"sr_dark_matter": 4.0}, "upkeep": {"sr_dark_matter": 4.0}}', '{"leaf":"is_dark_consortium_empire","value":"yes"}', '{"op":"not","args":[{"leaf":"resource_stockpile_compare","value":"scope"}]}', NULL, NULL, 49);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('dark_matter_unravelling', 'country_energy_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_energy_produces_mult', 'Monthly Energy Credits', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('baryonic_insight', 'Baryonic Insight', 'For a deeper understanding of the weave of the universe, we must look beyond the notion of the atom.', 'edicts', -1, '{"cost": {"sr_dark_matter": 1.0}, "upkeep": {"sr_dark_matter": 1.0}}', '{"leaf":"is_dark_consortium_empire","value":"yes"}', NULL, NULL, NULL, 50);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('baryonic_insight', 'country_physics_research_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_physics_research_produces_mult', 'Monthly Physics Research', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('spontaneous_crystallization', 'Spontaneous Crystallization', 'By applying a unique matrix of catalysts onto freshly harvested rock, we have a chance at generating much more valuable crystalline structures.', 'edicts_unscaled', -1, '{"cost": {"minerals": 1.0}, "upkeep": {"minerals": 1.0}}', '{"leaf":"has_country_flag","value":"has_spontaneous_crystallization"}', NULL, NULL, NULL, 51);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('inner_focus', 'Inner Focus', 'Overextension of one''s boundaries introduces a variety of risks. Understanding oneself is a more reliable and productive endeavor.', 'edicts', -1, '{"cost": {"influence": 3.0}, "upkeep": {"influence": 3.0}}', '{"leaf":"is_sovereign_guardianship_empire","value":"yes"}', NULL, NULL, NULL, 52);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('inner_focus', 'country_unity_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('astral_cloaking', 'Astral Cloaking', 'Astral threads used in cloaking field generators partially ''reflect'' our ships into other dimensions, making them even more difficult to detect in this one.', 'edicts', -1, '{"cost": {"astral_threads": 5.0}, "upkeep": {"astral_threads": 5.0}}', '{"leaf":"has_country_flag","value":"astral_cloaking_available"}', NULL, NULL, NULL, 53);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('astral_cloaking', 'ship_cloaking_strength_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_cloaking_strength_add', 'Cloaking Strength', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('astral_binding', 'Astral Binding', 'We have learned how to weave Astral Thread into any other material in the universe. It is the very fabric of dimension.', 'edicts', -1, '{"cost": {"astral_threads": 25.0}, "upkeep": {"astral_threads": 25.0}}', '{"leaf":"has_country_flag","value":"action_planar_mastery_activated"}', '{"op":"not","args":[{"leaf":"resource_stockpile_compare","value":"scope"}]}', NULL, NULL, 54);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('astral_binding', 'pop_bonus_workforce_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('astral_shielding', 'Astral Shielding', 'There is no stronger barrier than a tightly knit lattice of Astral Threads.', 'edicts', -1, '{"cost": {"astral_threads": 10.0}, "upkeep": {"astral_threads": 10.0}}', '{"leaf":"has_country_flag","value":"action_planar_mastery_activated"}', '{"op":"not","args":[{"leaf":"resource_stockpile_compare","value":"scope"}]}', NULL, NULL, 55);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('astral_shielding', 'ship_shield_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_shield_mult', 'Shield Hit Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('astral_shielding', 'ship_shield_hardening_add', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_shield_hardening_add', 'Shield Hardening', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('dimensional_artificing', 'Dimensional Artificing', 'Manifesting objects of cultural significance from other dimensions can be done under the right circumstances. Whether or not our actions will be noticed in the other planes, we cannot say.', 'edicts', -1, '{"cost": {"astral_threads": 10.0}, "upkeep": {"astral_threads": 10.0}}', '{"op":"and","args":[{"leaf":"has_country_flag","value":"action_planar_mastery_activated"},{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}]}', '{"op":"not","args":[{"leaf":"resource_stockpile_compare","value":"scope"}]}', NULL, NULL, 56);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('decentralized_research', 'Decentralized Research', 'The greatest knowledge lies external to our own civilization. By focusing on the greater whole of the galaxy, we can come to a more complete understanding of ourselves.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"is_galactic_curators_empire","value":"yes"},{"leaf":"host_has_dlc","value":"Grand Archive"},{"leaf":"is_nomadic","value":"no"}]}', NULL, NULL, NULL, 57);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('decentralized_research', 'researcher_jobs_bonus_workforce_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('decentralized_research', 'station_researchers_produces_mult', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('station_researchers_produces_mult', 'Resources Produced from Research Stations', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('decentralized_research_nomad', 'Decentralized Research', 'The greatest knowledge lies external to our own civilization. By focusing on the greater whole of the galaxy, we can come to a more complete understanding of ourselves.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"is_galactic_curators_empire","value":"yes"},{"leaf":"host_has_dlc","value":"Grand Archive"},{"leaf":"is_nomadic","value":"yes"}]}', NULL, NULL, NULL, 58);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('decentralized_research_nomad', 'planet_researchers_produces_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_researchers_produces_mult', 'Resources Produced from Researchers', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('decentralized_research_nomad', 'starbase_collected_system_physics_research_mult', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_physics_research_mult', 'Physics Research Collection Efficiency', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('decentralized_research_nomad', 'starbase_collected_system_society_research_mult', '1.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_society_research_mult', 'Society Research Collection Efficiency', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('decentralized_research_nomad', 'starbase_collected_system_engineering_research_mult', '1.0', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_engineering_research_mult', 'Engineering Research Collection Efficiency', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('storm_attraction_field', 'Storm Attraction Field', 'Increases the efficiency of our storm attraction tech.', 'edicts', -1, '{"cost": {"unity": 15.0}, "upkeep": {"unity": 15.0}}', NULL, '{"op":"not","args":[{"leaf":"has_edict","value":"storm_repel_field"}]}', NULL, NULL, 59);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('storm_attraction_field', 'country_storm_attraction_influence_add', '0.15', NULL, 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('storm_repel_field', 'Storm Repulsion Field', 'Increases the efficiency of our storm repulsion tech.', 'edicts', -1, '{"cost": {"unity": 15.0}, "upkeep": {"unity": 15.0}}', NULL, '{"op":"not","args":[{"leaf":"has_edict","value":"storm_attraction_field"}]}', NULL, NULL, 60);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('storm_repel_field', 'country_storm_repulsion_influence_add', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_storm_repulsion_influence_add', 'Cosmic Storm Repulsion Effect', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('auto_hunker_down', 'Hunker Down Protocols', 'Any colony affected by a Cosmic Storm will initiate the Hunker Down Colony Decision until the danger has passed.', 'edicts', -1, '{"cost": {"unity": 15.0}, "upkeep": {"unity": 15.0}}', NULL, NULL, NULL, NULL, 61);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('centrifugal_siphoning', 'Centrifugal Siphoning', 'Powerful centrifuges help partition liquid alloys such that they can be recomposed into Living Metal.', 'edicts', -1, '{"cost": {"unity": 15.0}, "upkeep": {"unity": 5.0}}', '{"leaf":"is_galvanic_empire","value":"yes"}', NULL, NULL, NULL, 62);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('centrifugal_siphoning', 'planet_metallurgists_alloys_produces_add', '-1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_alloys_produces_add', 'Alloys Produced per 100 Metallurgists', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('centrifugal_siphoning', 'planet_metallurgists_sr_living_metal_produces_add', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_sr_living_metal_produces_add', 'Living Metal Produced per 100 Metallurgists', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('modular_growth_compounds', 'Modular Growth Compounds', 'Molecular use of Living Metal allows for effective modular compounds that promote stronger growth.', 'edicts', -1, '{"cost": {"sr_living_metal": 10.0}, "upkeep": {"sr_living_metal": 5.0}}', '{"leaf":"is_galvanic_empire","value":"yes"}', NULL, NULL, NULL, 63);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('modular_growth_compounds', 'founder_species_growth_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('entropy_harnessing', 'Entropy Harnessing', 'Integrating Crystallized Entropy production into our infrastructure allows us to fully harness our technical prowess, and exploit this volatile new resource to its fullest potential.', 'edicts', -1, '{"cost": {"unity": 5.0}, "upkeep": {"unity": 5.0}}', '{"leaf":"has_menace_perk","value":"menp_hyperthermia_harnessing"}', NULL, NULL, NULL, 64);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('entropy_harnessing', 'planet_technician_energy_produces_add', '-2.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_energy_produces_add', 'Energy Produced per 100 Technicians', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('entropy_harnessing', 'planet_technician_entropy_crystals_produces_add', '0.4', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_entropy_crystals_produces_add', 'Entropy Crystals Crystallized Entropy from Technician', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('fear_campaign', 'Fear Campaign', 'The vile and beastly nature of the xeno must be communicated to our people. They must accept the truth that we stand alone in a sea of alien filth.', 'campaigns', -1, '{"cost": {"energy": 15.0}, "upkeep": {"energy": 15.0}}', '{"op":"and","args":[{"leaf":"is_xenophobe","value":"yes"},{"leaf":"has_comms_with_alien_civilization","value":"yes"},{"leaf":"has_technology","value":"tech_planetary_unification"}]}', NULL, NULL, NULL, 65);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('fear_campaign', 'country_unity_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('fear_campaign', 'pop_ethic_xenophobe_attraction_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_xenophobe_attraction_mult', 'Xenophobe Ethics Attraction', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('education_campaign', 'Education Campaign', 'Back to school! By momentarily spending resources to promote higher education programs among our leaders, their skills will improve at a faster rate.', 'campaigns', -1, '{"cost": {"energy": 15.0}, "upkeep": {"energy": 15.0}}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"has_technology","value":"tech_planetary_unification"}]}', NULL, NULL, NULL, 66);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('education_campaign', 'species_leader_exp_gain', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('recycling_campaign', 'Recycling Campaign', 'The populace must be taught to limit wasteful consumption of resources. A public awareness campaign to promote recycling will momentarily lower our consumer goods costs.', 'campaigns', -1, '{"cost": {"energy": 15.0}, "upkeep": {"energy": 15.0}}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"has_technology","value":"tech_planetary_unification"}]}', NULL, NULL, NULL, 67);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('recycling_campaign', 'planet_pops_consumer_goods_upkeep_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('healthcare_campaign', 'Healthcare Campaign', 'Diet, regular exercise and sleeping patterns all combine to affect the health of our population. By promoting a healthier lifestyle, their life expectancy will go up.', 'campaigns', -1, '{"cost": {"energy": 15.0}, "upkeep": {"energy": 15.0}}', '{"leaf":"always","value":"no"}', NULL, NULL, NULL, 68);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('healthcare_campaign', 'logistic_growth_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('robot_campaign', 'Drone Campaign', 'By allocating additional resources to our production facilities, we are able to produce new worker drones at an even quicker pace.', 'campaigns', -1, '{"cost": {"energy": 15.0}, "upkeep": {"energy": 15.0}}', '{"leaf":"always","value":"no"}', NULL, NULL, NULL, 69);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('robot_campaign', 'planet_pop_assembly_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('machine_learning_campaign', 'Machine Learning Campaign', 'By allocating additional resources to our autonomous drones, they are able to increase the rate at which their self-learning algorithms improve their overall productivity.', 'campaigns', -1, '{"cost": {"energy": 15.0}, "upkeep": {"energy": 15.0}}', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_technology","value":"tech_planetary_unification"}]}', NULL, NULL, NULL, 70);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('machine_learning_campaign', 'species_leader_exp_gain', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('drone_campaign', 'Drone Campaign', 'By allocating additional biomass to our spawning pools, we are able to produce new worker drones at an even quicker pace.', 'campaigns', -1, '{"cost": {"alloys": 4.0, "food": 15.0, "minerals": 15.0}, "upkeep": {"alloys": 4.0, "food": 15.0, "minerals": 15.0}}', '{"leaf":"always","value":"no"}', NULL, NULL, NULL, 71);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('drone_campaign', 'logistic_growth_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('learning_campaign', 'Learning Campaign', 'By providing our autonomous drones with additional nutrients, we are able to increase their productivity.', 'campaigns', -1, '{"cost": {"alloys": 4.0, "food": 15.0, "minerals": 15.0}, "upkeep": {"alloys": 4.0, "food": 15.0, "minerals": 15.0}}', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"has_technology","value":"tech_planetary_unification"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, NULL, NULL, 72);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('learning_campaign', 'species_leader_exp_gain', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('learning_campaign_wilderness', 'Learning Campaign', 'By providing our symbionts with additional nutrients, we are able to increase productivity.', 'campaigns', -1, '{"cost": {"alloys": 4.0, "food": 15.0, "minerals": 15.0}, "upkeep": {"alloys": 4.0, "food": 15.0, "minerals": 15.0}}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_planetary_unification"},{"leaf":"is_wilderness_empire","value":"yes"}]}', NULL, NULL, NULL, 73);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('learning_campaign_wilderness', 'species_leader_exp_gain', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('war_drone_campaign', 'War Drone Campaign', 'By allocating our war drones additional nutrients, we are able to increase their strength and combat readiness.', 'campaigns', -1, '{"cost": {"alloys": 4.0, "food": 15.0, "minerals": 15.0}, "upkeep": {"alloys": 4.0, "food": 15.0, "minerals": 15.0}}', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"has_technology","value":"tech_planetary_unification"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, NULL, NULL, 74);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('war_drone_campaign', 'army_damage_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('war_drone_campaign_wilderness', 'War Symbiote Campaign', 'By allocating additional nutrients to our predator and herd symbionts, we are able to increase their strength and combat readiness.', 'campaigns', -1, '{"cost": {"alloys": 4.0, "food": 15.0, "minerals": 15.0}, "upkeep": {"alloys": 4.0, "food": 15.0, "minerals": 15.0}}', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"has_technology","value":"tech_planetary_unification"},{"leaf":"is_wilderness_empire","value":"yes"}]}', NULL, NULL, NULL, 75);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('war_drone_campaign_wilderness', 'army_damage_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('terraforming_gas', 'Terraforming Gases', 'By employing exotic gases in the terraforming process, we are able to achieve progress at a much faster rate.', 'rare_edicts', -1, '{"cost": {"exotic_gases": 0.5}, "upkeep": {"exotic_gases": 0.5}}', '{"leaf":"is_nomadic","value":"no"}', NULL, NULL, NULL, 76);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('terraforming_gas', 'terraform_speed_mult', '0.5', NULL, 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('fuel_gases', 'Exotic Gases as Fuel', 'Various exotic gases also function as excellent fuel for sublight travel, although perhaps not the most economical alternative.', 'ship_edicts', -1, '{"cost": {"exotic_gases": 1.0}, "upkeep": {"exotic_gases": 1.0}}', '{"op":"or","args":[{"leaf":"has_resource","value":"scope"},{"leaf":"has_edict","value":"fuel_gases"}]}', NULL, NULL, NULL, 77);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('fuel_gases', 'ship_speed_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('shield_gases', 'Exotic Gases for Shield Boost', 'Some exotic gases can be utilized for boosting ships'' shield capabilities. They can create complex dampening fields to repel and soften enemy attacks.', 'ship_edicts', -1, '{"cost": {"exotic_gases": 1.0}, "upkeep": {"exotic_gases": 1.0}}', '{"op":"or","args":[{"leaf":"has_resource","value":"scope"},{"leaf":"has_edict","value":"shield_gases"}]}', NULL, NULL, NULL, 78);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('shield_gases', 'ship_shield_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_shield_mult', 'Shield Hit Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('shield_gases', 'ship_shield_hardening_add', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_shield_hardening_add', 'Shield Hardening', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('clearing_motes', 'Volatile Land Clearance', 'By using volatile motes for their explosive capabilities, we are able to clear difficult terrain at a much faster rate.', 'rare_edicts', -1, '{"cost": {"volatile_motes": 0.5}, "upkeep": {"volatile_motes": 0.5}}', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_resource","value":"scope"},{"leaf":"has_edict","value":"clearing_motes"}]},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, NULL, NULL, 79);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('clearing_motes', 'deposit_blockers_cost_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('deposit_blockers_cost_mult', 'Clear Blocker Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('clearing_motes', 'planet_clear_blocker_speed_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('clearing_motes_wilderness', 'Volatile Land Clearance', 'Supplementing symbiont diets with volatile motes allows for digestion of both organic and inorganic substances. Our holobiont will adapt our own environment by eating it.', 'rare_edicts', -1, '{"cost": {"volatile_motes": 0.5}, "upkeep": {"volatile_motes": 0.5}}', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_resource","value":"scope"},{"leaf":"has_edict","value":"clearing_motes"}]},{"leaf":"is_wilderness_empire","value":"yes"}]}', NULL, NULL, NULL, 80);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('clearing_motes_wilderness', 'deposit_blockers_cost_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('deposit_blockers_cost_mult', 'Clear Blocker Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('clearing_motes_wilderness', 'planet_clear_blocker_speed_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('clearing_motes_nomad', 'Volatile Compartment Reclamation', 'By using volatile motes for their explosive capabilities, we are able to clear obstructions in bulk.', 'rare_edicts', -1, '{"cost": {"volatile_motes": 0.5}, "upkeep": {"volatile_motes": 0.5}}', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_resource","value":"scope"},{"leaf":"has_edict","value":"clearing_motes_nomad"}]},{"leaf":"is_nomadic","value":"yes"}]}', NULL, NULL, NULL, 81);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('clearing_motes_nomad', 'deposit_blockers_cost_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('deposit_blockers_cost_mult', 'Clear Blocker Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('clearing_motes_nomad', 'planet_clear_blocker_speed_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('motes_kinetic', 'Volatile Ammunition', 'We are able to deploy volatile motes as an explosive in our ships'' ammunition.', 'ship_edicts', -1, '{"cost": {"volatile_motes": 1.0}, "upkeep": {"volatile_motes": 1.0}}', '{"op":"or","args":[{"leaf":"has_resource","value":"scope"},{"leaf":"has_edict","value":"motes_kinetic"}]}', NULL, NULL, NULL, 82);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('motes_kinetic', 'weapon_type_kinetic_weapon_damage_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_type_kinetic_weapon_damage_mult', 'Kinetic Weapon Damage', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('motes_explosives', 'Volatile Explosives', 'By using volatile motes to construct specialized missiles, our ships will have greater destructive capabilities.', 'ship_edicts', -1, '{"cost": {"volatile_motes": 1.0}, "upkeep": {"volatile_motes": 1.0}}', '{"op":"or","args":[{"leaf":"has_resource","value":"scope"},{"leaf":"has_edict","value":"motes_explosives"}]}', NULL, NULL, NULL, 83);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('motes_explosives', 'weapon_type_explosive_weapon_damage_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_type_explosive_weapon_damage_mult', 'Explosive Weapon Damage', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('motes_armor', 'Volatile Reactive Armor', 'By enhancing our ships'' armor with a reactive component, our ships are able to absorb more damage by reducing incoming damage with a controlled counter-explosion.', 'ship_edicts', -1, '{"cost": {"volatile_motes": 1.0}, "upkeep": {"volatile_motes": 1.0}}', '{"op":"or","args":[{"leaf":"has_resource","value":"scope"},{"leaf":"has_edict","value":"motes_armor"}]}', NULL, NULL, NULL, 84);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('motes_armor', 'ship_armor_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('motes_armor', 'ship_armor_hardening_add', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_hardening_add', 'Armor Hardening', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('crystalline_sensors', 'Crystalline Sensors', 'By employing rare crystals to boost our sensors, we are able to gain a crystal clear picture of our surroundings.', 'rare_edicts', -1, '{"cost": {"rare_crystals": 0.5}, "upkeep": {"rare_crystals": 0.5}}', '{"op":"or","args":[{"leaf":"has_resource","value":"scope"},{"leaf":"has_edict","value":"crystalline_sensors"}]}', NULL, NULL, NULL, 85);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('crystalline_sensors', 'ship_sensor_range_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('crystal_focus', 'Focusing Crystals', 'By increasing our ships'' access to rare crystals, we are able to increase the damage of their energy weapons.', 'ship_edicts', -1, '{"cost": {"rare_crystals": 1.0}, "upkeep": {"rare_crystals": 1.0}}', '{"op":"or","args":[{"leaf":"has_resource","value":"scope"},{"leaf":"has_edict","value":"crystal_focus"}]}', NULL, NULL, NULL, 86);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('crystal_focus', 'weapon_type_energy_weapon_damage_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_type_energy_weapon_damage_mult', 'Energy Weapon Damage', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('sight_beyond_sight', 'Sight Beyond Sight', 'Microdosing Zro allows our navigators to sense objects beyond the reach of our scanners.', 'rare_edicts', -1, '{"cost": {"sr_zro": 0.5}, "upkeep": {"sr_zro": 0.5}}', '{"op":"or","args":[{"leaf":"has_active_tradition","value":"tr_psionics_mind_readers"},{"leaf":"has_active_tradition","value":"tr_psionics_shroud_finish"}]}', NULL, '["tr_psionics_mind_readers", "tr_psionics_shroud_finish"]', NULL, 87);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sight_beyond_sight', 'ship_sensor_range_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sight_beyond_sight', 'ship_windup_mult', '-0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_windup_mult', 'Hyper Jump Charge Time', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sight_beyond_sight', 'ship_winddown_mult', '-0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_winddown_mult', 'Hyper Jump Cooldown', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sight_beyond_sight', 'ship_jumpdrive_cooldown_mult', '-0.15', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_jumpdrive_cooldown_mult', 'Jump Drive Cooldown', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sight_beyond_sight', 'catapult_spread_mult', '0.15', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('catapult_spread_mult', 'Catapult Accuracy', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('zro_catalysis_utopia', 'Zro Catalysis', 'Among the many mysterious properties of Zro is the ability to significantly increase the capabilities of psionic beings imbibing it.', 'rare_edicts', -1, '{"cost": {"sr_zro": 0.5}, "upkeep": {"sr_zro": 0.5}}', '{"op":"and","args":[{"leaf":"exists","value":"federation"},{"leaf":"federation","value":"scope"},{"op":"or","args":[{"leaf":"has_resource","value":"scope"},{"leaf":"has_edict","value":"zro_catalysis_utopia"}]},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, NULL, NULL, 88);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('zro_catalysis_utopia', 'psionic_pop_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('zro_catalysis_non_utopia', 'Zro Catalysis', 'Our researchers have found ways to synthesize Zro to produce performance-enhancing substances that cause no negative side effects on those imbibing them.', 'rare_edicts', -1, '{"cost": {"sr_zro": 0.5}, "upkeep": {"sr_zro": 0.5}}', '{"leaf":"always","value":"no"}', NULL, NULL, NULL, 89);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('zro_catalysis_non_utopia', 'pop_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('living_metal_construction', 'Living Metal Mega-Construction', 'The inherent properties of living metal makes it perfect for improving megastructure construction.', 'rare_edicts', -1, '{"cost": {"sr_living_metal": -0.25}, "upkeep": {"sr_living_metal": 0.5}}', '{"op":"and","args":[{"leaf":"has_resource","value":"scope"},{"op":"or","args":[{"leaf":"has_any_megastructure_in_empire","value":"yes"},{"leaf":"has_technology","value":"tech_mega_engineering"},{"leaf":"has_technology","value":"tech_habitat_1"},{"leaf":"has_technology","value":"tech_hyper_relays"},{"leaf":"has_technology","value":"tech_orbital_ring_tier_1"},{"leaf":"has_technology","value":"tech_quantum_catapult"},{"leaf":"has_technology","value":"tech_deep_space_citadel"},{"leaf":"has_technology","value":"tech_gateway_construction"},{"leaf":"has_technology","value":"tech_dyson_swarm"},{"leaf":"has_technology","value":"tech_orbital_arc_furnace"}]}]}', NULL, NULL, NULL, 90);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('living_metal_construction', 'megastructure_build_speed_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructure_build_speed_mult', 'Megastructure Build Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('nanite_actuators', 'Nanite Actuators', 'Simple but powerful nanoactuators, allowing for complex manipulations and experiments at mesoscopic scales.', 'rare_edicts', -1, '{"cost": {"nanites": 10.0}, "upkeep": {"nanites": 2.0}}', '{"op":"or","args":[{"leaf":"has_resource","value":"scope"},{"leaf":"has_edict","value":"nanite_actuators"}]}', NULL, NULL, NULL, 91);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nanite_actuators', 'all_technology_research_speed', '0.1', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nanite_actuators', 'planet_researchers_upkeep_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_researchers_upkeep_mult', 'Upkeep for Researchers', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('zro_observators', 'Shroud Observation', 'Zro is a difficult material to work with. Maintaining a small surplus can be beneficial.', 'rare_edicts', -1, '{"upkeep": {"sr_zro": 0.5}}', '{"leaf":"has_origin","value":"origin_shroud_forged"}', NULL, NULL, NULL, 92);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('zro_observators', 'biologist_jobs_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('biologist_jobs_bonus_workforce_mult', 'Job Efficiency for Biologist jobs', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('shroud_bonded', 'Shroud-Bonded', 'Bonded by our connections enabled by the Shroud, we are closer than ever before.', 'rare_edicts', -1, '{"upkeep": {"sr_zro": 0.5}}', '{"op":"and","args":[{"leaf":"has_origin","value":"origin_shroud_forged"},{"leaf":"has_country_flag","value":"finish_shroud_forged_liberation_flag"}]}', NULL, NULL, NULL, 93);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('shroud_bonded', 'country_unity_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('masters_writings_politics', 'Master''s Teachings: The Greater Good', 'Translations of an alien philosopher''s teachings. We could make great strides in infrastructure by following her advice on how to unify the people via self-sacrifice.', 'edicts', -1, '{"cost": {"unity": 20.0}, "upkeep": {"unity": 20.0}}', '{"leaf":"has_country_flag","value":"edict_masters_writings_politics"}', NULL, NULL, NULL, 94);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('masters_writings_politics', 'planet_structures_cost_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_cost_mult', 'Infrastructure Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('masters_writings_politics', 'planet_building_build_speed_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('masters_writings_diplomacy', 'Master''s Teachings: Diplomatic Trust', 'Translations of an alien philosopher''s teachings. Her anecdotes from diplomatic negotiations may act as a good basis for diplomatic negotiations.', 'edicts', -1, '{"cost": {"unity": 20.0}, "upkeep": {"unity": 20.0}}', '{"leaf":"has_country_flag","value":"edict_masters_writings_diplomacy"}', NULL, NULL, NULL, 95);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('masters_writings_diplomacy', 'country_trust_growth', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_growth', 'Trust Growth', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('masters_writings_philosophy', 'Master''s Teachings: Philosophical Mindset', 'Translations of an alien philosopher''s teachings. It contains several analyses and ponderings on the meaning of life and the purpose of the cosmos. By having our rulers follow this advice, we can make more informed decisions.', 'edicts', -1, '{"cost": {"unity": 20.0}, "upkeep": {"unity": 20.0}}', '{"leaf":"has_country_flag","value":"edict_masters_writings_philosophy"}', NULL, NULL, NULL, 96);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('masters_writings_philosophy', 'country_society_tech_research_speed', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_society_tech_research_speed', 'Research Speed ( Society)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('masters_writings_philosophy', 'country_leader_pool_size', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_leader_pool_size', 'Recruitable Leaders per Class', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('masters_writings_war', 'Master''s Teachings: Warring States', 'Translations of an alien philosopher''s teachings. Her depictions of war and ideas on combat strategy could make excellent training material for our military.', 'edicts', -1, '{"cost": {"unity": 20.0}, "upkeep": {"unity": 20.0}}', '{"leaf":"has_country_flag","value":"edict_masters_writings_war"}', NULL, NULL, NULL, 97);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('masters_writings_war', 'country_naval_cap_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('masters_writings_war', 'armies_upkeep_mult', '-0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('armies_upkeep_mult', 'Army Upkeep', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('improved_work_environment', 'Improved Working Environment', 'Spending time and resources to improve the working conditions of our people will surely result in better results and happier workers.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"leaf":"has_country_flag","value":"edict_improved_work_environment"}', NULL, NULL, NULL, 98);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('improved_work_environment', 'pop_happiness', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('improved_work_environment', 'category_biology_research_speed_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_biology_research_speed_mult', 'Research Speed (Biology)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('improved_work_environment', 'category_statecraft_research_speed_mult', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_statecraft_research_speed_mult', 'Research Speed (Statecraft)', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('renewable_energy', 'Improved Energy Initiative', 'We can further limit the use of toxic fuels and non-renewable resources in order to promote research into new methods of energy production. This could help us come closer to a perfect energy cycle and improve the environment for our people to enjoy.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"leaf":"has_country_flag","value":"edict_renewable_energy"}', NULL, NULL, NULL, 99);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('renewable_energy', 'planet_pops_consumer_goods_upkeep_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('renewable_energy', 'category_industry_research_speed_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_industry_research_speed_mult', 'Research Speed (Industry)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('renewable_energy', 'category_materials_research_speed_mult', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_materials_research_speed_mult', 'Research Speed (Materials)', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('super_sensors', 'Extensive Sensor Searches', 'After having researched advanced sensor technology we have enough information to pour extra resources into enhancing our own search scans. Our technicians would have an easier time finding objects of interest at the edge of our systems with this initiative.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"leaf":"has_country_flag","value":"edict_super_sensors"}', NULL, NULL, NULL, 100);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('super_sensors', 'ship_sensor_range_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('super_sensors', 'ship_hyperlane_range_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hyperlane_range_add', 'Ship Hyperlane Detection Range', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('nuumismatic_visualization', 'Numistic Visualization', 'The active use of Numistic visualization techniques will refocus our people''s attention from personal gain to cosmic energy production. To achieve something, you must first visualize it.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"leaf":"has_country_flag","value":"nuumismatic_visualization"}', NULL, NULL, NULL, 101);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nuumismatic_visualization', 'planet_pops_consumer_goods_upkeep_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nuumismatic_visualization', 'category_statecraft_research_speed_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_statecraft_research_speed_mult', 'Research Speed (Statecraft)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nuumismatic_visualization', 'country_trade_produces_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('automated_disinfection', 'Automated Disinfection', 'The cleaning drones we discovered in one of our visits beyond an Astral Rift have enlightened us on more efficient methods of sanitation involving fleets of autonomous robots.', 'edicts', -1, '{"upkeep": {"energy": 15.0}}', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Astral Planes"},{"leaf":"has_country_flag","value":"edict_automated_disinfection"}]}', NULL, NULL, NULL, 102);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('automated_disinfection', 'pop_amenities_usage_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('automated_disinfection', 'pop_environment_tolerance', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('scientific_revolution', 'Decree: Scientific Revolution', 'A brief yet highly productive golden age of scientific discovery. The combination of fearlessness, ingenuity and unbridled optimism can take you far.', 'edicts', -1, '{"cost": {"unity": 75.0}, "upkeep": {"unity": 75.0}}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_ascension_theory"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, NULL, NULL, 103);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('scientific_revolution', 'researcher_jobs_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('scientific_revolution', 'num_tech_alternatives_add', '1.0', NULL, 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('scientific_revolution_wilderness', 'Decree: Scientific Revolution', 'A brief yet highly productive golden age of scientific discovery. The combination of fearlessness, ingenuity and unbridled optimism can take you far.', 'edicts', -1, '{"cost": {"unity": 75.0}, "upkeep": {"unity": 75.0}}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_ascension_theory"},{"leaf":"is_wilderness_empire","value":"yes"}]}', NULL, NULL, NULL, 104);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('scientific_revolution_wilderness', 'all_technology_research_speed', '0.1', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('scientific_revolution_wilderness', 'num_tech_alternatives_add', '1.0', NULL, 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('desperate_measures', 'Decree: Desperate Measures', 'The cornered animal is indeed the most dangerous, as our enemies will soon find out. No effort must be spared to ensure our continued survival.', 'edicts', -1, '{"cost": {"unity": 75.0}, "upkeep": {"unity": 75.0}}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_ascension_theory"},{"leaf":"is_nomadic","value":"no"}]}', NULL, NULL, NULL, 105);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('desperate_measures', 'starbase_defensive_war_ship_build_speed_mult', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_defensive_war_ship_build_speed_mult', 'Ship Build Speed (Defensive War)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('desperate_measures', 'ship_home_territory_fire_rate_mult', '0.4', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_home_territory_fire_rate_mult', 'Home Territory Fire Rate', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('fortress_proclamation', 'Decree: Fortress Proclamation', 'Our frontiers shall be an unassailable line, and they will convey a clear message to our most ambitious neighbors - this far, no further!', 'edicts', -1, '{"cost": {"unity": 75.0}, "upkeep": {"unity": 75.0}}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_ascension_theory"},{"leaf":"is_nomadic","value":"no"}]}', NULL, NULL, NULL, 106);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('fortress_proclamation', 'starbase_upgrade_speed_mult', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_speed_mult', 'Station Upgrade Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('fortress_proclamation', 'shipsize_military_station_small_build_speed_mult', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_station_small_build_speed_mult', 'Defense Platform Build Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('architectural_renaissance', 'Decree: Architectural Renaissance', 'It is construction on a scale that previous generations could only dream of. Megastructures may well become the true legacy of our civilization.', 'edicts', -1, '{"cost": {"unity": 75.0}, "upkeep": {"unity": 75.0}}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_ascension_theory"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"has_technology","value":"tech_mega_engineering"}', NULL, NULL, 107);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('architectural_renaissance', 'megastructure_build_speed_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructure_build_speed_mult', 'Megastructure Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('architectural_renaissance', 'country_megastructure_build_cap_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_megastructure_build_cap_add', 'Megastructure Build Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('architectural_renaissance', 'planet_building_build_speed_mult', '1.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('architectural_renaissance_nomad', 'Decree: Nomadic Renaissance', 'The nomadic way of life is now being realized on a scale once thought unattainable. The expansion of our ark fleet and the construction of new waystations shall cease to be exceptional; they must become routine.', 'edicts', -1, '{"cost": {"unity": 75.0}, "upkeep": {"unity": 75.0}}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_ascension_theory"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"has_technology","value":"tech_mega_engineering"}', NULL, NULL, 108);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('architectural_renaissance_nomad', 'megastructure_build_speed_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructure_build_speed_mult', 'Megastructure Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('architectural_renaissance_nomad', 'country_starbase_capacity_mult', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_mult', 'Station Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('architectural_renaissance_nomad', 'planet_building_build_speed_mult', '1.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('hearts_and_minds', 'Decree: Hearts and Minds', 'A concentrated propaganda effort to make the populace understand the merits of the government''s position. Ultimately, it is for their own good.', 'edicts', -1, '{"cost": {"unity": 75.0}, "upkeep": {"unity": 75.0}}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_ascension_theory"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}', NULL, NULL, NULL, 109);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('hearts_and_minds', 'pop_government_ethic_attraction', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('hearts_and_minds', 'pop_ethics_shift_speed_mult', '1.0', NULL, 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('omnifarious_acquisition', 'Decree: Omnifarious Acquisition', 'Everything that can be spared will be recycled and used. Our ambitions require all the resources we can possibly find.', 'edicts', -1, '{"cost": {"unity": 75.0}, "upkeep": {"unity": 75.0}}', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"has_technology","value":"tech_ascension_theory"}]}', NULL, NULL, NULL, 110);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('omnifarious_acquisition', 'country_minerals_produces_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_minerals_produces_mult', 'Monthly Minerals', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('omnifarious_acquisition_nomad', 'Decree: Omnifarious Acquisition', 'Everything that can be spared will be recycled and used. Our ambitions require all the resources we can possibly find.', 'edicts', -1, '{"cost": {"unity": 75.0}, "upkeep": {"unity": 75.0}}', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_technology","value":"tech_ascension_theory"}]}', NULL, NULL, NULL, 111);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('omnifarious_acquisition_nomad', 'arkship_harvest_resources_produces_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_produces_mult', 'Resources from Harvesting Actions', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('omnifarious_acquisition_nomad', 'starbase_collected_system_resources_mult', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_resources_mult', 'Waystation Collection Efficiency', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('grand_fleet', 'Decree: A Grand Fleet', 'Our galactic ambitions require that the construction of A Grand Fleet must be our primary goal.', 'edicts', -1, '{"cost": {"unity": 75.0}, "upkeep": {"unity": 75.0}}', '{"leaf":"has_technology","value":"tech_ascension_theory"}', NULL, NULL, NULL, 112);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('grand_fleet', 'country_naval_cap_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('grand_fleet', 'country_power_projection_influence_produces_add', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_power_projection_influence_produces_add', 'Max Influence from Power Projection', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('will_to_power', 'Decree: Will to Power', 'As power is simply the ability to impose one''s will on others, the will to power is a self-fulfilling prophecy.', 'edicts', -1, '{"cost": {"unity": 75.0}, "upkeep": {"unity": 75.0}}', '{"leaf":"has_technology","value":"tech_ascension_theory"}', NULL, NULL, NULL, 113);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('will_to_power', 'country_ambition_influence_produces_add', '5.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ambition_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('sacrifice_dummy', 'Sacrifices', 'The most devout amongst us are prepared to meet their fate, keen to give their lives for the better of our society. With the Togetherness, Harmony and Bounty Sacrifices, they need wait no longer.', 'edicts', 1800, '{"cost": {"unity": 1.0}}', '{"leaf":"always","value":"no"}', NULL, NULL, NULL, 114);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('sacrifice_togetherness', 'Sacrifice: Togetherness', 'The most devout amongst us are prepared to meet their fate, ensuring that our society is brought closer together. Let our unity shine out into the lonely dark of space!', 'edicts', 1800, '{"cost": {"unity": 1.0}}', '{"op":"and","args":[{"leaf":"is_death_cult_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_harmony"},{"leaf":"has_edict","value":"sacrifice_bounty"}]}]},{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_togetherness"},{"op":"or","args":[{"leaf":"any_owned_colony","value":"scope"},{"leaf":"any_subject","value":"scope"}]}]}]}', '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_harmony"},{"leaf":"has_edict","value":"sacrifice_bounty"}]}]},{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_togetherness"},{"leaf":"num_assigned_jobs","value":"scope"}]}]}', NULL, NULL, 115);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sacrifice_togetherness', 'country_unity_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sacrifice_togetherness', 'logistic_growth_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('sacrifice_harmony', 'Sacrifice: Harmony', 'The most devout amongst us are prepared to meet their fate. Their final sacrifice is a time for joyous celebration of purpose. Let every day be spent in honor of a good life!', 'edicts', 1800, '{"cost": {"unity": 1.0}}', '{"op":"and","args":[{"leaf":"is_death_cult_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_togetherness"},{"leaf":"has_edict","value":"sacrifice_bounty"}]}]},{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_harmony"},{"op":"or","args":[{"leaf":"any_owned_colony","value":"scope"},{"leaf":"any_subject","value":"scope"}]}]}]}', '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_togetherness"},{"leaf":"has_edict","value":"sacrifice_bounty"}]}]},{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_harmony"},{"leaf":"num_assigned_jobs","value":"scope"}]}]}', NULL, NULL, 116);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sacrifice_harmony', 'pop_happiness', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sacrifice_harmony', 'logistic_growth_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('sacrifice_bounty', 'Sacrifice: Bounty', 'The most devout among us are prepared to meet their fate, keen that our society should be enriched by their final sacrifice. Let death cleanse the way for vibrant life, glorious in its essence!', 'edicts', 1800, '{"cost": {"unity": 2.0}}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_permanent_employment"}]},{"leaf":"is_death_cult_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_togetherness"},{"leaf":"has_edict","value":"sacrifice_harmony"}]}]},{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_bounty"},{"op":"or","args":[{"leaf":"any_owned_colony","value":"scope"},{"leaf":"any_subject","value":"scope"}]}]}]}', '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_togetherness"},{"leaf":"has_edict","value":"sacrifice_harmony"}]}]},{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_bounty"},{"leaf":"num_assigned_jobs","value":"scope"}]}]}', NULL, NULL, 117);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sacrifice_bounty', 'country_minerals_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_minerals_produces_mult', 'Monthly Minerals', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sacrifice_bounty', 'country_energy_produces_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_energy_produces_mult', 'Monthly Energy Credits', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sacrifice_bounty', 'logistic_growth_mult', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('sacrifice_bounty_zombie', 'Sacrifice: Bounty', 'The most devout among us are prepared to meet their fate, keen that our society should be enriched by their final sacrifice. Our deaths shall bring prosperous enterprise value, and our bodies will continue serving the corporation.', 'edicts', 1800, '{"cost": {"unity": 2.0}}', '{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_permanent_employment"},{"leaf":"is_death_cult_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_togetherness"},{"leaf":"has_edict","value":"sacrifice_harmony"}]}]},{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_bounty_zombie"},{"op":"or","args":[{"leaf":"any_owned_colony","value":"scope"},{"leaf":"any_subject","value":"scope"}]}]}]}', '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_togetherness"},{"leaf":"has_edict","value":"sacrifice_harmony"}]}]},{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_bounty_zombie"},{"leaf":"num_assigned_jobs","value":"scope"}]}]}', NULL, NULL, 118);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sacrifice_bounty_zombie', 'country_minerals_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_minerals_produces_mult', 'Monthly Minerals', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sacrifice_bounty_zombie', 'country_energy_produces_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_energy_produces_mult', 'Monthly Energy Credits', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sacrifice_bounty_zombie', 'logistic_growth_mult', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('legislative_chorus', 'Legislative Chorus', 'The cacophony of the individualized voting streams is divided into manageable data chunks, significantly improving response speed.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_democratic_authority","value":"yes"},{"leaf":"has_country_flag","value":"cyber_individualist"}]}', NULL, NULL, NULL, 119);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('legislative_chorus', 'council_agenda_progress_speed', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('legislative_chorus', 'council_agenda_finishing_effect_duration_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_finishing_effect_duration_mult', 'Council Agenda Effect Duration', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('self_preservation_override', 'Self-Preservation Override', 'By remotely disabling the threat response mechanisms of the brain, enhanced citizens accept riskier work assignments.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_democratic_authority","value":"yes"},{"leaf":"has_country_flag","value":"cyber_collectivist"}]}', NULL, NULL, NULL, 120);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('self_preservation_override', 'cyborg_pop_bonus_workforce_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('cyborg_pop_bonus_workforce_mult', 'Job Efficiency for Cybernetic Pops', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('self_preservation_override', 'logistic_growth_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('battle_royale', 'Battle Royale', 'Activate a gamified quota interface to entice specialists and workers to compete for promotions and performance badges. The nature of the endless grind partially offsets the increase in productivity.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_oligarchic_authority","value":"yes"},{"leaf":"has_country_flag","value":"cyber_individualist"}]}', NULL, NULL, NULL, 121);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('battle_royale', 'pop_cat_specialist_bonus_workforce_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_bonus_workforce_mult', 'Job Efficiency for Specialists', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('battle_royale', 'pop_cat_worker_bonus_workforce_mult', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_bonus_workforce_mult', 'Job Efficiency for Workers', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('battle_royale', 'pop_cat_specialist_happiness', '-0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_happiness', 'Specialist Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('battle_royale', 'pop_cat_worker_happiness', '-0.15', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_happiness', 'Worker Happiness', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('stately_acclaim', 'Stately Acclaim', 'The oligarchy highlights the incredible efforts of the currently exploited faction, increasing their approval and attraction. This fleeting fame can also lead to increased social mobility.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_oligarchic_authority","value":"yes"},{"leaf":"has_country_flag","value":"cyber_collectivist"}]}', '{"leaf":"has_extorted_faction","value":"yes"}', NULL, NULL, 122);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('self_indictment_protocol', 'Self-Indictment Protocol', 'Enables a hidden personal implant feature which uses heuristic live feed analysis to detect and report crimes without requiring the owner''s consent.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_dictatorial_authority","value":"yes"},{"leaf":"has_country_flag","value":"cyber_individualist"}]}', NULL, NULL, NULL, 123);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('self_indictment_protocol', 'planet_crime_add', '-30.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('self_indictment_protocol', 'planet_stability_add', '4.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('self_indictment_protocol', 'pop_cyborg_happiness', '0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cyborg_happiness', 'Cyborg Happiness', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('love_letter_virus', 'Love Letter Virus', 'Triggers implants to produce more pheromones and other chemicals in order to coax more', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_dictatorial_authority","value":"yes"},{"leaf":"has_country_flag","value":"cyber_collectivist"},{"leaf":"is_nomadic","value":"no"}]}', NULL, NULL, NULL, 124);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('love_letter_virus', 'planet_resettlement_unemployed_mult', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_mult', 'Automatic Resettlement Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('love_letter_virus', 'pop_resettlement_cost_mult', '-0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('love_letter_virus', 'pop_cyborg_happiness', '0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cyborg_happiness', 'Cyborg Happiness', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('love_letter_virus_nomad', 'Love Letter Virus', 'Triggers implants to produce more pheromones and other chemicals in order to coax more', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_dictatorial_authority","value":"yes"},{"leaf":"has_country_flag","value":"cyber_collectivist"},{"leaf":"is_nomadic","value":"yes"}]}', NULL, NULL, NULL, 125);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('love_letter_virus_nomad', 'pop_cyborg_happiness', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cyborg_happiness', 'Cyborg Happiness', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('levied_experience', 'Levied Experience', 'By extracting our population''s knowledge using cybernetics, we can improve our leader''s experience without wasting their time with menial tasks.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_imperial_authority","value":"yes"},{"leaf":"has_country_flag","value":"cyber_individualist"}]}', NULL, NULL, NULL, 126);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('levied_experience', 'leader_trait_selection_options_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_trait_selection_options_add', 'Additional Leader Trait Options', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('levied_experience', 'negative_traits_country', '-1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_traits_country', 'Leader Maximum Negative Traits', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('neurocasted_spectacles', 'Neurocasted Spectacles', 'By neurocasting the brutal sport spectacles of the capital''s Cyberdome directly to the cyberbrain, people flock to the capital. With their bodies safe in pods, spectators share the gladiators'' experiences in first-person. A year of games!', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_imperial_authority","value":"yes"},{"leaf":"has_country_flag","value":"cyber_collectivist"}]}', '{"leaf":"owner.capital_scope","value":"scope"}', NULL, NULL, 127);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('customer_insights', 'Customer Insights', 'Extensively networked surveys and real-time data analysis enable us to gauge and react to market shifts faster than ever before. Resources are diverted to features and products with the highest profit potential.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_megacorp","value":"yes"},{"leaf":"has_country_flag","value":"cyber_individualist"}]}', NULL, NULL, NULL, 128);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('customer_insights', 'planet_branch_offices_cost_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_branch_offices_cost_mult', 'Branch Office Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('customer_insights', 'branch_office_value_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('branch_office_value_mult', 'Branch Office Value', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('rolling_updates', 'Rolling Updates', 'Automated and user-independent deployment of implant updates removes the need for monolithic infrastructure. This also keeps us one step ahead of hostile cyber-incursions.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_megacorp","value":"yes"},{"leaf":"has_country_flag","value":"cyber_collectivist"}]}', NULL, NULL, NULL, 129);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('rolling_updates', 'intel_encryption_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('rolling_updates', 'intel_decryption_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('rolling_updates', 'planet_pops_consumer_goods_upkeep_mult', '-0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('subsidized_identity_backups', 'Subsidized Identity Backups', 'The government provides the immense amount of server space required for continuous identity backups.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"leaf":"has_country_flag","value":"edict_subsidized_identity_backups"}', NULL, NULL, NULL, 130);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('optimized_identity_creation', 'Optimized Identity Creation', 'Advanced personality algorithms and core memory compression techniques improve our identity generation velocity.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"leaf":"has_country_flag","value":"edict_optimized_identity_creation"}', NULL, NULL, NULL, 131);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('optimized_identity_creation', 'planet_pop_assembly_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('hive_mind_outreach', 'Hive Mind Outreach', 'The will of a determined mind moves faster than the speed of light.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"has_country_flag","value":"cyber_hive_volitional"}]}', NULL, NULL, NULL, 132);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('hive_mind_outreach', 'ship_speed_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('hive_mind_outreach', 'diplomacy_influence_upkeep_mult', '-0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplomacy_influence_upkeep_mult', 'Diplomatic Agreement Influence Upkeep', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('hive_hyper_stimulants', 'Hyper-Stimulants', 'Cybernetic implants automatically administer boosting drugs to our drones, increasing performance.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"has_country_flag","value":"cyber_hive_integrated"}]}', NULL, NULL, NULL, 133);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('hive_hyper_stimulants', 'ship_evasion_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_evasion_mult', 'Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('hive_hyper_stimulants', 'pop_cat_simple_drone_bonus_workforce_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_simple_drone_bonus_workforce_mult', 'Job Efficiency for Menial Drones', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('hive_hyper_stimulants', 'pop_cat_complex_drone_bonus_workforce_mult', '-0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_complex_drone_bonus_workforce_mult', 'Job Efficiency for Complex Drones', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('hive_mega_construction', 'Integrated Mega-Construction', 'This Edict allocates additional resources to our Mega-Engineering program, speeding up the construction of new galactic structures.', 'edicts', -1, '{"cost": {"alloys": 15.0}, "upkeep": {"alloys": 15.0}}', '{"op":"or","args":[{"leaf":"has_country_flag","value":"cyber_hive_integrated"},{"leaf":"has_country_flag","value":"cyber_hive_volitional"}]}', NULL, NULL, NULL, 134);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('hive_mega_construction', 'megastructure_build_speed_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructure_build_speed_mult', 'Megastructure Build Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('aggregated_memory', 'Aggregated Memory', 'The memories of our assimilated population cascade like a rushing torrent. Their collective experience is ours to wield.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"has_country_flag","value":"driven_memory_aggregator"},{"leaf":"host_has_dlc","value":"The Machine Age"}]}', NULL, NULL, NULL, 135);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('aggregated_memory', 'council_agenda_progress_speed', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('aggregated_memory', 'councilor_exp_gain', '0.1', NULL, 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('choral_harmony', 'Choral Harmony', 'To compose a song, there must be harmony; let the minds of our assimilated population be unified.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"has_country_flag","value":"driven_neural_chorus"},{"leaf":"host_has_dlc","value":"The Machine Age"}]}', NULL, NULL, NULL, 136);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('choral_harmony', 'cyborg_pop_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('cyborg_pop_bonus_workforce_mult', 'Job Efficiency for Cybernetic Pops', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('cybernetic_creed_construction_edict', 'A Virtuous Hammering', 'For a divine society, we must fully back the Fellowship of the Hammer, whose work is key to building a future that merits the divine.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_cyber_creed_advanced_government","value":"yes"},{"leaf":"has_country_flag","value":"cybernetic_creed_construction"}]}', NULL, NULL, NULL, 137);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('cybernetic_creed_construction_edict', 'planet_building_build_speed_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('cybernetic_creed_construction_edict', 'foundry_jobs_bonus_workforce_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('foundry_jobs_bonus_workforce_mult', 'Job Efficiency for Metallurgist jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('cybernetic_creed_construction_edict', 'artisan_jobs_bonus_workforce_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('artisan_jobs_bonus_workforce_mult', 'Job Efficiency for Artisan jobs', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('cybernetic_creed_war_edict', 'The Crusade of Steel', 'To guard against fiends attacking our divine flesh, we must fully support the Templars of Steel, ensuring our warriors are always prepared.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_cyber_creed_advanced_government","value":"yes"},{"leaf":"has_country_flag","value":"cybernetic_creed_war"}]}', NULL, NULL, NULL, 138);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('cybernetic_creed_war_edict', 'country_naval_cap_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('cybernetic_creed_war_edict', 'ship_fire_rate_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('cybernetic_creed_war_edict', 'army_attack_damage_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_attack_damage_mult', 'Assault Army Damage', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('cybernetic_creed_research_edict', 'The Song of Knowledge', 'Only through a vibrant song of knowledge shall our people ever truly know the divine. We must support our wise Choir of the Mind in all their endeavors.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_cyber_creed_advanced_government","value":"yes"},{"leaf":"has_country_flag","value":"cybernetic_creed_research"}]}', NULL, NULL, NULL, 139);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('cybernetic_creed_research_edict', 'num_tech_alternatives_add', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('cybernetic_creed_research_edict', 'researcher_jobs_bonus_workforce_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('researcher_jobs_bonus_workforce_mult', 'Job Efficiency for Researcher jobs', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('cybernetic_creed_construction_labor', 'The Labored Masses', 'Our true strength lies in our laborers. If we do not have the strength to lift them up, then they will not have the strength to carry us to the future.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_cyber_creed_advanced_government","value":"yes"},{"leaf":"has_country_flag","value":"cybernetic_creed_labor"}]}', NULL, NULL, NULL, 140);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('cybernetic_creed_construction_labor', 'planet_jobs_worker_produces_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('cybernetic_creed_construction_labor', 'planet_jobs_upkeep_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_upkeep_mult', 'Upkeep from Jobs', 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('cybernetic_creed_general_edict', 'The Lessons of Harmony', 'Unifying the Church brought many lessons. It''s made our faith stronger and more contemplative than ever.', 'edicts', -1, '{"cost": {"unity": 25.0}, "upkeep": {"unity": 25.0}}', '{"op":"and","args":[{"leaf":"is_cyber_creed_advanced_government","value":"yes"},{"leaf":"has_country_flag","value":"cybernetic_creed_general"}]}', NULL, NULL, NULL, 141);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('cybernetic_creed_general_edict', 'cyborg_pop_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('cyborg_pop_bonus_workforce_mult', 'Job Efficiency for Cybernetic Pops', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('cybernetic_creed_general_edict', 'pop_happiness', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('cybernetic_creed_general_edict', 'planet_stability_add', '2.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('nanotech_naval_augmentation', 'Nano-operated Supply Chains', 'The flexibility of nanite based supplies that can morph into standardized ammunition or ship components will extend our supply reach to the confines of the galaxy.', 'edicts', -1, '{"cost": {"nanites": 2500.0}, "upkeep": {"nanites": 5.0}}', '{"leaf":"has_tradition","value":"tr_nanotech_5"}', NULL, '["tr_nanotech_5"]', NULL, 142);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nanotech_naval_augmentation', 'country_naval_cap_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('nanotech_alloy_augmentation', 'Coordinated Nanocomplexes', 'Infusing alloy lattices with nanites enables faster, better, and more precise alloy production along new baseline regenerative metallic properties.', 'edicts', -1, '{"cost": {"nanites": 2500.0}, "upkeep": {"nanites": 5.0}}', '{"leaf":"has_tradition","value":"tr_nanotech_5"}', NULL, '["tr_nanotech_5"]', NULL, 143);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nanotech_alloy_augmentation', 'country_alloys_produces_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_alloys_produces_mult', 'Monthly Alloys', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('nanotech_energy_augmentation', 'Nanoconnected Generators', 'Nanite maintained connectors and power lines can be restored in real time without interruption.', 'edicts', -1, '{"cost": {"nanites": 2500.0}, "upkeep": {"nanites": 5.0}}', '{"leaf":"has_tradition","value":"tr_nanotech_5"}', NULL, '["tr_nanotech_5"]', NULL, 144);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('nanotech_energy_augmentation', 'country_energy_produces_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_energy_produces_mult', 'Monthly Energy Credits', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('space_fauna_exhibition', 'Space Fauna Exhibition', 'Ranchers from across the galaxy exhibit their prized livestock and compete for the coveted', 'edicts', -1, '{"cost": {"unity": 15.0}, "upkeep": {"unity": 15.0}}', '{"leaf":"has_modifier","value":"primal_calling_exhibit_modifier"}', NULL, NULL, NULL, 145);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('space_fauna_exhibition', 'planet_amenities_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_mult', 'Amenities', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('beasts_burden', 'Beasts of Burden', 'Our hardiest livestock should do their part in some of our most labor-intensive duties.', 'edicts', -1, '{"cost": {"unity": 15.0}, "upkeep": {"unity": 15.0}}', '{"leaf":"has_modifier","value":"primal_calling_exploit_modifier"}', NULL, NULL, NULL, 146);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('beasts_burden', 'farmer_jobs_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('farmer_jobs_bonus_workforce_mult', 'Job Efficiency for Farmer jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('beasts_burden', 'planet_jobs_worker_produces_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('beasts_burden', 'pop_slave_bonus_workforce_mult', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_bonus_workforce_mult', 'Job Efficiency for Slaves', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('creature_welfare', 'Creature Welfare', 'It is our responsibility to ensure the highest quality of life for the creatures within our care.', 'edicts', -1, '{"cost": {"unity": 15.0}, "upkeep": {"unity": 15.0}}', '{"leaf":"has_modifier","value":"primal_calling_shelter_modifier"}', NULL, NULL, NULL, 147);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('creature_welfare', 'space_fauna_ship_hull_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_hull_mult', 'Space Fauna Ship Hull', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('crack_the_whip', 'Crack The Whip', 'No matter the species, every organism has a similar response to pain. The trick is learning how to inflict it correctly.', 'edicts', -1, '{"cost": {"unity": 15.0}, "upkeep": {"unity": 15.0}}', '{"leaf":"has_modifier","value":"primal_calling_hunt_modifier"}', NULL, NULL, NULL, 148);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('crack_the_whip', 'space_fauna_ship_fire_rate_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_fire_rate_mult', 'Space Fauna Ship Fire Rate', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('exotic_network', 'Exotic Neural Network', 'The minds of the lesser organisms in our care are of sufficient capacity to lend bandwidth in more demanding calculations.', 'edicts', -1, '{"cost": {"unity": 15.0}, "upkeep": {"unity": 15.0}}', '{"leaf":"has_modifier","value":"primal_calling_assimilate_modifier"}', NULL, NULL, NULL, 149);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('exotic_network', 'all_technology_research_speed', '0.05', NULL, 0);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('defensive_instincts', 'Self-Preservation Instincts', 'We are as one. Let our instincts entwine in the cold of deep space.', 'edicts', -1, '{"cost": {"unity": 15.0}, "upkeep": {"unity": 15.0}}', '{"leaf":"has_modifier","value":"primal_calling_symbiosis_modifier"}', NULL, NULL, NULL, 150);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('defensive_instincts', 'space_fauna_ship_hull_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_hull_mult', 'Space Fauna Ship Hull', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('biological_overdrive', 'Biological Overdrive', 'Our lesser creatures can be pushed to their absolute limits with the proper neural receptors installed.', 'edicts', -1, '{"cost": {"unity": 15.0}, "upkeep": {"unity": 15.0}}', '{"leaf":"has_modifier","value":"primal_calling_feed_modifier"}', NULL, NULL, NULL, 151);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('biological_overdrive', 'space_fauna_ship_fire_rate_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_fire_rate_mult', 'Space Fauna Ship Fire Rate', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('behemoth_nanite_augmentation', 'Behemoth Augmentation: Nanites', 'Nanite infused behemoth shells can regenerate even the worst damage in record time.', 'edicts', -1, '{"cost": {"nanites": 2500.0}, "upkeep": {"nanites": 5.0}}', '{"leaf":"has_country_flag","value":"behemoth_mutation_machine"}', NULL, NULL, NULL, 152);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('behemoth_nanite_augmentation', 'shipsize_behemoth_01_armor_regen_add_perc', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_behemoth_01_armor_regen_add_perc', 'Class I Behemoth Daily Armor Regen', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('behemoth_nanite_augmentation', 'shipsize_behemoth_02_armor_regen_add_perc', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_behemoth_02_armor_regen_add_perc', 'Class II Behemoth Daily Armor Regen', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('behemoth_nanite_augmentation', 'shipsize_behemoth_03_armor_regen_add_perc', '0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_behemoth_03_armor_regen_add_perc', 'Class III Behemoth Daily Armor Regen', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('behemoth_nanite_augmentation', 'shipsize_behemoth_04_armor_regen_add_perc', '0.15', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_behemoth_04_armor_regen_add_perc', 'Class IV Behemoth Daily Armor Regen', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('behemoth_living_metal_augmentation', 'Behemoth Augmentation: Living Metal', 'Layering living metal between chitin layers creates reactive armor with enhanced ablative properties.', 'edicts', -1, '{"cost": {"sr_living_metal": 500.0}, "upkeep": {"sr_living_metal": 2.0}}', '{"leaf":"has_country_flag","value":"behemoth_mutation_machine"}', NULL, NULL, NULL, 153);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('behemoth_living_metal_augmentation', 'shipsize_behemoth_01_armor_hardening_add', '0.4', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_behemoth_01_armor_hardening_add', 'Class I Behemoth Armor Hardening', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('behemoth_living_metal_augmentation', 'shipsize_behemoth_02_armor_hardening_add', '0.4', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_behemoth_02_armor_hardening_add', 'Class II Behemoth Armor Hardening', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('behemoth_living_metal_augmentation', 'shipsize_behemoth_03_armor_hardening_add', '0.4', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_behemoth_03_armor_hardening_add', 'Class III Behemoth Armor Hardening', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('behemoth_living_metal_augmentation', 'shipsize_behemoth_04_armor_hardening_add', '0.4', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_behemoth_04_armor_hardening_add', 'Class IV Behemoth Armor Hardening', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('behemoth_alloys_augmentation', 'Behemoth Augmentation: Alloys', 'Bolting alloy plates on carapaces is crude but efficient.', 'edicts', -1, '{"cost": {"alloys": 5000.0}, "upkeep": {"alloys": 25.0}}', '{"leaf":"has_country_flag","value":"behemoth_mutation_machine"}', NULL, NULL, NULL, 154);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('behemoth_alloys_augmentation', 'shipsize_behemoth_01_armor_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_behemoth_01_armor_mult', 'Class I Behemoth Armor Hit Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('behemoth_alloys_augmentation', 'shipsize_behemoth_02_armor_mult', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_behemoth_02_armor_mult', 'Class II Behemoth Armor Hit Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('behemoth_alloys_augmentation', 'shipsize_behemoth_03_armor_mult', '0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_behemoth_03_armor_mult', 'Class III Behemoth Armor Hit Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('behemoth_alloys_augmentation', 'shipsize_behemoth_04_armor_mult', '0.15', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_behemoth_04_armor_mult', 'Class IV Behemoth Armor Hit Points', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('energy_drain', 'Energy Drain', 'The population is required to have essence harvesting implants installed and inspected on a regular basis. They must be capable of being activated at a moment''s notice.', 'edicts', -1, '{"cost": {"unity": 20.0}, "upkeep": {"unity": 20.0}}', '{"leaf":"is_entropy_drinkers_empire","value":"yes"}', NULL, NULL, NULL, 155);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('sanguine_council', 'Sanguine Council', 'Regular fluid tests are mandated for the whole population, through which vital energy is extracted for the benefit of the empire''s governing council.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"is_entropy_drinkers_empire","value":"yes"},{"leaf":"is_machine_empire","value":"no"}]}', NULL, NULL, NULL, 156);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sanguine_council', 'council_agenda_progress_speed', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('sanguine_council_machine', 'Nexus Charge', 'Regular fluid tests are mandated for the whole population, through which vital energy is extracted for the benefit of the empire''s governing council.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"is_entropy_drinkers_empire","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]}', NULL, NULL, NULL, 157);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('sanguine_council_machine', 'council_agenda_progress_speed', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('psychic_feast', 'Convergence of Will', 'With significant mental effort, we can awaken even greater power within our leaders.', 'edicts', -1, '{"cost": {"sr_zro": 3.0, "unity": 20.0}, "upkeep": {"sr_zro": 3.0, "unity": 20.0}}', '{"leaf":"is_entropy_drinkers_empire","value":"yes"}', NULL, NULL, NULL, 158);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('psychic_feast', 'councilor_skill_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('galactic_dowsing', 'Galactic Dowsing', 'When prospectors add divinatory practices to their conventional geological analyses, they will discover richer veins of resources.', 'edicts', -1, '{"cost": {"unity": 15.0}, "upkeep": {"unity": 15.0}}', '{"op":"and","args":[{"leaf":"is_superstitious_beliefs_empire","value":"yes"},{"leaf":"is_gestalt","value":"no"}]}', NULL, NULL, NULL, 159);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('galactic_dowsing', 'planet_bureaucrats_unity_produces_add', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_unity_produces_add', 'Unity Produced per 100 Bureaucrats', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('galactic_dowsing', 'deposit_increase_on_survey_chance_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('deposit_increase_on_survey_chance_mult', 'Chance to increase Resource Deposit Size on Survey', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('galactic_dowsing_gestalt', 'Galactic Dowsing', 'When prospectors add divinatory practices to their conventional geological analyses, they will discover richer veins of resources.', 'edicts', -1, '{"cost": {"unity": 15.0}, "upkeep": {"unity": 15.0}}', '{"op":"and","args":[{"leaf":"is_superstitious_beliefs_empire","value":"yes"},{"leaf":"is_gestalt","value":"yes"}]}', NULL, NULL, NULL, 160);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('galactic_dowsing_gestalt', 'planet_bureaucrats_unity_produces_add', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_unity_produces_add', 'Unity Produced per 100 Bureaucrats', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('galactic_dowsing_gestalt', 'deposit_increase_on_survey_chance_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('deposit_increase_on_survey_chance_mult', 'Chance to increase Resource Deposit Size on Survey', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('annihilation_of_matter', 'Annihilation of Matter', 'With each scrap of dust thrown to the flame, the heat of oblivion burns ever brighter.', 'edicts', -1, '{"cost": {"alloys": 100.0, "minerals": 200.0}, "upkeep": {"alloys": 100.0, "minerals": 200.0}}', '{"leaf":"has_country_flag","value":"reached_eotc_situation_stage3"}', NULL, NULL, NULL, 161);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('annihilation_of_matter', 'psionic_aura_intensity_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_aura_intensity_mult', 'Psionic Aura Intensity Gain', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('annihilation_of_energy', 'Annihilation of Energy', 'The dance of entropy has been spinning long before we were aware of its magnificence. We only now raise its tempo.', 'edicts', -1, '{"cost": {"energy": 200.0, "exotic_gases": 30.0}, "upkeep": {"energy": 200.0, "exotic_gases": 30.0}}', '{"leaf":"has_country_flag","value":"reached_eotc_situation_stage3"}', NULL, NULL, NULL, 162);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('annihilation_of_energy', 'psionic_aura_intensity_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_aura_intensity_mult', 'Psionic Aura Intensity Gain', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('dimensional_collapse', 'Dimensional Collapse', 'There are dimensions other than the Shroud entwined with our own. Their power, too, will unravel with time.', 'edicts', -1, '{"cost": {"astral_threads": 25.0, "sr_zro": 5.0}, "upkeep": {"astral_threads": 25.0, "sr_zro": 5.0}}', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Astral Planes"},{"leaf":"has_country_flag","value":"reached_eotc_situation_stage3"}]}', NULL, NULL, NULL, 163);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('dimensional_collapse', 'psionic_aura_intensity_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_aura_intensity_mult', 'Psionic Aura Intensity Gain', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('animatus', 'Animatus', 'The Animator of Clay sparks new life within our fleets; it is as if they have wills of their own.', 'edicts', -1, '{"cost": {"sr_zro": 1.0}, "upkeep": {"sr_zro": 5.0}}', '{"leaf":"has_country_flag","value":"shroud_3200_happened"}', NULL, NULL, NULL, 164);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('animatus', 'ship_hull_regen_add_perc', '0.005', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hull_regen_add_perc', 'Daily Hull Regen', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('animatus', 'ship_armor_regen_add_perc', '0.005', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_regen_add_perc', 'Daily Armor Regen', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('animatus', 'ship_evasion_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_evasion_mult', 'Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('animatus', 'ship_fire_rate_mult', '0.1', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('will_of_temperance', 'Will of Temperance', 'The will of the Outsider alerts us to the dangers lurking ahead.', 'edicts', -1, '{"cost": {"sr_zro": 1.0}, "upkeep": {"sr_zro": 1.0}}', '{"leaf":"has_country_flag","value":"shroud_3210_happened"}', NULL, NULL, NULL, 165);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('will_of_temperance', 'ship_sensor_range_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('will_of_distraction', 'Will of Distraction', 'The Golden Dream reveals to us ascended forms of leisure.', 'edicts', -1, '{"cost": {"sr_zro": 1.0}, "upkeep": {"sr_zro": 1.0}}', '{"leaf":"has_country_flag","value":"shroud_3220_happened"}', NULL, NULL, NULL, 166);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('will_of_endless', 'Will of Endless', 'The Endless Tide enhances our perspectives on time itself.', 'edicts', -1, '{"cost": {"sr_zro": 1.0}, "upkeep": {"sr_zro": 5.0}}', '{"leaf":"has_country_flag","value":"shroud_3230_happened"}', NULL, NULL, NULL, 167);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('will_of_endless', 'leader_lifespan_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('will_of_rebirth', 'Will of Rebirth', 'The Pale Mountain makes, so that it may unmake.', 'edicts', -1, '{"cost": {"sr_zro": 1.0}, "upkeep": {"sr_zro": 5.0}}', '{"leaf":"has_country_flag","value":"shroud_3240_happened"}', NULL, NULL, NULL, 168);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('will_of_rebirth', 'ship_hull_regen_add_perc', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hull_regen_add_perc', 'Daily Hull Regen', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('will_of_rebirth', 'ship_armor_regen_add_perc', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_regen_add_perc', 'Daily Armor Regen', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('will_of_rebirth', 'ship_hull_mult', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hull_mult', 'Ship Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('will_of_rebirth', 'ship_armor_mult', '0.05', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('will_of_order', 'Will of Order', 'The Vacant Throne knows the order of all things.', 'edicts', -1, '{"cost": {"sr_zro": 1.0}, "upkeep": {"sr_zro": 1.0}}', '{"leaf":"has_country_flag","value":"shroud_3260_happened"}', NULL, NULL, NULL, 169);
+INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES ('will_of_motion', 'Will of Motion', 'The velocity of the Black River sweeps us along the void.', 'edicts', -1, '{"cost": {"sr_zro": 1.0}, "upkeep": {"sr_zro": 5.0}}', '{"leaf":"has_country_flag","value":"shroud_3270_happened"}', NULL, NULL, NULL, 170);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('will_of_motion', 'ship_speed_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_infinite_opportunities', 'Infinite Opportunities', 'Let''s promote and celebrate our technological achievements.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"always","value":"yes"}', NULL, NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_infinite_opportunities', 'pop_citizen_happiness', '0.04', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_citizen_happiness', 'Pop Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_infinite_opportunities#finish', 'pop_citizen_happiness', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_citizen_happiness', 'Pop Happiness', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_infinite_opportunities_gestalt', 'Infinite Opportunities', 'Let''s promote and celebrate our technological achievements.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"always","value":"yes"}', NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_infinite_opportunities_gestalt', 'planet_amenities_no_happiness_add', '400.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_infinite_opportunities_gestalt#finish', 'planet_amenities_no_happiness_add', '1000.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_unlock_slot', 'Expand The Council', 'We should expand our government to support an additional councilor.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"op":"or","args":[{"leaf":"has_unlocked_council_positions","cmp":"<","value":"4"},{"op":"and","args":[{"leaf":"has_unlocked_council_positions","cmp":"<","value":"5"},{"leaf":"civics_count","cmp":">=","value":"3"}]}]}]}', '{"leaf":"always","value":"yes"}', NULL, NULL, 2);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_reorganize_council', 'Reorganize Council', 'Due to changes in government focus, we should reorganize the Council to focus on other matters.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"host_has_dlc","value":"Galactic Paragons"}]}', '{"leaf":"always","value":"yes"}', NULL, NULL, 3);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_gestalt_purge_traits', 'Correctional Bisection', 'Distracting data points, and false conclusions hinder our reasoning skills. We must purge all redundant information.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"always","value":"yes"}', NULL, 'Removes Negative Traits from Ruler and Councilor Nodes.
+For each Trait removed, lose -300 experience.', 4);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_gestalt_purge_traits#finish', 'negative_traits_country', '-2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_traits_country', 'Leader Maximum Negative Traits', 0);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('origin_delusional_tyrant', 'Total Crackdown', 'By apprehending their leaders in an empire-wide sweep, we can cripple the Reformists and force them to the negotiating table on our terms.', '7000.0', 3600, '{"leaf":"any_situation","value":"scope"}', '{"leaf":"any_situation","value":"scope"}', NULL, 'Conclude Reformists Demands Situation by apprehending Reformist leaders.', 5);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('origin_delusional_tyrant', 'pop_citizen_happiness', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_citizen_happiness', 'Pop Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('origin_delusional_tyrant', 'pop_ethic_egalitarian_attraction_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('origin_legendary_leader', 'Unifying Promise', 'The 40-year plan is vital to our empire''s success. By combining our efforts under the Luminary''s guidance, we will achieve things far greater than we could alone.', '7000.0', 3600, '{"leaf":"any_situation","value":"scope"}', '{"leaf":"any_situation","value":"scope"}', NULL, 'Adds Approaches to the Unifying Promise Situation.
+Gives one random Luminary Insight effect.
+Ethic-based Agendas gain a Luminary Insight effect for the duration of the Unifing Promise Situation.', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('origin_legendary_leader', 'pop_citizen_happiness', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_citizen_happiness', 'Pop Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('origin_legendary_leader', 'council_agenda_progress_speed', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_augmentation_product_launch', 'Augmentation Product Launch', 'Major cyber implant-based product launch preceded by a period of unprofitable conceptualization, development and testing.', '3800.0', 3600, '{"op":"and","args":[{"leaf":"is_megacorp","value":"yes"},{"leaf":"has_country_flag","value":"cyber_collectivist"}]}', '{"op":"and","args":[{"leaf":"is_megacorp","value":"yes"},{"leaf":"has_country_flag","value":"cyber_collectivist"}]}', NULL, NULL, 7);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_augmentation_product_launch', 'planet_jobs_productive_produces_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_productive_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_augmentation_product_launch', 'planet_pops_consumer_goods_upkeep_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_augmentation_product_launch#finish', 'planet_jobs_productive_produces_mult', '0.3', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_productive_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_we_come_in_peace', 'We Come in Peace', 'Ensure that non-aggression permeates our society and diplomatic relations.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"is_pacifist","value":"yes"}', NULL, 'Every Non-Genocidal: +25 Trust', 8);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace', 'country_border_friction_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace', 'country_trust_cap_add', '25.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace', 'country_naval_cap_mult', '-0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace', 'pop_ethic_pacifist_attraction_mult', '0.1', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_pacifist_attraction_mult', 'Pacifist Ethics Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace#finish', 'country_border_friction_mult', '-0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace#finish', 'country_trust_cap_add', '25.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace#finish', 'country_naval_cap_mult', '-0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace#finish', 'pop_ethic_pacifist_attraction_mult', '0.4', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_pacifist_attraction_mult', 'Pacifist Ethics Attraction', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_we_come_in_peace_nomads', 'We Come in Peace', 'Ensure that non-aggression permeates our society and diplomatic relations.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"is_pacifist","value":"yes"}', NULL, 'Every Non-Genocidal: +25 Trust
+Opinion Penatly for crossing into Closed Border: -50%', 9);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace_nomads', 'country_trust_cap_add', '25.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace_nomads', 'country_naval_cap_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace_nomads', 'pop_ethic_pacifist_attraction_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_pacifist_attraction_mult', 'Pacifist Ethics Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace_nomads#finish', 'country_trust_cap_add', '25.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace_nomads#finish', 'country_naval_cap_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_we_come_in_peace_nomads#finish', 'pop_ethic_pacifist_attraction_mult', '0.4', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_pacifist_attraction_mult', 'Pacifist Ethics Attraction', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_display_of_power', 'Display of Power', 'Our neighbors will know we are prepared for war if necessary.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_militarist","value":"yes"}', NULL, NULL, 10);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_display_of_power', 'country_power_projection_influence_produces_add', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_power_projection_influence_produces_add', 'Max Influence from Power Projection', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_display_of_power', 'country_war_exhaustion_mult', '-0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_display_of_power', 'pop_ethic_militarist_attraction_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_militarist_attraction_mult', 'Militarist Ethics Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_display_of_power#finish', 'country_power_projection_influence_produces_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_power_projection_influence_produces_add', 'Max Influence from Power Projection', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_display_of_power#finish', 'country_war_exhaustion_mult', '-0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_display_of_power#finish', 'pop_ethic_militarist_attraction_mult', '0.4', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_militarist_attraction_mult', 'Militarist Ethics Attraction', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_open_arms', 'Open Arms', 'We are all citizens of the same galaxy. Everyone should feel welcome within our borders.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"is_xenophile","value":"yes"}', NULL, NULL, 11);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms', 'planet_resettlement_unemployed_destination_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_destination_mult', 'Automatic Resettlement Destination Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms', 'country_trade_produces_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms', 'pop_ethic_xenophile_attraction_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_xenophile_attraction_mult', 'Xenophile Ethics Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms#finish', 'planet_resettlement_unemployed_destination_mult', '0.4', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_destination_mult', 'Automatic Resettlement Destination Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms#finish', 'planet_jobs_trade_produces_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms#finish', 'external_leader_pool_add', '2.0', NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms#finish', 'pop_ethic_xenophile_attraction_mult', '0.4', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_xenophile_attraction_mult', 'Xenophile Ethics Attraction', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_open_arms_nomads', 'Open Arms', 'We are all citizens of the same galaxy. Everyone should feel safe welcoming us within their borders.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"is_xenophile","value":"yes"}', NULL, NULL, 12);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms_nomads', 'unlicensed_waystations_scaling_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('unlicensed_waystations_scaling_mult', 'Opinion penalty from Unlicensed Waystations', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms_nomads', 'country_trade_produces_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms_nomads', 'pop_ethic_xenophile_attraction_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_xenophile_attraction_mult', 'Xenophile Ethics Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms_nomads#finish', 'unlicensed_waystations_scaling_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('unlicensed_waystations_scaling_mult', 'Opinion penalty from Unlicensed Waystations', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms_nomads#finish', 'planet_jobs_trade_produces_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms_nomads#finish', 'external_leader_pool_add', '2.0', NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_arms_nomads#finish', 'pop_ethic_xenophile_attraction_mult', '0.4', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_xenophile_attraction_mult', 'Xenophile Ethics Attraction', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_strong_on_our_own', 'Strong on Our Own', 'We cannot rely on others, and must focus on making ourselves stronger.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_xenophobe","value":"yes"}', NULL, NULL, 13);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_strong_on_our_own', 'logistic_growth_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_strong_on_our_own', 'country_trade_produces_mult', '-0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_strong_on_our_own', 'pop_ethic_xenophobe_attraction_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_xenophobe_attraction_mult', 'Xenophobe Ethics Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_strong_on_our_own#finish', 'logistic_growth_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_strong_on_our_own#finish', 'planet_stability_add', '3.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_strong_on_our_own#finish', 'intel_encryption_add', '2.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_strong_on_our_own#finish', 'planet_jobs_trade_produces_mult', '-0.1', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_strong_on_our_own#finish', 'pop_ethic_xenophobe_attraction_mult', '0.4', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_xenophobe_attraction_mult', 'Xenophobe Ethics Attraction', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_give_and_take', 'Give and Take', 'Our political climate must encourage compromises and respect for differing views.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_egalitarian","value":"yes"}', NULL, NULL, 14);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_give_and_take', 'faction_approval', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('faction_approval', 'Faction Approval', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_give_and_take', 'pop_ethic_egalitarian_attraction_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_give_and_take#finish', 'faction_approval', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('faction_approval', 'Faction Approval', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_give_and_take#finish', 'pop_factions_produces_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_factions_produces_mult', 'Faction Resource Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_give_and_take#finish', 'pop_ethic_egalitarian_attraction_mult', '0.4', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_preserve_the_order', 'Preserve the Order', 'For us to truly prosper as a society, people must respect the judgment of the regime.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_authoritarian","value":"yes"}', NULL, NULL, 15);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_preserve_the_order', 'planet_jobs_worker_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_preserve_the_order', 'pop_slave_bonus_workforce_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_bonus_workforce_mult', 'Job Efficiency for Slaves', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_preserve_the_order', 'pop_ethic_authoritarian_attraction_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_authoritarian_attraction_mult', 'Authoritarian Ethics Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_preserve_the_order#finish', 'planet_jobs_worker_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_preserve_the_order#finish', 'pop_slave_bonus_workforce_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_bonus_workforce_mult', 'Job Efficiency for Slaves', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_preserve_the_order#finish', 'pop_cat_worker_political_power', '-0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_political_power', 'Worker Political Power', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_preserve_the_order#finish', 'pop_slave_political_power', '-0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_political_power', 'Slave Political Power', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_preserve_the_order#finish', 'pop_ethic_authoritarian_attraction_mult', '0.4', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_authoritarian_attraction_mult', 'Authoritarian Ethics Attraction', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_a_higher_purpose', 'A Higher Purpose', 'In our faith we must find comfort, purpose and direction.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_spiritualist","value":"yes"}', NULL, '(Gain Unity 50 per 100 Priest)', 16);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_a_higher_purpose', 'pop_citizen_happiness', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_citizen_happiness', 'Pop Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_a_higher_purpose', 'pop_ethic_spiritualist_attraction_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_spiritualist_attraction_mult', 'Spiritualist Ethics Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_a_higher_purpose#finish', 'pop_citizen_happiness', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_citizen_happiness', 'Pop Happiness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_a_higher_purpose#finish', 'pop_ethic_spiritualist_attraction_mult', '0.4', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_spiritualist_attraction_mult', 'Spiritualist Ethics Attraction', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_progressive_growth', 'Progressive Growth', 'The only practical way to satisfy our desire for growth is through manufacturing it.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_materialist","value":"yes"}', NULL, NULL, 17);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_progressive_growth', 'planet_pop_assembly_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_progressive_growth', 'pop_ethic_materialist_attraction_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_materialist_attraction_mult', 'Materialist Ethics Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_progressive_growth#finish', 'planet_pop_assembly_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_progressive_growth#finish', 'pop_ethic_materialist_attraction_mult', '0.4', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_materialist_attraction_mult', 'Materialist Ethics Attraction', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_finding_the_voice', 'Finding the Voice', 'Millions of impressions and conclusions overwhelm us. Learning to filter out all but the most important voices takes effort, but also makes us more efficient.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"always","value":"yes"}', NULL, NULL, 18);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_finding_the_voice', 'country_agendas_unity_produces_add', '5.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_agendas_unity_produces_add', 'Monthly Unity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_finding_the_voice', 'country_unity_produces_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_finding_the_voice#finish', 'country_agendas_unity_produces_add', '20.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_agendas_unity_produces_add', 'Monthly Unity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_finding_the_voice#finish', 'country_unity_produces_mult', '0.4', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_conquer_nature', 'Conquer Nature', 'We can adapt to our surroundings, but in the end nature will bend to our will.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_adaptability_adopt"}', '["tr_adaptability_adopt"]', NULL, 19);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_conquer_nature', 'pop_environment_tolerance', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_conquer_nature', 'terraform_speed_mult', '0.1', NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_conquer_nature#finish', 'pop_environment_tolerance', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_conquer_nature#finish', 'terraform_speed_mult', '0.4', NULL, 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_conquer_nature_nomads', 'Conquer Nature', 'We can adapt to our surroundings, but in the end nature will bend to our will.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_adaptability_adopt"}', '["tr_adaptability_adopt"]', NULL, 20);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_conquer_nature_nomads', 'arkship_harvest_resources_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_produces_mult', 'Resources from Harvesting Actions', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_conquer_nature_nomads', 'starbase_collected_system_resources_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_resources_mult', 'Waystation Collection Efficiency', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_conquer_nature_nomads#finish', 'arkship_harvest_resources_produces_mult', '0.4', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_produces_mult', 'Resources from Harvesting Actions', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_conquer_nature_nomads#finish', 'starbase_collected_system_resources_mult', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_resources_mult', 'Waystation Collection Efficiency', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_build_relations', 'Build Relations', 'Only through building trust can we create a better future.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_inwards_perfection"},{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"}]}]}]}', '{"leaf":"has_tradition","value":"tr_diplomacy_adopt"}', '["tr_diplomacy_adopt"]', NULL, 21);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_build_relations', 'country_trust_growth', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_growth', 'Trust Growth', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_build_relations', 'diplo_weight_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_build_relations#finish', 'country_trust_growth', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_growth', 'Trust Growth', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_build_relations#finish', 'diplo_weight_mult', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_chart_the_unknown', 'Chart the Unknown', 'We must fervently chart all the mysteries of the galaxy.', '7000.0', 3600, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', '{"leaf":"has_tradition","value":"tr_discovery_adopt"}', '["tr_discovery_adopt"]', NULL, 22);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_chart_the_unknown', 'science_ship_survey_speed', '0.25', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_chart_the_unknown', 'ship_anomaly_generation_chance_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_anomaly_generation_chance_mult', 'Anomaly Discovery Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_chart_the_unknown#finish', 'science_ship_survey_speed', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_chart_the_unknown#finish', 'ship_anomaly_generation_chance_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_anomaly_generation_chance_mult', 'Anomaly Discovery Chance', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_civil_exclusion', 'Civil Exclusion', 'Citizenship requirements are temporarily adjusted, raising expectations of those within our borders.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_gestalt","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_domination_adopt"}', '["tr_domination_adopt"]', NULL, 23);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_civil_exclusion', 'planet_jobs_worker_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_civil_exclusion', 'pop_slave_bonus_workforce_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_bonus_workforce_mult', 'Job Efficiency for Slaves', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_civil_exclusion', 'planet_crime_add', '10.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_civil_exclusion#finish', 'planet_jobs_productive_produces_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_productive_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_civil_exclusion#finish', 'pop_slave_bonus_workforce_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_bonus_workforce_mult', 'Job Efficiency for Slaves', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_civil_exclusion#finish', 'planet_crime_add', '10.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_confidence_in_variance', 'Confidence in Variance', 'We can comfortably wield a degree of deviancy among our in order to permit novel bursts of productivity.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_gestalt","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_domination_adopt"}', '["tr_domination_adopt"]', NULL, 24);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_confidence_in_variance', 'planet_jobs_productive_produces_mult', '0.04', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_productive_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_confidence_in_variance', 'planet_crime_no_happiness_add', '10.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_confidence_in_variance#finish', 'planet_jobs_productive_produces_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_productive_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_confidence_in_variance#finish', 'planet_crime_no_happiness_add', '10.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_superior_colonies', 'Superior Infrastructure', 'We make substantial logistical efforts to support the development of our new colonies.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_nomadic","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_expansion_adopt"}', '["tr_expansion_adopt"]', 'Young colonies get Infrastructure Build Speed: +50% for 10 years.', 25);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_superior_colonies', 'planet_colony_development_speed_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_colony_development_speed_mult', 'Colony Development Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_superior_colonies#finish', 'planet_colony_development_speed_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_colony_development_speed_mult', 'Colony Development Speed', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_superior_colonies_wilderness', 'Superior Sproutlings', 'We make substantial logistical efforts to support the development of our new colonies.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_wilderness_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_expansion_adopt"}', '["tr_expansion_adopt"]', 'Young colonies get Infrastructure Build Speed: +50% for 10 years.', 26);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_superior_colonies_wilderness', 'terraform_speed_mult', '0.25', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_superior_colonies_wilderness#finish', 'terraform_speed_mult', '0.5', NULL, 0);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_superior_colonies_nomad', 'Superior Stations', 'We make substantial logistical efforts to support the development of our waystations.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_expansion_adopt"}', '["tr_expansion_adopt"]', NULL, 27);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_superior_colonies_nomad', 'starbase_collected_system_resources_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_resources_mult', 'Waystation Collection Efficiency', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_superior_colonies_nomad#finish', 'starbase_collected_system_resources_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_resources_mult', 'Waystation Collection Efficiency', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_inner_stability', 'Inner Stability', 'A shared vision brings us harmony despite our differing values.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_gestalt","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_harmony_adopt"}', '["tr_harmony_adopt"]', NULL, 28);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_inner_stability', 'planet_stability_add', '5.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_inner_stability#finish', 'planet_stability_add', '5.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_open_markets', 'Open Markets', 'We commit entirely to maximizing the benefits for all involved parties in our Commercial Pacts.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_regular_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_criminal_heritage"}]}]}', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_mercantile_adopt"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_criminal_heritage"}]}]}', '["tr_mercantile_adopt"]', NULL, 29);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_markets', 'commercial_pact_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commercial_pact_mult', 'Commercial Pact Effectiveness', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_markets#finish', 'commercial_pact_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commercial_pact_mult', 'Commercial Pact Effectiveness', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_open_markets_criminal_heritage', 'Open Markets', 'We are entirely committed to maximizing the benefits for all of our Clientele.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_regular_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_criminal_heritage"}]}', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_mercantile_adopt"},{"leaf":"has_valid_civic","value":"civic_criminal_heritage"}]}', '["tr_mercantile_adopt"]', NULL, 30);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_markets_criminal_heritage', 'branch_office_holding_crime_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('branch_office_holding_crime_mult', 'Crime from Branch Office Holdings', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_open_markets_criminal_heritage#finish', 'branch_office_holding_crime_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('branch_office_holding_crime_mult', 'Crime from Branch Office Holdings', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_favored_society', 'Favored Society', 'We choose to provide special dispensation to citizens living and working on our Capital.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_prosperity_adopt"}', '["tr_prosperity_adopt"]', NULL, 31);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_favored_society', 'planet_jobs_specialist_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_specialist_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_favored_society#finish', 'planet_jobs_specialist_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_specialist_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_favor_the_core', 'Favor the Core', 'We choose to focus more energy and attention on our thriving capital, heart of all Hearts.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_wilderness_empire","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_prosperity_adopt"}', '["tr_prosperity_adopt"]', NULL, 32);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_favor_the_core', 'planet_jobs_produces_mult', '0.03', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_favor_the_core#finish', 'planet_jobs_specialist_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_specialist_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_departmental_efficiency', 'Departmental Efficiency', 'We streamline council departments by rebuilding them from the ground up.', '7000.0', 3600, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', '{"leaf":"has_tradition","value":"tr_statecraft_adopt"}', '["tr_statecraft_adopt"]', NULL, 33);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_departmental_efficiency', 'councilor_exp_gain', '0.2', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_departmental_efficiency#finish', 'councilor_exp_gain', '0.2', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_departmental_efficiency#finish', 'councilor_skill_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_rightful_claims', 'Rightful Claims', 'Through political procedure and streamlined bureaucracy, we are better suited to manipulate our rivals.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"host_has_dlc","value":"Galactic Paragons"}]}', '{"leaf":"has_tradition","value":"tr_statecraft_inspiring_agendas"}', '["tr_statecraft_inspiring_agendas"]', NULL, 34);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_rightful_claims', 'rivalries_influence_produces_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('rivalries_influence_produces_mult', 'Rivalries Influence Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_rightful_claims#finish', 'rivalries_influence_produces_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('rivalries_influence_produces_mult', 'Rivalries Influence Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_rightful_claims#finish', 'damage_vs_rival_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_rival_mult', 'Damage to Rivals', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_rightful_claims#finish', 'country_claim_influence_cost_mult', '-0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_rightful_claims_nomads', 'Rightful Claims', 'Through political procedure and streamlined bureaucracy, we are better suited to manipulate our rivals.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"host_has_dlc","value":"Galactic Paragons"}]}', '{"leaf":"has_tradition","value":"tr_statecraft_inspiring_agendas"}', '["tr_statecraft_inspiring_agendas"]', NULL, 35);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_rightful_claims_nomads', 'rivalries_influence_produces_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('rivalries_influence_produces_mult', 'Rivalries Influence Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_rightful_claims_nomads#finish', 'rivalries_influence_produces_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('rivalries_influence_produces_mult', 'Rivalries Influence Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_rightful_claims_nomads#finish', 'damage_vs_rival_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_rival_mult', 'Damage to Rivals', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_rightful_claims_nomads#finish', 'megastructures_waystations_influence_cost_mult', '-0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_waystations_influence_cost_mult', 'Waystation Influence Cost', 0);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_evolving_society', 'Evolving Society', 'Ideas and theories for new ways to improve ourselves must be discussed and pursued with fervor.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"always","value":"yes"}', NULL, NULL, 36);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_evolving_society', 'country_unity_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_evolving_society#finish', 'country_unity_produces_mult', '0.4', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_oppose_the_fallen', 'Oppose the Fallen', 'Studying these imposing threats will allow us to adapt our forces before a confrontation can arise.', '7000.0', 3600, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', '{"leaf":"has_tradition","value":"tr_statecraft_inspiring_agendas"}', '["tr_statecraft_inspiring_agendas"]', NULL, 37);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_oppose_the_fallen', 'damage_vs_country_type_dormant_marauders_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_dormant_marauders_mult', 'Damage vs Marauders', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_oppose_the_fallen', 'damage_vs_country_type_awakened_marauders_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_marauders_mult', 'Damage vs Awakened Marauders', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_oppose_the_fallen', 'damage_vs_country_type_fallen_empire_mult', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_fallen_empire_mult', 'Damage to Fallen Empires', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_oppose_the_fallen', 'damage_vs_country_type_awakened_fallen_empire_mult', '0.05', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_oppose_the_fallen#finish', 'damage_vs_country_type_dormant_marauders_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_dormant_marauders_mult', 'Damage vs Marauders', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_oppose_the_fallen#finish', 'damage_vs_country_type_awakened_marauders_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_marauders_mult', 'Damage vs Awakened Marauders', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_oppose_the_fallen#finish', 'damage_vs_country_type_fallen_empire_mult', '0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_fallen_empire_mult', 'Damage to Fallen Empires', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_oppose_the_fallen#finish', 'damage_vs_country_type_awakened_fallen_empire_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_uncover_secrets', 'Uncover Secrets', 'We pursue all means possible of gaining information on anyone and everything.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"host_has_dlc","value":"Nemesis"}]}', '{"leaf":"has_tradition","value":"tr_subterfuge_adopt"}', '["tr_subterfuge_adopt"]', NULL, 38);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_uncover_secrets', 'intel_decryption_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_uncover_secrets', 'add_base_country_intel', '5.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_base_country_intel', 'Base Intel Level', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_uncover_secrets#finish', 'intel_decryption_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_uncover_secrets#finish', 'add_base_country_intel', '20.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_base_country_intel', 'Base Intel Level', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_military_buildup', 'Military Buildup', 'By acting decisively, we stand prepared for any threats.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_supremacy_adopt"}', '["tr_supremacy_adopt"]', NULL, 39);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_military_buildup', 'starbase_shipyard_build_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_military_buildup', 'country_claim_influence_cost_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_military_buildup#finish', 'starbase_shipyard_build_speed_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_military_buildup#finish', 'country_claim_influence_cost_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_military_buildup#finish', 'country_war_exhaustion_mult', '-0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_military_buildup_nomads', 'Military Buildup', 'By acting decisively, we stand prepared for any threats.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_supremacy_adopt"}', '["tr_supremacy_adopt"]', NULL, 40);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_military_buildup_nomads', 'starbase_shipyard_build_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_military_buildup_nomads', 'country_naval_cap_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_military_buildup_nomads#finish', 'starbase_shipyard_build_speed_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_military_buildup_nomads#finish', 'country_naval_cap_mult', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_impenetrable_border', 'Impenetrable Border', 'We will prepare for the worst and be ready, should our territory ever be threatened.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"op":"or","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"host_has_dlc","value":"Overlord"}]}]}', '{"leaf":"has_tradition","value":"tr_unyielding_adopt"}', '["tr_unyielding_adopt"]', 'Increased chance of Starbase research options.', 41);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_impenetrable_border', 'shipclass_starbase_hull_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_starbase_hull_mult', 'Station Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_impenetrable_border', 'starbase_upgrade_cost_mult', '-0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_impenetrable_border', 'country_war_exhaustion_mult', '-0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_impenetrable_border#finish', 'shipclass_starbase_hull_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_starbase_hull_mult', 'Station Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_impenetrable_border#finish', 'starbase_upgrade_cost_mult', '-0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_impenetrable_border#finish', 'country_war_exhaustion_mult', '-0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_second_strike', 'Second Strike', 'Attacking while your enemy is reeling remains a time-honored tradition.', '3500.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_homicidal","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}]}]}]}', '{"leaf":"has_tradition","value":"tr_enmity_adopt"}', '["tr_enmity_adopt"]', 'Removes all truces with Rivals.', 42);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_second_strike', 'ship_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_second_strike', 'fleet_mia_time_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('fleet_mia_time_mult', 'Time Spent Missing In Action', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_second_strike#finish', 'ship_speed_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_second_strike#finish', 'ship_disengage_opportunities_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_disengage_opportunities_add', 'Disengagement Opportunities', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_leadership_conditioning', 'Leadership Conditioning', 'All our leaders spend, willingly or not, considerable time and effort on introspection and behavioral retraining.', '7000.0', 3600, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', '{"leaf":"has_tradition","value":"tr_aptitude_adopt"}', '["tr_aptitude_adopt"]', '3000 Experience will be shared between all Leaders below Skill Level 10', 43);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_leadership_conditioning', 'species_leader_exp_gain', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_leadership_conditioning#finish', 'species_leader_exp_gain', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_pioneer_politics', 'Pioneer Politics', 'The will recognize and praise our absolute commitment to them.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"is_homicidal","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_politics_adopt"}', '["tr_politics_adopt"]', NULL, 44);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_pioneer_politics', 'resolutions_cost_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('resolutions_cost_mult', 'Galcom Resolution Action Costs', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_pioneer_politics', 'veto_cooldown_mult', '-0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_pioneer_politics#finish', 'resolutions_cost_mult', '-0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('resolutions_cost_mult', 'Galcom Resolution Action Costs', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_pioneer_politics#finish', 'veto_cooldown_mult', '-0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_self_maintenance', 'Self Maintenance', 'Permit local clustering and patching of environmental adaptation protocols.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_machine_empire","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_versatility_adopt"}', '["tr_versatility_adopt"]', NULL, 45);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_self_maintenance', 'planet_pop_assembly_mult', '0.025', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_self_maintenance', 'pop_amenities_usage_no_happiness_mult', '-0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_self_maintenance#finish', 'planet_pop_assembly_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_self_maintenance#finish', 'pop_amenities_usage_no_happiness_mult', '-0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_gestalt_boost_growth', 'Growth Revision', 'Coordinating our and colonies must be prioritized.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"has_tradition","value":"tr_synchronicity_adopt"}', '["tr_synchronicity_adopt"]', NULL, 46);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_gestalt_boost_growth', 'councilor_gestalt_growth_exp_gain', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_gestalt_boost_growth#finish', 'councilor_gestalt_growth_exp_gain', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_gestalt_boost_cognitive', 'Cognitive Revision', 'Analysis and existential understanding must be prioritized.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"has_tradition","value":"tr_synchronicity_adopt"}', '["tr_synchronicity_adopt"]', NULL, 47);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_gestalt_boost_cognitive', 'councilor_gestalt_cognitive_exp_gain', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_gestalt_boost_cognitive#finish', 'councilor_gestalt_cognitive_exp_gain', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_gestalt_boost_regulatory', 'Regulatory Revision', 'Preemptive measures must be prioritized.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"has_tradition","value":"tr_synchronicity_adopt"}', '["tr_synchronicity_adopt"]', NULL, 48);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_gestalt_boost_regulatory', 'councilor_gestalt_regulatory_exp_gain', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_gestalt_boost_regulatory#finish', 'councilor_gestalt_regulatory_exp_gain', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_gestalt_boost_legion', 'Legion Revision', 'Controlling the boundaries of our territory in space must be prioritized.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"has_tradition","value":"tr_synchronicity_adopt"}', '["tr_synchronicity_adopt"]', NULL, 49);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_gestalt_boost_legion', 'councilor_gestalt_legion_exp_gain', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_gestalt_boost_legion#finish', 'councilor_gestalt_legion_exp_gain', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_mind_over_matter', 'Mind Over Matter', '', NULL, 3600, '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_psionic_theory"},{"leaf":"has_technology","value":"tech_telepathy"},{"leaf":"has_technology","value":"tech_thought_enforcement"}]}]},{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_individual_machine","value":"no"}]}]},{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"has_country_flag","value":"has_completed_reckoning_dig_site"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_endbringers"}]}]}]}]}', '{"leaf":"has_psionic_ascension","value":"yes"}', '["ap_mind_over_matter"]', NULL, 50);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_psionic_supremacy', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"composer_covenant_confirmed"},{"leaf":"has_country_flag","value":"instrument_covenant_confirmed"},{"leaf":"has_country_flag","value":"eater_covenant_confirmed"},{"leaf":"has_country_flag","value":"whisperers_covenant_confirmed"}]}]}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 51);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy', 'category_psionics_research_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy', 'psionic_pop_bonus_workforce_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy#finish', 'category_psionics_research_speed_mult', '0.4', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy#finish', 'country_unity_produces_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy#finish', 'psionic_pop_bonus_workforce_mult', '0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_psionic_supremacy_composer', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"has_country_flag","value":"composer_covenant_confirmed"}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 52);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_composer', 'category_psionics_research_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_composer', 'psionic_pop_bonus_workforce_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_composer#finish', 'category_psionics_research_speed_mult', '0.4', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_composer#finish', 'logistic_growth_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_composer#finish', 'psionic_pop_bonus_workforce_mult', '0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_psionic_supremacy_instrument', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"has_country_flag","value":"instrument_covenant_confirmed"}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 53);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_instrument', 'category_psionics_research_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_instrument', 'psionic_pop_bonus_workforce_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_instrument#finish', 'category_psionics_research_speed_mult', '0.4', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_instrument#finish', 'country_trade_produces_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_instrument#finish', 'psionic_pop_bonus_workforce_mult', '0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_psionic_supremacy_eater', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"has_country_flag","value":"eater_covenant_confirmed"}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 54);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_eater', 'category_psionics_research_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_eater', 'psionic_pop_bonus_workforce_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_eater#finish', 'category_psionics_research_speed_mult', '0.4', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_eater#finish', 'starbase_shipyard_build_speed_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_eater#finish', 'psionic_pop_bonus_workforce_mult', '0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_psionic_supremacy_whisperers', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"has_country_flag","value":"whisperers_covenant_confirmed"}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 55);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_whisperers', 'category_psionics_research_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_whisperers', 'psionic_pop_bonus_workforce_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_whisperers#finish', 'category_psionics_research_speed_mult', '0.4', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_whisperers#finish', 'espionage_operation_cost_mult', '-0.3', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('espionage_operation_cost_mult', 'Operation Infiltration Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_whisperers#finish', 'psionic_pop_bonus_workforce_mult', '0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_psionic_supremacy_shroud', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_psionics_shroud_adopt"}', '["tr_psionics_shroud_adopt"]', NULL, 56);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_shroud', 'category_psionics_research_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_shroud', 'psionic_pop_bonus_workforce_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_shroud', 'attunement_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('attunement_mult', 'Patron Attunement', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_shroud#finish', 'category_psionics_research_speed_mult', '0.4', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_psionics_research_speed_mult', 'Research Speed (Psionics)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_shroud#finish', 'attunement_mult', '0.4', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('attunement_mult', 'Patron Attunement', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_psionic_supremacy_shroud#finish', 'psionic_pop_bonus_workforce_mult', '0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_engineered_evolution', 'Biomorphosis', 'To leave our genetic destiny in the hands of nature is an inefficient and excruciatingly slow process. Why not jump-start the future of our species?', '3500.0', 3600, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_genome_mapping"},{"leaf":"has_technology","value":"tech_gene_tailoring"},{"leaf":"has_technology","value":"tech_glandular_acclimation"},{"leaf":"has_technology","value":"tech_gene_expressions"},{"leaf":"has_technology","value":"tech_gene_seed_purification"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"}', '["ap_engineered_evolution"]', NULL, 57);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_genetic_pursuit', 'Genetic Pursuit', 'We must focus our efforts to achieve absolute genetic perfection.', '7000.0', 3600, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"BioGenesis"}]},{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_genetics_adopt"}', '["tr_genetics_adopt"]', NULL, 58);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_genetic_pursuit', 'category_biology_research_speed_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_biology_research_speed_mult', 'Research Speed (Biology)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_genetic_pursuit', 'logistic_growth_mult', '0.025', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_genetic_pursuit', 'bonus_pop_growth_mult', '0.025', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_genetic_pursuit#finish', 'category_biology_research_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_biology_research_speed_mult', 'Research Speed (Biology)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_genetic_pursuit#finish', 'logistic_growth_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_genetic_pursuit#finish', 'bonus_pop_growth_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_cybernetic_advantage', 'Cybernetic Advantage', 'We must ensure that our best Cybernetic enhancements are made available to everyone within our borders.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_cybernetics_adopt"}', '["tr_cybernetics_adopt"]', NULL, 59);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_cybernetic_advantage', 'planet_pops_cyborgs_upkeep_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_cyborgs_upkeep_mult', 'Cyborg Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_cybernetic_advantage', 'logistic_growth_mult', '0.025', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_cybernetic_advantage#finish', 'planet_pops_cyborgs_upkeep_mult', '-0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_cyborgs_upkeep_mult', 'Cyborg Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_cybernetic_advantage#finish', 'logistic_growth_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_flesh_is_weak', 'The Flesh is Weak', 'The limits and constraints imposed on us by our feeble organic bodies are simply unacceptable. To reach our full potential, we must turn to cybernetic implants.', '3500.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}', '["ap_the_flesh_is_weak"]', NULL, 60);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_organo_machine_interfacing', 'Organo-Machine Interfacing', NULL, '3500.0', 3600, '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"}', '["ap_organo_machine_interfacing"]', NULL, 61);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_cybernetic_advantage_assimilator', 'Cybernetic Advantage', 'We must ensure that our best Cybernetic enhancements are distributed and installed properly among everyone within our borders.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_cybernetics_assimilator_adopt"}', '["tr_cybernetics_assimilator_adopt"]', NULL, 62);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_cybernetic_advantage_assimilator', 'planet_pops_cyborgs_upkeep_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_cyborgs_upkeep_mult', 'Cyborg Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_cybernetic_advantage_assimilator', 'logistic_growth_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_cybernetic_advantage_assimilator#finish', 'planet_pops_cyborgs_upkeep_mult', '-0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_cyborgs_upkeep_mult', 'Cyborg Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_cybernetic_advantage_assimilator#finish', 'logistic_growth_mult', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_organo_machine_interfacing_assimilator', NULL, 'The limits and constraints imposed on us by our creators are simply unacceptable. To reach our full potential, we must fuse organic and machine.', '3500.0', 3600, '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"}', '["ap_organo_machine_interfacing_assimilator"]', NULL, 63);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_synthetic_evolution', 'Synthetic Evolution', 'It is time to abandon the flawed organic vessels that imprison our minds. By transferring our neural patterns into synthetic bodies, we will achieve a higher state of being.', '3500.0', 3600, '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_robotic_workers"},{"leaf":"has_technology","value":"tech_droid_workers"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]}]}]}', '{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}', '["ap_synthetic_evolution"]', NULL, 64);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_synthetic_yield', 'Synthetic Yield', 'Any doubt regarding the superiority of our synthetics must be cast aside.', '7000.0', 3600, '{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_synthetics_adopt"}', '["tr_synthetics_adopt"]', NULL, 65);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_synthetic_yield', 'planet_pop_assembly_add', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_add', 'Monthly Mechanical Pop Assembly', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_synthetic_yield#finish', 'planet_pop_assembly_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_add', 'Monthly Mechanical Pop Assembly', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_synthetic_age', 'Synthetic Age', 'The age of organics has come and gone, the future of the galaxy belongs to the machines. This is the dawn of a synthetic age.', '3500.0', 3600, '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"has_cybernetic_ascension","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_robomodding_m"},{"leaf":"has_technology","value":"tech_binary_motivators"},{"leaf":"has_technology","value":"tech_nanite_assemblers"},{"leaf":"has_technology","value":"tech_mega_assembly"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_synthetic_age"}', '["ap_synthetic_age"]', NULL, 66);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_virtuality_optimized_network', 'Optimized Network', 'Optimizing our data structures will allow both increased performance and security when accessing remote worksites', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_country_flag","value":"modularity_traditions_unlocked"},{"leaf":"has_country_flag","value":"nanotech_traditions_unlocked"}]}]}]}', '{"leaf":"has_tradition","value":"tr_virtuality_adopt"}', '["tr_virtuality_adopt"]', NULL, 67);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_virtuality_optimized_network', 'pop_bonus_workforce_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_virtuality_optimized_network#finish', 'intel_decryption_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_virtuality_optimized_network#finish', 'intel_encryption_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_virtuality_optimized_network#finish', 'pop_bonus_workforce_mult', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_nanotech_unstoppable_swarm', 'Unstoppable Swarm', 'We shall ensure that our swarm will blot out the stars themselves.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_country_flag","value":"modularity_traditions_unlocked"},{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}]}]}]}', '{"leaf":"has_tradition","value":"tr_nanotech_adopt"}', '["tr_nanotech_adopt"]', NULL, 68);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_nanotech_unstoppable_swarm', 'shipsize_nanite_swarmer_build_speed_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_nanite_swarmer_build_speed_mult', 'Nanite Swarmer Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_nanotech_unstoppable_swarm', 'ship_nanite_swarmer_cost_mult', '-0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_nanite_swarmer_cost_mult', 'Nanite Swarmer Build Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_nanotech_unstoppable_swarm#finish', 'shipsize_nanite_swarmer_evasion_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_nanite_swarmer_evasion_mult', 'Nanite Swarmer Evasion', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_nanotech_unstoppable_swarm#finish', 'shipsize_nanite_swarmer_tracking_mult', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_nanite_swarmer_tracking_mult', 'Nanite Swarmer Tracking', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_modularity_reshape_form', 'Reshape Form', 'Utilizing Living Metal to reshape our population allows for increased efficiency in the upkeep and adaptability of our machine bodies.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_country_flag","value":"nanotech_traditions_unlocked"},{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}]}]}]}', '{"leaf":"has_tradition","value":"tr_modularity_adopt"}', '["tr_modularity_adopt"]', NULL, 69);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_modularity_reshape_form', 'planet_pops_robotics_upkeep_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_robotics_upkeep_mult', 'Robot Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_modularity_reshape_form', 'planet_jobs_sr_living_metal_produces_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_sr_living_metal_produces_mult', 'Living Metal from Jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_modularity_reshape_form', 'auto_mod_monthly_add', '100.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_modularity_reshape_form#finish', 'planet_pops_robotics_upkeep_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_robotics_upkeep_mult', 'Robot Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_modularity_reshape_form#finish', 'planet_jobs_sr_living_metal_produces_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_sr_living_metal_produces_mult', 'Living Metal from Jobs', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_modularity_reshape_form#finish', 'auto_mod_monthly_add', '200.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_purity_perfection', 'Perfection Protocols', 'We shall embrace the purity found within our genetic code.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}]}]}', '{"leaf":"has_tradition","value":"tr_purity_adopt"}', '["tr_purity_adopt"]', 'For every Pop Organic Pops:
+Gain 5 Unity per Positive Species Trait
+(Max. Unity 25 per Pop 100):
+Gain 5 Society Research per Negative Species Trait
+(Max. Society 25 per Pop 100):', 70);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_purity_perfection', 'logistic_growth_mult', '0.025', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_purity_perfection#finish', 'logistic_growth_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_purity_perfection_wilderness', 'Perfection Protocols', 'We shall direct the genetic orchestra of our symbionts with unmatched precision.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_wilderness_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}]}]}', '{"leaf":"has_tradition","value":"tr_purity_adopt"}', '["tr_purity_adopt"]', NULL, 71);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_purity_perfection_wilderness', 'planet_building_build_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_purity_perfection_wilderness#finish', 'planet_building_build_speed_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_purity_perfection_wilderness#finish', 'planet_structures_upkeep_mult', '-0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_upkeep_mult', 'Infrastructure Upkeep', 0);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_cloning_replication', 'Replication Initiative', 'We shall increase our population by ensuring our cloning facilities have no shortage of resources.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_cloning_adopt"}', '["tr_cloning_adopt"]', NULL, 72);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_cloning_replication', 'bonus_pop_growth_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_cloning_replication#finish', 'bonus_pop_growth_mult', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_mutation_divergence', 'Divergence Directive', 'The introduction of hyper-adaptive nucleotides enables evolutionary changes in real time.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}]}]}', '{"leaf":"has_tradition","value":"tr_mutation_adopt"}', '["tr_mutation_adopt"]', 'Every Organic Species gains the Adaptive Mutations Species Trait', 73);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_mutation_divergence', 'auto_mod_monthly_add', '200.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_mutation_divergence#finish', 'auto_mod_monthly_add', '400.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_mutation_divergence_evo_pred', 'Evolutionary Directive', 'Will we institute an empire-wide focus on our evolutionary ambitions', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}', '{"leaf":"has_tradition","value":"tr_mutation_adopt"}', '["tr_mutation_adopt"]', NULL, 74);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_mutation_divergence_evo_pred', 'auto_mod_monthly_add', '200.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_mutation_divergence_evo_pred#finish', 'auto_mod_monthly_add', '400.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_dark_matter_breakthrough', 'Dark Matter Breakthrough', 'There are powerful applications we have not yet fully explored in the manipulation of Dark Matter.', '7000.0', 3600, '{"leaf":"is_dark_consortium_empire","value":"yes"}', '{"op":"and","args":[{"leaf":"num_researched_techs_of_tier","value":"scope"},{"op":"or","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tech_option","value":"tech_dark_matter_deflector"},{"leaf":"has_technology","value":"tech_dark_matter_deflector"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tech_option","value":"tech_dark_matter_power_core"},{"leaf":"has_technology","value":"tech_dark_matter_power_core"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tech_option","value":"tech_dark_matter_propulsion"},{"leaf":"has_technology","value":"tech_dark_matter_propulsion"}]}]}]}]}', NULL, 'Unlocks a research option for a random Dark Matter Technology.', 75);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_galactic_trawling', 'Galactic Trawling', 'There is life in deep space that should be catalogued and studied.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"host_has_dlc","value":"Grand Archive"}]}', '{"leaf":"has_tradition","value":"tr_domestication_adopt"}', '["tr_domestication_adopt"]', NULL, 76);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_galactic_trawling', 'gravity_snare_cost_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('gravity_snare_cost_mult', 'Gravity Snare Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_galactic_trawling', 'gravity_snare_cooldown_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('gravity_snare_cooldown_mult', 'Gravity Snare Cooldown', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_galactic_trawling', 'space_fauna_culling_reward_mult', '0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_culling_reward_mult', 'Resources from Culling', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_galactic_trawling#finish', 'gravity_snare_cost_mult', '-1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('gravity_snare_cost_mult', 'Gravity Snare Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_galactic_trawling#finish', 'gravity_snare_cooldown_mult', '-0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('gravity_snare_cooldown_mult', 'Gravity Snare Cooldown', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_galactic_trawling#finish', 'country_capture_chance_add', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_capture_chance_add', 'Fauna Capture Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_galactic_trawling#finish', 'space_fauna_culling_reward_mult', '0.5', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_culling_reward_mult', 'Resources from Culling', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_astute_observation', 'Astute Observation', 'The history of our galaxy is buried deep. We must work to learn from its forgotten lessons.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"host_has_dlc","value":"Grand Archive"}]}', '{"leaf":"has_tradition","value":"tr_archivism_adopt"}', '["tr_archivism_adopt"]', NULL, 77);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_astute_observation', 'specimens_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('specimens_produces_mult', 'Specimens Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_astute_observation', 'find_arc_site_on_survey_chance_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('find_arc_site_on_survey_chance_mult', 'Chance of finding an Archaeology Site on survey', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_astute_observation#finish', 'specimens_produces_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('specimens_produces_mult', 'Specimens Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_astute_observation#finish', 'find_arc_site_on_survey_chance_mult', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('find_arc_site_on_survey_chance_mult', 'Chance of finding an Archaeology Site on survey', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_hive_restore_growth', 'Cull Growth Node', 'Our Growth Node is no longer suited for our purpose, it shall be culled and a replacement Node shall be grown.', '7000.0', 3600, '{"leaf":"is_hive_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_culling_1"}', NULL, NULL, 78);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_hive_restore_growth#finish', 'councilor_gestalt_growth_exp_gain', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_hive_restore_cognitive', 'Cull Cognitive Node', 'Our Cognitive Node is no longer suited for our purpose, it shall be culled and a replacement Node shall be grown.', '7000.0', 3600, '{"leaf":"is_hive_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_culling_1"}', NULL, NULL, 79);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_hive_restore_cognitive#finish', 'councilor_gestalt_cognitive_exp_gain', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_hive_restore_legion', 'Cull Legion Node', 'Our Legion Node is no longer suited for our purpose, it shall be culled and a replacement Node shall be grown.', '7000.0', 3600, '{"leaf":"is_hive_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_culling_1"}', NULL, NULL, 80);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_hive_restore_legion#finish', 'councilor_gestalt_legion_exp_gain', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_hive_restore_regulatory', 'Cull Regulatory Node', 'Our Regulatory Node is no longer suited for our purpose, it shall be culled and a replacement Node shall be grown.', '7000.0', 3600, '{"leaf":"is_hive_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_culling_1"}', NULL, NULL, 81);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_hive_restore_regulatory#finish', 'councilor_gestalt_regulatory_exp_gain', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_machine_restore_growth', 'Reformat Growth Node', 'Our Growth Node is no longer suited for our purpose, it shall be reformatted and restored to the last valid backup.', '7000.0', 3600, '{"leaf":"is_machine_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_reformatting_1"}', NULL, NULL, 82);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_machine_restore_growth#finish', 'councilor_gestalt_growth_exp_gain', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_machine_restore_cognitive', 'Reformat Cognitive Node', 'Our Cognitive Node is no longer suited for our purpose, it shall be reformatted and restored to the last valid backup.', '7000.0', 3600, '{"leaf":"is_machine_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_reformatting_1"}', NULL, NULL, 83);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_machine_restore_cognitive#finish', 'councilor_gestalt_cognitive_exp_gain', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_machine_restore_legion', 'Reformat Legion Node', 'Our Legion Node is no longer suited for our purpose, it shall be reformatted and restored to the last valid backup.', '7000.0', 3600, '{"leaf":"is_machine_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_reformatting_1"}', NULL, NULL, 84);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_machine_restore_legion#finish', 'councilor_gestalt_legion_exp_gain', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_machine_restore_regulatory', 'Reformat Regulatory Node', 'Our Regulatory Node is no longer suited for our purpose, it shall be reformatted and restored to the last valid backup.', '7000.0', 3600, '{"leaf":"is_machine_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_reformatting_1"}', NULL, NULL, 85);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_machine_restore_regulatory#finish', 'councilor_gestalt_regulatory_exp_gain', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_arkship_engineering_civilian', 'Arkship Development', 'Our Arkship is optimized for resource extraction, but combat readiness and research capacity have gone without investment. Broadening our capabilities is a strategic priority.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_country_flag","value":"starting_civilian_arkship"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_arkship_construction"},{"leaf":"has_technology","value":"tech_arkship_tier_2"},{"leaf":"has_technology","value":"tech_science_arkship"},{"leaf":"has_technology","value":"tech_military_arkship"},{"leaf":"has_technology","value":"tech_arkship_tier_3"}]}]}]}', NULL, NULL, NULL, 86);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_civilian_arkship_tier_1_science_survey_speed', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_science_survey_speed', 'Civilian Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_civilian_arkship_tier_2_science_survey_speed', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_science_survey_speed', 'Civilian Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_civilian_arkship_tier_3_science_survey_speed', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_science_survey_speed', 'Civilian Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_science_arkship_tier_1_science_survey_speed', '0.05', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_science_survey_speed', 'Scientific Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_science_arkship_tier_2_science_survey_speed', '0.05', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_science_survey_speed', 'Scientific Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_science_arkship_tier_3_science_survey_speed', '0.05', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_science_survey_speed', 'Scientific Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_military_arkship_tier_1_science_survey_speed', '0.05', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_science_survey_speed', 'Military Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_military_arkship_tier_2_science_survey_speed', '0.05', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_science_survey_speed', 'Military Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_military_arkship_tier_3_science_survey_speed', '0.05', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_science_survey_speed', 'Military Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_civilian_arkship_tier_1_evasion_add', '5.0', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_evasion_add', 'Civilian Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_civilian_arkship_tier_2_evasion_add', '5.0', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_evasion_add', 'Civilian Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_civilian_arkship_tier_3_evasion_add', '5.0', NULL, 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_evasion_add', 'Civilian Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_science_arkship_tier_1_evasion_add', '5.0', NULL, 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_evasion_add', 'Scientific Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_science_arkship_tier_2_evasion_add', '5.0', NULL, 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_evasion_add', 'Scientific Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_science_arkship_tier_3_evasion_add', '5.0', NULL, 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_evasion_add', 'Scientific Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_military_arkship_tier_1_evasion_add', '5.0', NULL, 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_evasion_add', 'Military Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_military_arkship_tier_2_evasion_add', '5.0', NULL, 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_evasion_add', 'Military Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_civilian', 'shipsize_military_arkship_tier_3_evasion_add', '5.0', NULL, 17);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_evasion_add', 'Military Arkship Evasion Chance', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_arkship_engineering_science', 'Arkship Development', 'Our Arkship is a research platform of considerable capability, but the void demands more than scientific aptitude alone. Operational endurance and combat systems require equal investment.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_country_flag","value":"starting_science_arkship"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_arkship_construction"},{"leaf":"has_technology","value":"tech_arkship_tier_2"},{"leaf":"has_technology","value":"tech_civilian_arkship"},{"leaf":"has_technology","value":"tech_military_arkship"},{"leaf":"has_technology","value":"tech_arkship_tier_3"}]}]}]}', NULL, NULL, NULL, 87);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_civilian_arkship_tier_1_speed_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_speed_mult', 'Civilian Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_civilian_arkship_tier_2_speed_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_speed_mult', 'Civilian Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_civilian_arkship_tier_3_speed_mult', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_speed_mult', 'Civilian Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_science_arkship_tier_1_speed_mult', '0.05', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_speed_mult', 'Scientific Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_science_arkship_tier_2_speed_mult', '0.05', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_speed_mult', 'Scientific Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_science_arkship_tier_3_speed_mult', '0.05', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_speed_mult', 'Scientific Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_military_arkship_tier_1_speed_mult', '0.05', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_speed_mult', 'Military Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_military_arkship_tier_2_speed_mult', '0.05', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_speed_mult', 'Military Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_military_arkship_tier_3_speed_mult', '0.05', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_speed_mult', 'Military Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_civilian_arkship_tier_1_evasion_add', '5.0', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_evasion_add', 'Civilian Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_civilian_arkship_tier_2_evasion_add', '5.0', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_evasion_add', 'Civilian Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_civilian_arkship_tier_3_evasion_add', '5.0', NULL, 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_evasion_add', 'Civilian Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_science_arkship_tier_1_evasion_add', '5.0', NULL, 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_evasion_add', 'Scientific Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_science_arkship_tier_2_evasion_add', '5.0', NULL, 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_evasion_add', 'Scientific Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_science_arkship_tier_3_evasion_add', '5.0', NULL, 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_evasion_add', 'Scientific Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_military_arkship_tier_1_evasion_add', '5.0', NULL, 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_evasion_add', 'Military Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_military_arkship_tier_2_evasion_add', '5.0', NULL, 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_evasion_add', 'Military Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_science', 'shipsize_military_arkship_tier_3_evasion_add', '5.0', NULL, 17);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_evasion_add', 'Military Arkship Evasion Chance', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_arkship_engineering_military', 'Arkship Development', 'Our Arkship is built for combat operations, but research capability and logistical infrastructure have gone without investment. Correcting this imbalance will extend our operational reach.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_country_flag","value":"starting_military_arkship"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_arkship_construction"},{"leaf":"has_technology","value":"tech_arkship_tier_2"},{"leaf":"has_technology","value":"tech_civilian_arkship"},{"leaf":"has_technology","value":"tech_science_arkship"},{"leaf":"has_technology","value":"tech_arkship_tier_3"}]}]}]}', NULL, NULL, NULL, 88);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_civilian_arkship_tier_1_speed_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_speed_mult', 'Civilian Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_civilian_arkship_tier_2_speed_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_speed_mult', 'Civilian Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_civilian_arkship_tier_3_speed_mult', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_speed_mult', 'Civilian Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_science_arkship_tier_1_speed_mult', '0.05', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_speed_mult', 'Scientific Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_science_arkship_tier_2_speed_mult', '0.05', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_speed_mult', 'Scientific Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_science_arkship_tier_3_speed_mult', '0.05', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_speed_mult', 'Scientific Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_military_arkship_tier_1_speed_mult', '0.05', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_speed_mult', 'Military Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_military_arkship_tier_2_speed_mult', '0.05', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_speed_mult', 'Military Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_military_arkship_tier_3_speed_mult', '0.05', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_speed_mult', 'Military Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_civilian_arkship_tier_1_science_survey_speed', '0.05', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_science_survey_speed', 'Civilian Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_civilian_arkship_tier_2_science_survey_speed', '0.05', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_science_survey_speed', 'Civilian Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_civilian_arkship_tier_3_science_survey_speed', '0.05', NULL, 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_science_survey_speed', 'Civilian Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_science_arkship_tier_1_science_survey_speed', '0.05', NULL, 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_science_survey_speed', 'Scientific Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_science_arkship_tier_2_science_survey_speed', '0.05', NULL, 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_science_survey_speed', 'Scientific Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_science_arkship_tier_3_science_survey_speed', '0.05', NULL, 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_science_survey_speed', 'Scientific Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_military_arkship_tier_1_science_survey_speed', '0.05', NULL, 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_science_survey_speed', 'Military Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_military_arkship_tier_2_science_survey_speed', '0.05', NULL, 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_science_survey_speed', 'Military Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_military', 'shipsize_military_arkship_tier_3_science_survey_speed', '0.05', NULL, 17);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_science_survey_speed', 'Military Arkship Survey Speed', 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_arkship_engineering_mastery', 'Arkship Mastery', 'Arkship engineering has been mastered across every configuration. Research platforms, warships, and hauling operations alike stand to benefit from this agenda''s refinements.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_technology","value":"tech_arkship_construction"},{"leaf":"has_technology","value":"tech_arkship_tier_2"},{"leaf":"has_technology","value":"tech_arkship_tier_3"},{"leaf":"has_technology","value":"tech_civilian_arkship"},{"leaf":"has_technology","value":"tech_science_arkship"},{"leaf":"has_technology","value":"tech_military_arkship"}]}', NULL, NULL, NULL, 89);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_civilian_arkship_tier_1_science_survey_speed', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_science_survey_speed', 'Civilian Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_civilian_arkship_tier_2_science_survey_speed', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_science_survey_speed', 'Civilian Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_civilian_arkship_tier_3_science_survey_speed', '0.05', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_science_survey_speed', 'Civilian Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_science_arkship_tier_1_science_survey_speed', '0.05', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_science_survey_speed', 'Scientific Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_science_arkship_tier_2_science_survey_speed', '0.05', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_science_survey_speed', 'Scientific Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_science_arkship_tier_3_science_survey_speed', '0.05', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_science_survey_speed', 'Scientific Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_military_arkship_tier_1_science_survey_speed', '0.05', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_science_survey_speed', 'Military Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_military_arkship_tier_2_science_survey_speed', '0.05', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_science_survey_speed', 'Military Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_military_arkship_tier_3_science_survey_speed', '0.05', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_science_survey_speed', 'Military Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_civilian_arkship_tier_1_speed_mult', '0.05', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_speed_mult', 'Civilian Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_civilian_arkship_tier_2_speed_mult', '0.05', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_speed_mult', 'Civilian Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_civilian_arkship_tier_3_speed_mult', '0.05', NULL, 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_speed_mult', 'Civilian Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_science_arkship_tier_1_speed_mult', '0.05', NULL, 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_speed_mult', 'Scientific Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_science_arkship_tier_2_speed_mult', '0.05', NULL, 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_speed_mult', 'Scientific Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_science_arkship_tier_3_speed_mult', '0.05', NULL, 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_speed_mult', 'Scientific Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_military_arkship_tier_1_speed_mult', '0.05', NULL, 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_speed_mult', 'Military Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_military_arkship_tier_2_speed_mult', '0.05', NULL, 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_speed_mult', 'Military Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_military_arkship_tier_3_speed_mult', '0.05', NULL, 17);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_speed_mult', 'Military Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_civilian_arkship_tier_1_evasion_add', '5.0', NULL, 18);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_evasion_add', 'Civilian Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_civilian_arkship_tier_2_evasion_add', '5.0', NULL, 19);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_evasion_add', 'Civilian Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_civilian_arkship_tier_3_evasion_add', '5.0', NULL, 20);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_evasion_add', 'Civilian Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_science_arkship_tier_1_evasion_add', '5.0', NULL, 21);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_evasion_add', 'Scientific Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_science_arkship_tier_2_evasion_add', '5.0', NULL, 22);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_evasion_add', 'Scientific Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_science_arkship_tier_3_evasion_add', '5.0', NULL, 23);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_evasion_add', 'Scientific Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_military_arkship_tier_1_evasion_add', '5.0', NULL, 24);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_evasion_add', 'Military Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_military_arkship_tier_2_evasion_add', '5.0', NULL, 25);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_evasion_add', 'Military Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery', 'shipsize_military_arkship_tier_3_evasion_add', '5.0', NULL, 26);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_evasion_add', 'Military Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_1_science_survey_speed', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_science_survey_speed', 'Civilian Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_2_science_survey_speed', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_science_survey_speed', 'Civilian Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_3_science_survey_speed', '0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_science_survey_speed', 'Civilian Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_1_science_survey_speed', '0.1', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_science_survey_speed', 'Scientific Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_2_science_survey_speed', '0.1', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_science_survey_speed', 'Scientific Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_3_science_survey_speed', '0.1', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_science_survey_speed', 'Scientific Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_1_science_survey_speed', '0.1', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_science_survey_speed', 'Military Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_2_science_survey_speed', '0.1', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_science_survey_speed', 'Military Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_3_science_survey_speed', '0.1', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_science_survey_speed', 'Military Arkship Survey Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_1_speed_mult', '0.1', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_speed_mult', 'Civilian Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_2_speed_mult', '0.1', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_speed_mult', 'Civilian Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_3_speed_mult', '0.1', NULL, 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_speed_mult', 'Civilian Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_1_speed_mult', '0.1', NULL, 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_speed_mult', 'Scientific Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_2_speed_mult', '0.1', NULL, 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_speed_mult', 'Scientific Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_3_speed_mult', '0.1', NULL, 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_speed_mult', 'Scientific Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_1_speed_mult', '0.1', NULL, 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_speed_mult', 'Military Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_2_speed_mult', '0.1', NULL, 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_speed_mult', 'Military Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_3_speed_mult', '0.1', NULL, 17);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_speed_mult', 'Military Arkship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_1_evasion_add', '10.0', NULL, 18);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_evasion_add', 'Civilian Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_2_evasion_add', '10.0', NULL, 19);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_evasion_add', 'Civilian Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_3_evasion_add', '10.0', NULL, 20);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_evasion_add', 'Civilian Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_1_evasion_add', '10.0', NULL, 21);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_evasion_add', 'Scientific Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_2_evasion_add', '10.0', NULL, 22);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_evasion_add', 'Scientific Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_3_evasion_add', '10.0', NULL, 23);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_evasion_add', 'Scientific Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_1_evasion_add', '10.0', NULL, 24);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_evasion_add', 'Military Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_2_evasion_add', '10.0', NULL, 25);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_evasion_add', 'Military Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_3_evasion_add', '10.0', NULL, 26);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_evasion_add', 'Military Arkship Evasion Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_1_fire_rate_mult', '0.1', NULL, 27);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_fire_rate_mult', 'Civilian Arkship I Ship Fire Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_2_fire_rate_mult', '0.1', NULL, 28);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_fire_rate_mult', 'Civilian Arkship II Ship Fire Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_3_fire_rate_mult', '0.1', NULL, 29);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_fire_rate_mult', 'Civilian Arkship III Ship Fire Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_1_fire_rate_mult', '0.1', NULL, 30);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_fire_rate_mult', 'Scientific Arkship I Ship Fire Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_2_fire_rate_mult', '0.1', NULL, 31);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_fire_rate_mult', 'Scientific Arkship II Ship Fire Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_3_fire_rate_mult', '0.1', NULL, 32);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_fire_rate_mult', 'Scientific Arkship III Ship Fire Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_1_fire_rate_mult', '0.1', NULL, 33);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_fire_rate_mult', 'Military Arkship I Ship Fire Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_2_fire_rate_mult', '0.1', NULL, 34);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_fire_rate_mult', 'Military Arkship II Ship Fire Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_3_fire_rate_mult', '0.1', NULL, 35);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_fire_rate_mult', 'Military Arkship III Ship Fire Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_1_starbase_stockpile_collection_rate_mult', '0.1', NULL, 36);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_starbase_stockpile_collection_rate_mult', 'Civilian Arkship Waystation Resource Transfer Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_2_starbase_stockpile_collection_rate_mult', '0.1', NULL, 37);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_starbase_stockpile_collection_rate_mult', 'Civilian Arkship Waystation Resource Transfer Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_3_starbase_stockpile_collection_rate_mult', '0.1', NULL, 38);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_starbase_stockpile_collection_rate_mult', 'Civilian Arkship Waystation Resource Transfer Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_1_starbase_stockpile_collection_rate_mult', '0.1', NULL, 39);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_starbase_stockpile_collection_rate_mult', 'Scientific Arkship Waystation Resource Transfer Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_2_starbase_stockpile_collection_rate_mult', '0.1', NULL, 40);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_starbase_stockpile_collection_rate_mult', 'Scientific Arkship Waystation Resource Transfer Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_3_starbase_stockpile_collection_rate_mult', '0.1', NULL, 41);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_starbase_stockpile_collection_rate_mult', 'Scientific Arkship Waystation Resource Transfer Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_1_starbase_stockpile_collection_rate_mult', '0.1', NULL, 42);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_starbase_stockpile_collection_rate_mult', 'Military Arkship Waystation Resource Transfer Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_2_starbase_stockpile_collection_rate_mult', '0.1', NULL, 43);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_starbase_stockpile_collection_rate_mult', 'Military Arkship Waystation Resource Transfer Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_3_starbase_stockpile_collection_rate_mult', '0.1', NULL, 44);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_starbase_stockpile_collection_rate_mult', 'Military Arkship Waystation Resource Transfer Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_1_sensor_range_add', '2.0', NULL, 45);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_sensor_range_add', 'Civilian Arkship Sensor Range', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_2_sensor_range_add', '2.0', NULL, 46);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_sensor_range_add', 'Civilian Arkship Sensor Range', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_civilian_arkship_tier_3_sensor_range_add', '2.0', NULL, 47);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_sensor_range_add', 'Civilian Arkship Sensor Range', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_1_sensor_range_add', '2.0', NULL, 48);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_sensor_range_add', 'Scientific Arkship Sensor Range', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_2_sensor_range_add', '2.0', NULL, 49);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_sensor_range_add', 'Scientific Arkship Sensor Range', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_science_arkship_tier_3_sensor_range_add', '2.0', NULL, 50);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_sensor_range_add', 'Scientific Arkship Sensor Range', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_1_sensor_range_add', '2.0', NULL, 51);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_sensor_range_add', 'Military Arkship Sensor Range', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_2_sensor_range_add', '2.0', NULL, 52);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_sensor_range_add', 'Military Arkship Sensor Range', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_3_sensor_range_add', '2.0', NULL, 53);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_sensor_range_add', 'Military Arkship Sensor Range', 1);
