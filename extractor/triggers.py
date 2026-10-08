@@ -133,3 +133,140 @@ def _signals(node, idx: dict[str, dict]) -> tuple[set[str], set[str]]:
 
     walk(node, False)
     return pos, neg
+
+
+# ---------------------------------------------------------------------------
+# Trigger trees as data (traditions, ascension perks)
+# ---------------------------------------------------------------------------
+# A trigger block normalises to a JSON-serialisable tree the planner evaluates:
+#   {'op': 'and'|'or'|'not', 'args': [...]}  |  {'leaf': key, 'value': v[, 'cmp': '>']}
+# Scripted triggers stay leaves (the planner knows the empire-type ones), except those
+# that are only a DLC check, which are inlined to `host_has_dlc` so DLC reads uniformly.
+
+_LOGIC = {'AND': 'and', 'OR': 'or', 'NOT': 'not_and', 'NOR': 'not_or', 'NAND': 'not_and'}
+# Keys inside trigger blocks that carry display text, not conditions.
+_TEXT_KEYS = {'fail_text', 'success_text', 'text', 'tooltip'}
+# Opaque leaf for constructs the tree can't express faithfully.
+COMPLEX = {'leaf': 'complex', 'value': 'yes'}
+
+
+def dlc_trigger_map(idx: dict[str, dict]) -> dict[str, str]:
+    """Scripted triggers that are nothing but `host_has_dlc = "X"` → X
+    (e.g. has_machine_age_dlc → "The Machine Age")."""
+    out: dict[str, str] = {}
+    for name in sorted(idx):
+        body = idx[name]
+        if isinstance(body, dict) and list(body) == ['host_has_dlc'] \
+                and isinstance(body['host_has_dlc'], str):
+            out[name] = body['host_has_dlc']
+    return out
+
+
+def _and(args: list) -> dict | None:
+    args = [a for a in args if a is not None]
+    if not args:
+        return None
+    return args[0] if len(args) == 1 else {'op': 'and', 'args': args}
+
+
+def _not(node: dict | None) -> dict | None:
+    if node is None:
+        return None
+    if node.get('op') == 'not':
+        return node['args'][0]
+    return {'op': 'not', 'args': [node]}
+
+
+def normalize_trigger(block, dlc_triggers: dict[str, str] | None = None,
+                      variables: dict[str, float] | None = None) -> dict | None:
+    """Parsed trigger block → normalised tree (None for an empty block). Pure."""
+    from .clausewitz import Cmp
+    dlc_triggers = dlc_triggers or {}
+    variables = variables or {}
+
+    def scalar(v) -> str:
+        s = str(v).strip()
+        if s.startswith('@') and s in variables:
+            f = variables[s]
+            return str(int(f)) if f == int(f) else str(f)
+        return s
+
+    def leaf(k: str, v) -> dict | None:
+        if isinstance(v, Cmp):
+            return {'leaf': k, 'cmp': v.op, 'value': scalar(v.value)}
+        if isinstance(v, (dict, list)):
+            # A scope or iterator (owner = {…}, any_country = {…}): kept opaque.
+            return {'leaf': k, 'value': 'scope'}
+        s = scalar(v)
+        if k in dlc_triggers and s in ('yes', 'no'):
+            node = {'leaf': 'host_has_dlc', 'value': dlc_triggers[k]}
+            return node if s == 'yes' else _not(node)
+        return {'leaf': k, 'value': s}
+
+    def if_chain(d: dict) -> dict | None:
+        """The `if` blocks of d, each with its else_if/else chain (IfBlock.chain).
+        A lone if is an implication; a chain is an OR of branches, each guarded by the
+        negation of the earlier limits."""
+        parts = []
+        for b in _to_list_blocks(d.get('if')):
+            chain = [('if', b), *getattr(b, 'chain', [])]
+            if len(chain) == 1:
+                lim, body = walk(b.get('limit')), walk_body(b)
+                parts.append({'op': 'or', 'args': [_and([lim, body]), _not(lim)]}
+                             if lim and body else body)
+                continue
+            branches, prev = [], []
+            for kind, blk in chain:
+                lim = walk(blk.get('limit')) if kind != 'else' else None
+                branches.append(_and([*(_not(p) for p in prev if p), lim, walk_body(blk)]))
+                prev.append(lim)
+            if all(prev):  # every branch is limited, so none may be taken: no condition
+                branches.append(_and([_not(p) for p in prev]))
+            branches = [x for x in branches if x is not None]
+            parts.append(branches[0] if len(branches) == 1 else {'op': 'or', 'args': branches})
+        if not parts and (d.get('else_if') or d.get('else')):
+            return COMPLEX  # an else without a parsed if (not from the parser)
+        return _and(parts)
+
+    def walk_body(b: dict) -> dict | None:
+        return walk({k: v for k, v in b.items() if k != 'limit'})
+
+    def walk(node) -> dict | None:
+        return _and(walk_args(node))
+
+    def walk_args(node) -> list:
+        """The conditions of a block, un-combined (its caller decides and/or)."""
+        if not isinstance(node, dict):
+            return []
+        args: list = []
+        for k, v in node.items():
+            if k in _TEXT_KEYS or k in ('if', 'else_if', 'else'):
+                continue  # if-chains are handled together below
+            for item in (v if isinstance(v, list) else [v]):
+                if k in _LOGIC:
+                    kids = walk_args(item)
+                    if not kids:
+                        continue
+                    if _LOGIC[k] in ('or', 'not_or'):
+                        inner = kids[0] if len(kids) == 1 else {'op': 'or', 'args': kids}
+                    else:
+                        inner = _and(kids)
+                    args.append(_not(inner) if _LOGIC[k].startswith('not') else inner)
+                elif k in ('custom_tooltip', 'hidden_trigger', 'custom_tooltip_fail'):
+                    if isinstance(item, dict):  # a bare string tooltip is display-only
+                        args.append(walk(item))  # one condition, even inside an OR
+                else:
+                    args.append(leaf(k, item))
+        args.append(if_chain(node))
+        return [a for a in args if a is not None]
+
+    return walk(block)
+
+
+def _to_list_blocks(v) -> list[dict]:
+    if isinstance(v, dict):
+        return [v]
+    if isinstance(v, list):
+        return [x for x in v if isinstance(x, dict)]
+    return []
+

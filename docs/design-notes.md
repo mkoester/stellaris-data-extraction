@@ -117,6 +117,7 @@ Cross-module imports keep the original (underscore-prefixed) helper names; the p
 | Job swaps                   | `common/pop_jobs/` + `common/scripted_triggers/`    |
 | Repeatable techs            | `common/technology/`                                |
 | Fallen empire techs         | `common/technology/00_fallen_empire_tech.txt` + `localisation/english/fallen_empire_l_english.yml` |
+| Traditions + ascension perks| `common/tradition_categories/`, `common/traditions/`, `common/ascension_perks/`, `common/defines/00_defines.txt` (whitelisted keys) |
 
 Localisation: `localisation/english/*.yml`
 
@@ -133,6 +134,8 @@ Clausewitz script → nested Python dicts/lists.
 - `key { }` without `=` is valid (parsed same as `key = { }`)
 - Anonymous sub-blocks (`{ key = X }` inside a list, as in `in_breach_of = { { key = X } { key = Y } }`) — the `{` token is consumed as a key; the parser recurses into the sub-block and discards the result. **This was a bug fix** — previously the stray `}` would terminate the WRONG outer block, making subsequent keys (like `valid`) unreachable.
 - `@variable` references resolved per-file from top-level `@key = value` entries.
+- **Comparisons** (`num_ascension_perks > 2`, `years_passed >= 5`) parse as `Cmp(op, value)` values. Before, a comparison flipped the whole block into a token list, silently dropping its `key = value` entries (or the comparison, depending on which came last). The fix left every pre-existing table byte-identical.
+- **`if` chains**: an `if` value is an `IfBlock` (a `dict` subclass) whose `.chain` lists the `else_if`/`else` blocks directly following it. Duplicate-key promotion turns several `if`s into a list and loses which `else` belongs to which; `.chain` keeps it. Invisible to every reader that treats it as a dict (`else_if`/`else` are still stored under their own keys too).
 
 ---
 
@@ -140,7 +143,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`, `game_define`, `tradition_category`, `tradition_category_desc`, `tradition`, `tradition_prereq`, `tradition_swap`, `tradition_modifier`, `ascension_perk`
 
 Drop order matters for FK integrity:
 ```sql
@@ -385,6 +388,10 @@ Unresolved `$KEY$` inline references in labels are discarded (label not stored i
 | Repeatable techs          | 24   |
 | Repeatable tech modifiers | 24   |
 | Fallen empire techs       | 35   |
+| Tradition trees           | 32   |
+| Traditions                | 224  |
+| Tradition/perk swaps      | 199  |
+| Ascension perks           | 49   |
 
 ---
 
@@ -394,6 +401,27 @@ Two tech slices the planner shows on their own pages; both share `_tech_common` 
 
 - **`tech_repeatable`** (+ `tech_repeatable_modifier`) — identified by `weight_groups` containing `repeatable` (not by key prefix). `levels = -1` means unlimited. Modifier values resolve `@scripted_vars`; a list-valued modifier takes the **last** definition (game load order), and `_write_modifier_label` is reused so labels come for free. 24 techs / 24 modifiers.
 - **`tech_fallen_empire`** — the techs defined in `00_fallen_empire_tech.txt`. There is no flag marking them, so `cli.main` loads `common/technology/` **per file** (not via `_merge_dir`) purely to capture that file's keys as `fe_tech_keys`. `building_key` is resolved from the **raw, pre-resolution** loc: many FE tech labels are a sole `$building_xxx$` reference, so `main` re-scans `fallen_empire_l_english.yml` with `_LOC_ENTRY`/`_LOC_REF` before `$KEY$` resolution collapses them into the building's display name. 35 techs.
+
+---
+
+## Traditions & Ascension Perks (`extract_traditions`, traditions.py)
+
+Conditions are stored as **normalised JSON trigger trees**, not requirement rows, so the planner can evaluate them against an empire profile (`src/lib/triggers.ts` there). `normalize_trigger` (triggers.py, pure, tested in `tests/test_triggers.py`):
+
+- `{"op":"and"|"or"|"not","args":[…]}` | `{"leaf":k,"value":v[,"cmp":">"]}`; `NOR` → `not(or)`, `NOT`/`NAND` → `not(and)`.
+- `custom_tooltip = { … }` / `hidden_trigger` unwrap to **one** condition (one alternative inside an `OR`); text keys (`fail_text`, …) and bare-string tooltips drop.
+- A lone `if` is an implication `(limit ∧ body) ∨ ¬limit`; an `if`/`else_if`/`else` chain (via `IfBlock.chain`) is an OR of branches, each guarded by the negated earlier limits. An `else_if` without `limit` acts as `else`.
+- Scripted triggers stay leaves (the planner knows the empire-type ones), **except** pure DLC checks (`has_machine_age_dlc` = only `host_has_dlc`), inlined to `host_has_dlc` via `dlc_trigger_map`. `@variables` resolve per file.
+- Scopes/iterators (`owner = {…}`) become opaque `{"leaf":k,"value":"scope"}`; `{"leaf":"complex"}` marks what can't be expressed.
+
+Data notes:
+
+- Map traditions to trees via each category's `traditions` list, **never by file name** (`00_mercantile.txt` is Commerce, `00_unyielding.txt` Fortification). `02_flexible_dummy` (`potential = { always = no }`) is skipped.
+- `tradition_prereq` = positive `has_tradition` leaves of a `possible` that name a sibling (negated ones are exclusions). These edges are the tree layout — the GUI `tree_template` isn't needed.
+- `tradition_swap` is identified as `<owner>#<n>`: `name` is optional and not unique (the Subterfuge finisher has two swaps with one name). Ascension perks use the same swap format, so the table (and `tradition_modifier`, whose `owner_key` may be a swap id) is shared.
+- Descriptions: traditions `<key>_delayed` (the `<key>_desc` loc is stale effect text), perks `<key>_desc`; `tooltip` = the `custom_tooltip(_with_modifiers)` strings plus those directly in `on_enabled`.
+- **No tier column**: a perk's `num_ascension_perks` bound differs per empire type (Mind Over Matter: 2, but 3 for synthetic empires; Biomorphosis: 0 for Clone Army), so the planner computes it per profile (`perkTier`).
+- Ascension trees opened by a **country flag** (Machine Age / BioGenesis trees) get it from situation/event outcomes; not traced further.
 
 ---
 

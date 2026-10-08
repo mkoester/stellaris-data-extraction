@@ -17,6 +17,7 @@ from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load
 from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
 from .tech import extract_fallen_empire_techs, extract_repeatable_techs
+from .traditions import extract_traditions
 from .traits import TRAIT_CATEGORIES, extract_trait_categories, extract_trait_modifiers, extract_traits, is_species_trait_file
 from .triggers import _scripted_trigger_index, _signals
 from .values import _as_blocks, _resolve_modifier_float
@@ -396,6 +397,10 @@ Examples:
     print(f"\n[fallen-empire-techs] {technology_dir / '00_fallen_empire_tech.txt'}", file=progress)
     extract_fallen_empire_techs(technologies, fe_tech_keys, fe_building_refs, loc, w, args.verbose)
 
+    # --- tradition trees + ascension perks (+ the defines behind tradition cost) ---
+    print(f"\n[traditions] {install_dir / 'common' / 'traditions'}", file=progress)
+    extract_traditions(install_dir, loc, scripted_vars, w, args.verbose, progress)
+
     w.close()
 
     # --- Summary ---
@@ -435,6 +440,10 @@ Examples:
         n_rep_techs     = tmp.execute("SELECT COUNT(*) FROM tech_repeatable").fetchone()[0]
         n_rep_tech_mods = tmp.execute("SELECT COUNT(*) FROM tech_repeatable_modifier").fetchone()[0]
         n_fe_techs      = tmp.execute("SELECT COUNT(*) FROM tech_fallen_empire").fetchone()[0]
+        n_trad_trees    = tmp.execute("SELECT COUNT(*) FROM tradition_category").fetchone()[0]
+        n_traditions    = tmp.execute("SELECT COUNT(*) FROM tradition").fetchone()[0]
+        n_trad_swaps    = tmp.execute("SELECT COUNT(*) FROM tradition_swap").fetchone()[0]
+        n_asc_perks     = tmp.execute("SELECT COUNT(*) FROM ascension_perk").fetchone()[0]
         tmp.close()
         print(f"""
 +------------------------------------------+
@@ -474,6 +483,10 @@ Examples:
 |  Repeatable techs   : {n_rep_techs:<20}|
 |  Repeatable tech mods: {n_rep_tech_mods:<19}|
 |  Fallen empire techs: {n_fe_techs:<20}|
+|  Tradition trees    : {n_trad_trees:<20}|
+|  Traditions         : {n_traditions:<20}|
+|  Tradition/AP swaps : {n_trad_swaps:<20}|
+|  Ascension perks    : {n_asc_perks:<20}|
 +------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size

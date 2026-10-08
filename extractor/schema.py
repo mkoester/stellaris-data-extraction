@@ -892,4 +892,96 @@ CREATE TABLE tech_repeatable_modifier (
     PRIMARY KEY (tech_key, modifier_key),
     FOREIGN KEY (tech_key) REFERENCES tech_repeatable(key)
 );
+-- Whitelisted values from common/defines (tradition cost formula, slot limits).
+DROP TABLE IF EXISTS game_define;
+CREATE TABLE game_define (
+    key   TEXT PRIMARY KEY,                -- e.g. "TRADITION_COST_TRADITION_EXP"
+    value REAL NOT NULL
+);
+
+-- Traditions and ascension perks. Conditions are stored as normalised JSON trigger
+-- trees (extractor/triggers.py normalize_trigger) that the planner evaluates against an
+-- empire profile: {"op":"and"|"or"|"not","args":[…]} | {"leaf":k,"value":v[,"cmp":">"]}.
+DROP TABLE IF EXISTS tradition_modifier;
+DROP TABLE IF EXISTS tradition_swap;
+DROP TABLE IF EXISTS tradition_prereq;
+DROP TABLE IF EXISTS tradition;
+DROP TABLE IF EXISTS tradition_category_desc;
+DROP TABLE IF EXISTS tradition_category;
+DROP TABLE IF EXISTS ascension_perk;
+CREATE TABLE tradition_category (
+    key            TEXT PRIMARY KEY,       -- e.g. "tradition_expansion"
+    name           TEXT,
+    potential_json TEXT,                   -- who may adopt the tree; NULL = everyone
+    required_dlc   TEXT,                   -- FK to dlc.name; top-level DLC gate of potential
+    adopt_key      TEXT NOT NULL,          -- FK to tradition.key
+    finish_key     TEXT NOT NULL,          -- FK to tradition.key
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (required_dlc) REFERENCES dlc(name)
+);
+-- Per-empire-type description variants (`desc = { trigger text }`), first match wins.
+CREATE TABLE tradition_category_desc (
+    category_key TEXT NOT NULL,
+    trigger_json TEXT,                     -- NULL = unconditional
+    description  TEXT,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (category_key, sort_order),
+    FOREIGN KEY (category_key) REFERENCES tradition_category(key)
+);
+CREATE TABLE tradition (
+    key            TEXT PRIMARY KEY,       -- e.g. "tr_expansion_colonization_fever"
+    category_key   TEXT NOT NULL,
+    role           TEXT NOT NULL,          -- adopt / finish / normal
+    name           TEXT,
+    description    TEXT,                   -- flavour text (loc <key>_delayed)
+    possible_json  TEXT,
+    unlocks_agenda TEXT,                   -- localised agenda name
+    tooltip        TEXT,                   -- custom_tooltip text (effects not expressed as modifiers)
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (category_key) REFERENCES tradition_category(key)
+);
+-- Tree edges: tradition_key needs requires_key (has_tradition in its possible).
+CREATE TABLE tradition_prereq (
+    tradition_key TEXT NOT NULL,
+    requires_key  TEXT NOT NULL,
+    PRIMARY KEY (tradition_key, requires_key)
+);
+CREATE TABLE ascension_perk (
+    key             TEXT PRIMARY KEY,      -- e.g. "ap_the_flesh_is_weak"
+    name            TEXT,
+    description     TEXT,                  -- flavour text (loc <key>_desc)
+    is_path         INTEGER NOT NULL DEFAULT 0,  -- 1 = from 00_ascension_paths.txt
+    potential_json  TEXT,                  -- shown at all
+    possible_json   TEXT,                  -- may be picked; its num_ascension_perks bound is
+                                           -- the tier, which can differ per empire type
+    required_dlc    TEXT,
+    tooltip         TEXT,
+    sort_order      INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (required_dlc) REFERENCES dlc(name)
+);
+-- tradition_swap: variant replacing a tradition or ascension perk (owner_key) when its
+-- trigger holds; the highest weight wins among several true ones.
+CREATE TABLE tradition_swap (
+    id              TEXT PRIMARY KEY,      -- "<owner_key>#<n>" (`name` is optional and not unique)
+    owner_key       TEXT NOT NULL,         -- tradition.key or ascension_perk.key
+    loc_key         TEXT,                  -- the swap's `name`, if any
+    name            TEXT,                  -- localised (owner's name when inherit_name / unnamed)
+    description     TEXT,                  -- NULL = owner's
+    trigger_json    TEXT,
+    inherit_effects INTEGER NOT NULL DEFAULT 0,  -- 1 = owner's modifiers apply, not its own
+    weight          REAL NOT NULL DEFAULT 1,
+    tooltip         TEXT,
+    sort_order      INTEGER NOT NULL DEFAULT 0
+);
+-- Modifiers of traditions, ascension perks and swaps (owner_key = a tradition/perk key
+-- or a tradition_swap.id).
+-- potential_json is set for triggered_modifier blocks.
+CREATE TABLE tradition_modifier (
+    owner_key      TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    potential_json TEXT,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (owner_key, sort_order)
+);
 """
