@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.traditions import pick_defines, prereqs, required_dlc, tooltip_keys
+from extractor.traditions import cost_amounts, pick_defines, prereqs, required_dlc, tooltip_keys, unlock_keys
 from extractor.triggers import normalize_trigger
 
 
@@ -41,6 +41,28 @@ class TestTooltipKeys(unittest.TestCase):
         d = block('custom_tooltip = a_tt custom_tooltip_with_modifiers = b_tt '
                   'on_enabled = { custom_tooltip = c_tt custom_tooltip = { fail_text = x } }')
         self.assertEqual(tooltip_keys(d), ['a_tt', 'b_tt', 'c_tt'])
+
+
+class TestUnlockKeys(unittest.TestCase):
+    def test_positive_leaves_and_expanded_scripted_triggers(self):
+        idx = {'has_psionic_ascension': block('OR = { has_ascension_perk = ap_mom has_origin = o }')}
+        b = block('has_active_tradition = tr_a has_psionic_ascension = yes '
+                  'NOT = { has_tradition = tr_b } OR = { has_tradition = tr_c is_ai = no }')
+        self.assertEqual(unlock_keys(b, idx), ['tr_a', 'ap_mom', 'tr_c'])
+
+    def test_scripted_trigger_with_no_is_skipped(self):
+        idx = {'has_psionic_ascension': block('has_ascension_perk = ap_mom')}
+        self.assertEqual(unlock_keys(block('has_psionic_ascension = no'), idx), [])
+
+
+class TestCostAmounts(unittest.TestCase):
+    def test_multiplier_ignored(self):
+        self.assertEqual(cost_amounts(block('unity = 10 multiplier = value:edict_size_effect')),
+                         {'unity': 10.0})
+
+    def test_variables_resolved(self):
+        self.assertEqual(cost_amounts(block('unity = @Edict1Cost'), {'@Edict1Cost': 20.0}),
+                         {'unity': 20.0})
 
 
 if __name__ == '__main__':

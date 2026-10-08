@@ -143,7 +143,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`, `game_define`, `tradition_category`, `tradition_category_desc`, `tradition`, `tradition_prereq`, `tradition_swap`, `tradition_modifier`, `ascension_perk`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`, `game_define`, `tradition_category`, `tradition_category_desc`, `tradition`, `tradition_prereq`, `tradition_swap`, `tradition_modifier`, `ascension_perk`, `edict`, `council_agenda`
 
 Drop order matters for FK integrity:
 ```sql
@@ -392,6 +392,8 @@ Unresolved `$KEY$` inline references in labels are discarded (label not stored i
 | Traditions                | 224  |
 | Tradition/perk swaps      | 199  |
 | Ascension perks           | 49   |
+| Edicts                    | 171  |
+| Council agendas           | 90   |
 
 ---
 
@@ -422,6 +424,11 @@ Data notes:
 - Descriptions: traditions `<key>_delayed` (the `<key>_desc` loc is stale effect text), perks `<key>_desc`; `tooltip` = the `custom_tooltip(_with_modifiers)` strings plus those directly in `on_enabled`.
 - **No tier column**: a perk's `num_ascension_perks` bound differs per empire type (Mind Over Matter: 2, but 3 for synthetic empires; Biomorphosis: 0 for Clone Army), so the planner computes it per profile (`perkTier`).
 - Ascension trees opened by a **country flag** (Machine Age / BioGenesis trees) get it from situation/event outcomes; not traced further.
+- **Edicts / council agendas** (`extract_edicts_agendas`): `edict` (name/desc from `edict_<key>`, cost/upkeep per resource with per-file `@vars`, length −1 = until cancelled) and `council_agenda` (name/desc `council_agenda_<key>_name/_desc`, cost, launch-effect tooltip, `finish_modifier` resolved via `common/static_modifiers` into `tradition_modifier` as `<key>#finish`, duration default `COUNCIL_AGENDA_FINISH_MODIFIER_DURATION`). `unlocked_by_json` = positive `has_(active_)tradition` / `has_ascension_perk` leaves of potential+allow with scripted triggers expanded (`unlock_keys`; `has_psionic_ascension` → `ap_mind_over_matter`). Game triggers name a **swapped** tradition by its swap `name` (`tr_domination_drone_network`), so the planner matches swap loc keys too. `tradition.unlocks_agenda` is now the agenda **key** (Logistics names Open Markets, which actually gates on Commerce — the planner shows it and lets the profile filter it).
+
+## Job-naming scripted loc (`scripted_loc_jobs`, localisation.py)
+
+Loc like `$researcher_type_plural_with_icon$` → `[GetResearcherPluralWithIcon]`, a `common/scripted_loc` `defined_text` that picks the job per empire type at runtime. `_clean_loc` resolves such commands (only those whose loc key is a `job_…`) to the `default`, else the first (regular-empire) variant — so "Amenities Produced per 100" reads "… per 100 Researchers" everywhere (also fixed "Resources Produced from Miners", "additional Priest Jobs", …). The map is module state set once per run by `set_scripted_loc`, like the scripted-modifier meta.
 
 ---
 

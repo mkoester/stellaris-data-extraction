@@ -22,6 +22,37 @@ def _concept_sub(m: re.Match) -> str:
 # A job-scope name command, e.g. [foundry.GetNamePlural] — resolvable to the job's loc
 # name ("Metallurgists"). Used in swap tooltips ("X are replaced with Y").
 _LOC_SCOPE_NAME = re.compile(r'\[(\w+)\.GetName(Plural)?(?:WithIcon)?\]')
+# A bare scripted-loc command, e.g. [GetResearcherPluralWithIcon] (common/scripted_loc).
+_LOC_SCRIPTED   = re.compile(r'\[(\w+)\]')
+# Scripted-loc command → the loc key it shows for a regular empire, for the commands that
+# name a job (set once per run by set_scripted_loc; empty = none resolved).
+_SCRIPTED_LOC: dict[str, str] = {}
+
+
+def scripted_loc_jobs(defined_texts: list[dict]) -> dict[str, str]:
+    """Job-naming scripted-loc commands → loc key. The choice is per empire type at runtime;
+    take `default`, else the first variant (the regular empire's). Pure."""
+    out: dict[str, str] = {}
+    for d in defined_texts:
+        name = d.get('name')
+        if not isinstance(name, str):
+            continue
+        key = d.get('default')
+        if not isinstance(key, str):
+            texts = [t for t in (d.get('text') if isinstance(d.get('text'), list)
+                                 else [d.get('text')]) if isinstance(t, dict)]
+            key = next((t['localization_key'] for t in texts
+                        if isinstance(t.get('localization_key'), str)), None)
+        if isinstance(key, str) and key.startswith('job_'):
+            out[name] = key
+    return out
+
+
+def set_scripted_loc(mapping: dict[str, str]) -> None:
+    _SCRIPTED_LOC.clear()
+    _SCRIPTED_LOC.update(mapping)
+
+
 # Any remaining bracket command, e.g. [This.GetName] — not statically resolvable.
 _LOC_COMMAND    = re.compile(r'\[[^\]]*\]')
 
@@ -111,6 +142,9 @@ def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False,
         before = s
         s = _LOC_CONCEPT.sub(_concept_sub, s)   # ['concept'] / ['type:key'] tags
         s = _LOC_INLINE_REF.sub(lambda m: loc.get(m.group(1), m.group(0)), s)  # $KEY$
+        s = _LOC_SCRIPTED.sub(  # [GetResearcherPluralWithIcon] → $job_researcher_plural…$
+            lambda m: f'${_SCRIPTED_LOC[m.group(1)]}$' if m.group(1) in _SCRIPTED_LOC
+            else m.group(0), s)
         if s == before:
             break
     if variables is not None:

@@ -228,7 +228,7 @@ def extract_traditions(install_dir: Path, loc: dict[str, str], scripted_vars: di
                     tooltip, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (tkey, ckey, role, name, ctx.text(tkey + '_delayed', True, tvars),
                  dumps(possible),
-                 ctx.text(f'council_agenda_{agenda}_name') if isinstance(agenda, str) else None,
+                 agenda if isinstance(agenda, str) else None,
                  ctx.tooltip(tdata, tvars), order))
             for req in prereqs(possible, siblings):
                 w.execute("INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) "
@@ -260,3 +260,124 @@ def extract_traditions(install_dir: Path, loc: dict[str, str], scripted_vars: di
     print(f"  {len(categories)} tree(s), {n_trad} traditions, {len(perks)} ascension perks, "
           f"{n_swap} swaps", file=progress)
     w.commit()
+
+
+UNLOCK_LEAVES = ('has_tradition', 'has_active_tradition', 'has_ascension_perk')
+
+
+def unlock_keys(block, idx: dict[str, dict]) -> list[str]:
+    """Traditions/perks a block asks for in a positive context (outside NOT/NOR, `= no`),
+    expanding scripted triggers such as has_psionic_ascension → ap_mind_over_matter."""
+    out: list[str] = []
+    seen: set[str] = set()
+
+    def walk(node):
+        if isinstance(node, list):
+            for x in node:
+                walk(x)
+            return
+        if not isinstance(node, dict):
+            return
+        for k, v in node.items():
+            if k in ('NOT', 'NOR', 'NAND'):
+                continue
+            for item in (v if isinstance(v, list) else [v]):
+                if k in UNLOCK_LEAVES and isinstance(item, str):
+                    if item not in out:
+                        out.append(item)
+                elif isinstance(item, dict):
+                    walk(item)
+                elif item == 'yes' and k in idx and k not in seen:
+                    seen.add(k)
+                    walk(idx[k])
+
+    walk(block)
+    return out
+
+
+def cost_amounts(block, variables: dict[str, float] | None = None) -> dict[str, float]:
+    """A resources cost/upkeep block → {resource: amount}; multipliers are ignored."""
+    variables = variables or {}
+    out: dict[str, float] = {}
+    for b in _as_blocks(block):
+        for k, v in b.items():
+            if k in ('multiplier', 'trigger') or isinstance(v, (dict, list)):
+                continue
+            s = str(v).strip()
+            try:
+                out[k] = variables[s] if s.startswith('@') else float(s)
+            except (KeyError, ValueError):
+                pass
+    return out
+
+
+def extract_edicts_agendas(install_dir: Path, loc: dict[str, str], scripted_vars: dict[str, float],
+                           static_mods: dict, w: Writer, progress=sys.stderr) -> None:
+    common = install_dir / 'common'
+    idx = _scripted_trigger_index(install_dir)
+    ctx = _Ctx(loc, dlc_trigger_map(idx), w)
+
+    def unlocked_by(d: dict) -> str | None:
+        keys = unlock_keys([d.get('potential'), d.get('allow')], idx)
+        return json.dumps(keys) if keys else None
+
+    edicts = _load(common / 'edicts', scripted_vars)
+    for order, (key, (data, evars, _)) in enumerate(edicts.items()):
+        res = data.get('resources') if isinstance(data.get('resources'), dict) else {}
+        costs = {k: cost_amounts(res.get(k), evars) for k in ('cost', 'upkeep')}
+        costs = {k: v for k, v in costs.items() if v}
+        length = data.get('length')
+        try:
+            length = int(float(evars.get(length, length))) if length is not None else None
+        except ValueError:
+            length = None
+        w.execute(
+            """INSERT INTO edict (key, name, description, category, length, cost_json,
+               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, ctx.text(f'edict_{key}') or ctx.text(key),
+             ctx.text(f'edict_{key}_desc', True, evars) or ctx.text(key + '_desc', True, evars),
+             res.get('category'), length,
+             json.dumps(costs, sort_keys=True) if costs else None,
+             dumps(ctx.trig(data.get('potential'), evars)), dumps(ctx.trig(data.get('allow'), evars)),
+             unlocked_by(data), ctx.tooltip(data, evars), order))
+        ctx.modifiers(key, data, evars)
+
+    finish_default = None
+    defines_file = common / 'defines' / '00_defines.txt'
+    if defines_file.exists():
+        finish_default = pick_defines(parse_file(defines_file),
+                                      ('COUNCIL_AGENDA_FINISH_MODIFIER_DURATION',)).get(
+            'COUNCIL_AGENDA_FINISH_MODIFIER_DURATION')
+
+    agendas = _load(common / 'council_agendas', scripted_vars)
+    for order, (key, (data, avars, _)) in enumerate(agendas.items()):
+        cost = data.get('agenda_cost')
+        try:
+            cost = float(avars.get(cost, cost)) if cost is not None else None
+        except (ValueError, TypeError):
+            cost = None
+        days = data.get('agenda_finish_modifier_duration', finish_default)
+        try:
+            days = int(float(avars.get(days, days))) if days is not None else None
+        except (ValueError, TypeError):
+            days = None
+        effect_keys = [x for b in _as_blocks(data.get('effect'))
+                       for x in _to_list(b.get('custom_tooltip')) if isinstance(x, str)]
+        effect = '\n'.join(t for t in (ctx.text(k, True, avars) for k in effect_keys) if t) or None
+        w.execute(
+            """INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
+               allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, ctx.text(f'council_agenda_{key}_name'),
+             ctx.text(f'council_agenda_{key}_desc', True, avars), cost, days,
+             dumps(ctx.trig(data.get('potential'), avars)), dumps(ctx.trig(data.get('allow'), avars)),
+             unlocked_by(data), effect, order))
+        ctx.modifiers(key, {'modifier': data.get('modifier')}, avars)
+        finish = data.get('finish_modifier')
+        if isinstance(finish, str) and isinstance(static_mods.get(finish), dict):
+            ctx.modifiers(f'{key}#finish', {'modifier': static_mods[finish]}, avars)
+
+    print(f"  {len(edicts)} edicts, {len(agendas)} council agendas", file=progress)
+    w.commit()
+

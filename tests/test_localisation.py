@@ -4,7 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from extractor.localisation import _clean_loc, _dedup_adjacent, _fmt_scripted, load_localisation
+from extractor.localisation import (_clean_loc, _dedup_adjacent, _fmt_scripted, load_localisation,
+                                    scripted_loc_jobs, set_scripted_loc)
 
 
 class TestFmtScripted(unittest.TestCase):
@@ -93,6 +94,29 @@ class TestLoadLocalisation(unittest.TestCase):
     def test_unresolvable_ref_dropped(self):
         labels = self.write_and_load('l_english:\n alias:0 "$missing$"\n')
         self.assertNotIn('alias', labels)
+
+
+class TestScriptedLocJobs(unittest.TestCase):
+    def tearDown(self):
+        set_scripted_loc({})
+
+    def test_default_then_first_variant_jobs_only(self):
+        texts = [
+            {'name': 'GetResearcherPlural', 'text': [{'localization_key': 'job_brain_drone_plural'}],
+             'default': 'job_researcher_plural'},
+            {'name': 'GetMinerPlural', 'text': [{'localization_key': 'job_miner_plural'},
+                                                {'localization_key': 'job_mining_drone_plural'}]},
+            {'name': 'GetRulerTitle', 'default': 'ruler_title'},
+        ]
+        self.assertEqual(scripted_loc_jobs(texts), {'GetResearcherPlural': 'job_researcher_plural',
+                                                    'GetMinerPlural': 'job_miner_plural'})
+
+    def test_clean_loc_resolves_job_command(self):
+        set_scripted_loc({'GetResearcherPluralWithIcon': 'job_researcher_plural_with_icon'})
+        loc = {'job_researcher_plural_with_icon': '£job_researcher£ Researchers',
+               'mod_x': 'Amenities Produced per 100 $res$', 'res': '[GetResearcherPluralWithIcon]'}
+        self.assertEqual(_clean_loc('$mod_x$: +200', loc), 'Amenities Produced per 100 Researchers: +200')
+        self.assertEqual(_clean_loc('[GetUnknown] left', loc), 'left')
 
 
 if __name__ == '__main__':

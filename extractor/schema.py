@@ -935,7 +935,7 @@ CREATE TABLE tradition (
     name           TEXT,
     description    TEXT,                   -- flavour text (loc <key>_delayed)
     possible_json  TEXT,
-    unlocks_agenda TEXT,                   -- localised agenda name
+    unlocks_agenda TEXT,                   -- council_agenda.key (base variant)
     tooltip        TEXT,                   -- custom_tooltip text (effects not expressed as modifiers)
     sort_order     INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (category_key) REFERENCES tradition_category(key)
@@ -973,8 +973,39 @@ CREATE TABLE tradition_swap (
     tooltip         TEXT,
     sort_order      INTEGER NOT NULL DEFAULT 0
 );
--- Modifiers of traditions, ascension perks and swaps (owner_key = a tradition/perk key
--- or a tradition_swap.id).
+-- Edicts and council agendas; unlocked_by_json lists the traditions/perks their potential/allow
+-- ask for (has_(active_)tradition / has_ascension_perk, scripted triggers expanded).
+DROP TABLE IF EXISTS edict;
+DROP TABLE IF EXISTS council_agenda;
+CREATE TABLE edict (
+    key            TEXT PRIMARY KEY,       -- e.g. "map_the_stars"
+    name           TEXT,
+    description    TEXT,
+    category       TEXT,                   -- resources.category: edicts / campaigns / rare_edicts …
+    length         INTEGER,                -- days; -1 = perpetual (until cancelled)
+    cost_json      TEXT,                   -- {"cost":{"unity":10},"upkeep":{"unity":10}} (before multipliers)
+    potential_json TEXT,
+    allow_json     TEXT,
+    unlocked_by_json TEXT,                 -- ["tr_…","ap_…"]: traditions/perks that unlock it
+    tooltip        TEXT,
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+-- Modifiers: owner_key = key (while enacted) and "<key>#finish" (finish_modifier, a static
+-- modifier lasting finish_days after launch) in tradition_modifier.
+CREATE TABLE council_agenda (
+    key            TEXT PRIMARY KEY,       -- e.g. "agenda_superior_colonies(_nomad)"
+    name           TEXT,
+    description    TEXT,
+    cost           REAL,                   -- agenda progress needed to launch
+    finish_days    INTEGER,                -- finish_modifier duration
+    potential_json TEXT,                   -- shown at all (empire-type variants split here)
+    allow_json     TEXT,                   -- selectable
+    unlocked_by_json TEXT,                 -- ["tr_…","ap_…"]: traditions/perks that unlock it
+    effect_tooltip TEXT,                   -- launch effect text
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+-- Modifiers of traditions, ascension perks, swaps, edicts and agendas (owner_key = their
+-- key, a tradition_swap.id, or "<agenda>#finish").
 -- potential_json is set for triggered_modifier blocks.
 CREATE TABLE tradition_modifier (
     owner_key      TEXT NOT NULL,

@@ -11,13 +11,13 @@ from .clausewitz import parse_file
 from .empires import extract_flag_assets, extract_initializers, extract_prescripted_empires, extract_rooms
 from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_ethics, extract_origins, extract_policy_restrictions
 from .jobs import extract_job_swaps, extract_jobs
-from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation
+from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
 from .misc import extract_dlc, extract_named_colors, extract_planet_classes
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
 from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
 from .tech import extract_fallen_empire_techs, extract_repeatable_techs
-from .traditions import extract_traditions
+from .traditions import extract_edicts_agendas, extract_traditions
 from .traits import TRAIT_CATEGORIES, extract_trait_categories, extract_trait_modifiers, extract_traits, is_species_trait_file
 from .triggers import _scripted_trigger_index, _signals
 from .values import _as_blocks, _resolve_modifier_float
@@ -160,6 +160,12 @@ Examples:
         loc = load_localisation(loc_dir)
     else:
         print(f"  WARNING: localisation dir not found: {loc_dir}", file=progress)
+    # Job-naming scripted-loc commands ([GetResearcherPluralWithIcon]) for _clean_loc.
+    defined_texts: list[dict] = []
+    for _, data in _iter_parsed(sorted((install_dir / 'common' / 'scripted_loc').glob('*.txt')),
+                                progress):
+        defined_texts += _as_blocks(data.get('defined_text'))
+    set_scripted_loc(scripted_loc_jobs(defined_texts))
     # Authoritative good/bad modifier flags (before any _write_modifier_label runs).
     _load_scripted_modifier_meta(install_dir)
     archetype_base_traits: dict[str, str] = {'ROBOT': _ROBOT_BASE_TRAIT}
@@ -400,6 +406,8 @@ Examples:
     # --- tradition trees + ascension perks (+ the defines behind tradition cost) ---
     print(f"\n[traditions] {install_dir / 'common' / 'traditions'}", file=progress)
     extract_traditions(install_dir, loc, scripted_vars, w, args.verbose, progress)
+    print(f"\n[edicts + agendas] {install_dir / 'common' / 'edicts'}", file=progress)
+    extract_edicts_agendas(install_dir, loc, scripted_vars, static_mods, w, progress)
 
     w.close()
 
@@ -444,6 +452,8 @@ Examples:
         n_traditions    = tmp.execute("SELECT COUNT(*) FROM tradition").fetchone()[0]
         n_trad_swaps    = tmp.execute("SELECT COUNT(*) FROM tradition_swap").fetchone()[0]
         n_asc_perks     = tmp.execute("SELECT COUNT(*) FROM ascension_perk").fetchone()[0]
+        n_edicts        = tmp.execute("SELECT COUNT(*) FROM edict").fetchone()[0]
+        n_agendas       = tmp.execute("SELECT COUNT(*) FROM council_agenda").fetchone()[0]
         tmp.close()
         print(f"""
 +------------------------------------------+
@@ -487,6 +497,8 @@ Examples:
 |  Traditions         : {n_traditions:<20}|
 |  Tradition/AP swaps : {n_trad_swaps:<20}|
 |  Ascension perks    : {n_asc_perks:<20}|
+|  Edicts             : {n_edicts:<20}|
+|  Council agendas    : {n_agendas:<20}|
 +------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size
