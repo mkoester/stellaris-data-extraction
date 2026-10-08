@@ -265,33 +265,38 @@ def extract_traditions(install_dir: Path, loc: dict[str, str], scripted_vars: di
 UNLOCK_LEAVES = ('has_tradition', 'has_active_tradition', 'has_ascension_perk')
 
 
-def unlock_keys(block, idx: dict[str, dict]) -> list[str]:
-    """Traditions/perks a block asks for in a positive context (outside NOT/NOR, `= no`),
-    expanding scripted triggers such as has_psionic_ascension → ap_mind_over_matter."""
+def unlock_keys(block, idx: dict[str, dict], leaves=UNLOCK_LEAVES,
+                negated: bool = False) -> list[str]:
+    """Values of `leaves` a block asks for in a positive context (outside NOT/NOR, `= no`),
+    expanding scripted triggers such as has_psionic_ascension → ap_mind_over_matter.
+    `negated` collects the ones inside a NOT/NOR instead (what the block rules out)."""
     out: list[str] = []
     seen: set[str] = set()
 
-    def walk(node):
+    def walk(node, inside_not: bool):
         if isinstance(node, list):
             for x in node:
-                walk(x)
+                walk(x, inside_not)
             return
         if not isinstance(node, dict):
             return
         for k, v in node.items():
-            if k in ('NOT', 'NOR', 'NAND'):
+            if k == 'NAND':
+                continue
+            neg = inside_not or k in ('NOT', 'NOR')
+            if neg and not negated:
                 continue
             for item in (v if isinstance(v, list) else [v]):
-                if k in UNLOCK_LEAVES and isinstance(item, str):
-                    if item not in out:
+                if k in leaves and isinstance(item, str):
+                    if inside_not == negated and item not in out:
                         out.append(item)
                 elif isinstance(item, dict):
-                    walk(item)
+                    walk(item, neg)
                 elif item == 'yes' and k in idx and k not in seen:
                     seen.add(k)
-                    walk(idx[k])
+                    walk(idx[k], inside_not)
 
-    walk(block)
+    walk(block, False)
     return out
 
 

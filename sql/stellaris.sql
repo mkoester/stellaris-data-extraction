@@ -1010,6 +1010,73 @@ CREATE TABLE tradition_modifier (
     sort_order     INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (owner_key, sort_order)
 );
+-- Federation types (event-only ones skipped), the perks each level grants, and the laws.
+-- unlocked_by_json / excluded_by_json: tradition/swap/perk/ethic/civic keys the type's `allow`
+-- asks for outside / inside a NOT (scripted triggers expanded: is_militarist → both ethics).
+DROP TABLE IF EXISTS federation_type_perk;
+DROP TABLE IF EXISTS federation_perk_modifier;
+DROP TABLE IF EXISTS federation_perk;
+DROP TABLE IF EXISTS federation_type;
+DROP TABLE IF EXISTS federation_law;
+DROP TABLE IF EXISTS federation_law_category;
+CREATE TABLE federation_type (
+    key              TEXT PRIMARY KEY,     -- e.g. "hegemony_federation"
+    name             TEXT,
+    description      TEXT,
+    base_intel       INTEGER,
+    potential_json   TEXT,
+    allow_json       TEXT,                 -- who may form it
+    unlocked_by_json TEXT,                 -- ["tr_…","ethic_…","civic_…"]
+    excluded_by_json TEXT,                 -- ["civic_barbaric_despoilers"]
+    sort_order       INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE federation_perk (
+    key            TEXT PRIMARY KEY,       -- e.g. "federation_fleet_size_1"
+    name           TEXT,
+    description    TEXT,                   -- flavour (<key>_desc)
+    effect         TEXT,                   -- custom_tooltip + modifier-block description texts
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE federation_type_perk (
+    type_key       TEXT NOT NULL,
+    level          INTEGER NOT NULL,       -- 1..5
+    experience     REAL,                   -- XP to the next level; NULL at the top level
+    perk_key       TEXT NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (type_key, sort_order),
+    FOREIGN KEY (type_key) REFERENCES federation_type(key),
+    FOREIGN KEY (perk_key) REFERENCES federation_perk(key)
+);
+CREATE TABLE federation_perk_modifier (
+    perk_key       TEXT NOT NULL,
+    scope          TEXT NOT NULL,          -- members / federation / leader (president) / envoy
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    potential_json TEXT,                   -- *_triggered_modifier blocks
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (perk_key, sort_order),
+    FOREIGN KEY (perk_key) REFERENCES federation_perk(key)
+);
+CREATE TABLE federation_law_category (
+    key            TEXT PRIMARY KEY,       -- e.g. "law_category_centralization"
+    name           TEXT,
+    description    TEXT,
+    potential_json TEXT,
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE federation_law (
+    key            TEXT PRIMARY KEY,       -- e.g. "centralization_low"
+    category_key   TEXT NOT NULL,
+    name           TEXT,
+    description    TEXT,
+    potential_json TEXT,
+    allow_json     TEXT,
+    types_json     TEXT,                   -- ["trade_federation"]: only for these types
+    required_centralization INTEGER,
+    cohesion_growth REAL,                  -- per month while enacted
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (category_key) REFERENCES federation_law_category(key)
+);
 
 -- Data
 
@@ -48914,3 +48981,893 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_arkship_engineering_mastery#finish', 'shipsize_military_arkship_tier_3_sensor_range_add', '2.0', NULL, 53);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_military_arkship_tier_3_sensor_range_add', 'Military Arkship Sensor Range', 1);
+INSERT INTO federation_type (key, name, description, base_intel, potential_json,
+               allow_json, unlocked_by_json, excluded_by_json, sort_order)
+               VALUES ('default_federation', 'Galactic Union', 'Members of this Federation are united in readiness to cooperate. Together, they will deal with whatever problems may arise.', 60, '{"leaf":"always","value":"yes"}', '{"op":"and","args":[{"leaf":"federation_check_for_subject_trigger","value":"yes"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_barbaric_despoilers"}]}]}', NULL, '["civic_barbaric_despoilers"]', 0);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('default_federation', 1, '1200.0', 'default_federation_passive', 0);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('default_federation', 2, '2400.0', 'federation_fleet_size_1', 1);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('default_federation', 2, '2400.0', 'cohesion_join_1', 2);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('default_federation', 2, '2400.0', 'extra_envoy_1', 3);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('default_federation', 3, '4800.0', 'envoy_unity_1', 4);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('default_federation', 3, '4800.0', 'federation_fleet_speed_1', 5);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('default_federation', 3, '4800.0', 'extra_influence_1', 6);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('default_federation', 4, '9600.0', 'cohesion_failed_vote_1', 7);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('default_federation', 4, '9600.0', 'damage_crisis_1', 8);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('default_federation', 4, '9600.0', 'diplo_weight_1', 9);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('default_federation', 5, NULL, 'envoy_unity_2', 10);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('default_federation', 5, NULL, 'damage_crisis_2', 11);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('default_federation', 5, NULL, 'president_unity_1', 12);
+INSERT INTO federation_type (key, name, description, base_intel, potential_json,
+               allow_json, unlocked_by_json, excluded_by_json, sort_order)
+               VALUES ('trade_federation', 'Trade League', 'This Federation has a distinct focus on free markets and economic growth.', 50, '{"leaf":"host_has_dlc","value":"Federations"}', '{"op":"and","args":[{"leaf":"federation_check_for_subject_trigger","value":"yes"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_barbaric_despoilers"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"host_has_dlc","value":"Megacorp"},{"op":"or","args":[{"leaf":"is_megacorp","value":"yes"},{"leaf":"has_valid_civic","value":"civic_merchant_guilds"},{"leaf":"has_active_tradition","value":"tr_mercantile_federations_finish"}]}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Megacorp"}]},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_corporate_dominion"},{"leaf":"has_active_tradition","value":"tr_mercantile_federations_finish"}]}]}]}]}', '["civic_merchant_guilds", "tr_mercantile_federations_finish", "civic_corporate_dominion"]', '["civic_barbaric_despoilers"]', 1);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('trade_federation', 1, '1200.0', 'trade_federation_passive', 0);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('trade_federation', 2, '2400.0', 'trade_value_1', 1);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('trade_federation', 2, '2400.0', 'federation_fleet_speed_1', 2);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('trade_federation', 2, '2400.0', 'extra_envoy_1', 3);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('trade_federation', 3, '4800.0', 'trade_value_2', 4);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('trade_federation', 3, '4800.0', 'trade_protection_1', 5);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('trade_federation', 3, '4800.0', 'extra_influence_1', 6);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('trade_federation', 4, '9600.0', 'trade_value_3', 7);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('trade_federation', 4, '9600.0', 'federation_fleet_size_1', 8);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('trade_federation', 4, '9600.0', 'diplo_weight_1', 9);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('trade_federation', 5, NULL, 'trade_value_4', 10);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('trade_federation', 5, NULL, 'damage_crisis_1', 11);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('trade_federation', 5, NULL, 'president_trade_value_1', 12);
+INSERT INTO federation_type (key, name, description, base_intel, potential_json,
+               allow_json, unlocked_by_json, excluded_by_json, sort_order)
+               VALUES ('research_federation', 'Research Cooperative', 'This Federation leans towards technocracy, with an acute focus on discerning universal truths.', 50, '{"leaf":"host_has_dlc","value":"Federations"}', '{"op":"and","args":[{"leaf":"federation_check_for_subject_trigger","value":"yes"},{"op":"or","args":[{"leaf":"is_materialist","value":"yes"},{"leaf":"has_active_tradition","value":"tr_discovery_federations_finish"},{"leaf":"is_machine_empire","value":"yes"}]},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_barbaric_despoilers"}]}]}', '["ethic_materialist", "ethic_fanatic_materialist", "tr_discovery_federations_finish"]', '["civic_barbaric_despoilers"]', 2);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('research_federation', 1, '1200.0', 'research_federation_passive', 0);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('research_federation', 2, '2400.0', 'research_share_1', 1);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('research_federation', 2, '2400.0', 'research_boost_1', 2);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('research_federation', 2, '2400.0', 'president_option_1', 3);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('research_federation', 3, '4800.0', 'research_share_2', 4);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('research_federation', 3, '4800.0', 'rare_tech_boost', 5);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('research_federation', 3, '4800.0', 'tech_diplo_weight_1', 6);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('research_federation', 4, '9600.0', 'research_share_3', 7);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('research_federation', 4, '9600.0', 'crisis_research_1', 8);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('research_federation', 4, '9600.0', 'extra_envoy_1', 9);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('research_federation', 5, NULL, 'research_share_4', 10);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('research_federation', 5, NULL, 'crisis_research_2', 11);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('research_federation', 5, NULL, 'president_megastructure_1', 12);
+INSERT INTO federation_type (key, name, description, base_intel, potential_json,
+               allow_json, unlocked_by_json, excluded_by_json, sort_order)
+               VALUES ('military_federation', 'Martial Alliance', 'Members of this Federation seek to close their ranks around the ideals of camaraderie, martial prowess and military cooperation.', 50, '{"leaf":"host_has_dlc","value":"Federations"}', '{"op":"and","args":[{"leaf":"federation_check_for_subject_trigger","value":"yes"},{"op":"or","args":[{"leaf":"is_militarist","value":"yes"},{"leaf":"has_active_tradition","value":"tr_unyielding_federations_finish"}]}]}', '["ethic_militarist", "ethic_fanatic_militarist", "tr_unyielding_federations_finish"]', NULL, 3);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('military_federation', 1, '1200.0', 'military_federation_passive', 0);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('military_federation', 2, '2400.0', 'federation_fleet_size_1', 1);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('military_federation', 2, '2400.0', 'federation_fleet_speed_1', 2);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('military_federation', 2, '2400.0', 'claim_cost_1', 3);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('military_federation', 3, '4800.0', 'admiral_level_cap_1', 4);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('military_federation', 3, '4800.0', 'federation_fire_rate_1', 5);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('military_federation', 3, '4800.0', 'extra_envoy_1', 6);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('military_federation', 4, '9600.0', 'federation_fleet_size_2', 7);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('military_federation', 4, '9600.0', 'damage_crisis_1', 8);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('military_federation', 4, '9600.0', 'federation_fleet_unity_1', 9);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('military_federation', 5, NULL, 'federation_fleet_size_3', 10);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('military_federation', 5, NULL, 'damage_crisis_2', 11);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('military_federation', 5, NULL, 'diplo_weight_1', 12);
+INSERT INTO federation_type (key, name, description, base_intel, potential_json,
+               allow_json, unlocked_by_json, excluded_by_json, sort_order)
+               VALUES ('hegemony_federation', 'Hegemony', 'Federations of this type are most often built around one powerful empire surrounded by lesser satellite states.', 40, '{"leaf":"host_has_dlc","value":"Federations"}', '{"op":"and","args":[{"leaf":"federation_check_for_subject_trigger","value":"yes"},{"op":"or","args":[{"leaf":"has_civic","value":"civic_machine_servitor"},{"leaf":"is_authoritarian","value":"yes"},{"op":"or","args":[{"leaf":"has_active_tradition","value":"tr_domination_federations_finish"},{"leaf":"has_active_tradition","value":"tr_domination_federations_wilderness_finish"}]}]}]}', '["civic_machine_servitor", "ethic_authoritarian", "ethic_fanatic_authoritarian", "tr_domination_federations_finish", "tr_domination_federations_wilderness_finish"]', NULL, 4);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('hegemony_federation', 1, '1200.0', 'hegemony_federation_passive', 0);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('hegemony_federation', 2, '2400.0', 'job_output_1', 1);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('hegemony_federation', 2, '2400.0', 'president_keep_navy_1', 2);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('hegemony_federation', 2, '2400.0', 'extra_envoy_1', 3);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('hegemony_federation', 3, '4800.0', 'job_output_2', 4);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('hegemony_federation', 3, '4800.0', 'cohesion_join_1', 5);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('hegemony_federation', 3, '4800.0', 'president_hegemony_cb_1', 6);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('hegemony_federation', 4, '9600.0', 'job_output_3', 7);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('hegemony_federation', 4, '9600.0', 'diplomacy_upkeep_1', 8);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('hegemony_federation', 4, '9600.0', 'extra_influence_1', 9);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('hegemony_federation', 5, NULL, 'damage_crisis_1', 10);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('hegemony_federation', 5, NULL, 'federation_fleet_unity_1', 11);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('hegemony_federation', 5, NULL, 'president_diplo_weight_steal_1', 12);
+INSERT INTO federation_type (key, name, description, base_intel, potential_json,
+               allow_json, unlocked_by_json, excluded_by_json, sort_order)
+               VALUES ('spiritualist_federation', 'Holy Covenant', 'This Federation promotes spiritualist scholarship, and asserts reverence for all things divine.', 50, '{"leaf":"host_has_dlc","value":"Federations"}', '{"op":"and","args":[{"leaf":"federation_check_for_subject_trigger","value":"yes"},{"op":"or","args":[{"leaf":"is_spiritualist","value":"yes"},{"leaf":"has_active_tradition","value":"tr_harmony_federations_finish"}]},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_barbaric_despoilers"}]}]}', '["ethic_spiritualist", "ethic_fanatic_spiritualist", "tr_harmony_federations_finish"]', '["civic_barbaric_despoilers"]', 5);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('spiritualist_federation', 1, '1200.0', 'spiritualist_federation_passive', 0);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('spiritualist_federation', 2, '2400.0', 'spiritualist_envoys_1', 1);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('spiritualist_federation', 2, '2400.0', 'culture_workers_1', 2);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('spiritualist_federation', 2, '2400.0', 'president_spiritualist_1', 3);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('spiritualist_federation', 3, '4800.0', 'unity_trade_1', 4);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('spiritualist_federation', 3, '4800.0', 'ascension_shared_1', 5);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('spiritualist_federation', 3, '4800.0', 'president_spiritualist_2', 6);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('spiritualist_federation', 4, '9600.0', 'all_the_priests_1', 7);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('spiritualist_federation', 4, '9600.0', 'all_the_priests_2', 8);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('spiritualist_federation', 4, '9600.0', 'president_spiritualist_3', 9);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('spiritualist_federation', 5, NULL, 'make_spiritualist_1', 10);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('spiritualist_federation', 5, NULL, 'zro_catalysis_1', 11);
+INSERT INTO federation_type_perk (type_key, level, experience, perk_key, sort_order)
+                       VALUES ('spiritualist_federation', 5, NULL, 'president_spiritualist_4', 12);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('default_federation_passive', 'Galactic Union', 'Members of this Federation are united in readiness to cooperate. Together, they will deal with whatever problems may arise.', 'Diverse Ethics impose a 50% smaller penalty to federation Cohesion.', 0);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('default_federation_passive', 'federation', 'cohesion_ethics_penalty_mult', '-0.5', NULL, 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('federation_fleet_size_1', 'Officer Exchange', 'Interoperability and deployability of our combined fleet are greatly enhanced by conducting frequent naval exercises, with command rotating between the flag officers of all member states.', 'The amount members contribute towards the Federation Naval Capacity counts for +25% more.', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('federation_fleet_size_1', 'members', 'federation_naval_cap_contribution_mult', '0.25', NULL, 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('cohesion_join_1', 'Welcoming Nature', 'Regardless of cultural or biological differences, growth of the federation is to everyone''s benefit.', 'New members impose a 50% smaller Cohesion penalty to the federation.', 2);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('cohesion_join_1', 'federation', 'federation_join_malus_mult', '-0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('federation_join_malus_mult', 'Federation Cohesion malus on joining', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('extra_envoy_1', 'Federal Envoys', 'The better future we''re striving to build will only work if all beings are aware of what we mean to achieve. We intend to become a pervasive, persuasive force for peace in the galaxy.', NULL, 3);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('extra_envoy_1', 'leader', 'envoys_add', '1.0', NULL, 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('envoy_unity_1', 'Federal Attachés', 'The arbiters of the federation agenda - our envoys - are savvy and active in their effort to improve the sense of belonging and mutual benefit between our members.', 'Gain 2 Unity and 5% Trust Growth for each Official assigned to the federation by any member.', 4);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('envoy_unity_1', 'envoy', 'country_federation_perks_unity_produces_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_federation_perks_unity_produces_add', 'Monthly Unity', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('envoy_unity_1', 'envoy', 'country_trust_growth', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_growth', 'Trust Growth', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('federation_fleet_speed_1', 'Interior Lines', 'Well-charted and patrolled hyperspace corridors within our territory permit unparalleled freedom of movement, allowing our navies to rapidly concentrate wherever required.', 'Ship Speed is increased by +10% while in federation space.', 5);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('federation_fleet_speed_1', 'members', 'ship_federation_territory_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_federation_territory_speed_mult', 'Federation Space Sublight Speed', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('extra_influence_1', 'Sanctity of Office', 'Rising to the highest office in our federation is no royal coronation; it is a limitless commitment in service to all sentient life. Nevertheless, the presidency comes with a great deal of prestige.', NULL, 6);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('extra_influence_1', 'leader', 'federation_influence_produces_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('federation_influence_produces_add', 'Federation Influence Gain', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('cohesion_failed_vote_1', 'Agree to Disagree', 'There is no better crucible for trying out ideas than a heated debate, and dispute is a great tool when the aim is to build a stable future.', 'Failed federation votes impose a 50% smaller Cohesion penalty to the federation.', 7);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('damage_crisis_1', 'Stronger Together', 'Collective deterrence against hegemonic aggressors has preserved the fragile peace of this galaxy. We will stand together against all who threaten that order, whether from within or without.', 'Damage to Endgame Crisis factions: +25%', 8);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_1', 'members', 'damage_vs_country_type_synth_queen_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_synth_queen_mult', 'Damage to Cetana', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_1', 'members', 'damage_vs_country_type_swarm_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_swarm_mult', 'Damage to Prethoryn Creatures', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_1', 'members', 'damage_vs_country_type_extradimensional_mult', '0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_extradimensional_mult', 'Damage to the Unbidden', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_1', 'members', 'damage_vs_country_type_extradimensional_2_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_extradimensional_2_mult', 'Damage to the Aberrant', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_1', 'members', 'damage_vs_country_type_extradimensional_3_mult', '0.25', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_extradimensional_3_mult', 'Damage to the Vehement', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_1', 'members', 'damage_vs_country_type_ai_empire_mult', '0.25', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_ai_empire_mult', 'Damage to the Contingency', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_1', 'members', 'damage_vs_country_type_gray_goo_mult', '0.25', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_gray_goo_mult', 'Damage to Nanites', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_1', 'members', 'damage_vs_player_crisis_mult', '0.25', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_player_crisis_mult', 'Damage to Crisis-Seeking Civilizations', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('diplo_weight_1', 'Historical Ally', 'With a record of long, fruitful cooperation within the alliance, federation members - who are of course free to vote as they choose - do tend to align on key issues over time.', NULL, 9);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('diplo_weight_1', 'leader', 'diplo_weight_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('envoy_unity_2', 'Federal Unity', 'Our envoys work ceaselessly to promote and encourage the federation''s agenda and purpose, inspiring kinship and confidence across the galaxy.', 'Gain 2 Unity and raise Trust Cap by 5 for each Official assigned to the federation by any member.', 10);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('envoy_unity_2', 'envoy', 'country_federation_perks_unity_produces_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_federation_perks_unity_produces_add', 'Monthly Unity', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('envoy_unity_2', 'envoy', 'country_trust_cap_add', '5.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('damage_crisis_2', 'Galactic Peacekeepers', 'If we intend to possess the moral authority to govern, we need to show the galaxy we have not just the will to defend it from outside threats, but also the means.', 'Damage to Endgame Crisis factions: +25%', 11);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_2', 'members', 'damage_vs_country_type_synth_queen_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_synth_queen_mult', 'Damage to Cetana', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_2', 'members', 'damage_vs_country_type_swarm_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_swarm_mult', 'Damage to Prethoryn Creatures', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_2', 'members', 'damage_vs_country_type_extradimensional_mult', '0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_extradimensional_mult', 'Damage to the Unbidden', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_2', 'members', 'damage_vs_country_type_extradimensional_2_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_extradimensional_2_mult', 'Damage to the Aberrant', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_2', 'members', 'damage_vs_country_type_extradimensional_3_mult', '0.25', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_extradimensional_3_mult', 'Damage to the Vehement', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_2', 'members', 'damage_vs_country_type_ai_empire_mult', '0.25', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_ai_empire_mult', 'Damage to the Contingency', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_2', 'members', 'damage_vs_country_type_gray_goo_mult', '0.25', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_gray_goo_mult', 'Damage to Nanites', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('damage_crisis_2', 'members', 'damage_vs_player_crisis_mult', '0.25', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_player_crisis_mult', 'Damage to Crisis-Seeking Civilizations', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('president_unity_1', 'League Loyalty', 'When one of our own assumes the presidential seat, we all feel a deep sense of unity and purpose in this great, shared endeavor. We will go forward together.', NULL, 12);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('president_unity_1', 'leader', 'country_unity_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('trade_federation_passive', 'Trade League', 'This Federation has a distinct focus on free markets and economic growth.', 'Grants access to the Trade League Trade Policy, which grants Energy Credits, Unity and Consumer Goods equal to 50% of our collected Trade.
+Free and automatic Commercial Pacts between all federation members.', 13);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('trade_value_1', 'Free Trade Agreements', 'The first step to building a truly prosperous and healthily competitive business environment is to remove systematic barriers to the movement of goods and services. Short term local economic disruptions will be overtaken by macro-scale efficiencies.', NULL, 14);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('trade_value_1', 'members', 'country_trade_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('trade_value_2', 'Standardization of Measures', 'Just as was done on all of our diverse homeworlds in the pre-FTL era, we must again agree upon a galactic standard set of measures for time, weight, distance, and value.', NULL, 15);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('trade_value_2', 'members', 'country_trade_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('trade_protection_1', 'Spacelane Security', 'No amount of material progress will matter if manufactured goods cannot arrive at their destination due to corruption and theft. Our robust enforcement of interstellar anti-piracy ordinances will ensure the league''s economic health.', NULL, 16);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('trade_protection_1', 'members', 'planet_jobs_trade_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('trade_value_3', 'Buy Local, Buy League', 'Peaceful and mutually profitable cooperation between league member states has, over time, built up a form of ''brand loyalty'' in consumer behavior. Our citizens, without much prompting, just seem to prefer to buy from other league members - knowing that much of the benefit will indirectly return to themselves.', NULL, 17);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('trade_value_3', 'members', 'country_trade_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('trade_value_4', 'Preferential Trade Treaties', 'We will now move to formalize the trade links between our constituent states, so that we all benefit whenever anything is bought or sold in or near our territory. Why buy anywhere else?', NULL, 18);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('trade_value_4', 'members', 'country_trade_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('president_trade_value_1', 'Center of Trade', 'Just like the sea lanes of old, sitting athwart the main arteries of galactic trade grants considerable financial benefits.', NULL, 19);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('president_trade_value_1', 'leader', 'country_trade_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('research_federation_passive', 'Research Cooperative', 'This Federation leans towards technocracy, with an acute focus on discerning universal truths.', 'Free and automatic Research Agreements between all federation members.', 20);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('research_federation_passive', 'federation', 'federation_research_sharing_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('federation_research_sharing_mult', 'Federation Research Sharing', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('research_share_1', 'Academic Contacts', 'No being can ''own'' knowledge. We hereby resolve to break with the practice of hoarding scientific discovery - one which impedes true progress in the galaxy.', 'Federal Research Agreements have their Research Speed increased by 5%.', 21);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('research_share_1', 'federation', 'federation_research_sharing_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('federation_research_sharing_mult', 'Federation Research Sharing', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('research_boost_1', 'Real Time Peer Review', 'If new prototypes and theories are conveyed to every research institution in our cooperative via FTL comms, they can be subjected to multiple sources of independent review, and perfected with lightning speed.', NULL, 22);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('research_boost_1', 'members', 'all_technology_research_speed', '0.05', NULL, 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('president_option_1', 'Executive Research Branch', 'Purely theoretical science plays a vital role, of course, but there are cases where targeted research - following priorities designated at the highest level - can have enormous impact.', NULL, 23);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('president_option_1', 'leader', 'num_tech_alternatives_add', '1.0', NULL, 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('research_share_2', 'Language of Science', 'Every member species had their own version of taxonomy, the periodic table, and other tools of knowledge exchange. By settling on a common lexicon, ideas can be transmitted with minimal confusion.', 'Federal Research Agreements have their Research Speed increased by 5%.', 24);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('research_share_2', 'federation', 'federation_research_sharing_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('federation_research_sharing_mult', 'Federation Research Sharing', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('rare_tech_boost', 'Scientific Inspiration', 'The interstellar, multi-species nature of our cooperative exposes scientists to perspectives quite literally alien to their own, resulting in a great boost to outside-the-box thinking.', 'Rare technologies already unlocked by another federation member now appear at 2 times the normal rate. This effect would change a 1% chance into a 2% chance.', 25);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('tech_diplo_weight_1', 'Technocrat', 'We will reorganize our society according to the radical idea that those who possess expert knowledge within a certain sphere shall wield decision-making power there.', NULL, 26);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('tech_diplo_weight_1', 'leader', 'diplo_weight_technology_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_technology_mult', 'Diplomatic Weight From Tech', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('research_share_3', 'License Production', 'A great invention that never leaves its homeworld is of limited academic or social value. We will incentivize license production of such innovations to speed their propagation.', 'Federal Research Agreements have their Research Speed increased by 5%.', 27);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('research_share_3', 'federation', 'federation_research_sharing_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('federation_research_sharing_mult', 'Federation Research Sharing', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('crisis_research_1', 'Research Mobilization', 'When faced with an obvious and imminent threat to all galactic life, the scientific community must be prepared to set aside abstract experimentation in favor of purely defensive applications.', 'Member Modifier:
+During an ongoing Endgame Crisis, gain 10% Research Speed.', 28);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('crisis_research_1', 'members', 'all_technology_research_speed', '0.1', '{"leaf":"has_crisis","value":"yes"}', 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('research_share_4', 'Universal Database', 'The UD has become a sort of technological holy text, containing the accumulated knowledge of all our member species. Even if individuals forget, or if empires fall, the UD will endure.', 'Federal Research Agreements have their Research Speed increased by 5%.', 29);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('research_share_4', 'federation', 'federation_research_sharing_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('federation_research_sharing_mult', 'Federation Research Sharing', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('crisis_research_2', 'Suspended Ethical Protocols', 'No taboo is too strong, no moral precept too sacrosanct, when the only alternative is complete annihilation.', 'Member Modifier:
+During an ongoing Endgame Crisis, gain 10% Research Speed.', 30);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('crisis_research_2', 'members', 'all_technology_research_speed', '0.1', '{"leaf":"has_crisis","value":"yes"}', 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('president_megastructure_1', 'Strategic Construction Initiative', 'The ability of the executive branch to concentrate league logistical power on designated strategic projects will help to preserve the balance of power, and defend our way of life.', NULL, 31);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('president_megastructure_1', 'leader', 'country_megastructure_build_cap_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_megastructure_build_cap_add', 'Megastructure Build Capacity', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('military_federation_passive', 'Martial Alliance', 'Members of this Federation seek to close their ranks around the ideals of camaraderie, martial prowess and military cooperation.', NULL, 32);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('military_federation_passive', 'members', 'ship_starting_experience_add', '100.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_starting_experience_add', 'Ship Starting Experience', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('military_federation_passive', 'members', 'army_starting_experience_add', '100.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_starting_experience_add', 'Army Starting Experience', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('military_federation_passive', 'members', 'starbase_shipyard_build_speed_mult', '0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('claim_cost_1', 'Sphere of Influence', 'We desire friendly relations with all neighboring nations. If friendly relations cannot be achieved due to intransigence by their current governments, we can - and will - install new ones.', NULL, 33);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('claim_cost_1', 'leader', 'country_claim_influence_cost_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('admiral_level_cap_1', 'Naval Tradition', 'Thorough and modern training academies backed up by centuries of spacefaring tradition make our officer corps the finest in the galaxy.', NULL, 34);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('admiral_level_cap_1', 'members', 'commander_initial_skill', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commander_initial_skill', 'Commander Starting Skill Level', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('federation_fire_rate_1', 'Offensive Spirit', 'Defense has the advantage tactically, but commanders have known since ancient days that only attack can achieve the ultimate object of war: to compel the enemy to obey our will.', NULL, 35);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('federation_fire_rate_1', 'members', 'ship_fire_rate_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('federation_fleet_size_2', 'Logistical Standardization', 'Agreeing upon common ammunition, fuel, and other vital consumables means our various member fleets can more easily be resupplied, and can thus stay in action longer.', 'The amount members contribute towards the Federation Naval Capacity counts for +25% more.', 36);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('federation_fleet_size_2', 'members', 'federation_naval_cap_contribution_mult', '0.25', NULL, 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('federation_fleet_unity_1', 'Unifying Might', 'To know that our joined fleets are patrolling the void bestows our members with a sense of pride, security and resolve.', 'Unity Monthly Unity equal to 10% of the size of the Federation Fleet.', 37);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('federation_fleet_unity_1', 'federation', 'federation_leader_fleet_scale_mult', '0.1', NULL, 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('federation_fleet_size_3', 'Interstellar Signal Corps', 'Linking all member navies in a single, unified FTL command net allows us to coordinate fleet actions of a hitherto unprecedented scale.', 'The amount members contribute towards the Federation Naval Capacity counts for +25% more.', 38);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('federation_fleet_size_3', 'members', 'federation_naval_cap_contribution_mult', '0.25', NULL, 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('hegemony_federation_passive', 'Hegemony', 'Federations of this type are most often built around one powerful empire surrounded by lesser satellite states.', 'Members cannot freely leave the federation without the president''s approval. If the president refuses, the member gets the Secession Casus Belli to leave the federation.', 39);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('job_output_1', 'Strength through Unity', 'Freed of the toxic, internecine bickering that characterized interstellar relations before the rise of our union, partner states can now focus their energies on productive labor for the good of all.', 'No effect.', 40);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('job_output_1', 'members', 'planet_jobs_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('job_output_1', 'leader', 'planet_jobs_produces_mult', '-0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('president_keep_navy_1', 'Levy Exemption', 'Leading by example can be a powerful and inspiring thing, and thus the leader is free of any restrictions that would prevent this.', 'Federation president contributes to federation fleet capacity without deducting their own naval capacity.', 41);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('president_keep_navy_1', 'leader', 'country_federation_fleet_contribution_naval_cap_reduction_discount', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_federation_fleet_contribution_naval_cap_reduction_discount', 'Country Naval Cap reduction of Fleet Contribution to Federation', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('job_output_2', 'Greater Purpose', 'The grand idea which unifies our peoples is more important than the whims or convenience of any individual being. Sacrifices must be made on the path to progress.', 'No effect.', 42);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('job_output_2', 'members', 'planet_jobs_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('job_output_2', 'leader', 'planet_jobs_produces_mult', '-0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('president_hegemony_cb_1', 'Join or Die', 'If they''re not with us, they''re against us. Any - and every - force that oppose us must be considered a threat, and dealt with accordingly.', 'President gets the Establish Hegemony Wargoal to force a non-federation empire to join the federation.', 43);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('job_output_3', 'Universal Service', 'We need no longer confront the angst and doubt of questions about our role in the federation. When asked ''how much should we be prepared to give?'', the only answer is ''everything''.', 'No effect.', 44);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('job_output_3', 'members', 'planet_jobs_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('job_output_3', 'leader', 'planet_jobs_produces_mult', '-0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('diplomacy_upkeep_1', 'Political Overseers', 'Mutually beneficial agreements between member nations are much easier to coordinate when supervisory agents from the leader nation are directly embedded in each member''s governing apparatus.', 'Research Agreements and Migration Pacts between federations members cost no Influence in their upkeep.', 45);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('president_diplo_weight_steal_1', 'Hegemonic Privilege', 'The might of the ruler cannot be undermined at any point. Full and active support from the hegemony''s subjects is imperative.', 'Every member transfers 10% of their Diplomatic Weight to the president.', 46);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('president_diplo_weight_steal_1', 'federation', 'federation_leader_diplo_weight_from_members_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('federation_leader_diplo_weight_from_members_mult', 'Diplomacy Weight from Federation Members', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('spiritualist_federation_passive', 'Holy Covenant', 'This Federation promotes spiritualist scholarship, and asserts reverence for all things divine.', 'Monthly Unity: +10%', 47);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('spiritualist_federation_passive', 'members', 'country_unity_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('spiritualist_envoys_1', 'Proselytizing Representatives', 'Many are the sacrileges that our representatives may prevent.', 'Officials assigned to the Federation will now provide 50% more Cohesion and increase Spiritualist ethic attraction within our Empire by 20%.', 48);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('spiritualist_envoys_1', 'federation', 'delegate_cohesion_effect_mult', '0.5', NULL, 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('culture_workers_1', 'Promotion of Culture', 'Our blend of cultural identities is our strength. By promoting it, we will immeasurably increase our might.', 'Unity Produced per 100 Civilians: +1
+Civilians gain additional effects from Empire''s ethics.', 49);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('culture_workers_1', 'members', 'planet_civilians_unity_produces_add', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_unity_produces_add', 'Unity Produced per 100 Civilians', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('president_spiritualist_1', 'Spread the Holy Word', 'We cannot guarantee that spiritualist interests will be protected unless we are able to encode them into galactic law.', NULL, 50);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('president_spiritualist_1', 'leader', 'resolution_category_divinity_vote_strength_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('resolution_category_divinity_vote_strength_mult', 'Voting Strength on Divinity of Life Resolutions', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('unity_trade_1', 'Ecclesiastical Funding', 'The priestly orders cannot thrive without wealth. We shall harness the power of commerce to grant them greater prosperity - and therefore put us closer to fulfilling our spiritual aims.', 'Grants access to the Holy Covenant Trade Policy, which converts 50% of our Trade into Unity.', 51);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('ascension_shared_1', 'Heavenly Accord', 'The ever greater closeness of our union shall bear fruit in the prosperity and spiritual wellbeing of our peoples.', NULL, 52);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('ascension_shared_1', 'members', 'planetary_ascension_effect_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_effect_mult', 'Colony Ascension Effects', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('president_spiritualist_2', 'In Pursuit of Ascension', 'Leadership of this holy covenant is a grand step towards spiritual ascension.', NULL, 53);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('president_spiritualist_2', 'leader', 'planetary_ascension_cost_mult', '-0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_cost_mult', 'Colony Ascension Cost', 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('all_the_priests_1', 'Empowerment of the Priestly Class', 'The more priests, the less spiritual impurity we will be forced to tolerate.', 'Unity Unity-focused Colony Designations will produce an extra +1 Priests jobs per 25 Pops (this can be further increased via Colony Ascension).', 54);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('all_the_priests_2', 'Saintly Hierarchy', 'With our increased focus on matters of spirituality, the priestly classes have swelled to unwieldy proportions. The most talented among them shall now be promoted into an expanded ecclesiastical leadership.', 'Sacred Nexuses and equivalent buildings provide +100 High Priests.', 55);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('president_spiritualist_3', 'Shroud Delving', 'The Shroud is the future. We shall make it ours.', NULL, 56);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('president_spiritualist_3', 'leader', 'shroud_delve_cooldown', '-0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shroud_delve_cooldown', 'Shroud Delve Cooldown', 0);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('make_spiritualist_1', 'A Union of Faith', 'Our faith is at the core of the holy covenant. No more shall heresies be permitted: all members must pull their weight if they are to remain within our union.', 'Non-spiritualist non-gestalt empires have Bureaucratic buildings swapped for Temples.
+Spiritualist empires gain +1 Unity Produced per 100 Priests.
+All empires face 30% slower robotic pop assembly but +15% faster organic pop growth.', 57);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('make_spiritualist_1', 'members', 'logistic_growth_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('make_spiritualist_1', 'members', 'planet_pop_assembly_reduction', '0.3', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_reduction', 'Mechanical Pop Assembly Speed Reduction', 1);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('make_spiritualist_1', 'members', 'planet_bureaucrats_unity_produces_add', '1.0', '{"leaf":"is_spiritualist","value":"yes"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_unity_produces_add', 'Unity Produced per 100 Bureaucrats', 1);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('zro_catalysis_1', 'Zro Catalysis', 'Zro deposits are a largely untapped resource. Our best minds can surely find ways to put it to greater use.', 'Unlocks the Zro Catalysis Edict, which allows us to convert Zro into increased resource output.', 58);
+INSERT INTO federation_perk (key, name, description, effect, sort_order)
+               VALUES ('president_spiritualist_4', 'Reverent Edicts', 'By grace of the Holy Covenant, the president may exercise greater executive power in their realm.', NULL, 59);
+INSERT INTO federation_perk_modifier
+                           (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
+                           VALUES ('president_spiritualist_4', 'leader', 'country_edict_fund_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_mult', 'Edict Fund', 1);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_centralization', 'Federation Centralization', 'Some Laws are Locked and require increasing the Centralization to unlock them. The Federation must first Level Up to gain access to a Higher Centralization. Be cautious though, as the Centralization is increased, Cohesion will suffer.', NULL, 0);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('centralization_minimal', 'law_category_centralization', 'Minimal', 'The Federation''s influence over its members is kept at a minimum.', '{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"centralization_minimal"}]},{"leaf":"has_modifier","value":"federation_law_category_centralization_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_centralization"}]}]}', NULL, NULL, NULL, 0);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('centralization_low', 'law_category_centralization', 'Low', 'The level of Federation influence over member states are kept very low.', '{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}', '{"op":"and","args":[{"leaf":"federation_level","cmp":">","value":"1"},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"centralization_low"}]},{"leaf":"has_modifier","value":"federation_law_category_centralization_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_centralization"}]}]}]}', NULL, NULL, '-1.0', 1);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('centralization_medium', 'law_category_centralization', 'Medium', 'The Federation has a good deal of influence over its members, while still allowing some independent governing.', '{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}', '{"op":"and","args":[{"leaf":"federation_level","cmp":">","value":"2"},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"centralization_medium"}]},{"leaf":"has_modifier","value":"federation_law_category_centralization_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_centralization"}]}]}]}', NULL, NULL, '-2.0', 2);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('centralization_high', 'law_category_centralization', 'High', 'The Federation''s influence over its member states is almost absolute.', '{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}', '{"op":"and","args":[{"leaf":"federation_level","cmp":">","value":"3"},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"centralization_high"}]},{"leaf":"has_modifier","value":"federation_law_category_centralization_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_centralization"}]}]}]}', NULL, NULL, '-3.0', 3);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('centralization_very_high', 'law_category_centralization', 'Very High', 'The Federation has sovereign control over how member states are being governed.', '{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}', '{"op":"and","args":[{"leaf":"federation_level","cmp":">","value":"4"},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"centralization_very_high"}]},{"leaf":"has_modifier","value":"federation_law_category_centralization_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_centralization"}]}]}]}', NULL, NULL, '-4.0', 4);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_fleet_contribution', 'Fleet Contribution', 'These Laws determine how much Naval Capacity our Members give up for the Federation Navy.', NULL, 1);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_none', 'law_category_fleet_contribution', 'None', 'This federation has no collaborative military effort.', NULL, '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_none"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', NULL, NULL, NULL, 5);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_low', 'law_category_fleet_contribution', 'Low', 'This federation has a minor collaborative military effort.', '{"leaf":"has_federation_type","value":"default_federation"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_low"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["default_federation"]', 2, '-0.25', 6);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_low_trade', 'law_category_fleet_contribution', 'Low', 'This federation has a minor collaborative military effort.', '{"leaf":"has_federation_type","value":"trade_federation"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_low_trade"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["trade_federation"]', 2, '-0.25', 7);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_low_hegemony', 'law_category_fleet_contribution', 'Low', 'This federation has a minor collaborative military effort.', '{"leaf":"has_federation_type","value":"hegemony_federation"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_low_hegemony"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["hegemony_federation"]', NULL, '-0.25', 8);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_low_research', 'law_category_fleet_contribution', 'Low', 'This federation has a minor collaborative military effort.', '{"op":"or","args":[{"leaf":"has_federation_type","value":"research_federation"},{"leaf":"has_federation_type","value":"spiritualist_federation"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_low_research"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["research_federation", "spiritualist_federation"]', 3, '-0.25', 9);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_low_martial', 'law_category_fleet_contribution', 'Low', 'This federation has a minor collaborative military effort.', '{"leaf":"has_federation_type","value":"military_federation"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_low_martial"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["military_federation"]', 1, '-0.25', 10);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_medium', 'law_category_fleet_contribution', 'Medium', 'This federation has a moderate collaborative military effort.', '{"leaf":"has_federation_type","value":"default_federation"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_medium"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["default_federation"]', 3, '-0.5', 11);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_medium_trade', 'law_category_fleet_contribution', 'Medium', 'This federation has a moderate collaborative military effort.', '{"leaf":"has_federation_type","value":"trade_federation"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_medium_trade"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["trade_federation"]', 3, '-0.5', 12);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_medium_hegemony', 'law_category_fleet_contribution', 'Medium', 'This federation has a moderate collaborative military effort.', '{"leaf":"has_federation_type","value":"hegemony_federation"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_medium_hegemony"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["hegemony_federation"]', 2, '-0.5', 13);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_medium_research', 'law_category_fleet_contribution', 'Medium', 'This federation has a moderate collaborative military effort.', '{"op":"or","args":[{"leaf":"has_federation_type","value":"research_federation"},{"leaf":"has_federation_type","value":"spiritualist_federation"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_medium_research"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["research_federation", "spiritualist_federation"]', 5, '-0.5', 14);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_medium_martial', 'law_category_fleet_contribution', 'Medium', 'This federation has a moderate collaborative military effort.', '{"leaf":"has_federation_type","value":"military_federation"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_medium_martial"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["military_federation"]', 2, '-0.5', 15);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_high', 'law_category_fleet_contribution', 'High', 'This federation has an extensive collaborative military effort.', '{"leaf":"has_federation_type","value":"default_federation"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_high"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["default_federation"]', 4, '-0.75', 16);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_high_trade', 'law_category_fleet_contribution', 'High', 'This federation has an extensive collaborative military effort.', '{"leaf":"has_federation_type","value":"trade_federation"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_high_trade"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["trade_federation"]', 5, '-0.75', 17);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_high_hegemony', 'law_category_fleet_contribution', 'High', 'This federation has an extensive collaborative military effort.', '{"leaf":"has_federation_type","value":"hegemony_federation"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_high_hegemony"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["hegemony_federation"]', 4, '-0.75', 18);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('fleet_contribution_high_martial', 'law_category_fleet_contribution', 'High', 'This federation has an extensive collaborative military effort.', '{"leaf":"has_federation_type","value":"military_federation"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_high_martial"}]},{"leaf":"has_modifier","value":"federation_law_category_fleet_contribution_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_fleet_contribution"}]}]}', '["military_federation"]', 3, '-0.75', 19);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_succession_type', 'Succession Type', 'These Laws determine how our President is chosen.', NULL, 2);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_type_rotation', 'law_category_succession_type', 'Rotation', 'The Presidency is rotated between member empires whenever a term ends.', '{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}', '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_type_rotation"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_type_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_type"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_type_rotation"}]},{"leaf":"any_member","value":"scope"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_type"}]}]}]}', NULL, NULL, '-0.5', 20);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_type_random', 'law_category_succession_type', 'Random', 'Whenever a term comes to end, another member is randomly chosen to become the new president.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}]}', '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_type_random"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_type_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_type"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_type_random"}]},{"leaf":"any_member","value":"scope"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_type"}]}]}]}', NULL, NULL, NULL, 21);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_type_challenge', 'law_category_succession_type', 'Challenge', 'The federation chooses its president by challenge. May the best candidate win.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}]}', '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_type_challenge"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_type_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_type"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_type_challenge"}]},{"leaf":"any_member","value":"scope"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_type"}]}]}]}', NULL, 2, NULL, 22);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_type_strongest', 'law_category_succession_type', 'Strongest', 'The president will be chosen from the most powerful empire, depending on which Succession Power is chosen. The Succession Power laws will become available when this law is active.', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_type","value":"hegemony_federation"}]},{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}]}', '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_type_strongest"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_type_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_type"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_type_strongest"}]},{"leaf":"any_member","value":"scope"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_type"}]}]}]}', NULL, 4, '-1.0', 23);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_type_strongest_hegemony', 'law_category_succession_type', 'Strongest', 'The president will be chosen from the most powerful empire, depending on which Succession Power is chosen. The Succession Power laws will become available when this law is active.', '{"op":"and","args":[{"leaf":"has_federation_type","value":"hegemony_federation"},{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}]}', '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_type_strongest_hegemony"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_type_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_type"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_type_strongest_hegemony"}]},{"leaf":"any_member","value":"scope"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_type"}]}]}]}', '["hegemony_federation"]', NULL, NULL, 24);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_succession_power', 'Succession Power', 'These laws determines which category is measured for choosing the strongest president.', '{"op":"or","args":[{"leaf":"has_federation_law","value":"succession_type_strongest"},{"leaf":"has_federation_law","value":"succession_type_strongest_hegemony"}]}', 3);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_power_economy', 'law_category_succession_power', 'Economy', 'The president should be chosen from the empire with the strongest economy.', '{"op":"or","args":[{"leaf":"has_federation_law","value":"succession_type_strongest"},{"leaf":"has_federation_law","value":"succession_type_strongest_hegemony"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_power_economy"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_power_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_power"}]}]}', NULL, NULL, NULL, 25);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_power_diplomatic_weight', 'law_category_succession_power', 'Diplomatic Weight', 'The president should be chosen from the empire with the largest Diplomatic Weight.', '{"op":"or","args":[{"leaf":"has_federation_law","value":"succession_type_strongest"},{"leaf":"has_federation_law","value":"succession_type_strongest_hegemony"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_power_diplomatic_weight"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_power_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_power"}]}]}', NULL, NULL, NULL, 26);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_power_tech', 'law_category_succession_power', 'Technology', 'The president should be chosen from the empire with the most advanced technology.', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_federation_law","value":"succession_type_strongest"},{"leaf":"has_federation_law","value":"succession_type_strongest_hegemony"}]},{"leaf":"host_has_dlc","value":"Federations"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_power_tech"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_power_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_power"}]}]}', NULL, NULL, NULL, 27);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_power_fleet', 'law_category_succession_power', 'Fleets', 'The president should be chosen from the empire with the largest and most powerful navy.', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_federation_law","value":"succession_type_strongest"},{"leaf":"has_federation_law","value":"succession_type_strongest_hegemony"}]},{"leaf":"host_has_dlc","value":"Federations"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_power_fleet"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_power_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_power"}]}]}', NULL, NULL, NULL, 28);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_succession_term', 'Succession Term', 'These Laws determine when a Member is chosen for President.', NULL, 4);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_term_years_10', 'law_category_succession_term', '10 Years', 'Sets a term length for certain Succession Types.', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}]}', '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_term_years_10"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_term_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_term"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_term_years_10"}]},{"leaf":"any_member","value":"scope"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_term"}]}]}]}', NULL, NULL, NULL, 29);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_term_years_20', 'law_category_succession_term', '20 Years', 'Sets a term length for certain Succession Types.', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}]}', '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_term_years_20"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_term_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_term"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_term_years_20"}]},{"leaf":"any_member","value":"scope"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_term"}]}]}]}', NULL, NULL, NULL, 30);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_term_years_30', 'law_category_succession_term', '30 Years', 'Sets a term length for certain Succession Types.', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}]}', '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_term_years_30"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_term_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_term"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_term_years_30"}]},{"leaf":"any_member","value":"scope"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_term"}]}]}]}', NULL, NULL, NULL, 31);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_term_years_40', 'law_category_succession_term', '40 Years', 'Sets a term length for certain Succession Types.', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}]}', '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_term_years_40"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_term_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_term"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_term_years_40"}]},{"leaf":"any_member","value":"scope"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_term"}]}]}]}', NULL, NULL, NULL, 32);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('succession_term_status_change', 'law_category_succession_term', 'Status Change', 'A new president is chosen whenever another member surpasses them by 25%.', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}]}', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_federation_law","value":"succession_type_strongest"},{"leaf":"has_federation_law","value":"succession_type_strongest_hegemony"}]},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_term_status_change"}]},{"leaf":"has_modifier","value":"federation_law_category_succession_term_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_term"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"succession_term_status_change"}]},{"leaf":"any_member","value":"scope"},{"leaf":"has_any_federation_law_in_category","value":"law_category_succession_term"}]}]}]}', NULL, NULL, NULL, 33);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_challenge', 'Succession Challenge Type', 'Defines which challenge type will be used to determine the next Federation President.', '{"leaf":"has_federation_law","value":"succession_type_challenge"}', 5);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('challenge_type_arena_combat', 'law_category_challenge', 'Arena Combat', 'The only reasonable way to determine who should be leading our Federation is to drop the rulers of all member nations into a large arena where they must fight each other to the death. Last survivor wins.
+Victory will depend on:
+The Ruler''s Leader and Species traits
+The Empire''s Ethics and Civics
+Gestalt Consciousness empires have no rulers that can participate and must forfeit.', '{"leaf":"has_federation_law","value":"succession_type_challenge"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"challenge_type_arena_combat"}]},{"leaf":"has_modifier","value":"federation_law_category_challenge_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_challenge"}]}]}', NULL, NULL, NULL, 34);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('challenge_type_psionic_battle', 'law_category_challenge', 'Psionic Battle', 'The matter of who should be leading our Federation is too important to be decided within the mundane limits of our corporeal realm. Each empire will send their most powerful psychics to face off against one another in a titanic battle that will momentarily rend the very fabric of reality.
+Victory will depend on:
+The number of Pops with psionic traits
+The number of Pops with the Telepath job
+Zro offerings
+Empires without psionic Pops cannot participate and must forfeit.', '{"leaf":"has_federation_law","value":"succession_type_challenge"}', '{"op":"and","args":[{"leaf":"any_member","value":"scope"},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"challenge_type_psionic_battle"}]},{"leaf":"has_modifier","value":"federation_law_category_challenge_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_challenge"}]}]}]}', NULL, NULL, NULL, 35);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('challenge_type_bidding_war', 'law_category_challenge', 'Golden Rule', 'All the wonders of advanced civilizations can ultimately be traced back to one simple concept: an abundance of resources. The right to rule should not therefore be measured by native intelligence or brute strength, but by depth of pocket.
+Victory will depend on:
+Energy Credits ( Energy ) available
+Energy Credits ( Energy ) spent
+Bids are paid into a central fund. How this fund is distributed afterwards is a matter left to the winner''s discretion.', '{"leaf":"has_federation_law","value":"succession_type_challenge"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"challenge_type_bidding_war"}]},{"leaf":"has_modifier","value":"federation_law_category_challenge_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_challenge"}]}]}', NULL, NULL, NULL, 36);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('challenge_type_thesis', 'law_category_challenge', 'Thesis Defense', 'The mantle of leadership must never be granted to the foolish or ignorant. Instead we choose trial by science: exposing the wisdom and insights of ruler and empire alike to the scrutiny of public examination, as each investigates an issue currently facing our Federation.
+Victory will depend on:
+The Ruler''s Leader and Scientist traits
+Technology level
+Each thesis will be reviewed within 60 days.
+Empires which lack a ruler and at least one scientist at the time of the examination will forfeit.', '{"leaf":"has_federation_law","value":"succession_type_challenge"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"challenge_type_thesis"}]},{"leaf":"has_modifier","value":"federation_law_category_challenge_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_challenge"}]}]}', NULL, NULL, NULL, 37);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('challenge_type_conclave', 'law_category_challenge', 'Spiritual Conclave', 'Spiritual purity and the pursuit of traditionalist values shall be the criteria upon which we shall judge our leaders. Only the one most blessed by divine favor shall be deemed worthy of leading us.
+Victory will depend on:
+Portion of population working as Priests or other spiritual jobs
+Unity investment (traditions, Colony Ascension, and available stockpile)
+Each thesis will be reviewed within 60 days.
+Empires which lack a ruler and at least one scientist at the time of the examination will forfeit.', '{"leaf":"has_federation_law","value":"succession_type_challenge"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"challenge_type_conclave"}]},{"leaf":"has_modifier","value":"federation_law_category_challenge_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_challenge"}]}]}', NULL, NULL, NULL, 38);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_build_fleets', 'Federation Fleet Construction', 'This establishes who can construct ships for the Federation Navy.', '{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_none"}]}', 6);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('federation_build_fleets_everyone', 'law_category_build_fleets', 'Everyone', 'Any member may order the construction of new ships to the federation fleet.', '{"leaf":"always","value":"yes"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"federation_build_fleets_everyone"}]},{"leaf":"has_modifier","value":"federation_law_category_build_fleets_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_build_fleets"}]}]}', NULL, NULL, NULL, 39);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('federation_build_fleets_only_leader', 'law_category_build_fleets', 'Only Leader', 'Only the president may order the construction of new ships to the federation fleet.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"op":"not","args":[{"leaf":"has_federation_law","value":"fleet_contribution_none"}]}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"federation_build_fleets_only_leader"}]},{"leaf":"has_modifier","value":"federation_law_category_build_fleets_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_build_fleets"}]}]}', NULL, 2, NULL, 40);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_allow_subjects_to_join', 'Can Subjects Join', 'This determines if we allow Subjects or Vassals to Join our Federation.', NULL, 7);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('allow_subjects_to_join_no', 'law_category_allow_subjects_to_join', 'No', 'Subjects may not join the federation.', '{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_type","value":"hegemony_federation"}]},{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"allow_subjects_to_join_no"}]},{"leaf":"has_modifier","value":"federation_law_category_allow_subjects_to_join_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_allow_subjects_to_join"}]}]}]}', NULL, NULL, NULL, 41);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('allow_subjects_to_join_yes', 'law_category_allow_subjects_to_join', 'Yes', 'Subjects are allowed to join the federation.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"allow_subjects_to_join_yes"}]},{"leaf":"has_modifier","value":"federation_law_category_allow_subjects_to_join_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_allow_subjects_to_join"}]}]}', NULL, NULL, NULL, 42);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_voting_weight', 'Vote Weight', 'This determines the weight of our Vote.', NULL, 8);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('vote_weight_equal', 'law_category_voting_weight', 'Equal', 'Every member has 1 vote, and each vote has equal value.', '{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"vote_weight_equal"}]},{"leaf":"has_modifier","value":"federation_law_category_voting_weight_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_voting_weight"}]}]}', NULL, NULL, NULL, 43);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('vote_weight_diplomatic', 'law_category_voting_weight', 'Diplomatic', 'Votes are determined by Diplomatic Weight. More influential members wield more power.', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]},{"leaf":"host_has_dlc","value":"Federations"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"vote_weight_diplomatic"}]},{"leaf":"has_modifier","value":"federation_law_category_voting_weight_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_voting_weight"}]}]}', NULL, 3, NULL, 44);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_war_declaration_vote', 'War Declaration', 'These Laws decide how we Declare War.', NULL, 9);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('declare_war_unanimous_vote', 'law_category_war_declaration_vote', 'Unanimous Vote', 'All members have to agree to declare any wars.', '{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"declare_war_unanimous_vote"}]},{"leaf":"has_modifier","value":"federation_law_category_war_declaration_vote_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_war_declaration_vote"}]}]}', NULL, NULL, NULL, 45);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('declare_war_majority_vote', 'law_category_war_declaration_vote', 'Majority Vote', 'A majority vote of members decides if wars will be declared.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"op":"not","args":[{"leaf":"has_federation_type","value":"hegemony_federation"}]},{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"declare_war_majority_vote"}]},{"leaf":"has_modifier","value":"federation_law_category_war_declaration_vote_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_war_declaration_vote"}]}]}', NULL, 2, NULL, 46);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('declare_war_majority_vote_hegemony', 'law_category_war_declaration_vote', 'Majority Vote', 'A majority vote of members decides if wars will be declared.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"has_federation_type","value":"hegemony_federation"},{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"declare_war_majority_vote_hegemony"}]},{"leaf":"has_modifier","value":"federation_law_category_war_declaration_vote_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_war_declaration_vote"}]}]}', '["hegemony_federation"]', NULL, NULL, 47);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('declare_war_president_vote', 'law_category_war_declaration_vote', 'President Decides', 'The president of the federation decides if wars will be declared.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"declare_war_president_vote"}]},{"leaf":"has_modifier","value":"federation_law_category_war_declaration_vote_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_war_declaration_vote"}]}]}', NULL, 4, '-0.5', 48);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_invite_members_vote', 'Invite Members', 'These Laws determine how we decide on Accepting New Members to our Federation.', NULL, 10);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('invite_members_unanimous_vote', 'law_category_invite_members_vote', 'Unanimous Vote', 'New federation members have to be approved by all current members.', '{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"invite_members_unanimous_vote"}]},{"leaf":"has_modifier","value":"federation_law_category_invite_members_vote_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_invite_members_vote"}]}]}', NULL, NULL, NULL, 49);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('invite_members_majority_vote', 'law_category_invite_members_vote', 'Majority Vote', 'New federation members have to be approved by a majority vote.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"invite_members_majority_vote"}]},{"leaf":"has_modifier","value":"federation_law_category_invite_members_vote_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_invite_members_vote"}]}]}', NULL, 2, NULL, 50);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('invite_members_president_vote', 'law_category_invite_members_vote', 'President Decides', 'The president decides if a new member will be accepted or not.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"op":"not","args":[{"leaf":"has_federation_type","value":"hegemony_federation"}]},{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"invite_members_president_vote"}]},{"leaf":"has_modifier","value":"federation_law_category_invite_members_vote_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_invite_members_vote"}]}]}', NULL, 4, '-0.25', 51);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('invite_members_president_vote_hegemony', 'law_category_invite_members_vote', 'President Decides', 'The president decides if a new member will be accepted or not.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"has_federation_type","value":"hegemony_federation"},{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"invite_members_president_vote_hegemony"}]},{"leaf":"has_modifier","value":"federation_law_category_invite_members_vote_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_invite_members_vote"}]}]}', '["hegemony_federation"]', NULL, '-0.25', 52);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_kick_members_vote', 'Kick Members', 'These Laws determine how we decide to Kick Members from our Federation.', NULL, 11);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('kick_members_majority_vote', 'law_category_kick_members_vote', 'Majority Vote', 'A member can be removed from the federation by a majority vote.', '{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"kick_members_majority_vote"}]},{"leaf":"has_modifier","value":"federation_law_category_kick_members_vote_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_kick_members_vote"}]}]}', NULL, NULL, NULL, 53);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('kick_members_president_vote', 'law_category_kick_members_vote', 'President Decides', 'The president wields the power to decide if a member should be removed from the federation.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"op":"not","args":[{"leaf":"has_federation_type","value":"hegemony_federation"}]},{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"kick_members_president_vote"}]},{"leaf":"has_modifier","value":"federation_law_category_kick_members_vote_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_kick_members_vote"}]}]}', NULL, 5, '-0.5', 54);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('kick_members_president_vote_hegemony', 'law_category_kick_members_vote', 'President Decides', 'The president wields the power to decide if a member should be removed from the federation.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"has_federation_type","value":"hegemony_federation"},{"op":"not","args":[{"leaf":"has_federation_type","value":"imperial_loyalists_federation"}]}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"kick_members_president_vote_hegemony"}]},{"leaf":"has_modifier","value":"federation_law_category_kick_members_vote_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_kick_members_vote"}]}]}', '["hegemony_federation"]', NULL, '-0.5', 55);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_free_migration', 'Free Migration', 'This determines if we allow Free Migration among Members in the Federation.', NULL, 12);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('free_migration_no', 'law_category_free_migration', 'Disabled', 'Members have to sign individual Migration Treaties.', '{"leaf":"always","value":"yes"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"free_migration_no"}]},{"leaf":"has_modifier","value":"federation_law_category_free_migration_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_free_migration"}]}]}', NULL, NULL, NULL, 56);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('free_migration_yes', 'law_category_free_migration', 'Enabled', 'Migration Treaties are free and automatic between all federation members.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"free_migration_yes"}]},{"leaf":"has_modifier","value":"federation_law_category_free_migration_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_free_migration"}]}]}', NULL, 3, NULL, 57);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_separate_treaties', 'Separate Treaties', 'This determines if we allow Members to have Separate Treaties within the Federation.', NULL, 13);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('treaties_separate_yes', 'law_category_separate_treaties', 'Allowed', 'Federation members are allowed to sign diplomatic agreements with empires outside the Federation.', '{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"treaties_separate_yes"}]},{"leaf":"has_modifier","value":"federation_law_category_separate_treaties_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_separate_treaties"}]}]}', NULL, NULL, NULL, 58);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('treaties_separate_no', 'law_category_separate_treaties', 'Prohibited', 'Federation members are prohibited from having Research Agreements, Migration Treaties with empires outside the Federation.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"treaties_separate_no"}]},{"leaf":"has_modifier","value":"federation_law_category_separate_treaties_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_separate_treaties"}]}]}', NULL, 2, '-0.1', 59);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_commercial_pact', 'Commercial Pacts', 'This determines whether Members have free and automatic Commercial Pacts within the Federation.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"op":"not","args":[{"leaf":"has_federation_type","value":"trade_federation"}]}]}', 14);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('commercial_pact_no', 'law_category_commercial_pact', 'Disabled', 'Members have to negotiate individual Commercial Pacts.', '{"leaf":"always","value":"yes"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"commercial_pact_no"}]},{"leaf":"has_modifier","value":"federation_law_category_commercial_pact_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_commercial_pact"}]}]}', NULL, NULL, NULL, 60);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('commercial_pact_yes', 'law_category_commercial_pact', 'Enabled', 'Commercial Pacts are free and automatic between all federation members.', '{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"commercial_pact_yes"}]},{"leaf":"has_modifier","value":"federation_law_category_commercial_pact_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_commercial_pact"}]}]}', NULL, 5, NULL, 61);
+INSERT INTO federation_law_category (key, name, description, potential_json, sort_order)
+               VALUES ('law_category_research_pact', 'Research Agreements', 'This determines whether Members have free and automatic Research Agreements within the Federation.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"op":"not","args":[{"leaf":"has_federation_type","value":"research_federation"}]}]}', 15);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('research_pact_no', 'law_category_research_pact', 'Disabled', 'Members have to negotiate individual Research Agreements.', '{"leaf":"always","value":"yes"}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"research_pact_no"}]},{"leaf":"has_modifier","value":"federation_law_category_research_pact_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_research_pact"}]}]}', NULL, NULL, NULL, 62);
+INSERT INTO federation_law (key, category_key, name, description, potential_json,
+                   allow_json, types_json, required_centralization, cohesion_growth, sort_order)
+                   VALUES ('research_pact_yes', 'law_category_research_pact', 'Enabled', 'Research Agreements are free and automatic between all federation members.', '{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"research_pact_yes"}]},{"leaf":"has_modifier","value":"federation_law_category_research_pact_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_research_pact"}]}]}', NULL, 5, NULL, 63);

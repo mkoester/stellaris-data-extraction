@@ -9,6 +9,7 @@ from . import __version__
 from .buildings import extract_buildings_ref
 from .clausewitz import parse_file
 from .empires import extract_flag_assets, extract_initializers, extract_prescripted_empires, extract_rooms
+from .federations import extract_federations
 from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_ethics, extract_origins, extract_policy_restrictions
 from .jobs import extract_job_swaps, extract_jobs
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
@@ -408,6 +409,8 @@ Examples:
     extract_traditions(install_dir, loc, scripted_vars, w, args.verbose, progress)
     print(f"\n[edicts + agendas] {install_dir / 'common' / 'edicts'}", file=progress)
     extract_edicts_agendas(install_dir, loc, scripted_vars, static_mods, w, progress)
+    print(f"\n[federations] {install_dir / 'common' / 'federation_types'}", file=progress)
+    extract_federations(install_dir, loc, scripted_vars, w, progress)
 
     w.close()
 
@@ -454,6 +457,8 @@ Examples:
         n_asc_perks     = tmp.execute("SELECT COUNT(*) FROM ascension_perk").fetchone()[0]
         n_edicts        = tmp.execute("SELECT COUNT(*) FROM edict").fetchone()[0]
         n_agendas       = tmp.execute("SELECT COUNT(*) FROM council_agenda").fetchone()[0]
+        n_fed_types     = tmp.execute("SELECT COUNT(*) FROM federation_type").fetchone()[0]
+        n_fed_laws      = tmp.execute("SELECT COUNT(*) FROM federation_law").fetchone()[0]
         tmp.close()
         print(f"""
 +------------------------------------------+
@@ -499,6 +504,8 @@ Examples:
 |  Ascension perks    : {n_asc_perks:<20}|
 |  Edicts             : {n_edicts:<20}|
 |  Council agendas    : {n_agendas:<20}|
+|  Federation types   : {n_fed_types:<20}|
+|  Federation laws    : {n_fed_laws:<20}|
 +------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size

@@ -1015,4 +1015,71 @@ CREATE TABLE tradition_modifier (
     sort_order     INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (owner_key, sort_order)
 );
+-- Federation types (event-only ones skipped), the perks each level grants, and the laws.
+-- unlocked_by_json / excluded_by_json: tradition/swap/perk/ethic/civic keys the type's `allow`
+-- asks for outside / inside a NOT (scripted triggers expanded: is_militarist → both ethics).
+DROP TABLE IF EXISTS federation_type_perk;
+DROP TABLE IF EXISTS federation_perk_modifier;
+DROP TABLE IF EXISTS federation_perk;
+DROP TABLE IF EXISTS federation_type;
+DROP TABLE IF EXISTS federation_law;
+DROP TABLE IF EXISTS federation_law_category;
+CREATE TABLE federation_type (
+    key              TEXT PRIMARY KEY,     -- e.g. "hegemony_federation"
+    name             TEXT,
+    description      TEXT,
+    base_intel       INTEGER,
+    potential_json   TEXT,
+    allow_json       TEXT,                 -- who may form it
+    unlocked_by_json TEXT,                 -- ["tr_…","ethic_…","civic_…"]
+    excluded_by_json TEXT,                 -- ["civic_barbaric_despoilers"]
+    sort_order       INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE federation_perk (
+    key            TEXT PRIMARY KEY,       -- e.g. "federation_fleet_size_1"
+    name           TEXT,
+    description    TEXT,                   -- flavour (<key>_desc)
+    effect         TEXT,                   -- custom_tooltip + modifier-block description texts
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE federation_type_perk (
+    type_key       TEXT NOT NULL,
+    level          INTEGER NOT NULL,       -- 1..5
+    experience     REAL,                   -- XP to the next level; NULL at the top level
+    perk_key       TEXT NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (type_key, sort_order),
+    FOREIGN KEY (type_key) REFERENCES federation_type(key),
+    FOREIGN KEY (perk_key) REFERENCES federation_perk(key)
+);
+CREATE TABLE federation_perk_modifier (
+    perk_key       TEXT NOT NULL,
+    scope          TEXT NOT NULL,          -- members / federation / leader (president) / envoy
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    potential_json TEXT,                   -- *_triggered_modifier blocks
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (perk_key, sort_order),
+    FOREIGN KEY (perk_key) REFERENCES federation_perk(key)
+);
+CREATE TABLE federation_law_category (
+    key            TEXT PRIMARY KEY,       -- e.g. "law_category_centralization"
+    name           TEXT,
+    description    TEXT,
+    potential_json TEXT,
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE federation_law (
+    key            TEXT PRIMARY KEY,       -- e.g. "centralization_low"
+    category_key   TEXT NOT NULL,
+    name           TEXT,
+    description    TEXT,
+    potential_json TEXT,
+    allow_json     TEXT,
+    types_json     TEXT,                   -- ["trade_federation"]: only for these types
+    required_centralization INTEGER,
+    cohesion_growth REAL,                  -- per month while enacted
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (category_key) REFERENCES federation_law_category(key)
+);
 """
