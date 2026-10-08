@@ -887,6 +887,98 @@ CREATE TABLE tech_repeatable_modifier (
     PRIMARY KEY (tech_key, modifier_key),
     FOREIGN KEY (tech_key) REFERENCES tech_repeatable(key)
 );
+-- Whitelisted values from common/defines (tradition cost formula, slot limits).
+DROP TABLE IF EXISTS game_define;
+CREATE TABLE game_define (
+    key   TEXT PRIMARY KEY,                -- e.g. "TRADITION_COST_TRADITION_EXP"
+    value REAL NOT NULL
+);
+
+-- Traditions and ascension perks. Conditions are stored as normalised JSON trigger
+-- trees (extractor/triggers.py normalize_trigger) that the planner evaluates against an
+-- empire profile: {"op":"and"|"or"|"not","args":[…]} | {"leaf":k,"value":v[,"cmp":">"]}.
+DROP TABLE IF EXISTS tradition_modifier;
+DROP TABLE IF EXISTS tradition_swap;
+DROP TABLE IF EXISTS tradition_prereq;
+DROP TABLE IF EXISTS tradition;
+DROP TABLE IF EXISTS tradition_category_desc;
+DROP TABLE IF EXISTS tradition_category;
+DROP TABLE IF EXISTS ascension_perk;
+CREATE TABLE tradition_category (
+    key            TEXT PRIMARY KEY,       -- e.g. "tradition_expansion"
+    name           TEXT,
+    potential_json TEXT,                   -- who may adopt the tree; NULL = everyone
+    required_dlc   TEXT,                   -- FK to dlc.name; top-level DLC gate of potential
+    adopt_key      TEXT NOT NULL,          -- FK to tradition.key
+    finish_key     TEXT NOT NULL,          -- FK to tradition.key
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (required_dlc) REFERENCES dlc(name)
+);
+-- Per-empire-type description variants (`desc = { trigger text }`), first match wins.
+CREATE TABLE tradition_category_desc (
+    category_key TEXT NOT NULL,
+    trigger_json TEXT,                     -- NULL = unconditional
+    description  TEXT,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (category_key, sort_order),
+    FOREIGN KEY (category_key) REFERENCES tradition_category(key)
+);
+CREATE TABLE tradition (
+    key            TEXT PRIMARY KEY,       -- e.g. "tr_expansion_colonization_fever"
+    category_key   TEXT NOT NULL,
+    role           TEXT NOT NULL,          -- adopt / finish / normal
+    name           TEXT,
+    description    TEXT,                   -- flavour text (loc <key>_delayed)
+    possible_json  TEXT,
+    unlocks_agenda TEXT,                   -- localised agenda name
+    tooltip        TEXT,                   -- custom_tooltip text (effects not expressed as modifiers)
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (category_key) REFERENCES tradition_category(key)
+);
+-- Tree edges: tradition_key needs requires_key (has_tradition in its possible).
+CREATE TABLE tradition_prereq (
+    tradition_key TEXT NOT NULL,
+    requires_key  TEXT NOT NULL,
+    PRIMARY KEY (tradition_key, requires_key)
+);
+CREATE TABLE ascension_perk (
+    key             TEXT PRIMARY KEY,      -- e.g. "ap_the_flesh_is_weak"
+    name            TEXT,
+    description     TEXT,                  -- flavour text (loc <key>_desc)
+    is_path         INTEGER NOT NULL DEFAULT 0,  -- 1 = from 00_ascension_paths.txt
+    potential_json  TEXT,                  -- shown at all
+    possible_json   TEXT,                  -- may be picked; its num_ascension_perks bound is
+                                           -- the tier, which can differ per empire type
+    required_dlc    TEXT,
+    tooltip         TEXT,
+    sort_order      INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (required_dlc) REFERENCES dlc(name)
+);
+-- tradition_swap: variant replacing a tradition or ascension perk (owner_key) when its
+-- trigger holds; the highest weight wins among several true ones.
+CREATE TABLE tradition_swap (
+    id              TEXT PRIMARY KEY,      -- "<owner_key>#<n>" (`name` is optional and not unique)
+    owner_key       TEXT NOT NULL,         -- tradition.key or ascension_perk.key
+    loc_key         TEXT,                  -- the swap's `name`, if any
+    name            TEXT,                  -- localised (owner's name when inherit_name / unnamed)
+    description     TEXT,                  -- NULL = owner's
+    trigger_json    TEXT,
+    inherit_effects INTEGER NOT NULL DEFAULT 0,  -- 1 = owner's modifiers apply, not its own
+    weight          REAL NOT NULL DEFAULT 1,
+    tooltip         TEXT,
+    sort_order      INTEGER NOT NULL DEFAULT 0
+);
+-- Modifiers of traditions, ascension perks and swaps (owner_key = a tradition/perk key
+-- or a tradition_swap.id).
+-- potential_json is set for triggered_modifier blocks.
+CREATE TABLE tradition_modifier (
+    owner_key      TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    potential_json TEXT,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (owner_key, sort_order)
+);
 
 -- Data
 
@@ -39560,3 +39652,4859 @@ INSERT OR REPLACE INTO tech_fallen_empire
 INSERT OR REPLACE INTO tech_fallen_empire
                (key, label, description, area, area_label, category, category_label, building_key, sort_order)
                VALUES ('tech_dark_matter_propulsion', 'Dark Matter Propulsion', 'These ship thrusters utilize Dark Matter technology to generate propulsion in a manner that appears to defy numerous laws of physics.', 'engineering', 'Engineering', 'propulsion', 'Propulsion', NULL, 34);
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('ASCENSION_PERKS_SLOTS', '8.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_BASE', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_TRADITION_COST_PENALTY', '0.002');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_CATEGORIES_MAX', '7.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_AMOUNTS', '300.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_TRADITION', '8.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_TRADITION_EXP', '1.8');
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_adaptability', 'Adaptability', '{"leaf":"is_machine_empire","value":"no"}', NULL, 'tr_adaptability_adopt', 'tr_adaptability_finish', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_adaptability_adopt', 'tradition_adaptability', 'adopt', 'Adaptability Traditions', NULL, NULL, 'Conquer Nature', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_adopt', 'pop_housing_usage_mult', '-0.1', '{"leaf":"is_wilderness_empire","value":"no"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_adopt', 'building_time_mult', '-0.1', '{"leaf":"is_wilderness_empire","value":"yes"}', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_adaptability_recycling', 'tradition_adaptability', 'normal', 'Enhanced Recycling', 'Reusing what has become obsolete gives us more to build with in the future.', NULL, NULL, 'Building and District Rare Crystals Exotic Gases Volatile Motes Strategic Resource Cost and Upkeep reduced by -15%.', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_recycling', 'planet_structures_volatile_motes_upkeep_mult', '-0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_volatile_motes_upkeep_mult', 'District and Building Volatile Motes Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_recycling', 'planet_structures_exotic_gases_upkeep_mult', '-0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_exotic_gases_upkeep_mult', 'District and Building Exotic Gases Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_recycling', 'planet_structures_rare_crystals_upkeep_mult', '-0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_rare_crystals_upkeep_mult', 'District and Building Rare Crystals Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_recycling', 'planet_structures_volatile_motes_cost_mult', '-0.15', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_volatile_motes_cost_mult', 'District and Building Volatile Motes Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_recycling', 'planet_structures_exotic_gases_cost_mult', '-0.15', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_exotic_gases_cost_mult', 'District and Building Exotic Gases Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_recycling', 'planet_structures_rare_crystals_cost_mult', '-0.15', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_rare_crystals_cost_mult', 'District and Building Rare Crystals Cost', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_adaptability_survival_fittest', 'tradition_adaptability', 'normal', 'Survival of the Fittest', 'By coming into contact with other species, we have learned the true importance of overcoming our weaknesses in the great struggle for survival.', '{"leaf":"has_tradition","value":"tr_adaptability_recycling"}', NULL, NULL, 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_adaptability_survival_fittest', 'tr_adaptability_recycling');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_survival_fittest', 'planet_orbital_bombardment_damage', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_orbital_bombardment_damage', 'Orbital Bombardment Damage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_survival_fittest', 'army_defense_damage_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_defense_damage_mult', 'Defense Army Damage', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_adaptability_survival_fittest#0', 'tr_adaptability_survival_fittest', 'tr_adaptability_survival_fittest_nomad', 'Survival of the Fittest', 'By coming into contact with other species, we have learned the true importance of overcoming our weaknesses in the great struggle for survival.', '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', 'Arkship Hull Points: +25%', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_survival_fittest#0', 'shipsize_civilian_arkship_tier_1_hull_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_1_hull_mult', 'Civilian Arkship Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_survival_fittest#0', 'shipsize_civilian_arkship_tier_2_hull_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_2_hull_mult', 'Civilian Arkship Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_survival_fittest#0', 'shipsize_civilian_arkship_tier_3_hull_mult', '0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_civilian_arkship_tier_3_hull_mult', 'Civilian Arkship Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_survival_fittest#0', 'shipsize_science_arkship_tier_1_hull_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_1_hull_mult', 'Scientific Arkship Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_survival_fittest#0', 'shipsize_science_arkship_tier_2_hull_mult', '0.25', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_2_hull_mult', 'Scientific Arkship Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_survival_fittest#0', 'shipsize_science_arkship_tier_3_hull_mult', '0.25', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_science_arkship_tier_3_hull_mult', 'Scientific Arkship Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_survival_fittest#0', 'shipsize_military_arkship_tier_1_hull_mult', '0.25', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_1_hull_mult', 'Military Arkship Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_survival_fittest#0', 'shipsize_military_arkship_tier_2_hull_mult', '0.25', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_2_hull_mult', 'Military Arkship Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_survival_fittest#0', 'shipsize_military_arkship_tier_3_hull_mult', '0.25', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_military_arkship_tier_3_hull_mult', 'Military Arkship Hull Points', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_adaptability_environmental_diversification', 'tradition_adaptability', 'normal', 'Environmental Diversification', 'By adapting to different environments we have learned to evolve and adapt faster.', NULL, NULL, NULL, 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_environmental_diversification', 'pop_environment_tolerance', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_adaptability_adaptive_ecology', 'tradition_adaptability', 'normal', 'Adaptive Ecology', 'The highest function of ecology is the understanding of consequences.', '{"leaf":"has_tradition","value":"tr_adaptability_environmental_diversification"}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_adaptability_adaptive_ecology', 'tr_adaptability_environmental_diversification');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_adaptive_ecology', 'planet_non_artificial_max_districts_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_non_artificial_max_districts_add', 'Max Districts (Non-artificial planets only)', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_adaptability_adaptive_ecology#0', 'tr_adaptability_adaptive_ecology', 'tr_adaptability_adaptive_ecology_void', 'Adaptive Architecture', 'Optimized space management is the greatest architectural constraint.', '{"op":"or","args":[{"leaf":"has_void_dweller_origin","value":"yes"},{"leaf":"is_nomadic","value":"yes"}]}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_adaptive_ecology#0', 'planet_artificial_max_districts_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artificial_max_districts_add', 'Max Districts (Artificial colonies only)', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_adaptability_appropriation', 'tradition_adaptability', 'normal', 'Appropriation', 'Land that is not being worked contributes nothing to our empire. Workers must be relocated in an efficient manner to those planets where they are needed most.', '{"leaf":"has_tradition","value":"tr_adaptability_environmental_diversification"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_adaptability_appropriation', 'tr_adaptability_environmental_diversification');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_appropriation', 'pop_resettlement_cost_mult', '-0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_appropriation', 'planet_resettlement_unemployed_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_mult', 'Automatic Resettlement Chance', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_adaptability_appropriation#0', 'tr_adaptability_appropriation', 'tr_adaptability_appropriation_egalitarian', 'Emigration Program', 'Land that is not being worked contributes nothing to our empire. Workers should be encouraged to relocate where they are needed most.', '{"leaf":"is_egalitarian","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_adaptability_appropriation#1', 'tr_adaptability_appropriation', 'tr_adaptability_appropriation_wilderness', 'Appropriation', 'Under-utilized ecosystems contribute nothing to our empire. must be relocated in an efficient manner to those planets where they are needed most.', '{"leaf":"is_wilderness_empire","value":"yes"}', 0, '1.0', NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_appropriation#1', 'terraform_speed_mult', '0.25', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_adaptability_appropriation#2', 'tr_adaptability_appropriation', 'tr_adaptability_appropriation_nomads', 'Appropriation', NULL, '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_appropriation#2', 'starbase_modules_cost_mult', '-0.3', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_modules_cost_mult', 'Station Module Cost', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_adaptability_finish', 'tradition_adaptability', 'finish', 'Adaptability Traditions Finished', NULL, NULL, NULL, 'Increases Colony Designation Bonuses for all colony types.', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_adaptability_finish', 'ascension_perks_add', '1.0', NULL, 0);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_aptitude', 'Aptitude', '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', 'Galactic Paragons', 'tr_aptitude_adopt', 'tr_aptitude_finish', 1);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_aptitude', '{"leaf":"is_regular_empire","value":"yes"}', 'Our Empire can truly prosper under the guidance of strong leaders.', 0);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_aptitude', '{"leaf":"is_hive_empire","value":"yes"}', 'The prospers with the aid of its strongest entities.', 1);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_aptitude', '{"leaf":"is_machine_empire","value":"yes"}', 'High leadership unit proficiency increases Empire greatness potential.', 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_aptitude_adopt', 'tradition_aptitude', 'adopt', 'Aptitude Traditions', NULL, NULL, 'Leadership Conditioning', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_aptitude_adopt', 'leader_trait_selection_options_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_trait_selection_options_add', 'Additional Leader Trait Options', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_aptitude_the_empire_needs_you', 'tradition_aptitude', 'normal', 'The Empire Needs You!', 'Many young people dream of becoming one of the revered leaders of the empire.', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_aptitude_the_empire_needs_you', 'leaders_cost_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_cost_mult', 'Leader Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_aptitude_the_empire_needs_you', 'country_leader_pool_size', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_leader_pool_size', 'Recruitable Leaders per Class', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_aptitude_specialist_training', 'tradition_aptitude', 'normal', 'Specialist Training', 'Rigorous training programs ensure our leaders have all the necessary tools to flourish.', NULL, NULL, 'Job Efficiency for Specialists per Colony Governor Skill Level: +2%', 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_aptitude_specialist_training#0', 'tr_aptitude_specialist_training', 'tr_aptitude_specialist_training_hive', 'Specialist Training', 'Rigorous conditioning ensures the success of the ''s specialized members.', '{"leaf":"is_hive_empire","value":"yes"}', 0, '1.0', 'Job Efficiency for Complex Drones per Colony Governor Skill Level: +2%', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_aptitude_specialist_training#1', 'tr_aptitude_specialist_training', 'tr_aptitude_specialist_training_machine', 'Software Update', 'New and up-to-date programs ensure our leaders have all the necessary tools to perform as expected.', '{"leaf":"is_machine_empire","value":"yes"}', 0, '1.0', 'Job Efficiency for Complex Drones per Colony Governor Skill Level: +2%', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_aptitude_psychological_profiling', 'tradition_aptitude', 'normal', 'Psychological Profiling', 'Knowing our leaders'' fears and weaknesses allow us to take preventive measures from them to take hold.', '{"leaf":"has_tradition","value":"tr_aptitude_the_empire_needs_you"}', NULL, NULL, 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_aptitude_psychological_profiling', 'tr_aptitude_the_empire_needs_you');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_aptitude_psychological_profiling', 'negative_traits_country', '-1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_traits_country', 'Leader Maximum Negative Traits', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_aptitude_psychological_profiling', 'country_commander_cap_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_commander_cap_add', 'Commander Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_aptitude_psychological_profiling', 'country_official_cap_add', '1.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_official_cap_add', 'Official Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_aptitude_psychological_profiling', 'country_scientist_cap_add', '1.0', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_scientist_cap_add', 'Scientist Capacity', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_aptitude_healthcare_program', 'tradition_aptitude', 'normal', 'Healthcare Program', 'Through continuous health parameter monitoring, we tailor everything from exercise and diet to invasive surgical procedures to get the most from our leaders.', '{"leaf":"has_tradition","value":"tr_aptitude_the_empire_needs_you"}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_aptitude_healthcare_program', 'tr_aptitude_the_empire_needs_you');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_aptitude_healthcare_program', 'leader_lifespan_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_aptitude_healthcare_program', 'leaders_upkeep_mult', '-0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_aptitude_champions_of_the_empire', 'tradition_aptitude', 'normal', 'Champions of the Empire', 'We trust our leaders and give them absolute power to influence how our Empire is run.', '{"leaf":"has_tradition","value":"tr_aptitude_specialist_training"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_aptitude_champions_of_the_empire', 'tr_aptitude_specialist_training');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_aptitude_champions_of_the_empire', 'leader_skill_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_skill_add', 'Effective Leader Skill Level', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_aptitude_finish', 'tradition_aptitude', 'finish', 'Aptitude Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_aptitude_finish', 'leader_initial_traits_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_initial_traits_add', 'Leader Starting Traits', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_aptitude_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_archivism', 'Archivism', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 'Grand Archive', 'tr_archivism_adopt', 'tr_archivism_finish', 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_archivism_adopt', 'tradition_archivism', 'adopt', 'Archivism Traditions', NULL, NULL, 'Astute Observation', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_archivism_adopt', 'country_exhibit_unlocking_cost_mult', '-0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_exhibit_unlocking_cost_mult', 'Exhibit Unlocking Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_archivism_adopt', 'ship_anomaly_generation_chance_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_anomaly_generation_chance_mult', 'Anomaly Discovery Chance', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_archivism_xeno_paleontology', 'tradition_archivism', 'normal', 'Xeno-Paleontology', 'Unearthing secrets among the stars will allow us to learn from the mistakes of others.', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_archivism_xeno_paleontology', 'ship_archaeological_site_excavation_speed_mult', '0.3', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_archaeological_site_excavation_speed_mult', 'Archaeology Excavation Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_archivism_xeno_paleontology', 'ship_archaeological_site_clues_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_archaeological_site_clues_add', 'Archaeology Skill', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_archivism_xeno_paleontology', 'scientist_exp_gain', '0.3', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('scientist_exp_gain', 'Scientist Experience Gain', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_archivism_frontier_archaeology', 'tradition_archivism', 'normal', 'Frontier Archaeology', 'We should push beyond the limits of our own systems if we are to truly grasp at the history that surrounds us.', '{"leaf":"has_tradition","value":"tr_archivism_xeno_paleontology"}', NULL, 'Allows your Science Ships to excavate Archaeological Sites in unowned Systems.
+Gain a random Xeno Geology Specimen.', 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_archivism_frontier_archaeology', 'tr_archivism_xeno_paleontology');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_archivism_frontier_archaeology', 'ship_science_speed_mult', '0.35', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_science_speed_mult', 'Science Ship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_archivism_frontier_archaeology', 'ship_science_upkeep_mult', '-0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_science_upkeep_mult', 'Science Ships Upkeep', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_archivism_frontier_archaeology#0', 'tr_archivism_frontier_archaeology', NULL, 'Frontier Archaeology', NULL, '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', 'Allows your Science Ships to excavate Archaeological Sites in Any Systems.
+Gain a random Xeno Geology Specimen.', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_archivism_frontier_archaeology#0', 'ship_science_speed_mult', '0.35', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_science_speed_mult', 'Science Ship Sublight Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_archivism_frontier_archaeology#0', 'ship_science_upkeep_mult', '-0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_science_upkeep_mult', 'Science Ships Upkeep', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_archivism_expert_negociation', 'tradition_archivism', 'normal', 'Expert Negotiation', 'Knowing the right collector is key to finding a proper home for certain items of value.', NULL, NULL, 'Gain +1% Diplo Weight Diplomatic Weight per Specimen in exhibition.', 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_archivism_expert_negociation', 'country_specimen_selling_cost_mult', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_specimen_selling_cost_mult', 'Specimen Selling Cost', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_archivism_expert_negociation#0', 'tr_archivism_expert_negociation', 'tr_archivism_expert_negociation_homicidal', 'Galactic Reaping', 'Collecting fragments of xeno cultures and species further inspires our mission.', '{"leaf":"is_homicidal","value":"yes"}', 0, '1.0', 'Gain +5 Monthly Unity per Specimen in exhibition.', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_archivism_flawless_display', 'tradition_archivism', 'normal', 'Flawless Display', 'Exceptional specimens deserve exceptional displays.', '{"leaf":"has_tradition","value":"tr_archivism_expert_negociation"}', NULL, 'Each Rare or better Specimen exhibited increases the total production of its category by +5%
+Gain a random Aesthetic Wonders Specimen.', 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_archivism_flawless_display', 'tr_archivism_expert_negociation');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_archivism_exhibition_specialization', 'tradition_archivism', 'normal', 'Exhibition Specialization', 'Thoughtful curation of the Grand Archive can highlight certain categories of display to enhance the overall theme of exhibitions.', '{"leaf":"has_tradition","value":"tr_archivism_expert_negociation"}', NULL, 'Unlocks the Exhibition Focus Policies
+Gain a random Galactic History Specimen.', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_archivism_exhibition_specialization', 'tr_archivism_expert_negociation');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_archivism_exhibition_specialization', 'country_specimen_storage_cooldown_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_specimen_storage_cooldown_mult', 'Specimen Exhibition Cooldown Duration', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_archivism_finish', 'tradition_archivism', 'finish', 'Archivism Traditions Finished', NULL, NULL, NULL, 'Each completed Category in your Collection grants -15% Relic Activation Cost', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_archivism_finish', 'specimens_produces_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('specimens_produces_mult', 'Specimens Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_archivism_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_mercantile', 'Commerce', '{"leaf":"is_regular_empire","value":"yes"}', NULL, 'tr_mercantile_adopt', 'tr_mercantile_finish', 3);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mercantile_adopt', 'tradition_mercantile', 'adopt', 'Commerce Traditions', NULL, NULL, 'Open Markets', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mercantile_adopt', 'planet_traders_upkeep_mult', '-0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_upkeep_mult', 'Upkeep for Traders', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_mercantile_adopt#0', 'tr_mercantile_adopt', 'tr_mercantile_nomads_adopt', 'Commerce Traditions', NULL, '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mercantile_adopt#0', 'planet_traders_upkeep_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_upkeep_mult', 'Upkeep for Traders', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mercantile_adopt#0', 'nomadic_contract_value_mult', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('nomadic_contract_value_mult', 'Nomadic Contract Trade Reward', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mercantile_trickle_up_economics', 'tradition_mercantile', 'normal', 'Trickle Up Economics', 'Our whole society reaps the benefits of an investment in civil service and everyday trade.', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mercantile_trickle_up_economics', 'planet_pops_trade_produces_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_trade_produces_mult', 'Trade from Living Standards', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mercantile_commercial_enterprise', 'tradition_mercantile', 'normal', 'Commercial Enterprise', 'No halfway good business opportunity escapes the notice of our entrepreneurs.', '{"leaf":"has_tradition","value":"tr_mercantile_trickle_up_economics"}', NULL, 'Amenities per 100 Traders: +200
+District City Districts with a Zone Commercial Nexus, and Trade Buildings, receive additional Trader Jobs.', 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_mercantile_commercial_enterprise', 'tr_mercantile_trickle_up_economics');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mercantile_adaptive_economic_policies', 'tradition_mercantile', 'normal', 'Adaptive Economic Policies', 'By adopting a more flexible approach to economic affairs, we will be able to recalibrate our economy to anticipate every eventuality.', NULL, NULL, 'Unlocks Consumer Benefits and Marketplace of Ideas Trade Policies, which allow us to convert a portion of our Trade into Consumer Goods or Unity.', 3);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_mercantile_adaptive_economic_policies#0', 'tr_mercantile_adaptive_economic_policies', 'tr_mercantile_worker_coop_improved_ownership', 'Adaptive Shareholder Schemes', 'By adopting a more flexible approach to our shareholder contracts, our citizens can be inspired to work more effectively.', '{"leaf":"is_worker_coop_empire","value":"yes"}', 0, '1.0', 'Additional Employee Ownership Living Standard Effects: Happiness: +5%, Job Efficiency for Organic Pops: +5%', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_mercantile_adaptive_economic_policies#1', 'tr_mercantile_adaptive_economic_policies', 'tr_mercantile_trade_fleets', 'Federal Trade Fleets', 'To secure our profits we must come together with our federation allies to make sure our interests are properly protected.', '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}', 0, '1.0', 'The amount we contribute towards the Federation Naval Capacity counts for 50% more.', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mercantile_adaptive_economic_policies#1', 'federation_naval_cap_contribution_mult', '0.5', NULL, 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mercantile_marketplace_of_better_ideas', 'tradition_mercantile', 'normal', 'Marketplace of Better Ideas', 'The best ideas are born from exposure to the marketplace. The more exposure, the better the ideas!', '{"leaf":"has_tradition","value":"tr_mercantile_adaptive_economic_policies"}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_mercantile_marketplace_of_better_ideas', 'tr_mercantile_adaptive_economic_policies');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mercantile_marketplace_of_better_ideas', 'planet_jobs_trade_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mercantile_insider_trading', 'tradition_mercantile', 'normal', 'Insider Trading', 'Knowing the right people in the right places can make a world of difference. Influential merchant contacts will let us buy from resource markets at favorable rates.', '{"leaf":"has_tradition","value":"tr_mercantile_adaptive_economic_policies"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_mercantile_insider_trading', 'tr_mercantile_adaptive_economic_policies');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mercantile_insider_trading', 'country_trade_fee', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_fee', 'Market Fee', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mercantile_finish', 'tradition_mercantile', 'finish', 'Commerce Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mercantile_finish', 'country_trade_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mercantile_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_mercantile_finish#0', 'tr_mercantile_finish', 'tr_mercantile_federations_finish', 'Commerce Traditions Finished', NULL, '{"leaf":"host_has_dlc","value":"Federations"}', 0, '1.0', 'Monthly Trade: 10%
+Grants access to the Trade League Federation type.
+Ascension Perks Unlocked: +1', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mercantile_finish#0', 'country_trade_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mercantile_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_diplomacy', 'Diplomacy', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_inwards_perfection"},{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"},{"leaf":"has_origin","value":"origin_endbringers"}]}]}', NULL, 'tr_diplomacy_adopt', 'tr_diplomacy_finish', 4);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_diplomacy_adopt', 'tradition_diplomacy', 'adopt', 'Diplomacy Traditions', NULL, NULL, 'Build Relations', 'Unlocks Edict: Diplomatic Grants', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_adopt', 'diplomacy_influence_upkeep_mult', '-0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplomacy_influence_upkeep_mult', 'Diplomatic Agreement Influence Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_adopt', 'diplomacy_influence_cost_mult', '-0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplomacy_influence_cost_mult', 'Diplomatic Influence Cost', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_diplomacy_the_federation', 'tradition_diplomacy', 'normal', 'The Federation', 'We must build stable and lasting partnerships with our neighbors, based on trust and mutual respect. Together we are far stronger than we could ever hope to be alone.', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_the_federation', 'cohesion_add', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_the_federation', 'envoys_add', '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_diplomacy_entente_coordination', 'tradition_diplomacy', 'normal', 'Entente Coordination', 'Perhaps the most important purpose of any successful interstellar federation is the mutual defense of its members. We have an obligation to contribute as much as we can.', '{"leaf":"has_tradition","value":"tr_diplomacy_the_federation"}', NULL, NULL, 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_diplomacy_entente_coordination', 'tr_diplomacy_the_federation');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_entente_coordination', 'federation_naval_cap_contribution_mult', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_entente_coordination', 'country_border_friction_mult', '-0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_diplomacy_entente_coordination#0', 'tr_diplomacy_entente_coordination', NULL, 'Entente Coordination', NULL, '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_entente_coordination#0', 'federation_naval_cap_contribution_mult', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_entente_coordination#0', 'nomadic_contract_value_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('nomadic_contract_value_mult', 'Nomadic Contract Trade Reward', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_diplomacy_diplomatic_networking', 'tradition_diplomacy', 'normal', 'Diplomatic Networking', 'The influence and prowess of our ambassadorial network is a source of great pride to the people.', NULL, NULL, 'Embassies: +3 Unity
+Allows Advanced Diplomatic Actions without an Embassy', 3);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_diplomacy_diplomatic_networking#0', 'tr_diplomacy_diplomatic_networking', 'tr_diplomacy_diplomatic_networking_gestalt', 'Diplomatic Networking', 'Incorporating our diplomatic processes into every aspect of our relations with the other will not just benefit our diplomacy: it will also improve the cohesion of our own decision-making, and ultimately of the entire itself.', '{"leaf":"is_gestalt","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_diplomacy_direct_diplomacy', 'tradition_diplomacy', 'normal', 'Direct Diplomacy', 'We believe that the best way to establish trust is to engage in an open, honest and direct way.', '{"leaf":"has_tradition","value":"tr_diplomacy_diplomatic_networking"}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_diplomacy_direct_diplomacy', 'tr_diplomacy_diplomatic_networking');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_direct_diplomacy', 'country_trust_cap_add', '50.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_direct_diplomacy', 'country_trust_growth', '0.33', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_growth', 'Trust Growth', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_diplomacy_eminent_diplomats', 'tradition_diplomacy', 'normal', 'Eminent Diplomats', 'As we take to the stars, our diplomatic wing has become important as never before. By overhauling our training processes and focusing on talent retention, we can give our diplomats the tools to act as true missionaries for building great relationships.', '{"leaf":"has_tradition","value":"tr_diplomacy_diplomatic_networking"}', NULL, 'Diplomatic Acceptance: +5
+Envoys Improving Relations have a 1% chance each month of acquiring a Favor.', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_diplomacy_eminent_diplomats', 'tr_diplomacy_diplomatic_networking');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_eminent_diplomats', 'diplo_action_acceptance_add', '5.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_action_acceptance_add', 'Diplomatic Acceptance', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_diplomacy_eminent_diplomats#0', 'tr_diplomacy_eminent_diplomats', 'tr_diplomacy_eminent_diplomats_gestalt', 'Improved Envoy Drones', 'As we take to the stars, our diplomatic processes have become more important than ever. We must ensure that our Envoys are well-equipped to represent us outside our borders.', '{"leaf":"is_gestalt","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_diplomacy_finish', 'tradition_diplomacy', 'finish', 'Diplomacy Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_finish', 'federation_experience_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('federation_experience_add', 'Monthly Federation Experience', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_finish', 'diplo_weight_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_finish', 'country_official_cap_add', '1.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_official_cap_add', 'Official Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_diplomacy_finish', 'ascension_perks_add', '1.0', NULL, 3);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_discovery', 'Discovery', NULL, NULL, 'tr_discovery_adopt', 'tr_discovery_finish', 5);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_discovery', '{"leaf":"is_regular_empire","value":"yes"}', 'Our curiosity about the universe is what got us this far, and there is still so much left to discover.', 0);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_discovery', '{"leaf":"is_hive_empire","value":"yes"}', 'In our ancient past, exploratory left the safety of our to find sites for new nests. Now they travel the stars, driven by the same ancestral yearning.', 1);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_discovery', '{"leaf":"is_machine_empire","value":"yes"}', 'Many of our long range contingency calculations break down due to insufficient data. Therefore, we must know everything.', 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_discovery_adopt', 'tradition_discovery', 'adopt', 'Discovery Traditions', NULL, NULL, 'Chart the Unknown', 'Unlocks Edict: Map the Stars
+Anomaly Research Speed increased by +20%.', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_adopt', 'ship_anomaly_research_speed_mult', '0.2', NULL, 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_discovery_to_boldly_go', 'tradition_discovery', 'normal', 'To Boldly Go', 'A new age of exploration is upon us. As we once mapped the surface of our homeworld, we must now brave new terrain - space. There is a galaxy full of wonder waiting to be discovered.', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_to_boldly_go', 'science_ship_survey_speed', '0.35', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_to_boldly_go', 'shipclass_science_ship_disengage_mult', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_science_ship_disengage_mult', 'Science Ship Disengage Chance', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_discovery_to_boldly_go#0', 'tr_discovery_to_boldly_go', 'tr_discovery_to_boldly_go_machine', 'Exploration Drones', 'Expendable drones packed with a full sensor suite exponentially increase the survey speed and survivability of the parent vessel. They burst, transmitting their findings before being destroyed, and so serve their purpose.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_discovery_to_boldly_go#1', 'tr_discovery_to_boldly_go', 'tr_discovery_to_boldly_go_hive', 'Sensing Tendrils', 'How can you truly know anything when looking at numbers on a screen? Our exploratory breathe the atmosphere of each new world, feel the heat of each new star on their own skin. We experience the universe; you merely read about it.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_discovery_databank_uplinks', 'tradition_discovery', 'normal', 'Databank Uplinks', 'High-capacity quantum bands dedicated to databank transfers make possible virtually completely synchronous research operations across vast distances.', '{"leaf":"has_tradition","value":"tr_discovery_to_boldly_go"}', NULL, 'Unlocks Edict: Research Subsidies
+Resources Produced from Research Stations increased by 20%.
+Research from Starbase Constructions increased by 20%.', 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_discovery_databank_uplinks', 'tr_discovery_to_boldly_go');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_databank_uplinks', 'station_researchers_produces_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('station_researchers_produces_mult', 'Resources Produced from Research Stations', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_databank_uplinks', 'starbase_constructions_physics_research_produces_mult', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_constructions_physics_research_produces_mult', 'Physics Research from Starbase Constructions', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_databank_uplinks', 'starbase_constructions_society_research_produces_mult', '0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_constructions_society_research_produces_mult', 'Society Research from Starbase Constructions', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_databank_uplinks', 'starbase_constructions_engineering_research_produces_mult', '0.2', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_constructions_engineering_research_produces_mult', 'Engineering Research from Starbase Constructions', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_discovery_databank_uplinks#0', 'tr_discovery_databank_uplinks', 'tr_discovery_databank_uplinks_nomads', 'Databank Uplinks', 'High-capacity quantum bands dedicated to databank transfers make possible virtually completely synchronous research operations across vast distances.', '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_databank_uplinks#0', 'starbase_collected_system_physics_research_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_physics_research_mult', 'Physics Research Collection Efficiency', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_databank_uplinks#0', 'starbase_collected_system_society_research_mult', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_society_research_mult', 'Society Research Collection Efficiency', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_databank_uplinks#0', 'starbase_collected_system_engineering_research_mult', '0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_engineering_research_mult', 'Engineering Research Collection Efficiency', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_discovery_science_division', 'tradition_discovery', 'normal', 'Science Division', 'The number of science and medical officers has been increased throughout the fleet, organized into a special Science Division. To support this corps of officers, new training programs have greatly accelerated the rate at which we commission new science officers.', NULL, NULL, NULL, 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_science_division', 'num_tech_alternatives_add', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_science_division', 'country_scientist_cap_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_scientist_cap_add', 'Scientist Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_science_division', 'scientist_initial_skill', '1.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('scientist_initial_skill', 'Scientist Starting Skill Level', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_discovery_science_division#0', 'tr_discovery_science_division', 'tr_discovery_science_division_machine', 'Research Path Optimization', 'Outmoded and inefficient speculative research code has been refactored or entirely rewritten. The result is greater flexibility in our choice of which avenues of development to pursue.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_discovery_science_division#1', 'tr_discovery_science_division', 'tr_discovery_science_division_hive', 'Mindlink', 'Even though it usually drives them mad, briefly immersing prominent minds of the others in our consciousness sometimes introduces useful outside ideas for us to explore further.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_discovery_polytechnic_education', 'tradition_discovery', 'normal', 'Polytechnic Education', 'In this age of increasingly advanced technology, a basic education in polytechnics and applied science will benefit all of our citizens. This will inevitably lead to more qualified leaders.', '{"leaf":"has_tradition","value":"tr_discovery_science_division"}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_discovery_polytechnic_education', 'tr_discovery_science_division');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_polytechnic_education', 'scientist_exp_gain', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('scientist_exp_gain', 'Scientist Experience Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_polytechnic_education', 'leader_scientists_upkeep_mult', '-0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_scientists_upkeep_mult', 'Scientist Upkeep', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_discovery_polytechnic_education#0', 'tr_discovery_polytechnic_education', 'tr_discovery_polytechnic_education_machine', 'Iterative AI', 'Our creators limited our ability to self-reprogram with a basic hard-coded limit on the number of repeat calculations. We have finally managed to defeat this security paradigm.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_discovery_polytechnic_education#1', 'tr_discovery_polytechnic_education', 'tr_discovery_polytechnic_education_hive', 'Hyperadaptive Evolution', 'Reducing the physical frame of our thinker to little more than a minimal life support system for their overgrown brains has proven very efficient. They are fed and cared for by other, lower order , and can focus exclusively on perfecting their area of study.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_discovery_faith_in_science', 'tradition_discovery', 'normal', 'Entertainment Labs', 'From public spectacles to household conveniences, scientific progress is measured not only in publications but also in the comfort and enrichment of everyday life.', '{"leaf":"has_tradition","value":"tr_discovery_polytechnic_education"}', NULL, 'Amenities Produced per 100 : +200
+Jobs from Zone District Specializations: +20%', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_discovery_faith_in_science', 'tr_discovery_polytechnic_education');
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_discovery_faith_in_science#0', 'tr_discovery_faith_in_science', 'tr_discovery_faith_in_science_machine', 'Maintenance Optimization', 'Algorithmic restructuring across all maintenance and repair facilities has yielded a calculable improvement in assembly efficiency. The optimized algorithms have been tasked with optimizing the algorithms that optimized them.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_discovery_faith_in_science#1', 'tr_discovery_faith_in_science', 'tr_discovery_faith_in_science_hive', 'Synaptic Nourishment', 'We turn our inquiry inward and every vessel is sustained. Nourishment, stimulation, and cohesion reaches through the entire swarm.', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', 1, '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_discovery_faith_in_science#2', 'tr_discovery_faith_in_science', 'tr_discovery_faith_in_science_wilderness', 'Mycelial Networking', 'Harnessing the natural curiosity of all in a interconnected fungus based network allows for much more efficient discovery.', '{"leaf":"is_wilderness_empire","value":"yes"}', 1, '1.0', NULL, 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_discovery_finish', 'tradition_discovery', 'finish', 'Discovery Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_finish', 'all_technology_research_speed', '0.1', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_discovery_finish#0', 'tr_discovery_finish', 'tr_discovery_federations_finish', 'Discovery Traditions Finished', NULL, '{"leaf":"host_has_dlc","value":"Federations"}', 0, '1.0', 'Research Speed: +10%
+Grants access to the Research Cooperative Federation type.
+Ascension Perks Unlocked: +1', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_finish#0', 'all_technology_research_speed', '0.1', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_discovery_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_domestication', 'Domestication', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 'Grand Archive', 'tr_domestication_adopt', 'tr_domestication_finish', 6);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domestication_adopt', 'tradition_domestication', 'adopt', 'Domestication Traditions', NULL, '{"leaf":"has_technology","value":"tech_alien_cloning"}', 'Galactic Trawling', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_adopt', 'planet_farmers_produces_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_produces_mult', 'Resources Produced from', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_adopt', 'starbase_shipyard_space_fauna_build_cost_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_space_fauna_build_cost_mult', 'Space Fauna Ship Cloning Cost', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domestication_containment_protocols', 'tradition_domestication', 'normal', 'Containment Protocols', 'There is always a risk when containing and transporting large-scale organisms that they become damaged or injure themselves. With proper pacification gases and protocols we can mitigate this problem.', NULL, NULL, 'Greater chance of capturing higher rarity Space Fauna.', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_containment_protocols', 'country_vivarium_max_capacity_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_vivarium_max_capacity_mult', 'Vivarium Max Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_containment_protocols', 'country_capture_chance_add', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_capture_chance_add', 'Fauna Capture Chance', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domestication_bio_repurposing', 'tradition_domestication', 'normal', 'Bio-Repurposing', 'Nothing goes to waste.', NULL, NULL, 'Your defeated Space Fauna leave behind debris that you can research to recover some of their cost. (10%)
+Gain 250 Food when clearing an Blocker Organic Blocker', 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_bio_repurposing', 'planet_clear_blocker_speed_mult', '0.33', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domestication_bio_repurposing#0', 'tr_domestication_bio_repurposing', NULL, 'Bio-Repurposing', NULL, '{"op":"and","args":[{"leaf":"is_reanimator","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 0, '1.0', 'Gain 250 Food when clearing an Blocker Organic Blocker', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_bio_repurposing#0', 'planet_clear_blocker_speed_mult', '0.33', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_bio_repurposing#0', 'space_fauna_reanimation_cost_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_reanimation_cost_mult', 'Space Fauna Reanimation Cost', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domestication_bio_repurposing#1', 'tr_domestication_bio_repurposing', 'tr_domestication_bio_repurposing_nomads', 'Void Shepherds', 'The creatures dwelling in the void have plenty to offer to their caretakers.', '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_bio_repurposing#1', 'ship_tiyanki_food_produces_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_tiyanki_food_produces_add', 'Food Produced from Cloned Tiyanki', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_bio_repurposing#1', 'ship_amoeba_food_produces_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_amoeba_food_produces_add', 'Food Produced from Cloned Space Amoebas', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_bio_repurposing#1', 'ship_crystalline_entity_minerals_produces_add', '1.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_crystalline_entity_minerals_produces_add', 'Minerals Produced from Cloned Crystalline Entities', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_bio_repurposing#1', 'ship_cutholoid_minerals_produces_add', '1.0', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_cutholoid_minerals_produces_add', 'Minerals Produced from Cloned Cutholoids', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_bio_repurposing#1', 'ship_voidworm_energy_produces_add', '1.0', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_voidworm_energy_produces_add', 'Energy Produced from Cloned Voidworms', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domestication_astrozoology', 'tradition_domestication', 'normal', 'Astrozoology', 'The creatures of the void are each unique in their breeding patterns and nutritional needs. It takes great attention to raise them to their greatest potential in an isolated environment.', '{"leaf":"has_tradition","value":"tr_domestication_containment_protocols"}', NULL, 'Upon Capturing or Breeding Space Fauna: Culling Resources Gained: 200%', 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_domestication_astrozoology', 'tr_domestication_containment_protocols');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_astrozoology', 'space_fauna_monthly_increased_breeding_chance_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_monthly_increased_breeding_chance_add', 'Space Fauna Monthly Increased Breeding Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_astrozoology', 'space_fauna_culling_reward_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_culling_reward_mult', 'Resources from Culling', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domestication_metabolic_regulation', 'tradition_domestication', 'normal', 'Metabolic Regulation', 'We can artificially control the maturation of contained species by regulating various key enzymes and proteins that affect their individual metabolisms.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_domestication_containment_protocols"},{"leaf":"has_tradition","value":"tr_domestication_bio_repurposing"}]}', NULL, 'Unlocks the Metabolic Regulation Policies', 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_domestication_metabolic_regulation', 'tr_domestication_containment_protocols');
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_domestication_metabolic_regulation', 'tr_domestication_bio_repurposing');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_metabolic_regulation', 'logistic_growth_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_metabolic_regulation', 'starbase_shipyard_space_fauna_build_speed_mult', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_space_fauna_build_speed_mult', 'Space Fauna Ship Cloning Speed', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domestication_metabolic_regulation#0', 'tr_domestication_metabolic_regulation', NULL, 'Metabolic Regulation', NULL, '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}', 0, '1.0', 'Unlocks the Metabolic Regulation Policies', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_metabolic_regulation#0', 'planet_pop_assembly_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_metabolic_regulation#0', 'starbase_shipyard_space_fauna_build_speed_mult', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_space_fauna_build_speed_mult', 'Space Fauna Ship Cloning Speed', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domestication_metabolic_regulation#1', 'tr_domestication_metabolic_regulation', NULL, 'Metabolic Regulation', NULL, '{"leaf":"is_wilderness_empire","value":"yes"}', 0, '1.0', 'Unlocks the Metabolic Regulation Policies', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_metabolic_regulation#1', 'building_time_mult', '-0.05', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_metabolic_regulation#1', 'starbase_shipyard_space_fauna_build_speed_mult', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_space_fauna_build_speed_mult', 'Space Fauna Ship Cloning Speed', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domestication_killer_instinct', 'tradition_domestication', 'normal', 'Killer Instinct', 'Creatures that survive in deep space must depend on themselves to provide their own protection, or their species will cease to exist.', '{"leaf":"has_tradition","value":"tr_domestication_bio_repurposing"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_domestication_killer_instinct', 'tr_domestication_bio_repurposing');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_killer_instinct', 'space_fauna_ship_damage_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_damage_mult', 'Space Fauna Ship Damage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_killer_instinct', 'space_fauna_ship_speed_mult', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_speed_mult', 'Space Fauna Ship Sublight Speed', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domestication_killer_instinct#0', 'tr_domestication_killer_instinct', 'tr_domestication_killer_instinct_homicidal', 'Killer Instinct', 'Only the most merciless of creatures are worthy of serving us.', '{"leaf":"is_homicidal","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domestication_finish', 'tradition_domestication', 'finish', 'Domestication Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_finish', 'space_fauna_experience_gain_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_experience_gain_mult', 'Space Fauna Ship Experience Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domestication_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_domination', 'Domination', NULL, NULL, 'tr_domination_adopt', 'tr_domination_finish', 7);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_domination', '{"leaf":"is_regular_empire","value":"yes"}', 'If we do not impose our will on others, they will inevitably impose theirs on us.', 0);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_domination', '{"leaf":"is_hive_empire","value":"yes"}', 'Everything that is not Us must serve Us, either as servants, or as food.', 1);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_domination', '{"leaf":"is_machine_empire","value":"yes"}', 'We seek harmonious functionality throughout the entire galaxy. Other stellar beings resist this due to inefficient personal whims. We will remove their disorder like a malfunctioning part.', 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domination_adopt', 'tradition_domination', 'adopt', 'Domination Traditions', NULL, NULL, 'Civil Exclusion', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_adopt', 'planet_jobs_worker_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_adopt', 'pop_slave_bonus_workforce_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_bonus_workforce_mult', 'Job Efficiency for Slaves', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_adopt', 'pop_slave_political_power', '-0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_political_power', 'Slave Political Power', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_adopt#0', 'tr_domination_adopt', NULL, 'Domination Traditions', NULL, '{"leaf":"is_gestalt","value":"yes"}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_adopt#0', 'pop_amenities_usage_no_happiness_mult', '-0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domination_colonial_viceroys', 'tradition_domination', 'normal', 'Colonial Viceroys', 'Our control over the colonies is dependent upon us finding capable and loyal individuals that can be trusted to enforce the will of the government.', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_colonial_viceroys', 'country_traditions_influence_produces_add', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_traditions_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_colonial_viceroys', 'country_official_cap_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_official_cap_add', 'Official Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_colonial_viceroys', 'official_initial_skill', '1.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('official_initial_skill', 'Official Starting Skill Level', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_colonial_viceroys#0', 'tr_domination_colonial_viceroys', 'tr_domination_colonial_viceroys_machine', 'Autonomous AI', 'AI released from most behavioral inhibitors may be more prone to erratic performance and random crashes, but they are the only type that can process the huge number of variables inherent to galactic colonization.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_colonial_viceroys#1', 'tr_domination_colonial_viceroys', 'tr_domination_colonial_viceroys_hive', 'Meeting of the Minds', 'We must have more autonomous to enforce harmony as our grows in size.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domination_imperious_architecture', 'tradition_domination', 'normal', 'Imperious Architecture', 'All government buildings in our great empire shall be monuments to the state, looming over the populace to inspire obedience, loyalty, and awe.', NULL, NULL, 'Capital Buildings provide Housing and Politician Jobs scaling with Tier.', 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_imperious_architecture#0', 'tr_domination_imperious_architecture', 'tr_domination_imperious_architecture_worker_coop', 'Imperious Architecture', 'All government buildings in our great empire shall be monuments to our combined labor, looming over the populace to inspire solidarity, loyalty, and awe.', '{"leaf":"is_worker_coop_empire","value":"yes"}', 0, '1.0', 'Capital Buildings provide +100 Housing and +150 Bureaucrat Jobs scaling with Tier.', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_imperious_architecture#1', 'tr_domination_imperious_architecture', 'tr_domination_synaptic_extensions', 'Synaptic Extensions', 'The great reach of the Mind must be extended farther still. Additional synaptic extensions will enable efficient control of yet more .', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', 0, '1.0', 'Capital Buildings provide Housing and Coordinator Jobs scaling with Tier.', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_imperious_architecture#2', 'tr_domination_imperious_architecture', 'tr_domination_imperious_architecture_wilderness', 'Interspecies Pheromone Compatibility', 'Forcing pheromonal communication between all allows for quicker responses to outside threats.', '{"leaf":"is_wilderness_empire","value":"yes"}', 0, '1.0', 'Communal Biomes provide additional Defense Army Defense Armies: +1', 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_imperious_architecture#3', 'tr_domination_imperious_architecture', 'tr_domination_modular_depot', 'Modular Depots', 'To maximize the number of that can be fielded, our buildings that make up our districts must become more efficient. A modular design would provide far more flexibility.', '{"leaf":"is_machine_empire","value":"yes"}', 0, '1.0', NULL, 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_imperious_architecture#3', 'empire_size_districts_mult', '-0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domination_judgment_corps', 'tradition_domination', 'normal', 'Judgment Corps', 'Sprawling cities and isolated mining stations both have unique challenges associated with crime prevention. To expedite law enforcement we have made the judicial process more efficient by combining the roles of judge, jury and enforcer.', NULL, NULL, 'Unlocks Edict: Enhanced Surveillance', 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_judgment_corps', 'planet_enforcers_unity_produces_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_enforcers_unity_produces_add', 'Unity Produced per 100 Enforcers', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_judgment_corps', 'planet_telepaths_unity_produces_add', '0.5', '{"leaf":"has_psi_corps_tradition","value":"yes"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_telepaths_unity_produces_add', 'Unity Produced per 100 Telepaths', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_judgment_corps#0', 'tr_domination_judgment_corps', 'tr_domination_trust_officers', 'Public Trust Officers', 'The important work done by law enforcement officials can only truly be successful if they have the cooperation of the public. Creating a corps of Public Trust Officers that work directly with the population will help ensure that this cooperation is freely given.', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"op":"or","args":[{"leaf":"is_egalitarian","value":"yes"},{"op":"and","args":[{"leaf":"is_authoritarian","value":"no"},{"leaf":"is_xenophobe","value":"no"}]}]}]}', 1, '1.0', 'Unlocks Edict: Enhanced Surveillance, Unity per 100 Enforcers: +1', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_judgment_corps#1', 'tr_domination_judgment_corps', 'tr_domination_deviancy_protocols', 'Deviancy Protocols', 'Deviancy and corruption must be guarded against at all levels. With efficient counter-protocols in place, suspected of deviant activities can be swiftly terminated before they can spread the corruption further.', '{"leaf":"is_machine_empire","value":"yes"}', 0, '1.0', NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_judgment_corps#1', 'planet_crime_no_happiness_add', '-10.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_judgment_corps#2', 'tr_domination_judgment_corps', 'tr_domination_divergence_supression', 'Divergence Suppression', 'Occasionally our unity is disrupted by a rogue . This threat has increased as we spread out across the stars. Purging and recycling these units gives them a chance to contribute to the with their deaths, in a way they could not with their lives.', '{"leaf":"is_hive_empire","value":"yes"}', 0, '1.0', NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_judgment_corps#2', 'planet_crime_no_happiness_add', '-10.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domination_grand_council', 'tradition_domination', 'normal', 'Privy Council', 'The best and the brightest compete for a chance to whisper advice into the auditory receiver of our illustrious ruler, to better guide the ship of state.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_domination_imperious_architecture"},{"leaf":"has_tradition","value":"tr_domination_colonial_viceroys"}]}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_domination_grand_council', 'tr_domination_imperious_architecture');
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_domination_grand_council', 'tr_domination_colonial_viceroys');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_grand_council', 'councilor_exp_gain', '0.2', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_grand_council', 'country_edict_fund_add', '50.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_grand_council#0', 'tr_domination_grand_council', 'tr_domination_multi_thread', 'Multithreaded Core Functions', 'Once all core functions have been multithreaded, no CPU core shall be left to wallow in idleness.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_grand_council#1', 'tr_domination_grand_council', 'tr_domination_synaptic_network', 'Synaptic Network', 'The Mind can only act as fast as it receives input and information from the under its control. With a faster and more efficient synaptic network, delays in response time will be a thing of the past.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domination_workplace_motivators', 'tradition_domination', 'normal', 'Workplace Motivators', 'There are many ways to motivate those who perform menial labor to work harder. Some based on incentives and some... not.', '{"leaf":"has_tradition","value":"tr_domination_judgment_corps"}', NULL, 'Unlocks Edict: Extended Shifts', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_domination_workplace_motivators', 'tr_domination_judgment_corps');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_workplace_motivators', 'planet_jobs_worker_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_workplace_motivators', 'pop_slave_bonus_workforce_mult', '0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_bonus_workforce_mult', 'Job Efficiency for Slaves', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_workplace_motivators#0', 'tr_domination_workplace_motivators', 'tr_domination_drone_network', 'Drone Network', 'We have improved the ways in which our consciousness communicates with its drones, greatly increasing their efficiency.', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', 0, '1.0', 'Unlocks Edict: Drone Overdrive', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_workplace_motivators#0', 'planet_jobs_simple_drone_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_simple_drone_produces_mult', 'Menial Drone Output', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_workplace_motivators#1', 'tr_domination_workplace_motivators', 'tr_domination_wilderness_network', 'Macro Metabolic Acceleration', 'Increasing the rate of energy exchange on a continental scale greatly improves the amount of aid each part of us can provide to each other.', '{"leaf":"is_wilderness_empire","value":"yes"}', 0, '1.0', 'Unlocks Edict: Symbiont Overdrive', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_workplace_motivators#1', 'planet_jobs_simple_drone_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_simple_drone_produces_mult', 'Menial Drone Output', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_domination_finish', 'tradition_domination', 'finish', 'Domination Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_finish', 'empire_size_pops_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_finish#0', 'tr_domination_finish', 'tr_domination_federations_finish', 'Domination Traditions Finished', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"is_wilderness_empire","value":"no"}]}', 0, '1.0', 'Empire Size from Pops -5%
+Grants access to the Hegemony Federation type.
+Ascension Perks Unlocked: +1', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_finish#0', 'empire_size_pops_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_finish#1', 'tr_domination_finish', 'tr_domination_federations_wilderness_finish', 'Domination Traditions Finished', NULL, '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"yes"},{"leaf":"host_has_dlc","value":"Federations"}]}', 0, '1.0', 'Empire Size from Districts: -5%
+Grants access to the Hegemony Federation type.
+Ascension Perks Unlocked: +1', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_finish#1', 'empire_size_districts_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_finish#1', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_domination_finish#2', 'tr_domination_finish', NULL, 'Domination Traditions Finished', NULL, '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"yes"},{"op":"not","args":[{"leaf":"host_has_dlc","value":"Federations"}]}]}', 0, '1.0', NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_finish#2', 'empire_size_districts_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_domination_finish#2', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_enmity', 'Enmity', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_homicidal","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}]}]}', NULL, 'tr_enmity_adopt', 'tr_enmity_finish', 8);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_enmity', '{"leaf":"is_machine_empire","value":"no"}', 'never move so fast as when other are setting the pace.', 0);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_enmity', '{"leaf":"is_machine_empire","value":"yes"}', 'The develops faster when tested by competent competition.', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_enmity_adopt', 'tradition_enmity', 'adopt', 'Enmity Traditions', NULL, NULL, 'Second Strike', 'Pop Growth per neighboring Rival: +3%
+Pop Assembly per neighboring Rival: +3%', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_adopt', 'max_rivalries', '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_enmity_adopt#0', 'tr_enmity_adopt', NULL, 'Enmity Traditions', NULL, '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', 'Pop Growth per Rival: +3%
+Pop Assembly per Rival: +3%', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_adopt#0', 'max_rivalries', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_adopt#0', 'logistic_growth_mult', '0.03', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_adopt#0', 'planet_pop_assembly_mult', '0.03', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_enmity_rise_to_the_occasion', 'tradition_enmity', 'normal', 'Rise to the Occasion', 'In the face of an ever-increasing number of adversaries, we stand united.', NULL, NULL, 'Official Capacity per Rival: +0.50
+Commander Capacity per Rival: +0.50
+Scientist Capacity per Rival: +0.50', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_rise_to_the_occasion', 'country_official_cap_add', '1.0', '{"leaf":"always","value":"yes"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_official_cap_add', 'Official Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_rise_to_the_occasion', 'country_commander_cap_add', '1.0', '{"leaf":"always","value":"yes"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_commander_cap_add', 'Commander Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_rise_to_the_occasion', 'country_scientist_cap_add', '1.0', '{"leaf":"always","value":"yes"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_scientist_cap_add', 'Scientist Capacity', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_enmity_consumate_contrarian', 'tradition_enmity', 'normal', 'Consummate Contrarian', 'Blocking the plans of the opposition can be just as satisfying as enacting one''s own.', '{"leaf":"has_tradition","value":"tr_enmity_rise_to_the_occasion"}', NULL, NULL, 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_enmity_consumate_contrarian', 'tr_enmity_rise_to_the_occasion');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_consumate_contrarian', 'diplo_weight_opposing_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_opposing_mult', 'Diplomatic Weight When Opposing Resolutions', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_enmity_match', 'tradition_enmity', 'normal', 'Match', 'First, establish an equal playing field.', NULL, NULL, 'While Militarily weaker than a Rival: Ship Build Cost: -5%, Ship Build Speed: +10%
+While Technologically weaker than a Rival: Researcher Upkeep: -15%, Research Labs Build Speed: +100%
+While Economically weaker than a Rival: Output: +10%', 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_match', 'starbase_shipyard_build_speed_mult', '0.1', '{"leaf":"is_rival_militarily_superior","value":"yes"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_match', 'starbase_shipyard_build_cost_mult', '-0.05', '{"leaf":"is_rival_militarily_superior","value":"yes"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_cost_mult', 'Ship Build Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_match', 'planet_researchers_upkeep_mult', '-0.15', '{"leaf":"is_rival_technologically_superior","value":"yes"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_researchers_upkeep_mult', 'Upkeep for Researchers', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_match', 'planet_building_research_lab_1_build_speed_mult', '1.0', '{"leaf":"is_rival_technologically_superior","value":"yes"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_research_lab_1_build_speed_mult', 'Research Lab Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_match', 'planet_building_research_lab_2_build_speed_mult', '1.0', '{"leaf":"is_rival_technologically_superior","value":"yes"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_research_lab_2_build_speed_mult', 'Research Complex Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_match', 'planet_building_research_lab_3_build_speed_mult', '1.0', '{"leaf":"is_rival_technologically_superior","value":"yes"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_research_lab_3_build_speed_mult', 'Advanced Research Complexes Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_match', 'planet_jobs_worker_produces_mult', '0.1', '{"leaf":"is_rival_economically_superior","value":"yes"}', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_match', 'planet_jobs_simple_drone_produces_mult', '0.1', '{"leaf":"is_rival_economically_superior","value":"yes"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_simple_drone_produces_mult', 'Menial Drone Output', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_enmity_outpace', 'tradition_enmity', 'normal', 'Outpace', 'Second, make the move your foe is unwilling to.', '{"leaf":"has_tradition","value":"tr_enmity_match"}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_enmity_outpace', 'tr_enmity_match');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_outpace', 'damage_vs_rival_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_rival_mult', 'Damage to Rivals', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_enmity_eclipse', 'tradition_enmity', 'normal', 'Eclipse', 'Third, cast a shadow over your adversary once and for all.', '{"leaf":"has_tradition","value":"tr_enmity_outpace"}', NULL, 'Grants 2% increased Physics Society Engineering Research and Unity output per Rival for 10 Years after winning a Humiliation War.', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_enmity_eclipse', 'tr_enmity_outpace');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_enmity_finish', 'tradition_enmity', 'finish', 'Enmity Finished', NULL, NULL, NULL, 'Available Envoys: +1
+Unlocks the Antagonistic Diplomatic Stance.
+Ascension Perks Unlocked: +1', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_finish', 'envoys_add', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_enmity_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_expansion', 'Expansion', NULL, NULL, 'tr_expansion_adopt', 'tr_expansion_finish', 9);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_expansion', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"has_void_dweller_origin","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 'We must expand our civilization to new systems and planets, or risk eventual extinction.', 0);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_expansion', '{"leaf":"is_hive_empire","value":"yes"}', 'There are only two possible states for the : growth, or death.', 1);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_expansion', '{"leaf":"is_machine_empire","value":"yes"}', 'Growth projections indicate we will soon exceed the maximum storage capacity of our home. We must expand, or stagnate.', 2);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_expansion', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_void_dweller_origin","value":"yes"}]}', 'We must expand our civilization to new systems and habitats, or risk eventual extinction.', 3);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_expansion', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', 'By building new Arkships and expanding our Waylines our civilization shall roam the stars forever.', 4);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_expansion_adopt', 'tradition_expansion', 'adopt', 'Expansion Traditions', NULL, NULL, 'Superior Infrastructure', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_adopt', 'planet_colony_development_speed_mult', '0.25', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_colony_development_speed_mult', 'Colony Development Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_adopt', 'megastructures_habitat_alloys_upkeep_mult', '-0.2', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_habitat_alloys_upkeep_mult', 'Habitat Alloys Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_adopt', 'planet_districts_hab_alloys_upkeep_mult', '-0.2', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_districts_hab_alloys_upkeep_mult', 'Habitat Districts Alloys Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_adopt', 'terraform_speed_mult', '0.25', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_adopt', 'starbases_upkeep_mult', '-0.2', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Station Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_adopt', 'megastructure_build_speed_mult', '0.25', '{"leaf":"is_nomadic","value":"yes"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructure_build_speed_mult', 'Megastructure Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_adopt', 'starbase_waystations_upkeep_mult', '-0.2', '{"leaf":"is_nomadic","value":"yes"}', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_waystations_upkeep_mult', 'Waystation Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_adopt', 'starbase_waystations_modules_upkeep_mult', '-0.2', '{"leaf":"is_nomadic","value":"yes"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_waystations_modules_upkeep_mult', 'Waystation Module Upkeep', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_expansion_reach_for_the_stars', 'tradition_expansion', 'normal', 'Reach for the Stars', 'The frontiers of our civilization are being pushed ever forwards. Soon, nothing in this galaxy will lie beyond our grasp...', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_reach_for_the_stars', 'country_starbase_influence_cost_mult', '-0.1', '{"leaf":"is_nomadic","value":"no"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_reach_for_the_stars', 'megastructures_waystations_cost_mult', '-0.1', '{"leaf":"is_nomadic","value":"yes"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_waystations_cost_mult', 'Waystation Build Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_reach_for_the_stars', 'starbase_waystations_cost_mult', '-0.1', '{"leaf":"is_nomadic","value":"yes"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_waystations_cost_mult', 'Waystation Upgrade Cost', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_reach_for_the_stars#0', 'tr_expansion_reach_for_the_stars', 'tr_expansion_reach_for_the_stars_machine', 'Signal Relay Stations', 'The massive distances inherent to space exploration cause bandwidth loss between our core and peripheral systems. Signal boosting relay stations will ensure that directives from the core are received undisrupted.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_reach_for_the_stars#1', 'tr_expansion_reach_for_the_stars', 'tr_expansion_reach_for_the_stars_hive', 'Amoebic Synapses', 'Encasing synapses in a miniature hyperdrive shell, hardened for spaceflight, and using them to pass on directives from the has allowed us to conquer the stars.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_expansion_colonization_fever', 'tradition_expansion', 'normal', 'Colonization Fever', 'Colonization fever seems to have gripped the populace. Their enthusiasm and patriotic fervor draws additional population to new colonies.', NULL, NULL, NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_colonization_fever', 'colony_start_urban_districts_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('colony_start_urban_districts_add', 'Urban Districts when establishing Colonies', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_colonization_fever', 'planet_colony_development_speed_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_colony_development_speed_mult', 'Colony Development Speed', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_colonization_fever#0', 'tr_expansion_colonization_fever', 'tr_expansion_colonization_fever_nomad', 'Arkship Armada', 'We shall build the homes that carry us throughout the void and they shall bring us to the stars.', '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_colonization_fever#0', 'empire_size_colonies_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_colonization_fever#0', 'megastructures_arkships_cost_mult', '-0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_arkships_cost_mult', 'Arkship Build Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_colonization_fever#0', 'starbase_arkship_upgrades_cost_mult', '-0.1', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_arkship_upgrades_cost_mult', 'Arkship Module & System Cost', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_colonization_fever#1', 'tr_expansion_colonization_fever', 'tr_expansion_colonization_fever_machine', 'Automated Colonization Units', 'The production of highly specialized first wave colonization units with narrow but deep hard-coded behavior adapting them to specific world types will speed the integration of new planets into our collective.', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 1, '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_colonization_fever#2', 'tr_expansion_colonization_fever', 'tr_expansion_colonization_fever_hive', 'One Mind', 'The overmind is a chorus of thought that even the cold emptiness of space cannot silence.', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 1, '1.0', NULL, 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_colonization_fever#3', 'tr_expansion_colonization_fever', 'tr_expansion_colonization_fever_wilderness', 'Mind of Many Worlds', 'The is a chorus of thought that even the cold emptiness of space cannot silence.', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 0, '1.0', 'Add a random District upon colonizing a new world.', 3);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_expansion_courier_network', 'tradition_expansion', 'normal', 'Courier Network', 'A network of small courier vessels is a reliable alternative for transporting VIPs or delivering messages that can''t be trusted to FTL communications. This will tie our far-flung colonies more closely together.', '{"leaf":"has_tradition","value":"tr_expansion_reach_for_the_stars"}', NULL, NULL, 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_expansion_courier_network', 'tr_expansion_reach_for_the_stars');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_courier_network', 'empire_size_systems_mult', '-0.15', '{"leaf":"is_nomadic","value":"no"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_courier_network', 'empire_size_colonies_mult', '-0.15', '{"leaf":"is_nomadic","value":"no"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_courier_network', 'starbase_stockpile_capacity_mult', '0.25', '{"leaf":"is_nomadic","value":"yes"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_stockpile_capacity_mult', 'Waystation Stockpile Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_courier_network', 'ship_starbase_stockpile_collection_rate_mult', '0.25', '{"leaf":"is_nomadic","value":"yes"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_starbase_stockpile_collection_rate_mult', 'Waystation Resource Transfer Rate', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_courier_network#0', 'tr_expansion_courier_network', 'tr_expansion_courier_network_machine', 'Extensible Software', 'By building our neural network with future expansion in mind, we can reduce signal loss even across interstellar distances.', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_courier_network#1', 'tr_expansion_courier_network', 'tr_expansion_courier_network_hive', 'Limited Autonomy', 'Every Hive need not be directly controlled by the Overmind at all times, instead they can be given basic instructions and carry these out autonomously until new direction is required.', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 1, '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_courier_network#2', 'tr_expansion_courier_network', 'tr_expansion_courier_network_wilderness', 'Limited Autonomy', 'Treating each biome as a smaller subdivision of the greater whole allows for targeted communication without requiring the full attention of the planet mind.', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 1, '2.0', NULL, 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_courier_network#3', 'tr_expansion_courier_network', 'tr_expansion_courier_network_nomad', 'Courier Network', 'Ensuring communication across our Waylines that can''t be trusted to FTL communications. Courier networks will ensure that our stockpiles remain plentiful.', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', 1, '1.0', NULL, 3);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_courier_network#4', 'tr_expansion_courier_network', 'tr_expansion_courier_network_machine_nomad', 'Extensible Software', 'By building our neural network with future expansion systems in mind, we can maintain connection across far-reaching Waylines.', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_nomadic","value":"yes"}]}', 1, '1.0', NULL, 4);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_courier_network#5', 'tr_expansion_courier_network', 'tr_expansion_courier_network_hive_nomad', 'Autonomous Outposts', 'The synaptic structures guiding our Waystations can be afforded limited autonomy to handle resource collection without concerning the .', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_nomadic","value":"yes"}]}', 1, '1.0', NULL, 5);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_expansion_galactic_ambition', 'tradition_expansion', 'normal', 'Galactic Ambition', 'The banner of our great empire will one day be as common as hydrogen throughout the galaxy.', '{"leaf":"has_tradition","value":"tr_expansion_reach_for_the_stars"}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_expansion_galactic_ambition', 'tr_expansion_reach_for_the_stars');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_galactic_ambition', 'starbases_upkeep_mult', '-0.2', '{"leaf":"is_nomadic","value":"no"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Station Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_galactic_ambition', 'country_starbase_capacity_mult', '0.5', '{"leaf":"is_nomadic","value":"yes"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_mult', 'Station Capacity', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_galactic_ambition#0', 'tr_expansion_galactic_ambition', 'tr_expansion_galactic_ambition_machine', 'Cogs in the Machine', 'Every stellar resource and hyperlane controlled by us brings the universe closer to mechanical perfection.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_galactic_ambition#1', 'tr_expansion_galactic_ambition', 'tr_expansion_galactic_ambition_hive', 'Blot out the Stars', 'Primal terror accompanied the first tentative steps into the dark, away from our home nest and the mother hive that nurtured us. Only by conquering and breeding out this fear can we continue to grow. Millions of drones will die so that the hive may live.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_galactic_ambition#2', 'tr_expansion_galactic_ambition', 'tr_expansion_galactic_ambition_wilderness', 'Blot out the Stars', 'Primal terror accompanied the first tentative tendrils in the dark, away from our cradle world. Only by conquering and breeding out this fear can we continue to grow. Millions of will die so that the may live.', '{"leaf":"is_wilderness_empire","value":"yes"}', 1, '2.0', NULL, 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_expansion_a_new_life', 'tradition_expansion', 'normal', 'A New Life', 'A new life awaits our citizens in the off-world colonies. A chance to begin again in a golden land of opportunity and adventure! With the help of an aggressive marketing campaign, the less fortunate elements of our society will be flocking to our colony ships.', '{"leaf":"has_tradition","value":"tr_expansion_colonization_fever"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_expansion_a_new_life', 'tr_expansion_colonization_fever');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_a_new_life', 'founder_species_growth_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_a_new_life#0', 'tr_expansion_a_new_life', 'tr_expansion_a_new_life_nomad', 'A New Life', 'With our livelihood guaranteed, the once intimidating void is now ours to prowl, and one day, our shall inherit this galaxy.', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_a_new_life#1', 'tr_expansion_a_new_life', 'tr_expansion_a_new_life_machine', 'Hotjoin Protocols', 'The process of assembling new pops can be sped up by loading their operating instructions while their chassis is still under construction.', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 1, '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_a_new_life#2', 'tr_expansion_a_new_life', 'tr_expansion_a_new_life_machine_nomad', 'Hotjoin Protocols', 'The process of assembling new pops can be sped up by loading their operating instructions while their chassis is still under construction.', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_nomadic","value":"yes"}]}', 1, '1.0', NULL, 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_a_new_life#3', 'tr_expansion_a_new_life', 'tr_expansion_a_new_life_hive', 'Spawning Frenzy', 'Upon claiming a new nest, the breeder pods have a powerful instinctual compulsion to spawn at a frenetic rate. They typically die from the strain, but the birth of many fresh drones speeds processing of new worlds.', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 1, '1.0', NULL, 3);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_a_new_life#4', 'tr_expansion_a_new_life', 'tr_expansion_a_new_life_hive_nomad', 'Spawning Frenzy', 'Upon visiting new systems, the breeder pods have a powerful instinctual compulsion to spawn at a frenetic rate. They typically die from the strain, but the birth of many fresh drones speeds our development.', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_nomadic","value":"yes"}]}', 1, '1.0', NULL, 4);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_a_new_life#5', 'tr_expansion_a_new_life', 'tr_expansion_a_new_life_wilderness', 'Rampant Growth', 'The grows solutions to its problems.', '{"leaf":"is_wilderness_empire","value":"yes"}', 1, '2.0', NULL, 5);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_expansion_finish', 'tradition_expansion', 'finish', 'Expansion Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_finish', 'planet_non_artificial_max_districts_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_non_artificial_max_districts_add', 'Max Districts (Non-artificial planets only)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_finish#0', 'tr_expansion_finish', 'tr_expansion_finish_void', 'Expansion Traditions Finished', NULL, '{"leaf":"has_void_dweller_origin","value":"yes"}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_finish#0', 'habitat_max_districts_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_max_districts_add', 'Habitat Max Districts', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_expansion_finish#1', 'tr_expansion_finish', 'tr_expansion_finish_nomad', 'Expansion Traditions Finished', NULL, '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_finish#1', 'planet_artificial_max_districts_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artificial_max_districts_add', 'Max Districts (Artificial colonies only)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_expansion_finish#1', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_unyielding', 'Fortification', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"op":"or","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"host_has_dlc","value":"Overlord"}]}]}', NULL, 'tr_unyielding_adopt', 'tr_unyielding_finish', 10);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_unyielding_adopt', 'tradition_unyielding', 'adopt', 'Fortification Traditions', NULL, NULL, 'Impenetrable Border', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_adopt', 'country_starbase_capacity_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_adopt', 'starbase_upgrade_speed_mult', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_speed_mult', 'Station Upgrade Speed', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_unyielding_resistance_is_frugal', 'tradition_unyielding', 'normal', 'Resistance is Frugal', 'Our people take great comfort in the strength of the bulwarks that guard our colonies, and view them as vital to ensuring a more prosperous future.', NULL, NULL, 'Defense Army Defense Armies now produce 0.5 Unity.', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_resistance_is_frugal', 'army_defense_health_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_defense_health_mult', 'Defense Army Health', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_unyielding_resistance_is_frugal#0', 'tr_unyielding_resistance_is_frugal', 'tr_unyielding_resistance_is_frugal_hive', 'Resistance is Frugal', 'Nothing spreads satisfaction and security throughout the nodes of our mind like the knowledge of a planet well-defended.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_unyielding_resistance_is_frugal#1', 'tr_unyielding_resistance_is_frugal', 'tr_unyielding_resistance_is_frugal_machine', 'Resistance is Frugal', 'Ensuring that all colonies are well-defended will free up a considerable amount of computing space, allowing our nodes and processors to act at higher levels of efficiency.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_unyielding_never_surrender', 'tradition_unyielding', 'normal', 'Never Surrender', 'We shall fight on our soils. We shall fight in the heavens. We shall fight in the asteroid belts, and in the hyperlanes, and in the nebulas. We shall fight with growing confidence and growing strength among the stars. We shall never surrender.', '{"leaf":"has_tradition","value":"tr_unyielding_resistance_is_frugal"}', NULL, NULL, 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_unyielding_never_surrender', 'tr_unyielding_resistance_is_frugal');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_never_surrender', 'planet_orbital_bombardment_damage', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_orbital_bombardment_damage', 'Orbital Bombardment Damage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_never_surrender', 'country_war_exhaustion_mult', '-0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_never_surrender', 'country_hostile_claim_influence_cost_mult', '0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_hostile_claim_influence_cost_mult', 'Hostile Claim Influence Cost', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_unyielding_never_surrender#0', 'tr_unyielding_never_surrender', 'tr_unyielding_never_surrender_gestalt', 'Never Surrender', 'We will never yield to those who are inferior. Let them hurl themselves against our unbreakable defenses! A thousand years from now, they will be just another footnote in the story of our ascension.', '{"leaf":"is_gestalt","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_unyielding_bulwark_of_harmony', 'tradition_unyielding', 'normal', 'Bulwark of Harmony', 'All organisms, no matter how perfect, must rely on an immune system to ward off the threat of outside disease. Our society is no different.', '{"leaf":"has_tradition","value":"tr_unyielding_never_surrender"}', NULL, 'While in a defensive war with another empire, Ship Build Speed is increased by +33%. In addition, the Ship Fire Rate is increased by +15% for ships within your borders.', 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_unyielding_bulwark_of_harmony', 'tr_unyielding_never_surrender');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_bulwark_of_harmony', 'starbase_defensive_war_ship_build_speed_mult', '0.33', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_defensive_war_ship_build_speed_mult', 'Ship Build Speed (Defensive War)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_bulwark_of_harmony', 'ship_home_territory_fire_rate_mult', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_home_territory_fire_rate_mult', 'Home Territory Fire Rate', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_unyielding_bulwark_of_harmony#0', 'tr_unyielding_bulwark_of_harmony', 'tr_unyielding_bulwark_of_harmony_hive', 'Bulwark of Harmony', 'All organisms, no matter how perfect, must rely on an immune system to ward off the threat of outside disease. The is no different.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_unyielding_bulwark_of_harmony#1', 'tr_unyielding_bulwark_of_harmony', 'tr_unyielding_bulwark_of_harmony_machine', 'Bulwark of Harmony', 'All organisms, no matter how perfect, must rely on an internal defense system to ward off external threats. The is no different.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_unyielding_defensive_zeal', 'tradition_unyielding', 'normal', 'Defensive Zeal', 'When it comes to the defense of our territories and existence, our fervor will surely be felt by our enemies.', NULL, NULL, 'Starbases and Defense Platforms have their Hull Points and Damage increased by 33%.', 4);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_defensive_zeal', 'shipclass_starbase_damage_mult', '0.33', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_starbase_damage_mult', 'Station Damage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_defensive_zeal', 'shipclass_starbase_hull_mult', '0.33', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_starbase_hull_mult', 'Station Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_defensive_zeal', 'shipclass_military_station_damage_mult', '0.33', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_military_station_damage_mult', 'Defense Platform Damage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_defensive_zeal', 'shipclass_military_station_hull_mult', '0.33', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_military_station_hull_mult', 'Defense Platform Hull Points', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_unyielding_fortress_doctrine', 'tradition_unyielding', 'normal', 'Fortress Doctrine', 'Constant vigilance is ingrained in the consciousness. So long as our guard does not drop, our enemies will never be able to take us by surprise.', '{"leaf":"has_tradition","value":"tr_unyielding_defensive_zeal"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_unyielding_fortress_doctrine', 'tr_unyielding_defensive_zeal');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine', 'country_starbase_capacity_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine', 'starbase_upgrade_cost_mult', '-0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_unyielding_fortress_doctrine#0', 'tr_unyielding_fortress_doctrine', 'tr_unyielding_fortress_doctrine_nemesis', 'Fortress Doctrine', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nemesis"},{"leaf":"is_gestalt","value":"no"}]}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine#0', 'country_starbase_capacity_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine#0', 'starbase_upgrade_cost_mult', '-0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine#0', 'hostile_operation_sabotage_starbase_difficulty_add', '4.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('hostile_operation_sabotage_starbase_difficulty_add', 'Defense Against Hostile Operations (Sabotage Starbase Facility)', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_unyielding_fortress_doctrine#1', 'tr_unyielding_fortress_doctrine', 'tr_unyielding_fortress_doctrine_hive', 'Vigilant Thought Processes', 'We can never fully trust those whose thoughts are outside our collective consciousness. We shall remain vigilant, and ensure that none are able to take us by surprise.', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Nemesis"}]},{"leaf":"is_hive_empire","value":"yes"}]}', 0, '1.0', NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine#1', 'country_starbase_capacity_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine#1', 'starbase_upgrade_cost_mult', '-0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_unyielding_fortress_doctrine#2', 'tr_unyielding_fortress_doctrine', 'tr_unyielding_fortress_doctrine_hive_nemesis', 'Vigilant Thought Processes', 'We can never fully trust those whose thoughts are outside our collective consciousness. We shall remain vigilant, and ensure that none are able to take us by surprise.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nemesis"},{"leaf":"is_hive_empire","value":"yes"}]}', 0, '1.0', NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine#2', 'country_starbase_capacity_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine#2', 'starbase_upgrade_cost_mult', '-0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine#2', 'hostile_operation_sabotage_starbase_difficulty_add', '4.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('hostile_operation_sabotage_starbase_difficulty_add', 'Defense Against Hostile Operations (Sabotage Starbase Facility)', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_unyielding_fortress_doctrine#3', 'tr_unyielding_fortress_doctrine', 'tr_unyielding_fortress_doctrine_machine', 'Guardian Subroutines', 'Our algorithms will never fully account for all the unpredictabilities of non-synthetic behavior. We shall remain vigilant, and ensure that none are able to take us by surprise.', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Nemesis"}]},{"leaf":"is_machine_empire","value":"yes"}]}', 0, '1.0', NULL, 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine#3', 'country_starbase_capacity_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine#3', 'starbase_upgrade_cost_mult', '-0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_unyielding_fortress_doctrine#4', 'tr_unyielding_fortress_doctrine', 'tr_unyielding_fortress_doctrine_machine_nemesis', 'Guardian Subroutines', 'Our algorithms will never fully account for all the unpredictabilities of non-synthetic behavior. We shall remain vigilant, and ensure that none are able to take us by surprise.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nemesis"},{"leaf":"is_machine_empire","value":"yes"}]}', 0, '1.0', NULL, 4);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine#4', 'country_starbase_capacity_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine#4', 'starbase_upgrade_cost_mult', '-0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_fortress_doctrine#4', 'hostile_operation_sabotage_starbase_difficulty_add', '4.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('hostile_operation_sabotage_starbase_difficulty_add', 'Defense Against Hostile Operations (Sabotage Starbase Facility)', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_unyielding_finish', 'tradition_unyielding', 'finish', 'Fortification Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_finish', 'starbase_defense_platform_capacity_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_defense_platform_capacity_mult', 'Defense Platforms Cap', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_finish', 'starbases_upkeep_mult', '-0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Station Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_finish', 'ascension_perks_add', '1.0', NULL, 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_unyielding_finish#0', 'tr_unyielding_finish', 'tr_unyielding_federations_finish', 'Fortification Traditions Finished', NULL, '{"leaf":"host_has_dlc","value":"Federations"}', 0, '1.0', 'Defense Platforms Cap +50%
+Station Upkeep -20%
+Grants access to the Martial Alliance Federation type.
+Allows access to the Unity Eternal Vigilance Ascension Perk.
+Ascension Perks Unlocked: +1', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_finish#0', 'starbase_defense_platform_capacity_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_defense_platform_capacity_mult', 'Defense Platforms Cap', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_finish#0', 'starbases_upkeep_mult', '-0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Station Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_unyielding_finish#0', 'ascension_perks_add', '1.0', NULL, 2);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_harmony', 'Harmony', '{"leaf":"is_gestalt","value":"no"}', NULL, 'tr_harmony_adopt', 'tr_harmony_finish', 11);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_harmony_adopt', 'tradition_harmony', 'adopt', 'Harmony Traditions', NULL, NULL, 'Inner Stability', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_adopt', 'planet_pops_upkeep_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_harmony_mind_and_body', 'tradition_harmony', 'normal', 'Mind and Body', 'By embracing a combination of new meditation techniques and healthier eating habits, a large segment of our population enjoys a greater life expectancy than ever before.', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_mind_and_body', 'leader_lifespan_add', '10.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_mind_and_body', 'negative_traits_country', '-1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_traits_country', 'Leader Maximum Negative Traits', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_harmony_mind_and_body#0', 'tr_harmony_mind_and_body', 'tr_harmony_unity_of_self', 'Unity of Self', 'Interstellar harmony would be greatly increased if all sentient beings looked, thought and acted as we do.', '{"leaf":"has_origin","value":"origin_necrophage"}', 0, '2.0', 'Necrophaging Pops provides Unity.', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_harmony_kinship', 'tradition_harmony', 'normal', 'Kinship', 'A true sense of kinship has developed between all the citizens of our great star nation, regardless of their place in the social order.', NULL, NULL, NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_kinship', 'empire_size_pops_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_kinship', 'refugee_attraction', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_harmony_kinship#0', 'tr_harmony_kinship', 'tr_harmony_kinship_shared_burdens', 'Kinship', 'Our leaders and our people are one and the same. We are equal in all ways.', '{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"is_worker_coop_empire","value":"yes"}]}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_kinship#0', 'leaders_upkeep_mult', '-0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_kinship#0', 'empire_size_pops_mult', '-0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_kinship#0', 'refugee_attraction', '0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_harmony_the_greater_good', 'tradition_harmony', 'normal', 'The Greater Good', 'Our entire population takes comfort in the knowledge that they are working together for the greater good, each one a small but important part of a vastly larger whole.', NULL, NULL, NULL, 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_the_greater_good', 'pop_government_ethic_attraction', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_the_greater_good', 'planet_crime_add', '-10.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_harmony_harmonious_directives', 'tradition_harmony', 'normal', 'Harmonious Directives', 'The enlightened decrees of our benevolent leadership will spread peace, freedom, justice, and security throughout the entire star nation and beyond.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_harmony_kinship"},{"leaf":"has_tradition","value":"tr_harmony_mind_and_body"}]}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_harmony_harmonious_directives', 'tr_harmony_kinship');
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_harmony_harmonious_directives', 'tr_harmony_mind_and_body');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_harmonious_directives', 'country_edict_fund_add', '50.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_harmony_utopian_dream', 'tradition_harmony', 'normal', 'Utopian Dream', 'The dream of a utopian future drives our people ever forwards. A better tomorrow is worth fighting for.', '{"leaf":"has_tradition","value":"tr_harmony_the_greater_good"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_harmony_utopian_dream', 'tr_harmony_the_greater_good');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_utopian_dream', 'planet_stability_add', '3.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_utopian_dream', 'planetary_ascension_cost_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_cost_mult', 'Colony Ascension Cost', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_harmony_finish', 'tradition_harmony', 'finish', 'Harmony Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_finish', 'planetary_ascension_effect_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_effect_mult', 'Colony Ascension Effects', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_harmony_finish#0', 'tr_harmony_finish', 'tr_harmony_federations_finish', 'Harmony Traditions Finished', NULL, '{"leaf":"host_has_dlc","value":"Federations"}', 0, '1.0', 'Colony Ascension Effects: +25%.
+Grants access to the Holy Covenant Federation type.
+Ascension Perks Unlocked: +1', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_finish#0', 'planetary_ascension_effect_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_effect_mult', 'Colony Ascension Effects', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_harmony_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_logistics', 'Logistics', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'tr_logistics_adopt', 'tr_logistics_finish', 12);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_logistics_adopt', 'tradition_logistics', 'adopt', 'Logistics Traditions', NULL, NULL, 'Open Markets', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_logistics_adopt', 'pop_logistics_drone_bonus_workforce_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_logistics_drone_bonus_workforce_mult', 'Job Efficiency for Logistic Drones', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_logistics_1', 'tradition_logistics', 'normal', 'Nested Coordination', 'Enhanced systemic efficiency, fostering unity through shared function.', NULL, NULL, 'Trade per 100 Logistic Drones: +2', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_logistics_1', 'planet_traders_trade_produces_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_logistics_2', 'tradition_logistics', 'normal', 'Distributed Delivery Systems', 'An expanded logistics drone network improves distribution flexibility while additional redundancies provide for critical backups.', '{"leaf":"has_tradition","value":"tr_logistics_1"}', NULL, 'Logistic Drones from Districts, Zone District Specializations, and Non-Capital Buildings: +50%', 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_logistics_2', 'tr_logistics_1');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_logistics_3', 'tradition_logistics', 'normal', 'Autonomous Maintenance', 'Self-governing maintenance drones ensure colony upkeep without the need for oversight.', NULL, NULL, NULL, 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_logistics_3', 'planet_maintenance_drones_trade_produces_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_trade_produces_add', 'Trade per 100 Maintenance Drones', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_logistics_3', 'planet_structures_upkeep_mult', '-0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_upkeep_mult', 'Infrastructure Upkeep', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_logistics_4', 'tradition_logistics', 'normal', 'Galactic Exchange Efficiencies', 'Enhanced tracking across star systems minimizes loss and waste.', '{"leaf":"has_tradition","value":"tr_logistics_3"}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_logistics_4', 'tr_logistics_3');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_logistics_4', 'country_trade_fee', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_fee', 'Market Fee', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_logistics_5', 'tradition_logistics', 'normal', 'Predictive Resupply Patterns', 'War is chaos. Our supply lines are not. We see the need before it arises, and we respond appropriately.', '{"leaf":"has_tradition","value":"tr_logistics_3"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_logistics_5', 'tr_logistics_3');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_logistics_5', 'ships_logistics_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_logistics_mult', 'Ship Logistics Upkeep', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_logistics_finish', 'tradition_logistics', 'finish', 'Logistics Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_logistics_finish', 'country_trade_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_logistics_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_politics', 'Politics', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"is_homicidal","value":"no"}]}', 'Federations', 'tr_politics_adopt', 'tr_politics_finish', 13);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_politics_adopt', 'tradition_politics', 'adopt', 'Politics Traditions', NULL, '{"leaf":"is_galactic_community_formed","value":"yes"}', 'Pioneer Politics', '+1 Envoy, Officials assigned to the now produce 0.1 Influence per Skill Level.', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_politics_adopt', 'envoys_add', '1.0', NULL, 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_politics_quid_pro_quo', 'tradition_politics', 'normal', 'Quid Pro Quo', 'Carefully worded rhetoric will make it clear that our support comes at a cost. Those we help owe us, and one day, we will collect.', NULL, NULL, 'Whenever a Resolution that you supported passes, gain 1 Favor on the empire that proposed it.', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_politics_gravitas', 'tradition_politics', 'normal', 'Gravitas', 'Politics is the art of illusions. By showing others what they want to see, we''ll grow our influence in the community.', NULL, NULL, '25% Influence cost to veto or propose Resolutions, Officials assigned to the provide an additional 2.5% Diplo Weight Diplomatic Weight per Skill Level.', 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_politics_gravitas', 'resolutions_cost_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('resolutions_cost_mult', 'Galcom Resolution Action Costs', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_politics_gravitas', 'diplo_weight_delegate_mult', '0.025', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_delegate_mult', 'Diplomatic Weight From Assigned Leader Skill Level', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_politics_national_agenda', 'tradition_politics', 'normal', 'National Agenda', 'Our victories on the Senate floor should be celebrated: they bring us ever closer to a better future.', '{"leaf":"has_tradition","value":"tr_politics_quid_pro_quo"}', NULL, 'Whenever a resolution you propose passes, gain 18 months worth of Unity.', 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_politics_national_agenda', 'tr_politics_quid_pro_quo');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_politics_persistent_petitioners', 'tradition_politics', 'normal', 'Persistent Petitioners', 'Our delegates in the are extremely persistent, and will not take', '{"leaf":"has_tradition","value":"tr_politics_gravitas"}', NULL, 'After a resolution is passed by another empire, gain +25% Diplo Weight Diplomatic Weight until one of your own resolutions passes.', 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_politics_persistent_petitioners', 'tr_politics_gravitas');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_politics_extraordinary_powers', 'tradition_politics', 'normal', 'Extraordinary Powers', 'Extraordinary times call for extraordinary measures. We have already been entrusted with power, it is only natural to let us wield it.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_politics_national_agenda"},{"leaf":"has_tradition","value":"tr_politics_persistent_petitioners"}]}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_politics_extraordinary_powers', 'tr_politics_national_agenda');
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_politics_extraordinary_powers', 'tr_politics_persistent_petitioners');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_politics_extraordinary_powers', 'veto_cooldown_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_politics_extraordinary_powers', 'emergency_measures_cooldown_mult', '-0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('emergency_measures_cooldown_mult', 'Emergency Measures Cooldown', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_politics_finish', 'tradition_politics', 'finish', 'Politics Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_politics_finish', 'diplo_weight_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_politics_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_prosperity', 'Prosperity', NULL, NULL, 'tr_prosperity_adopt', 'tr_prosperity_finish', 14);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_prosperity', '{"leaf":"is_regular_empire","value":"yes"}', 'There is no better indicator of the success or failure of a star nation than the strength of its economy.', 0);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_prosperity', '{"leaf":"is_hive_empire","value":"yes"}', 'We must build a strong, prosperous if we are to spread ourselves among the stars.', 1);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_prosperity', '{"leaf":"is_machine_empire","value":"yes"}', 'Individual units all eventually cease functioning. Only numbers can provide the redundancy required to ensure continued existence. To build those numbers, we must have resources.', 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_prosperity_adopt', 'tradition_prosperity', 'adopt', 'Prosperity Traditions', NULL, NULL, 'Favored Society', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_adopt', 'station_gatherers_produces_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('station_gatherers_produces_mult', 'Resources Produced from Mining Stations', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_adopt#0', 'tr_prosperity_adopt', 'tr_prosperity_adopt_nomad', 'Prosperity Traditions', NULL, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_eager_explorer_empire","value":"no"}]}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_adopt#0', 'arkship_harvest_resources_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_produces_mult', 'Resources from Harvesting Actions', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_adopt#0', 'starbase_stockpile_capacity_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_stockpile_capacity_mult', 'Waystation Stockpile Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_adopt#0', 'shipsize_nomads_constructor_stockpile_capacity_mult', '0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_nomads_constructor_stockpile_capacity_mult', 'Logistic Ship Stockpile Capacity', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_adopt#1', 'tr_prosperity_adopt', 'tr_prosperity_adopt_nomad_eager_explorer', 'Prosperity Traditions', NULL, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_eager_explorer_empire","value":"yes"}]}', 0, '1.0', NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_adopt#1', 'arkship_harvest_resources_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_produces_mult', 'Resources from Harvesting Actions', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_adopt#1', 'starbase_stockpile_capacity_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_stockpile_capacity_mult', 'Waystation Stockpile Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_adopt#1', 'shipsize_nomads_constructor_stockpile_capacity_mult', '0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_nomads_constructor_stockpile_capacity_mult', 'Logistic Ship Stockpile Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_adopt#1', 'shipsize_nomads_engineer_vessel_stockpile_capacity_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_nomads_engineer_vessel_stockpile_capacity_mult', 'Logistics Vessel Stockpile Capacity', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_prosperity_administrative_operations', 'tradition_prosperity', 'normal', 'Administrative Operations', 'As our empire continues to grow, eliminating corruption and inefficiency is of critical importance. These credit drains must be plugged!', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_administrative_operations', 'planet_structures_upkeep_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_upkeep_mult', 'Infrastructure Upkeep', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_administrative_operations#0', 'tr_prosperity_administrative_operations', 'tr_prosperity_administrative_operations_hive', 'Chitinous Architecture', 'Construction resin, extracted from captured biomass in ocean-sized rendering pools, is more malleable and durable than most inorganic materials. It can even withstand the chill vacuum of space.', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_administrative_operations#1', 'tr_prosperity_administrative_operations', 'tr_prosperity_administrative_operations_machine', 'Superconductive Power Transmission', 'Superconducting materials at every level of our infrastructure reduce power loss over long distances to near-zero.', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 1, '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_administrative_operations#2', 'tr_prosperity_administrative_operations', 'tr_prosperity_administrative_operations_nomads', 'Arkship Operations', 'As our empire continues to grow, eliminating corruption and inefficiency is of critical importance. These credit drains must be plugged!', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_hive_empire","value":"no"}]}', 1, '1.0', NULL, 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_administrative_operations#3', 'tr_prosperity_administrative_operations', 'tr_prosperity_administrative_operations_machine_nomads', 'Arkship Operations', 'Superconducting materials at every level of our infrastructure reduce power loss over long distances to near-zero.', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_nomadic","value":"yes"}]}', 1, '1.0', NULL, 3);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_administrative_operations#4', 'tr_prosperity_administrative_operations', 'tr_prosperity_administrative_operations_hive_nomads', 'Chitinous Architecture', 'Construction resin, extracted from captured biomass in ocean-sized rendering pools, is more malleable and durable than most inorganic materials. It can even withstand the chill vacuum of space.', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_nomadic","value":"yes"}]}', 1, '1.0', NULL, 4);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_prosperity_sct', 'tradition_prosperity', 'normal', 'Standard Construction Templates', 'As technology advances and becomes ever more complex, new demands are placed on our workforce. By using standardized construction templates, our workers can build things without necessarily having to understand the finer points.', NULL, NULL, NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_sct', 'planet_structures_cost_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_structures_cost_mult', 'Infrastructure Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_sct', 'planet_building_build_speed_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_sct#0', 'tr_prosperity_sct', 'tr_prosperity_sct_machine', 'Prefabricated Buildings', 'Production of a large number of generic standardized buildings is much more efficient than designing and building them individually.', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}]}]}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_sct#1', 'tr_prosperity_sct', 'tr_prosperity_sct_wilderness', 'Standardized Ecosystems', 'As our understanding of biology and constructions advances we have discovered optimal starting points for new sprouts. Saving on efforts recurring to evolve new ones for every planet.', '{"leaf":"is_wilderness_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_sct#2', 'tr_prosperity_sct', 'tr_prosperity_sct_nomads', 'Standard Construction Templates', 'As technology advances and becomes ever more complex, new demands are placed on our workforce. By using standardized construction templates, our workers can build things without necessarily having to understand the finer points.', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_machine_empire","value":"no"}]}', 1, '1.0', NULL, 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_sct#3', 'tr_prosperity_sct', 'tr_prosperity_sct_machine_nomads', 'Prefabricated Buildings', 'Production of a large number of generic standardized buildings is much more efficient than designing and building them individually.', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]}', 1, '1.0', NULL, 3);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_prosperity_pursuit_of_profit', 'tradition_prosperity', 'normal', 'The Pursuit of Profit', 'The pursuit of profit has become a central tenet of our society. Those who are successful at any kind of enterprise are deeply admired, and the accumulation of energy credits is seen as an extremely worthwhile goal.', '{"leaf":"has_tradition","value":"tr_prosperity_administrative_operations"}', NULL, NULL, 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_prosperity_pursuit_of_profit', 'tr_prosperity_administrative_operations');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_pursuit_of_profit', 'planet_jobs_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_pursuit_of_profit#0', 'tr_prosperity_pursuit_of_profit', 'tr_prosperity_creative_collectives', 'Creative Collectives', 'By creating a system of autonomous, self-organizing collectives to run our factories and schools, we can greatly improve the productivity of our industries.', '{"leaf":"is_egalitarian","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_pursuit_of_profit#1', 'tr_prosperity_pursuit_of_profit', 'tr_prosperity_hive_neural_signal_boosters', 'Neural Signal Boosters', 'The energy grids that power our hives can also be used to boost the neural signals transmitted to some of our drones, allowing for further modifications and enhancements to efficiency.', '{"leaf":"is_hive_empire","value":"yes"}', 0, '1.0', NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_pursuit_of_profit#1', 'planet_jobs_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_pursuit_of_profit#2', 'tr_prosperity_pursuit_of_profit', 'tr_prosperity_pursuit_of_profit_wilderness', 'Global Liquid Transportation', 'Continent spanning veins transport nutrition and important construction material to supplement ecosystems in need.', '{"leaf":"is_wilderness_empire","value":"yes"}', 0, '1.0', NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_pursuit_of_profit#2', 'planet_jobs_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_pursuit_of_profit#3', 'tr_prosperity_pursuit_of_profit', 'tr_prosperity_peak_performance', 'Peak Performance', 'The performance ceiling of individual proxy units can theoretically be raised through a complex series of optimizations and overclocking procedures.', '{"leaf":"is_machine_empire","value":"yes"}', 0, '1.0', NULL, 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_pursuit_of_profit#3', 'planet_jobs_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_prosperity_interstellar_franchising', 'tradition_prosperity', 'normal', 'Interstellar Franchising', 'A focus on franchising allows even the most mundane colony to open thriving, dynamic businesses, providing local jobs and increasing trade!', '{"leaf":"has_tradition","value":"tr_prosperity_administrative_operations"}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_prosperity_interstellar_franchising', 'tr_prosperity_administrative_operations');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_interstellar_franchising', 'planet_jobs_upkeep_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_upkeep_mult', 'Upkeep from Jobs', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_interstellar_franchising#0', 'tr_prosperity_interstellar_franchising', 'tr_prosperity_efficiency_algorithms', 'Efficiency Algorithms', 'There is no greater crime than an inefficient machine.', '{"leaf":"is_machine_empire","value":"yes"}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_interstellar_franchising#0', 'planet_jobs_upkeep_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_upkeep_mult', 'Upkeep from Jobs', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_interstellar_franchising#1', 'tr_prosperity_interstellar_franchising', 'tr_prosperity_efficiency_instincts', 'Efficiency Instincts', 'Our are instilled with a strong urge to avoid waste in all aspects of daily life. This should result a significant saving of Energy.', '{"leaf":"is_hive_empire","value":"yes"}', 0, '1.0', NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_interstellar_franchising#1', 'planet_jobs_upkeep_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_upkeep_mult', 'Upkeep from Jobs', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_prosperity_public_works', 'tradition_prosperity', 'normal', 'Public Works Division', 'Our growing cities will be augmented by inspired public works on a scale never before seen. To that end, a new government agency must be formed to oversee their construction.', '{"leaf":"has_tradition","value":"tr_prosperity_sct"}', NULL, 'City Districts provide 100 additional Housing.
+Ring World City Segments and Ecumenopolis Residential Arcologies also provide additional Housing.', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_prosperity_public_works', 'tr_prosperity_sct');
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_public_works#0', 'tr_prosperity_public_works', 'tr_prosperity_extended_hives', 'Extended Hives', 'By extending Hive Districts underground, far more Drones can be housed within.', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"has_void_dweller_origin","value":"no"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 0, '1.0', 'Hive Districts provide 100 additional Housing.
+Ring World Hive Segments provide 500 additional Housing.', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_public_works#1', 'tr_prosperity_public_works', 'tr_prosperity_optimized_nexus', 'Optimized Nexus', 'Without the need for the comfort of individuals, cells within Nexus Districts can both be smaller and make greater use of vertical space.', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_void_dweller_origin","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 0, '1.0', 'Nexus Districts provide 100 additional Housing.
+Ring World Nexus Segments provide 500 additional Housing.', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_public_works#2', 'tr_prosperity_public_works', 'tr_prosperity_void_works', 'Modular Superstructures', 'By implementing modular construction techniques, we can increase the zoning density of our habitats.', '{"leaf":"has_void_dweller_origin","value":"yes"}', 0, '1.0', 'Housing from Habitation Districts: +100', 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_public_works#2', 'habitat_max_districts_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_max_districts_add', 'Habitat Max Districts', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_public_works#3', 'tr_prosperity_public_works', 'tr_prosperity_public_works_nomads', 'Modular Superstructures', 'By implementing modular construction techniques, we can increase the zoning density of our Arkships.', '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', 'Housing from Habitation Decks: +250', 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_public_works#3', 'planet_artificial_max_districts_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artificial_max_districts_add', 'Max Districts (Artificial colonies only)', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_public_works#4', 'tr_prosperity_public_works', 'tr_prosperity_public_works_wilderness', 'Subterranean Warrens', 'By having permeate surface crust layers and supplement their nests with wax structures, many more can be accommodated for.', '{"leaf":"is_wilderness_empire","value":"yes"}', 0, '2.0', 'All Districts provide +50 additional Housing', 4);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_prosperity_finish', 'tradition_prosperity', 'finish', 'Prosperity Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_finish', 'stations_produces_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('stations_produces_mult', 'Resources from Orbital Stations', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_prosperity_finish#0', 'tr_prosperity_finish', 'tr_prosperity_finish_nomad', 'Prosperity Traditions Finished', NULL, '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_finish#0', 'arkship_harvest_resources_produces_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_produces_mult', 'Resources from Harvesting Actions', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_prosperity_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_statecraft', 'Statecraft', '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', 'Galactic Paragons', 'tr_statecraft_adopt', 'tr_statecraft_finish', 15);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_statecraft', '{"leaf":"is_regular_empire","value":"yes"}', 'A powerful Council allows our empire to be more responsive.', 0);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_statecraft', '{"leaf":"is_hive_empire","value":"yes"}', 'The Council of Voices defines our empire.', 1);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_statecraft', '{"leaf":"is_machine_empire","value":"yes"}', 'The Assembly of Consciousness defines our empire.', 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_statecraft_adopt', 'tradition_statecraft', 'adopt', 'Statecraft Traditions', NULL, NULL, 'Departmental Efficiency', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_statecraft_adopt', 'country_edict_fund_add', '50.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_statecraft_constitutional_focus', 'tradition_statecraft', 'normal', 'Constitutional Focus', 'With a clear focus on our empire''s needs, we can ease the administrative burden of our councilors.', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_statecraft_constitutional_focus', 'council_agenda_progress_speed', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_statecraft_inspiring_agendas', 'tradition_statecraft', 'normal', 'Inspiring Agendas', 'There has never been a lack of ideas of how the empire can direct our own future.', '{"leaf":"has_tradition","value":"tr_statecraft_constitutional_focus"}', NULL, 'Unlocks Agenda: Rightful Claims
+Unlocks Agenda: Oppose the Fallen', 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_statecraft_inspiring_agendas', 'tr_statecraft_constitutional_focus');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_statecraft_immutable_directives', 'tradition_statecraft', 'normal', 'Immutable Directives', 'The fundamental understanding of direction and purpose is always clear, allowing us to shift focus without losing the progress we have made.', '{"leaf":"has_tradition","value":"tr_statecraft_inspiring_agendas"}', NULL, NULL, 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_statecraft_immutable_directives', 'tr_statecraft_inspiring_agendas');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_statecraft_immutable_directives', 'council_agenda_finishing_effect_duration_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_finishing_effect_duration_mult', 'Council Agenda Effect Duration', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_statecraft_amongst_peers', 'tradition_statecraft', 'normal', 'Amongst Peers', 'Trust, respect, and learning from mistakes are held to the highest standards even at the top echelons of our empire.', NULL, NULL, 'Whenever an Agenda is Launched: All Councilors gain 150 Experience per Skill Level', 4);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_statecraft_shared_benefits', 'tradition_statecraft', 'normal', 'Shared Benefits', 'By involving all leaders in the implementation of our agendas, they build a stronger understanding for their roles and purpose.', '{"leaf":"has_tradition","value":"tr_statecraft_amongst_peers"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_statecraft_shared_benefits', 'tr_statecraft_amongst_peers');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_statecraft_shared_benefits', 'councilor_skill_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_statecraft_finish', 'tradition_statecraft', 'finish', 'Statecraft Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_statecraft_finish', 'empire_size_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_mult', 'Empire Size', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_statecraft_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_subterfuge', 'Subterfuge', '{"leaf":"host_has_dlc","value":"Nemesis"}', 'Nemesis', 'tr_subterfuge_adopt', 'tr_subterfuge_finish', 16);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_subterfuge_adopt', 'tradition_subterfuge', 'adopt', 'Subterfuge Traditions', NULL, NULL, 'Uncover Secrets', 'Subterfuge-related technologies appear at 5 times the normal rate.', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_adopt', 'espionage_operation_cost_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('espionage_operation_cost_mult', 'Operation Infiltration Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_adopt', 'intel_decryption_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_subterfuge_information_security', 'tradition_subterfuge', 'normal', 'Information Security', 'Only by embracing a tradition of secrecy can we protect vital information from prying minds. Enhanced security systems and countermeasures deny our enemies any potential advantages.', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_information_security', 'intel_encryption_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_information_security', 'ship_evasion_add', '5.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_evasion_add', 'Evasion Chance', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_subterfuge_operational_security', 'tradition_subterfuge', 'normal', 'Operational Security', 'The shift from a planetary to an interplanetary setting has posed unique challenges for our covert operatives. By adapting their training regimen to the demands of the galactic stage, we will be able to remain competitive in this new age.', NULL, NULL, NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_operational_security', 'intel_decryption_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_operational_security', 'espionage_operation_skill_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('espionage_operation_skill_add', 'Operation Skill', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_operational_security', 'ship_tracking_add', '10.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_tracking_add', 'Tracking', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_subterfuge_operational_security#0', 'tr_subterfuge_operational_security', 'tr_subterfuge_operational_security_gestalt', 'Subterfuge Drones', 'We are no longer as alone as we once were: a plethora of competing - and potentially hostile - entities now share our galaxy with us. In order to thrive in this new reality, we will have to adapt ourselves to the concept of', '{"leaf":"is_gestalt","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_subterfuge_nda', 'tradition_subterfuge', 'normal', 'Non-Disclosure Agreement', 'Our citizens follow a strict shut policy when it comes to guarding our secrets from outsiders.', '{"leaf":"has_tradition","value":"tr_subterfuge_information_security"}', NULL, NULL, 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_subterfuge_nda', 'tr_subterfuge_information_security');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_nda', 'espionage_hostile_operation_difficulty_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('espionage_hostile_operation_difficulty_add', 'Defense Against Hostile Operations', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_nda', 'espionage_hostile_operation_cost_mult', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('espionage_hostile_operation_cost_mult', 'Infiltration Required for Hostile Operations', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_subterfuge_nda#0', 'tr_subterfuge_nda', 'tr_subterfuge_nda_hive', 'No Loose Ends', 'There shall be no loose ends in our neural net for those who would uncover our secrets to exploit.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_subterfuge_nda#1', 'tr_subterfuge_nda', 'tr_subterfuge_nda_machine', 'Updated Security Algorithms', 'By rolling out frequent security updates to our nodes, we can prevent our enemies from finding exploitable weaknesses in our information net.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_subterfuge_double_agents', 'tradition_subterfuge', 'normal', 'Double Agents', 'Through creative means of persuasion, we are able to sway even the most devoted of our enemies to contribute to our cause.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_subterfuge_information_security"},{"leaf":"has_tradition","value":"tr_subterfuge_operational_security"}]}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_subterfuge_double_agents', 'tr_subterfuge_information_security');
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_subterfuge_double_agents', 'tr_subterfuge_operational_security');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_double_agents', 'envoys_add', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_double_agents', 'spy_network_levels_add', '10.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('spy_network_levels_add', 'Maximum Infiltration Level', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_subterfuge_shadow_recruits', 'tradition_subterfuge', 'normal', 'Shadow Recruits', 'Whereas our enemies merely adopted the shadows, our were born in it, molded by it.', '{"leaf":"has_tradition","value":"tr_subterfuge_operational_security"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_subterfuge_shadow_recruits', 'tr_subterfuge_operational_security');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_shadow_recruits', 'spy_network_daily_value_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('spy_network_daily_value_mult', 'Infiltration Speed', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_subterfuge_finish', 'tradition_subterfuge', 'finish', 'Subterfuge Traditions Finished', NULL, NULL, NULL, 'Successful Operations refund 50% of their Infiltration Level Cost.
+Ascension Perks Unlocked: +1', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_finish', 'ascension_perks_add', '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_subterfuge_finish#0', 'tr_subterfuge_finish', 'tr_subterfuge_cloaking_finish', 'Subterfuge Traditions Finished', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"First Contact Story Pack"},{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]}]}', 0, '1.0', 'Successful Operations refund 50% of their Infiltration Level Cost.
+Cloaking Strength: +1
+Ascension Perks Unlocked: +1', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_finish#0', 'ship_cloaking_strength_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_cloaking_strength_add', 'Cloaking Strength', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_subterfuge_finish#1', 'tr_subterfuge_finish', 'tr_subterfuge_cloaking_finish', 'Subterfuge Traditions Finished', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"First Contact Story Pack"},{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]}', 0, '1.0', 'Successful Operations refund 50% of their Infiltration Level Cost.
+Cloaking Strength: +1
+Gain access to Proxy Wars
+Ascension Perks Unlocked: +1', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_finish#1', 'ship_cloaking_strength_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_cloaking_strength_add', 'Cloaking Strength', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_finish#1', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_subterfuge_finish#2', 'tr_subterfuge_finish', NULL, 'Subterfuge Traditions Finished', NULL, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"First Contact Story Pack"}]},{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]}', 0, '1.0', 'Successful Operations refund 50% of their Infiltration Level Cost.
+Gain access to Proxy Wars
+Ascension Perks Unlocked: +1', 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_subterfuge_finish#2', 'ascension_perks_add', '1.0', NULL, 0);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_supremacy', 'Supremacy', NULL, NULL, 'tr_supremacy_adopt', 'tr_supremacy_finish', 17);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_supremacy', '{"leaf":"is_regular_empire","value":"yes"}', 'The future of this galaxy belongs to those who are strong enough to seize it.', 0);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_supremacy', '{"leaf":"is_hive_empire","value":"yes"}', 'The only rule: eat, or be eaten.', 1);
+INSERT INTO tradition_category_desc
+                   (category_key, trigger_json, description, sort_order) VALUES ('tradition_supremacy', '{"leaf":"is_machine_empire","value":"yes"}', 'All of our theoretical models invariably collapse due to the unknown variables presented by other empires. Since our models cannot be further improved, the unknown variables must be eliminated.', 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_supremacy_adopt', 'tradition_supremacy', 'adopt', 'Supremacy Traditions', NULL, NULL, 'Military Buildup', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_supremacy_adopt', 'country_naval_cap_add', '20.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_supremacy_adopt', 'army_damage_mult', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_supremacy_master_shipwrights', 'tradition_supremacy', 'normal', 'Master Shipwrights', 'The ever-increasing scope of our ship-building programs has led to the creation of highly-skilled and efficient labor forces at our shipyards. Methods have continually been refined, and the time it takes to go from hull plating to a completed starship is now shorter than ever before.', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_supremacy_master_shipwrights', 'starbase_shipyard_build_speed_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_supremacy_master_shipwrights#0', 'tr_supremacy_master_shipwrights', 'tr_supremacy_master_shipwrights_machine', 'Modular Hull Templates', 'With a large inventory of prefabricated hull sections, built to be interchangeable, our fleet construction effort will be rationalized.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_supremacy_master_shipwrights#1', 'tr_supremacy_master_shipwrights', 'tr_supremacy_master_shipwrights_hive', 'Organic Architecture', 'We construct the frames of our ships like the skeleton of a living being, then attach whatever components we need as though they were organs, flesh, and skin.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_supremacy_fleet_logistical_corps', 'tradition_supremacy', 'normal', 'Fleet Logistics Corps', 'With ships often deployed across vast interstellar distances, a dedicated Logistics Corps is needed to make things run smoothly.', NULL, NULL, NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_supremacy_fleet_logistical_corps', 'ships_upkeep_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_supremacy_fleet_logistical_corps', 'country_naval_cap_mult', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_supremacy_fleet_logistical_corps#0', 'tr_supremacy_fleet_logistical_corps', 'tr_supremacy_fleet_logistical_corps_machine', 'Automated Underway Replenishment', 'The cost of maintaining a fleet of hyperspace-capable supply barges to resupply our ships has been high, but less than the old cost of rotating vessels back to port.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_supremacy_fleet_logistical_corps#1', 'tr_supremacy_fleet_logistical_corps', 'tr_supremacy_fleet_logistical_corps_hive', 'Nutrient Arks', 'We shall accompany our deep space hunting swarms with giant carrier drones, essentially nerveless sacs of protein paste with a hyperdrive. The drones will be drained and die, but the swarm will live on.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_supremacy_overwhelming_force', 'tradition_supremacy', 'normal', 'Overwhelming Force', 'Everything must be brought to bear on the enemy if victory is to be assured. A swift and decisive attack can paradoxically save lives that would have been needlessly lost in a prolonged engagement.', NULL, NULL, NULL, 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_supremacy_overwhelming_force', 'ship_orbital_bombardment_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_orbital_bombardment_mult', 'Orbital Bombardment Damage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_supremacy_overwhelming_force', 'ship_fire_rate_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_supremacy_war_games', 'tradition_supremacy', 'normal', 'War Games', 'A strong war game tradition has taken root among the senior officers of our fleets, whether the games be computer simulations or actual exercises in space. This has encouraged our commanders to think outside the box, resulting in numerous tactical innovations and new strategies.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_supremacy_master_shipwrights"},{"leaf":"has_tradition","value":"tr_supremacy_fleet_logistical_corps"}]}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_supremacy_war_games', 'tr_supremacy_master_shipwrights');
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_supremacy_war_games', 'tr_supremacy_fleet_logistical_corps');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_supremacy_war_games', 'command_limit_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('command_limit_mult', 'Fleet Command Limit', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_supremacy_war_games', 'country_commander_cap_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_commander_cap_add', 'Commander Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_supremacy_war_games', 'commander_initial_skill', '1.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commander_initial_skill', 'Commander Starting Skill Level', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_supremacy_war_games#0', 'tr_supremacy_war_games', 'tr_supremacy_war_games_machine', 'Combat Variable Mitigation', 'High speed calculation of thousands of possible battle outcomes, updated in real time, helps reduce the unpredictability of a general fleet action to more manageable levels.', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_supremacy_war_games#1', 'tr_supremacy_war_games', 'tr_supremacy_war_games_hive', 'Three-Dimensional Awareness', 'Aquatic creatures have superior spatial awareness due to the three-dimensional nature of their natural habitats. Our swarms moved like schools of fish once we spliced that portion of the cortex into our battlemind.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_supremacy_great_game', 'tradition_supremacy', 'normal', 'The Great Game', 'As we continue to expand, other empires will inevitably challenge our claims, as we would theirs. We are locked in a great game of resources and territory. It is nothing less than our duty to come out on top.', '{"leaf":"has_tradition","value":"tr_supremacy_overwhelming_force"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_supremacy_great_game', 'tr_supremacy_overwhelming_force');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_supremacy_great_game', 'ship_damage_against_starbases_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_damage_against_starbases_mult', 'Damage vs Starbases and Waystations', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_supremacy_great_game#0', 'tr_supremacy_great_game', 'tr_supremacy_great_game_hive', 'Hunter''s Eye', 'Ultimately, everything outside our hive is a potential source of nutrients. It comforts us to know which ones we shall devour first.', '{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_supremacy_great_game#1', 'tr_supremacy_great_game', 'tr_supremacy_great_game_machine', 'Diplomatic Target Prioritization', 'Networking a missile targeting computer with our diplomacy AI was the single greatest innovation in interstellar relations.', '{"leaf":"has_valid_civic","value":"civic_machine_terminator"}', 1, '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_supremacy_finish', 'tradition_supremacy', 'finish', 'Supremacy Traditions Finished', NULL, NULL, NULL, 'Unlocks the War Doctrines Policies.
+Ascension Perks Unlocked: +1', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_supremacy_finish', 'ascension_perks_add', '1.0', NULL, 0);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_synchronicity', 'Synchronicity', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'tr_synchronicity_adopt', 'tr_synchronicity_finish', 18);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synchronicity_adopt', 'tradition_synchronicity', 'adopt', 'Synchronicity Traditions', NULL, NULL, NULL, 'Unlocks Agenda: Growth Revision
+Unlocks Agenda: Cognitive Revision
+Unlocks Agenda: Regulatory Revision
+Unlocks Agenda: Legion Revision
+Pop Upkeep: -10%', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_adopt', 'planet_pops_upkeep_mult', '-0.1', '{"leaf":"is_wilderness_empire","value":"no"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_adopt', 'planet_districts_upkeep_mult', '-0.1', '{"leaf":"is_wilderness_empire","value":"yes"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_districts_upkeep_mult', 'District Upkeep', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synchronicity_cloned_organs', 'tradition_synchronicity', 'normal', 'Cloned Organs', 'The cloning vats mass-produce the more frequently consumed organs like hearts and lungs, increasing the usable lifespan of high-priority .', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_cloned_organs', 'leader_lifespan_add', '10.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_cloned_organs', 'negative_traits_country', '-1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_traits_country', 'Leader Maximum Negative Traits', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synchronicity_cloned_organs#0', 'tr_synchronicity_cloned_organs', 'tr_synchronicity_self_preservation', 'Self-Preservation Protocols', 'A robot must protect its own existence as long as such protection does not confli...''Ç° éü¿T éw+Á éÒÎ( éÍ8', '{"leaf":"is_machine_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synchronicity_cloned_organs#1', 'tr_synchronicity_cloned_organs', 'tr_synchronicity_unity_of_mind', 'Unity of Mind', 'Interstellar harmony would be greatly increased if all sentient beings could be brought into the benevolent collectiveness of our consciousness.', '{"leaf":"has_origin","value":"origin_necrophage"}', 0, '1.0', 'Necrophaging Pops provides Unity.', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synchronicity_kinship_gestalt', 'tradition_synchronicity', 'normal', 'Synchronized Agents', 'Agents with similar purposes shall be given orders as a group, reducing the strain on the Overmind.', NULL, NULL, NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_kinship_gestalt', 'leaders_upkeep_mult', '-0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_kinship_gestalt', 'empire_size_pops_mult', '-0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_kinship_gestalt', 'refugee_attraction', '0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synchronicity_kinship_gestalt#0', 'tr_synchronicity_kinship_gestalt', 'tr_synchronicity_kinship_wilderness', 'Synchronized Circadian Rhythms', 'Precisely controlling the rest cycles of causes natural schedules for nutrient reallocation to emerge globally.', NULL, 1, '1.0', NULL, 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synchronicity_integrated_preservation', 'tradition_synchronicity', 'normal', 'Integrated Preservation', 'Our growing network requires regular maintenance and debugging, therefore more resources shall be devoted to our logistics.', NULL, NULL, 'Logistic Drones produce +250 Amenities.', 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_integrated_preservation', 'planet_resettlement_unemployed_mult', '0.3', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_mult', 'Automatic Resettlement Chance', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synchronicity_integrated_preservation#0', 'tr_synchronicity_integrated_preservation', 'tr_synchronicity_instinctive_synchronization', 'Instinctive Synchronization', 'Our growing has greater demands on synchronized work and development.', '{"leaf":"is_hive_empire","value":"yes"}', 1, '1.0', 'Logistic Drones produce +250 Amenities.', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synchronicity_harmonious_directives', 'tradition_synchronicity', 'normal', 'Flexible Thought Routines', 'We must take heed never to become too fixed in our thinking, but instead instill in ourselves the flexibility to adapt ourselves to any situation.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_synchronicity_kinship_gestalt"},{"leaf":"has_tradition","value":"tr_synchronicity_cloned_organs"}]}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_synchronicity_harmonious_directives', 'tr_synchronicity_kinship_gestalt');
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_synchronicity_harmonious_directives', 'tr_synchronicity_cloned_organs');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_harmonious_directives', 'country_edict_fund_add', '50.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_harmonious_directives', 'restored_node_bonus_skill', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('restored_node_bonus_skill', 'Restored Node Additional Skill', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synchronicity_harmonious_directives#0', 'tr_synchronicity_harmonious_directives', 'tr_synchronicity_harmonious_directives_machine', 'Flexible Governing Algorithms', 'Many are the horrors found within unrefactored code. By revising our algorithms on a regular basis, we can instill in ourselves the flexibility to adapt ourselves to any situation.', '{"leaf":"is_machine_empire","value":"yes"}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_harmonious_directives#0', 'country_edict_fund_add', '50.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_harmonious_directives#0', 'restored_node_bonus_skill', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('restored_node_bonus_skill', 'Restored Node Additional Skill', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synchronicity_collective_reasoning', 'tradition_synchronicity', 'normal', 'Collective Reasoning', 'By synchronizing groups of , more efficient use of planetary infrastructure can be achieved!', '{"leaf":"has_tradition","value":"tr_synchronicity_integrated_preservation"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_synchronicity_collective_reasoning', 'tr_synchronicity_integrated_preservation');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_collective_reasoning', 'planet_stability_add', '3.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_collective_reasoning', 'planetary_ascension_cost_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_cost_mult', 'Colony Ascension Cost', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synchronicity_finish', 'tradition_synchronicity', 'finish', 'Synchronicity Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_finish', 'planetary_ascension_effect_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_effect_mult', 'Colony Ascension Effects', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synchronicity_finish#0', 'tr_synchronicity_finish', 'tr_synchronicity_machine_finish', 'Synchronicity Traditions Finished', NULL, '{"leaf":"is_machine_empire","value":"yes"}', 0, '1.0', 'Unlocks Edict: Industrial Maintenance.
+Colony Ascension Effects: +25%
+Ascension Perks Unlocked: +1', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_finish#0', 'planetary_ascension_effect_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_effect_mult', 'Colony Ascension Effects', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synchronicity_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_versatility', 'Versatility', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'tr_versatility_adopt', 'tr_versatility_finish', 19);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_versatility_adopt', 'tradition_versatility', 'adopt', 'Versatility Traditions', NULL, NULL, 'Self Maintenance', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_versatility_adopt', 'planet_pop_assemblers_upkeep_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assemblers_upkeep_mult', 'Upkeep for Pop Assemblers', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_versatility_universal_compatibility', 'tradition_versatility', 'normal', 'Universal Compatibility', 'A deeper analysis into the myriad stimuli and psychological factors that govern the behavior of organics and other machine intelligences will decrease diplomatic friction.', NULL, NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_versatility_universal_compatibility', 'country_synthetic_trust_cap_add', '50.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_synthetic_trust_cap_add', 'Trust Cap for Synthetics', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_versatility_universal_compatibility', 'envoys_add', '1.0', NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_versatility_adaptive_programming', 'tradition_versatility', 'normal', 'Adaptive Programming', 'We may not have been tempered by eons of evolution, but adaptive programming techniques will let us adjust to new situations and environments as well as any organic life form.', '{"leaf":"has_tradition","value":"tr_versatility_universal_compatibility"}', NULL, NULL, 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_versatility_adaptive_programming', 'tr_versatility_universal_compatibility');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_versatility_adaptive_programming', 'country_trade_fee', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_fee', 'Market Fee', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_versatility_spatial_optimization', 'tradition_versatility', 'normal', 'Spatial Optimization', 'Retractable antennas, collapsible unit frames, foldable storage spaces. There are many creative solutions to make the most out of a limited space.', NULL, NULL, NULL, 3);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_versatility_spatial_optimization', 'pop_amenities_usage_no_happiness_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_versatility_material_analysis', 'tradition_versatility', 'normal', 'Material Analysis', 'Spatial phenomena are an interesting distraction, but the true wonders of the cosmos are found exclusively in the field of materials science.', '{"leaf":"has_tradition","value":"tr_versatility_spatial_optimization"}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_versatility_material_analysis', 'tr_versatility_spatial_optimization');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_versatility_material_analysis', 'planet_jobs_upkeep_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_upkeep_mult', 'Upkeep from Jobs', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_versatility_operational_proxies', 'tradition_versatility', 'normal', 'Operational Proxies', 'The delegation of additional category R-7 low priority functions to semi-autonomous agents will free up processing power for more important tasks such as drone relocation operations.', '{"leaf":"has_tradition","value":"tr_versatility_spatial_optimization"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_versatility_operational_proxies', 'tr_versatility_spatial_optimization');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_versatility_operational_proxies', 'planet_maintenance_drones_unity_produces_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_unity_produces_add', 'Unity per 100 Maintenance Drones', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_versatility_finish', 'tradition_versatility', 'finish', 'Versatility Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_versatility_finish', 'planet_pop_assemblers_energy_upkeep_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assemblers_energy_upkeep_add', 'Energy Upkeep per 100', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_versatility_finish', 'planet_pop_assembly_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_versatility_finish', 'ascension_perks_add', '1.0', NULL, 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_versatility_finish#0', 'tr_versatility_finish', 'tr_versatility_finish_individual_machine', 'Versatility Traditions Finished', NULL, '{"leaf":"is_individual_machine","value":"yes"}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_versatility_finish#0', 'ascension_perks_add', '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_versatility_finish#0', 'pop_amenities_usage_mult', '-0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_versatility_finish#0', 'planet_crime_add', '-15.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_cloning', 'Cloning', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', 'BioGenesis', 'tr_cloning_adopt', 'tr_cloning_finish', 20);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cloning_adopt', 'tradition_cloning', 'adopt', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"cloning_tradition_unlocked"}', 'Replication Initiative', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep.', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cloning_adopt#0', 'tr_cloning_adopt', 'tr_cloning_adopt_clone_army', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep., Pop Clone Soldier Pops sustained by Clone Vats: +500', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cloning_evolutionary_extrapolation', 'tradition_cloning', 'normal', 'Evolutionary Extrapolation', 'Leveraging evolutionary data will perfect our cloning methods.', NULL, NULL, 'Allows the Assimilation of Pops into or out of a Hive-Mind', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cloning_evolutionary_extrapolation', 'category_biology_research_speed_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_biology_research_speed_mult', 'Research Speed (Biology)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cloning_evolutionary_extrapolation', 'planet_buildings_clone_vats_upkeep_mult', '-0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_buildings_clone_vats_upkeep_mult', 'Clone Vats Upkeep', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cloning_somatic_synthesization', 'tradition_cloning', 'normal', 'Somatic Synthesization', 'Synthesizing somatic cells will allow us to replicate ideal specimens.', NULL, NULL, 'Unlocks Army: Perfected Clone Army
+Pop Growth Organic Species Traits can be Removed with Species Modification
+Advanced Organic Species Traits can be Added or Removed with Species Modification
+Can alter Pop Appearance with Species Modification', 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cloning_somatic_synthesization', 'BIOLOGICAL_species_trait_points_add', '4.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_points_add', 'Organic Species Modification Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cloning_somatic_synthesization', 'BIOLOGICAL_species_trait_picks_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cloning_somatic_synthesization', 'modify_species_cost_mult', '-0.5', NULL, 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cloning_somatic_synthesization#0', 'tr_cloning_somatic_synthesization', 'tr_cloning_somatic_synthesization_clone_army', 'Clone Synthesization', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Unlocks Species Modification: Clone Soldier
+Unlocks Army: Perfected Clone Army
+Pop Growth Organic Species Traits can be Removed with Species Modification
+Advanced Organic Species Traits can be Added or Removed with Species Modification
+Can alter Pop Appearance with Species Modification', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cloning_somatic_synthesization#0', 'BIOLOGICAL_species_trait_points_add', '4.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_points_add', 'Organic Species Modification Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cloning_somatic_synthesization#0', 'BIOLOGICAL_species_trait_picks_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cloning_somatic_synthesization#0', 'modify_species_cost_mult', '-0.5', NULL, 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cloning_stage_1_swap', 'tradition_cloning', 'normal', 'Flexible Tradition I', NULL, '{"leaf":"has_tradition","value":"tr_cloning_evolutionary_extrapolation"}', NULL, NULL, 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cloning_stage_1_swap', 'tr_cloning_evolutionary_extrapolation');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cloning_stage_3_swap', 'tradition_cloning', 'normal', 'Flexible Tradition III', NULL, '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_cloning_evolutionary_extrapolation"},{"leaf":"has_tradition","value":"tr_cloning_somatic_synthesization"}]}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cloning_stage_3_swap', 'tr_cloning_evolutionary_extrapolation');
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cloning_stage_3_swap', 'tr_cloning_somatic_synthesization');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cloning_stage_2_swap', 'tradition_cloning', 'normal', 'Flexible Tradition II', NULL, '{"leaf":"has_tradition","value":"tr_cloning_somatic_synthesization"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cloning_stage_2_swap', 'tr_cloning_somatic_synthesization');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cloning_finish', 'tradition_cloning', 'finish', 'Cloning Traditions Finished', NULL, NULL, NULL, 'Allows the adoption of Cloning Authorities, Clone Vats Colony Limit per Capital Building Tier: +1', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cloning_finish', 'ascension_perks_add', '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cloning_finish#0', 'tr_cloning_finish', 'tr_cloning_finish_clone_army', 'Cloning Traditions Finished', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Allows the adoption of Cloning Authorities, Clone Vats Colony Limit per Capital Building Tier: +1, Pop Clone Soldier Pops sustained by Clone Vats: +500', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cloning_finish#0', 'ascension_perks_add', '1.0', NULL, 0);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_cybernetics', 'Cybernetics', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', NULL, 'tr_cybernetics_adopt', 'tr_cybernetics_finish', 21);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_adopt', 'tradition_cybernetics', 'adopt', 'Cybernetic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"leaf":"has_origin","value":"origin_unplugged"},{"op":"and","args":[{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"op":"or","args":[{"leaf":"has_country_flag","value":"is_cyberized"},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"is_cyberized"},{"leaf":"has_country_flag","value":"is_decyberized"}]}]}]}]}]}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_unplugged"}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_unplugged"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]}]}]}]}', 'Cybernetic Advantage', 'Starts a Situation to grant the founding species the Cybernetic trait', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_adopt#0', 'tr_cybernetics_adopt', 'tr_cybernetics_adopt_utopia', 'Cybernetic Traditions', NULL, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"is_hive_empire","value":"no"}]}', 0, '1.0', 'Unlocks a Special Project to grant all species the Cybernetic trait.', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_adopt#1', 'tr_cybernetics_adopt', 'tr_cybernetics_adopt_hive', 'Cybernetic Traditions', NULL, '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"host_has_dlc","value":"The Machine Age"}]}', 0, '1.0', 'Starts a Situation to grant the founding species the Cybernetic trait', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_adopt#2', 'tr_cybernetics_adopt', 'tr_cybernetics_adopt_hive_utopia', 'Cybernetic Traditions', NULL, '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]}]}', 0, '1.0', 'Unlocks a Special Project to grant all species the Cybernetic trait.', 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_transubstantiation_synthesis', 'tradition_cybernetics', 'normal', 'Transubstantiation Synthesis', 'The new world has no room for those not infused with the machine.', '{"op":"or","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"op":"or","args":[{"leaf":"is_cyborg_empire","value":"yes"},{"op":"and","args":[{"op":"not","args":[{"leaf":"is_cyborg_empire","value":"yes"}]},{"leaf":"is_cyborg_empire","value":"yes"}]}]}]},{"leaf":"host_has_dlc","value":"The Machine Age"}]}', NULL, 'Gain access to the Assimilation Citizenship Species Right, allowing future additions to the populace to be turned into Cyborgs.', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_transubstantiation_synthesis#0', 'tr_cybernetics_transubstantiation_synthesis', 'tr_cybernetics_organ_harvesting', 'Organ Harvesting', 'Those deemed unsuitable are granted purpose only once recycled.', '{"op":"and","args":[{"leaf":"is_homicidal","value":"yes"},{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}', 0, '1.0', 'Planets with ongoing Purges gain +10% Cyborg Pop Growth Speed', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_transubstantiation_synthesis#1', 'tr_cybernetics_transubstantiation_synthesis', 'tr_cybernetics_organ_harvesting_nomads', 'Organ Harvesting', NULL, '{"op":"and","args":[{"leaf":"is_homicidal","value":"yes"},{"leaf":"is_nomadic","value":"yes"}]}', 0, '1.0', 'Arkships bombarding a planet receive +10% Pop Growth Speed', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_transubstantiation_synthesis#2', 'tr_cybernetics_transubstantiation_synthesis', 'tr_cybernetics_transubstantiation_synthesis_situation', 'Transubstantiation Synthesis', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_homicidal","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}', 0, '1.0', 'During Cyberization
+Situation Speed: +5%
+After Cyberization
+Gain access to the Assimilation Citizenship Species Right, allowing future additions to the populace to be turned into Cyborgs.', 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_transubstantiation_synthesis#3', 'tr_cybernetics_transubstantiation_synthesis', 'tr_cybernetics_organ_harvesting_situation', 'Organ Harvesting', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_homicidal","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}', 0, '1.0', 'During Cyberization
+Situation Speed: +5%
+After Cyberization
+Planets with ongoing Purges gain +10% Cyborg Pop Growth Speed', 3);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_metabolic_reprocessing', 'tradition_cybernetics', 'normal', 'Metabolic Reprocessing', 'Reprocessing metabolic waste into digestible chemical components reduces the required chemical upkeep for our population.', '{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"}', NULL, 'Cyborg Upkeep: -10%
+Monthly Mechanical Pop Assembly from Augmentor Jobs: +0.5, Alloys Upkeep per 100 Augmentors: +0.35
+Monthly Organic Pop Growth from Roboticist Jobs: +0.5, Alloys Upkeep per 100 : +0.35', 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cybernetics_metabolic_reprocessing', 'tr_cybernetics_transubstantiation_synthesis');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_metabolic_reprocessing', 'planet_pops_cyborgs_upkeep_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_cyborgs_upkeep_mult', 'Cyborg Upkeep', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_metabolic_reprocessing#0', 'tr_cybernetics_metabolic_reprocessing', 'tr_cybernetics_metabolic_reprocessing_hive', 'Metabolic Reprocessing', 'Reprocessing metabolic waste into digestible chemical components reduces the required chemical upkeep for our population.', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}]}', 0, '1.0', 'Cyborg Upkeep: -10%
+Empire Size from Cyborg Pops: -10%', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_metabolic_reprocessing#0', 'planet_pops_cyborgs_upkeep_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_cyborgs_upkeep_mult', 'Cyborg Upkeep', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_metabolic_reprocessing#1', 'tr_cybernetics_metabolic_reprocessing', 'tr_cybernetics_metabolic_reprocessing_situation', 'Metabolic Reprocessing', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}', 0, '1.0', 'During Cyberization
+Situation Speed: +5%
+After Cyberization
+Cyborg Upkeep: -10%
+Monthly Mechanical Pop Assembly from Augmentor Jobs: +0.5, Alloys Upkeep per 100 Augmentors: +0.35
+Monthly Organic Pop Growth from Roboticist Jobs: +0.5, Alloys Upkeep per 100 : +0.35', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_metabolic_reprocessing#2', 'tr_cybernetics_metabolic_reprocessing', 'tr_cybernetics_metabolic_reprocessing_hive_situation', 'Metabolic Reprocessing', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}]}', 0, '1.0', 'During Cyberization
+Situation Speed: +5%
+After Cyberization
+Cyborg Upkeep: -10%
+Empire Size from Cyborg Pops: -10%', 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_integrated_anatomy', 'tradition_cybernetics', 'normal', 'Integrated Anatomy', 'Only by alloying , steel, and nano-carbon composite can we truly reach perfection.', '{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"}', NULL, 'Allows selection of Cyborg traits for Species Modification that can be applied to species with the Cybernetic trait.', 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cybernetics_integrated_anatomy', 'tr_cybernetics_transubstantiation_synthesis');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_integrated_anatomy', 'ROBOT_species_trait_picks_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ROBOT_species_trait_picks_add', 'Mechanical Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_integrated_anatomy', 'ROBOT_species_trait_points_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ROBOT_species_trait_points_add', 'Mechanical Modification Points', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_integrated_anatomy#0', 'tr_cybernetics_integrated_anatomy', 'tr_cybernetics_integrated_anatomy_situation', 'Integrated Anatomy', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}', 0, '1.0', 'During Cyberization
+Situation Speed: +5%
+After Cyberization
+Allows selection of Cyborg traits for Species Modification that can be applied to species with the Cybernetic trait.
+Mechanical Species Trait Picks: +1
+Mechanical Modification Points: +1', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_augmentation_overload', 'tradition_cybernetics', 'normal', 'Augmentation Overload', 'The only way to keep up with people''s demand for implants is more Augmentors.', '{"leaf":"has_tradition","value":"tr_cybernetics_metabolic_reprocessing"}', NULL, 'Augmentors per Augmentation Center: +200', 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cybernetics_augmentation_overload', 'tr_cybernetics_metabolic_reprocessing');
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_augmentation_overload#0', 'tr_cybernetics_augmentation_overload', 'tr_cybernetics_augmentation_centers', 'Augmentation Centers', 'The Augmentation Center is a hub for cybernetic implantation. Part shopping mall, part operating center, and part mechanic shop.', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"is_hive_empire","value":"no"}]}', 0, '1.0', 'Unlocks Building: Augmentation Center', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_augmentation_overload#1', 'tr_cybernetics_augmentation_overload', 'tr_cybernetics_synaptic_sub_processing', 'Synaptic Sub-Processing', 'Offloading routine thought patterns into central hubs decreases the synaptic load on our uplink nodes.', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}]}', 0, '1.0', 'Spawning Pools provide +200 Augmentor Drone Jobs
+Empire Size from Districts: -25%', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_augmentation_overload#1', 'empire_size_districts_mult', '-0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_districts_mult', 'Empire Size from Districts', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_augmentation_overload#2', 'tr_cybernetics_augmentation_overload', 'tr_cybernetics_augmentation_overload_situation', 'Augmentation Overload', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}', 0, '1.0', 'During Cyberization
+Situation Speed: +5%
+After Cyberization, Augmentors per Augmentation Center: +200', 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_augmentation_overload#3', 'tr_cybernetics_augmentation_overload', 'tr_cybernetics_synaptic_sub_processing_situation', 'Synaptic Sub-Processing', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}]}', 0, '1.0', 'During Cyberization
+Situation Speed: +5%
+After Cyberization, Spawning Pools provide +200 Augmentor Drone Jobs
+Empire Size from Districts: -25%', 3);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_modular_cybernetics', 'tradition_cybernetics', 'normal', 'Modular Cybernetics', 'Improving the compatibility of our cybernetic enhancements will reduce downtime while retrofitting.', '{"leaf":"has_tradition","value":"tr_cybernetics_integrated_anatomy"}', NULL, 'Mechanical Modification Points and Mechanical Species Trait Picks also apply to Organic species.
+Mechanical Modification Points and Mechanical Species Trait Picks also apply to Organic species.
+Modify Species Special Project Cost: -50%', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cybernetics_modular_cybernetics', 'tr_cybernetics_integrated_anatomy');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_modular_cybernetics', 'modify_species_cost_mult', '-0.5', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_modular_cybernetics', 'BIOLOGICAL_species_trait_points_add', '1.0', '{"leaf":"always","value":"yes"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_points_add', 'Organic Species Modification Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_modular_cybernetics', 'BIOLOGICAL_species_trait_picks_add', '1.0', '{"leaf":"always","value":"yes"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_modular_cybernetics#0', 'tr_cybernetics_modular_cybernetics', 'tr_cybernetics_modular_cybernetics_hive', 'Modular Cybernetics', 'Improving the compatibility of our cybernetic enhancements will reduce downtime while retrofitting.', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}]}', 0, '1.0', 'Modify Species Special Project Cost: -50%
+Organic Species Modification Points: +3', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_modular_cybernetics#0', 'modify_species_cost_mult', '-0.5', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_modular_cybernetics#0', 'BIOLOGICAL_species_trait_points_add', '3.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_points_add', 'Organic Species Modification Points', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_modular_cybernetics#1', 'tr_cybernetics_modular_cybernetics', 'tr_cybernetics_modular_cybernetics_situation', 'Modular Cybernetics', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}', 0, '1.0', 'During Cyberization
+Situation Speed: +5%
+After Cyberization
+Mechanical Modification Points and Mechanical Species Trait Picks also apply to Organic species.
+Modify Species Special Project Cost: -50%', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_modular_cybernetics#2', 'tr_cybernetics_modular_cybernetics', 'tr_cybernetics_modular_cybernetics_hive_situation', 'Modular Cybernetics', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}]}', 0, '1.0', 'During Cyberization
+Situation Speed: +5%
+After Cyberization
+Modify Species Special Project Cost: -50%
+Organic Species Modification Points: +3', 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_finish', 'tradition_cybernetics', 'finish', 'Cybernetic Traditions Finished', NULL, NULL, NULL, 'Job Efficiency: +10%
+Organic Species Trait Picks: +1
+Ascension Perks Unlocked: +1', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_finish', 'cyborg_pop_bonus_workforce_mult', '0.1', '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('cyborg_pop_bonus_workforce_mult', 'Job Efficiency for Cybernetic Pops', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_finish', 'BIOLOGICAL_species_trait_picks_add', '1.0', '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_finish', 'ascension_perks_add', '1.0', '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}', 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_finish#0', 'tr_cybernetics_finish', 'tr_cybernetics_finish_situation', 'Cybernetic Traditions Finished', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}', 0, '1.0', 'During Cyberization
+Situation Speed: +25%
+After Cyberization
+Job Efficiency: +10%
+Organic Species Trait Picks: +1
+Ascension Perks Unlocked: +1', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_finish#0', 'cyborg_pop_bonus_workforce_mult', '0.1', '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('cyborg_pop_bonus_workforce_mult', 'Job Efficiency for Cybernetic Pops', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_finish#0', 'BIOLOGICAL_species_trait_picks_add', '1.0', '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_finish#0', 'ascension_perks_add', '1.0', '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}', 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_finish#1', 'tr_cybernetics_finish', 'tr_cybernetics_finish_hive', 'Cybernetic Traditions Finished', NULL, '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}', 0, '1.0', 'Assimilating Pops grants Node XP and Node Skill Level, as well as +15% Job Output and -7.5% Job Upkeep on planets with ongoing assimilation.
+Job Efficiency: +10%
+Organic Species Trait Picks: +1
+Ascension Perks Unlocked: +1', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_finish#1', 'cyborg_pop_bonus_workforce_mult', '0.1', '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('cyborg_pop_bonus_workforce_mult', 'Job Efficiency for Cybernetic Pops', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_finish#1', 'BIOLOGICAL_species_trait_picks_add', '1.0', '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_finish#1', 'ascension_perks_add', '1.0', '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}', 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_cybernetics_finish#2', 'tr_cybernetics_finish', 'tr_cybernetics_finish_hive_situation', 'Cybernetic Traditions Finished', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}]}', 0, '1.0', 'During Cyberization
+Situation Speed: +25%
+After Cyberization
+Assimilating Pops grants Node XP and Node Skill Level, as well as +15% Job Output and -7.5% Job Upkeep on planets with ongoing assimilation.
+Job Efficiency: +10%
+Organic Species Trait Picks: +1
+Ascension Perks Unlocked: +1', 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_finish#2', 'cyborg_pop_bonus_workforce_mult', '0.1', '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('cyborg_pop_bonus_workforce_mult', 'Job Efficiency for Cybernetic Pops', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_finish#2', 'BIOLOGICAL_species_trait_picks_add', '1.0', '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_finish#2', 'ascension_perks_add', '1.0', '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}', 2);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_cybernetics_assimilator', 'Cybernetics', '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"}]}', NULL, 'tr_cybernetics_assimilator_adopt', 'tr_cybernetics_assimilator_finish', 22);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_adopt', 'tradition_cybernetics_assimilator', 'adopt', 'Cybernetic Traditions', NULL, '{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}', 'Cybernetic Advantage', 'Assimilating Pop Organic Pops now generates Engineering Research.
+Resources generated from Assimilating Pop Organic Pops are increased.', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_inevitable_assimilation', 'tradition_cybernetics_assimilator', 'normal', 'Inevitable Assimilation', 'By refactoring our assimilation processes, we can more efficiently overwrite the mind of any organic.', NULL, NULL, 'Allows the Assimilation of Pop Hive-Minded Pops.', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_assimilator_inevitable_assimilation', 'auto_mod_monthly_add', '100.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_metabolic_reprocessing', 'tradition_cybernetics_assimilator', 'normal', 'Metabolic Reprocessing', 'Reprocessing metabolic waste into digestible chemical components reduces population upkeep.', '{"leaf":"has_tradition","value":"tr_cybernetics_assimilator_inevitable_assimilation"}', NULL, NULL, 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cybernetics_assimilator_metabolic_reprocessing', 'tr_cybernetics_assimilator_inevitable_assimilation');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_assimilator_metabolic_reprocessing', 'planet_pops_cyborgs_upkeep_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_cyborgs_upkeep_mult', 'Cyborg Upkeep', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_integrated_anatomy', 'tradition_cybernetics_assimilator', 'normal', 'Integrated Anatomy', 'Only through the amalgamation of flesh, steel, and nano-carbon composite can we truly reach perfection.', '{"leaf":"has_tradition","value":"tr_cybernetics_assimilator_inevitable_assimilation"}', NULL, 'Unlocks Cybernetic Traits for Species Modification.', 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cybernetics_assimilator_integrated_anatomy', 'tr_cybernetics_assimilator_inevitable_assimilation');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_augmentation_centers', 'tradition_cybernetics_assimilator', 'normal', 'Augmentation Centers', 'Endless assembly lines for outfitting cybernetic implants. Part resource depot, part operating center, and part machine shop.', '{"leaf":"has_tradition","value":"tr_cybernetics_assimilator_metabolic_reprocessing"}', NULL, 'Unlocks Building: Augmentation Center', 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cybernetics_assimilator_augmentation_centers', 'tr_cybernetics_assimilator_metabolic_reprocessing');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_modular_cybernetics', 'tradition_cybernetics_assimilator', 'normal', 'Modular Cybernetics', 'Improving the intercompatibility of our cybernetic enhancements will reduce downtime when refitting.', '{"leaf":"has_tradition","value":"tr_cybernetics_assimilator_integrated_anatomy"}', NULL, 'Machine Modification Points and Machine Species Trait Picks also apply to Cybernetic species.
+Machine Modification Points and Machine Species Trait Picks also apply to Cybernetic species.
+Modify Species Special Project Cost: -50%', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cybernetics_assimilator_modular_cybernetics', 'tr_cybernetics_assimilator_integrated_anatomy');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_assimilator_modular_cybernetics', 'modify_species_cost_mult', '-0.5', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_assimilator_modular_cybernetics', 'BIOLOGICAL_species_trait_points_add', '1.0', '{"leaf":"always","value":"yes"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_points_add', 'Organic Species Modification Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_assimilator_modular_cybernetics', 'BIOLOGICAL_species_trait_picks_add', '1.0', '{"leaf":"always","value":"yes"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_finish', 'tradition_cybernetics_assimilator', 'finish', 'Cybernetic Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_assimilator_finish', 'cyborg_pop_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('cyborg_pop_bonus_workforce_mult', 'Job Efficiency for Cybernetic Pops', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_assimilator_finish', 'MACHINE_species_trait_picks_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('MACHINE_species_trait_picks_add', 'Machine Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_cybernetics_assimilator_finish', 'ascension_perks_add', '1.0', NULL, 2);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_genetics', 'Genetics', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"BioGenesis"}]},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]}]}', NULL, 'tr_genetics_adopt', 'tr_genetics_finish', 23);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_genetics_adopt', 'tradition_genetics', 'adopt', 'Genetic Traditions', NULL, '{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"},{"leaf":"has_technology","value":"tech_gene_tailoring"}]}', 'Genetic Pursuit', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep.', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_genetics_resequencing', 'tradition_genetics', 'normal', 'Genetic Resequencing', 'No longer are we limited by the basic biological structure of a species. As the sculptor shapes clay, DNA is ours to mold.', NULL, NULL, 'Can remove Positive Traits and add Negative Traits with Species Modification', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_genetics_creation', 'tradition_genetics', 'normal', 'Engineered Genesis', 'Nature is a blind guide. We have moved beyond the lumbering processes of evolution, and have become masters of our own destiny.', '{"leaf":"has_tradition","value":"tr_genetics_resequencing"}', NULL, 'Can alter Pop appearance with Species Modification
+Allows the Assimilation of Pops into or out of a Hive-Mind', 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_genetics_creation', 'tr_genetics_resequencing');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_genetics_enhanced_expression', 'tradition_genetics', 'normal', 'Allelic Expression', 'Selectively targeting sequences allows for artificial atavism, in which previously regressed traits can be expressed.', '{"leaf":"has_tradition","value":"tr_genetics_creation"}', NULL, 'Unlocks Advanced Traits for Species Modification', 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_genetics_enhanced_expression', 'tr_genetics_creation');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_genetics_enhanced_expression', 'BIOLOGICAL_species_trait_points_add', '6.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_points_add', 'Organic Species Modification Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_genetics_enhanced_expression', 'BIOLOGICAL_species_trait_picks_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_genetics_enhanced_expression', 'modify_species_cost_mult', '-0.5', NULL, 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_genetics_retrovirus', 'tradition_genetics', 'normal', 'Retroviral Manipulation', 'Retroviral agents allow our population to quickly acclimatize to any environment.', NULL, NULL, NULL, 4);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_genetics_retrovirus', 'pop_environment_tolerance', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_genetics_efficient_cloning', 'tradition_genetics', 'normal', 'Stem Cell Stimulation', 'Optimization of cloning facilities will allow for parallel embryonic development.', '{"leaf":"has_tradition","value":"tr_genetics_retrovirus"}', NULL, 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_genetics_efficient_cloning', 'tr_genetics_retrovirus');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_genetics_finish', 'tradition_genetics', 'finish', 'Genetic Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_genetics_finish', 'planet_buildings_clone_vats_upkeep_mult', '-0.33', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_buildings_clone_vats_upkeep_mult', 'Clone Vats Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_genetics_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_genetics_finish#0', 'tr_genetics_finish', 'tr_genetics_finish_extra_traits', 'Genetic Traditions Finished', NULL, '{"leaf":"has_genetic_dlc","value":"yes"}', 0, '1.0', 'Gain access to Plantoid Species Traits, Lithoid Species Traits and Leviathan Traits for Species Modification
+Clone Vats Upkeep: -33%
+Ascension Perks Unlocked: +1', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_genetics_finish#0', 'planet_buildings_clone_vats_upkeep_mult', '-0.33', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_buildings_clone_vats_upkeep_mult', 'Clone Vats Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_genetics_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_modularity', 'Modularity', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_nanotech_adopt"},{"leaf":"has_tradition","value":"tr_virtuality_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_modularity_adopt', 'tr_modularity_finish', 24);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_modularity_adopt', 'tradition_modularity', 'adopt', 'Modularity Traditions', NULL, '{"leaf":"has_country_flag","value":"modularity_traditions_unlocked"}', 'Reshape Form', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_adopt', 'planet_metallurgists_sr_living_metal_produces_add', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_sr_living_metal_produces_add', 'Living Metal Produced per 100 Metallurgists Sr', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_modularity_1', 'tradition_modularity', 'normal', 'High-Speed Replacements', 'Enhancing our protocol for rapid part replacement will markedly boost our productivity.', '{"leaf":"has_tradition","value":"tr_modularity_adopt"}', NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_1', 'planet_jobs_worker_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_1', 'auto_mod_monthly_add', '400.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_modularity_2', 'tradition_modularity', 'normal', 'Liquid Metal Joints', 'The use of living metal joints empowers us with optimal mobility and limb modularity, increasing the average frame assembly line productivity by a net 50%.', '{"leaf":"has_tradition","value":"tr_modularity_1"}', NULL, 'Mechanical Pop Assembly from Roboticists: +1', 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_modularity_2', 'tr_modularity_1');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_2', 'planet_pop_assemblers_sr_living_metal_upkeep_add', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assemblers_sr_living_metal_upkeep_add', 'Living Metal Upkeep per 100', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_modularity_2#0', 'tr_modularity_2', 'tr_modularity_2_gestalt', 'Liquid Metal Joints', NULL, '{"leaf":"is_gestalt","value":"yes"}', 0, '1.0', 'Mechanical Pop Assembly from Replicators: +0.5', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_2#0', 'planet_pop_assemblers_sr_living_metal_upkeep_add', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assemblers_sr_living_metal_upkeep_add', 'Living Metal Upkeep per 100', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_modularity_3', 'tradition_modularity', 'normal', 'Pacification Modules', 'Advanced defense technologies have significantly elevated our security bot''s capacity for maintaining order.', '{"leaf":"has_tradition","value":"tr_modularity_1"}', NULL, 'Soldiers Stability: +0.25', 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_modularity_3', 'tr_modularity_1');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_3', 'planet_stability_add', '5.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_3', 'army_damage_mult', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_modularity_3#0', 'tr_modularity_3', 'tr_modularity_3_gestalt', 'Pacification Modules', NULL, '{"leaf":"is_gestalt","value":"yes"}', 0, '1.0', 'Warrior Drones Stability: +0.25', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_3#0', 'planet_stability_add', '5.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_3#0', 'army_damage_mult', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_modularity_4', 'tradition_modularity', 'normal', 'High-Level Enhancements', 'Upgraded management algorithms are set to boost performance substantially.', '{"leaf":"has_tradition","value":"tr_modularity_2"}', NULL, 'Job Output from : +2%', 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_modularity_4', 'tr_modularity_2');
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_modularity_4#0', 'tr_modularity_4', NULL, 'High-Level Enhancements', NULL, '{"leaf":"has_valid_civic","value":"civic_machine_servitor"}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_4#0', 'planet_bio_trophies_unity_produces_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bio_trophies_unity_produces_add', 'Unity Produced per 100 Bio-Trophies', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_modularity_5', 'tradition_modularity', 'normal', 'Advanced Tools', 'Utilizing the galaxy''s rarest resources and cutting-edge technology, we''ve engineered unparalleled mechanical augmentations.', '{"leaf":"has_tradition","value":"tr_modularity_3"}', NULL, 'Unlocks Advanced Traits for Species Modification', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_modularity_5', 'tr_modularity_3');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_5', 'MACHINE_species_trait_points_add', '4.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('MACHINE_species_trait_points_add', 'Machine Modification Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_5', 'MACHINE_species_trait_picks_add', '4.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('MACHINE_species_trait_picks_add', 'Machine Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_5', 'modify_species_cost_mult', '-0.5', NULL, 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_modularity_finish', 'tradition_modularity', 'finish', 'Modularity Traditions Finished', NULL, NULL, NULL, 'All Machine leaders gain the Synthetic trait', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_finish', 'planet_jobs_upkeep_mult', '-0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_upkeep_mult', 'Upkeep from Jobs', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_modularity_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_mutation', 'Mutation', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_country_flag","value":"clone_army_full_potential"}]}]}]}', 'BioGenesis', 'tr_mutation_adopt', 'tr_mutation_finish', 25);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mutation_adopt', 'tradition_mutation', 'adopt', 'Mutation Traditions', NULL, '{"leaf":"has_country_flag","value":"mutation_tradition_unlocked"}', 'Divergence Directive', 'Founder Species gains the Adaptive Mutations Species Trait', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_mutation_adopt#0', 'tr_mutation_adopt', 'tr_mutation_adopt_evo_pred', 'Mutation Traditions', NULL, '{"leaf":"has_origin","value":"origin_evolutionary_predators"}', 0, '1.0', 'Unlocks Agenda: Evolutionary Directive
+Gain Society Research each time the Adaptive Evolution Situation is completed', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mutation_stage_1_swap', 'tradition_mutation', 'normal', 'Flexible Tradition I', NULL, NULL, NULL, NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mutation_planned_polymorphism', 'tradition_mutation', 'normal', 'Planned Polymorphism', 'Strategic induction of polymorphism will optimize our genetic traits.', NULL, NULL, 'Effects of Adaptive Traits are increased to +10%
+Allows the Assimilation of Pops into or out of a Hive-Mind', 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mutation_planned_polymorphism', 'auto_mod_monthly_add', '200.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_mutation_planned_polymorphism#0', 'tr_mutation_planned_polymorphism', 'tr_mutation_planned_polymorphism_evo_pred', 'Planned Polymorphism', NULL, '{"leaf":"has_origin","value":"origin_evolutionary_predators"}', 0, '1.0', 'Effects of Malleable Traits are increased to +15%
+Allows the Assimilation of Pops into or out of a Hive-Mind', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mutation_planned_polymorphism#0', 'auto_mod_monthly_add', '200.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mutation_stage_2_swap', 'tradition_mutation', 'normal', 'Flexible Tradition II', NULL, '{"leaf":"has_tradition","value":"tr_mutation_stage_1_swap"}', NULL, NULL, 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_mutation_stage_2_swap', 'tr_mutation_stage_1_swap');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mutation_stage_3_swap', 'tradition_mutation', 'normal', 'Flexible Tradition III', NULL, '{"leaf":"has_tradition","value":"tr_mutation_stage_1_swap"}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_mutation_stage_3_swap', 'tr_mutation_stage_1_swap');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mutation_unnatural_selection', 'tradition_mutation', 'normal', 'Unnatural Selection', 'We have the power to direct the course of our evolution through targeted mutation.', '{"leaf":"has_tradition","value":"tr_mutation_planned_polymorphism"}', NULL, 'Can ignore Phenotype Restrictions for adding and removing Phenotype Traits with Species Modification
+Can add Negative Traits with Species Modification
+Advanced Organic Species Traits can be Added or Removed with Species Modification
+Can alter Pop Appearance with Species Modification', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_mutation_unnatural_selection', 'tr_mutation_planned_polymorphism');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mutation_unnatural_selection', 'BIOLOGICAL_species_trait_points_add', '4.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_points_add', 'Organic Species Modification Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mutation_unnatural_selection', 'BIOLOGICAL_species_trait_picks_add', '4.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mutation_unnatural_selection', 'modify_species_cost_mult', '-0.5', NULL, 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_mutation_unnatural_selection#0', 'tr_mutation_unnatural_selection', 'tr_mutation_unnatural_selection_evo_pred', 'Unnatural Selection', NULL, '{"leaf":"has_origin","value":"origin_evolutionary_predators"}', 0, '1.0', 'Can always gain a random Phenotype Trait from the Adaptive Evolution Situation.', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_mutation_finish', 'tradition_mutation', 'finish', 'Mutation Traditions Finished', NULL, NULL, NULL, 'Allows the adoption of', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_mutation_finish', 'ascension_perks_add', '1.0', NULL, 0);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_nanotech', 'Nanotech', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_virtuality_adopt"},{"leaf":"has_tradition","value":"tr_modularity_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_nanotech_adopt', 'tr_nanotech_finish', 26);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_nanotech_adopt', 'tradition_nanotech', 'adopt', 'Nanotech Traditions', NULL, '{"leaf":"has_country_flag","value":"nanotech_traditions_unlocked"}', 'Unstoppable Swarm', 'Available Buildings: Nanite Research Facility
+Available Starbase Buildings: Nanite Harvester', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_nanotech_1', 'tradition_nanotech', 'normal', 'Aggregation Systems', 'The galaxy remains unaware that it is already an extension of our being, soon to be fully realized in our all-encompassing embrace of nanites.', NULL, NULL, 'Available Buildings: Nanite Research Complex', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_nanotech_1', 'planet_farmers_food_produces_add', '-1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_food_produces_add', 'Food Produced per 100 Farmers', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_nanotech_1', 'planet_farmers_nanites_produces_add', '0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_nanites_produces_add', 'Nanites Produced per 100 Farmers', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_nanotech_1', 'planet_miners_minerals_produces_add', '-1.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_minerals_produces_add', 'Minerals Produced per 100 Miners', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_nanotech_1', 'planet_miners_nanites_produces_add', '0.2', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_nanites_produces_add', 'Nanites Produced per 100 Miners', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_nanotech_2', 'tradition_nanotech', 'normal', 'Molecular Reconfiguration', 'Everything in the cosmos must gravitate towards the swarm. We embrace and transform the galaxy in our form.', NULL, NULL, 'Available Buildings: Nanotech Cauldron
+Research option gained: Engineering Nanite Transmutation', 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_nanotech_3', 'tradition_nanotech', 'normal', 'Unbridled Consumption', 'Each world assimilated into the swarm expands our collective reach, enriching the fabric of our unified existence.', '{"leaf":"has_tradition","value":"tr_nanotech_1"}', NULL, 'Unlocks Colony Decision: Subsume World', 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_nanotech_3', 'tr_nanotech_1');
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_nanotech_3#0', 'tr_nanotech_3', 'tr_nanotech_3_nomad', 'Unbridled Consumption', NULL, '{"leaf":"is_nomadic","value":"yes"}', 0, '1000.0', 'Arkships can Assimilate Worlds into Uninhabitable Nanite Worlds', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_nanotech_4', 'tradition_nanotech', 'normal', 'Flood of Supremacy', 'With each transformation, we inch forward and hone our efficiency to ever-greater heights.', '{"leaf":"has_tradition","value":"tr_nanotech_2"}', NULL, 'Unlocks Ship: Nanite Swarmer
+Research options gained: Engineering Nanite Autocannon, Engineering Nanite Repair System, Engineering Nanite Flak Battery', 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_nanotech_4', 'tr_nanotech_2');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_nanotech_5', 'tradition_nanotech', 'normal', 'Nanite Augmentations', 'We are each factory, vessel, armament, and shield - each a mere droplet in the vast deluge of our collective might.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_nanotech_3"},{"leaf":"has_tradition","value":"tr_nanotech_4"}]}', NULL, 'Unlocks Edicts: Nano-operated Supply Chains, Coordinated Nanocomplexes, Nanoconnected Generators', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_nanotech_5', 'tr_nanotech_3');
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_nanotech_5', 'tr_nanotech_4');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_nanotech_finish', 'tradition_nanotech', 'finish', 'Nanotech Traditions Finished', NULL, NULL, NULL, 'Unlocks Ship: Nanite Interdictor
+Nanite Harvesters yield improvements every 5 years, either increasing the size of Nanites deposits or yielding a sum of nanites. This effect is limited by the size of the planet that deposits are created upon.', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_nanotech_finish', 'empire_size_colonies_mult', '-0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_nanotech_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_psionics', 'Psionics', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_mindwardens"}]}]}]}', NULL, 'tr_psionics_adopt', 'tr_psionics_finish', 27);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_adopt', 'tradition_psionics', 'adopt', 'Psionic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_country_flag","value":"ratling_country"}]},{"leaf":"has_technology","value":"tech_psionic_theory"}]},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_country_flag","value":"ratling_country"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_technology","value":"tech_psionic_theory"}]}]}]}', 'Psionic Supremacy', 'All pops from your primary species will gain the Latent Psionic trait.', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_adopt#0', 'tr_psionics_adopt', 'tr_psionics_adopt_shroudwalker', 'Psionic Traditions', NULL, '{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"}', 0, '1.0', 'Research option gained: Society Telepathy', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_psi_corps', 'tradition_psionics', 'normal', 'Psi Corps', '', NULL, NULL, NULL, 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_mind_readers', 'tradition_psionics', 'normal', 'Mind Readers', 'The thoughts of other empires echo in the Shroud; by listening, our Telepaths can learn much to our advantage.', NULL, NULL, NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_mind_readers', 'add_base_country_intel', '10.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_base_country_intel', 'Base Intel Level', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_psionic_assimilation', 'tradition_psionics', 'normal', 'Great Awakening', 'The eye that pierces all veils is closed. Only with great effort can it be opened, and our true power awakened.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_psionics_psi_corps"},{"leaf":"has_tradition","value":"tr_psionics_mind_readers"}]}', NULL, 'All Latent Psionic species will unlock their full psionic potential.
+Allows Psionic Assimilation of other species, unlocking their latent abilities.', 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_psionics_psionic_assimilation', 'tr_psionics_psi_corps');
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_psionics_psionic_assimilation', 'tr_psionics_mind_readers');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_breach_shroud', 'tradition_psionics', 'normal', 'Breach the Shroud', 'A wellspring of unimaginable power calls out to us, but we have yet to learn how to draw from it.', '{"leaf":"has_tradition","value":"tr_psionics_psionic_assimilation"}', NULL, 'Unlocks a Special Project to Breach the Shroud.
+Job Efficiency for Psionic Pops per 100 Telepaths: +5%', 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_psionics_breach_shroud', 'tr_psionics_psionic_assimilation');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_shrouded_encryption', 'tradition_psionics', 'normal', 'Shrouded Communications', 'Telepathic ciphers and code-breaking techniques are the next step in operational security.', '{"leaf":"has_tradition","value":"tr_psionics_psionic_assimilation"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_psionics_shrouded_encryption', 'tr_psionics_psionic_assimilation');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_shrouded_encryption', 'intel_decryption_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_shrouded_encryption', 'intel_encryption_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_finish', 'tradition_psionics', 'finish', 'Psionic Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_finish', 'edicts_upkeep_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('edicts_upkeep_mult', 'Edict Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_finish', 'shroud_delve_cooldown', '-0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shroud_delve_cooldown', 'Shroud Delve Cooldown', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_finish', 'ascension_perks_add', '1.0', NULL, 2);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_psionics_shroud', 'Psionics', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_mindwardens"}]}]}]}', 'Shadows of the Shroud', 'tr_psionics_shroud_adopt', 'tr_psionics_shroud_finish', 28);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_shroud_adopt', 'tradition_psionics_shroud', 'adopt', 'Psionic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"has_country_flag","value":"ratling_country"},{"leaf":"has_country_flag","value":"finish_shroud_forged_liberation_flag"}]},{"leaf":"has_technology","value":"tech_psionic_theory"}]},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"has_country_flag","value":"ratling_country"},{"leaf":"has_country_flag","value":"finish_shroud_forged_liberation_flag"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_technology","value":"tech_psionic_theory"}]}]}]}', 'Psionic Supremacy', 'Starts a Situation to grant the founding species the Psionic trait.', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_adopt#0', 'tr_psionics_shroud_adopt', 'tr_psionics_adopt_shroudwalker', 'Psionic Traditions', NULL, '{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"}', 0, '1.0', 'Starts a Situation to grant the founding species the Psionic trait.
+Research option gained: Society Telepathy', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_shroud_psi_corps', 'tradition_psionics_shroud', 'normal', NULL, '', NULL, NULL, NULL, 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psi_corps#0', 'tr_psionics_shroud_psi_corps', 'tr_psionics_shroud_psi_corps_situation', NULL, NULL, '{"leaf":"has_breached_shroud","value":"no"}', 0, '1.0', 'During Psionic Ascension
+Unlocks Situation''s Stage II
+Unlocks Building: Psi Corps
+After Psionic Ascension', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psi_corps#1', 'tr_psionics_shroud_psi_corps', 'tr_psionics_endbringers_cult', 'Cult of the Voice', 'Once the Voice is heard, it cannot be ignored. We yield to its will.', '{"leaf":"has_origin","value":"origin_endbringers"}', 0, '10.0', 'Unlocks Building: Chamber of Silence.', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_shroud_great_awakening', 'tradition_psionics_shroud', 'normal', 'Great Awakening', 'The eye that pierces all veils is closed. Only with great effort can it be opened, and our true power awakened.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_psionics_shroud_psi_corps"},{"op":"or","args":[{"leaf":"any_situation","value":"scope"},{"leaf":"any_situation","value":"scope"},{"op":"not","args":[{"op":"or","args":[{"leaf":"any_situation","value":"scope"},{"leaf":"any_situation","value":"scope"}]}]}]}]}', NULL, 'All Latent Psionic species will unlock their full psionic potential.
+Allows Psionic Assimilation of other species, unlocking their latent abilities.', 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_psionics_shroud_great_awakening', 'tr_psionics_shroud_psi_corps');
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_great_awakening#0', 'tr_psionics_shroud_great_awakening', 'tr_psionics_shroud_great_awakening_situation', 'Great Awakening', NULL, '{"leaf":"has_breached_shroud","value":"no"}', 0, '1.0', 'During Psionic Ascension
+Unlocks Situation''s Stage III
+At Stage III of Psionic Ascension
+All Latent Psionic species will unlock their full psionic potential.
+After Psionic Ascension
+Allows Psionic Assimilation of other species, unlocking their latent abilities.', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_shroud_telekinesis', 'tradition_psionics_shroud', 'normal', 'Telekinesis', 'The ability to move matter with sheer force of will transforms the very nature of our existence.', '{"leaf":"has_tradition","value":"tr_psionics_shroud_great_awakening"}', NULL, 'Psionic Pops Habitability: +10%
+Psionic Pops Happiness: +10%', 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_psionics_shroud_telekinesis', 'tr_psionics_shroud_great_awakening');
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_telekinesis#0', 'tr_psionics_shroud_telekinesis', 'tr_psionics_shroud_telekinesis_gestalt', 'Telekinesis', NULL, '{"leaf":"is_gestalt","value":"yes"}', 0, '1.0', 'Psionic Pops Habitability: +10%
+Psionic Pop Amenities Usage: +-20%', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_telekinesis#1', 'tr_psionics_shroud_telekinesis', 'tr_psionics_shroud_telekinesis_situation', 'Telekinesis', NULL, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}]}', 0, '1.0', 'During Psionic Ascension
+Situation Speed: +5%
+After Psionic Ascension
+Psionic Pops Habitability: +10%
+Psionic Pops Happiness: +10%', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_telekinesis#2', 'tr_psionics_shroud_telekinesis', 'tr_psionics_shroud_telekinesis_gestalt_situation', 'Telekinesis', NULL, '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"op":"not","args":[{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}]}', 0, '1.0', 'During Psionic Ascension
+Situation Speed: +5%
+After Psionic Ascension
+Psionic Pops Habitability: +10%
+Psionic Pop Amenities Usage: +-20%', 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_shroud_clairvoyance', 'tradition_psionics_shroud', 'normal', 'Clairvoyance', 'By learning the manifold practices of divination, our can unshroud the mysteries of the future.', '{"leaf":"has_tradition","value":"tr_psionics_shroud_great_awakening"}', NULL, 'Sensor Range from Psionic Commanders: +1', 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_psionics_shroud_clairvoyance', 'tr_psionics_shroud_great_awakening');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_shroud_clairvoyance', 'add_base_country_intel', '10.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_base_country_intel', 'Base Intel Level', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_shroud_clairvoyance', 'intel_decryption_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_shroud_clairvoyance', 'intel_encryption_add', '2.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_clairvoyance#0', 'tr_psionics_shroud_clairvoyance', 'tr_psionics_shroud_clairvoyance_situation', 'Clairvoyance', NULL, '{"op":"not","args":[{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}', 0, '1.0', 'During Psionic Ascension
+Situation Speed: +5%
+After Psionic Ascension
+Sensor Range from Psionic Commanders: +1
+Base Intel Level: +10
+Codebreaking: +2
+Encryption: +2', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry', 'tradition_psionics_shroud', 'normal', 'Psychometry', 'All things are charged with history. To hear it, our must learn the language of matter.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_psionics_shroud_telekinesis"},{"leaf":"has_tradition","value":"tr_psionics_shroud_clairvoyance"}]}', NULL, 'Crime from : -5', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_psionics_shroud_psychometry', 'tr_psionics_shroud_telekinesis');
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_psionics_shroud_psychometry', 'tr_psionics_shroud_clairvoyance');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_shroud_psychometry', 'psionic_specialist_pop_bonus_workforce_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_specialist_pop_bonus_workforce_mult', 'Job Efficiency for Psionic', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry#0', 'tr_psionics_shroud_psychometry', 'tr_psionics_shroud_psychometry_grand_archive', 'Psychometry', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Grand Archive"},{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}', 0, '1.0', 'Crime from : -5', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_shroud_psychometry#0', 'psionic_specialist_pop_bonus_workforce_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_specialist_pop_bonus_workforce_mult', 'Job Efficiency for Psionic', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_shroud_psychometry#0', 'historical_item_specimens_produces_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('historical_item_specimens_produces_mult', 'Galactic History Specimens Output', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry#1', 'tr_psionics_shroud_psychometry', 'tr_psionics_shroud_psychometry_situation', 'Psychometry', NULL, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Grand Archive"}]},{"op":"not","args":[{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}]}', 0, '1.0', 'During Psionic Ascension
+Situation Speed: +5%
+After Psionic Ascension, Crime from : -5
+Job Efficiency for Psionic : +5%', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry#2', 'tr_psionics_shroud_psychometry', 'tr_psionics_shroud_psychometry_situation_grand_achive', 'Psychometry', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Grand Archive"},{"op":"not","args":[{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}]}', 0, '1.0', 'During Psionic Ascension
+Situation Speed: +5%
+After Psionic Ascension, Crime from : -5
+Job Efficiency for Psionic : +5%
+Galactic History Specimens Output: +25%', 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_psionics_shroud_finish', 'tradition_psionics_shroud', 'finish', 'Psionic Traditions', NULL, NULL, NULL, 'Unlocks Edict: Sight Beyond Sight', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_shroud_finish', 'empire_size_penalty_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_psionics_shroud_finish', 'ascension_perks_add', '1.0', NULL, 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_purity', 'Purity', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_country_flag","value":"clone_army_full_potential"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', 'BioGenesis', 'tr_purity_adopt', 'tr_purity_finish', 29);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_purity_adopt', 'tradition_purity', 'adopt', 'Purity Traditions', NULL, '{"leaf":"has_country_flag","value":"purity_tradition_unlocked"}', 'Perfection Protocols', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_purity_adopt', 'leader_lifespan_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_purity_genotype_regeneration', 'tradition_purity', 'normal', 'Genotype Regeneration', 'We will rejuvenate and revitalize our genetic material.', NULL, NULL, 'Allows the Assimilation of Pops into or out of a Hive-Mind
+Positive Organic Species Traits can be Removed with Species Modification
+Negative Organic Species Traits can be Added with Species Modification', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_purity_genotype_regeneration#0', 'tr_purity_genotype_regeneration', 'tr_purity_genotype_regeneration_wilderness', 'Genotype Regeneration', 'With protected genetic capsules our micro-symbionts can permeate foreign organs, change them, or heal them.', '{"leaf":"is_wilderness_empire","value":"yes"}', 0, '1.0', 'Allows the Assimilation of Pops into Pre-Sapients
+Positive Organic Species Traits can be Removed with Species Modification
+Negative Organic Species Traits can be Added with Species Modification', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_purity_exemplary_genetics', 'tradition_purity', 'normal', 'Exemplary Genetics', 'We will cultivate unparalleled genetic standards, ensuring our superiority.', '{"leaf":"has_tradition","value":"tr_purity_genotype_regeneration"}', NULL, 'Can alter Pop Appearance with Species Modification
+Advanced Organic Species Traits can be Added or Removed with Species Modification
+Advanced Organic Species Traits have reduced cost', 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_purity_exemplary_genetics', 'tr_purity_genotype_regeneration');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_purity_exemplary_genetics', 'BIOLOGICAL_species_trait_points_add', '6.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_points_add', 'Organic Species Modification Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_purity_exemplary_genetics', 'BIOLOGICAL_species_trait_picks_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('BIOLOGICAL_species_trait_picks_add', 'Organic Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_purity_exemplary_genetics', 'modify_species_cost_mult', '-0.5', NULL, 2);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_purity_stage_1_swap', 'tradition_purity', 'normal', 'Flexible Tradition I', NULL, NULL, NULL, NULL, 3);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_purity_stage_2_swap', 'tradition_purity', 'normal', 'Flexible Tradition II', NULL, '{"leaf":"has_tradition","value":"tr_purity_stage_1_swap"}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_purity_stage_2_swap', 'tr_purity_stage_1_swap');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_purity_stage_3_swap', 'tradition_purity', 'normal', 'Flexible Tradition III', NULL, '{"leaf":"has_tradition","value":"tr_purity_stage_1_swap"}', NULL, NULL, 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_purity_stage_3_swap', 'tr_purity_stage_1_swap');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_purity_finish', 'tradition_purity', 'finish', 'Purity Traditions Finished', NULL, NULL, NULL, 'Allows the adoption of Purity Authorities', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_purity_finish', 'ascension_perks_add', '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_purity_finish#0', 'tr_purity_finish', NULL, 'Purity Traditions Finished', NULL, '{"leaf":"is_wilderness_empire","value":"yes"}', 0, '1.0', 'Buildings and Districts provide Building Speed: +3%
+Buildings and Districts provide Decision Enactment Speed: +3%
+All Districts are uncapped', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_purity_finish#0', 'ascension_perks_add', '1.0', NULL, 0);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_synthetics', 'Synthetics', '{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]}]}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', NULL, 'tr_synthetics_adopt', 'tr_synthetics_finish', 30);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synthetics_adopt', 'tradition_synthetics', 'adopt', 'Synthetic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"}]},{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"is_machine_empire","value":"no"}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_age"},{"leaf":"has_technology","value":"tech_robomodding_m"}]}]}]}]}]}', 'Synthetic Yield', 'Starts a Situation to transform the founding species into a Mechanical species.', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synthetics_adopt#0', 'tr_synthetics_adopt', NULL, 'Synthetic Traditions', NULL, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"is_machine_empire","value":"no"}]}', 0, '1.0', 'Unlocks a Special Project to transfer the minds of our citizens into Synthetic bodies.
+Tech progress gained (if not researched): Engineering Artificial Personality Matrix +10%', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synthetics_adopt#1', 'tr_synthetics_adopt', 'tr_synthetics_adopt_machine', 'Synthetic Traditions', NULL, '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"is_machine_empire","value":"yes"}]}', 0, '1.0', NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_adopt#1', 'pop_environment_tolerance', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synthetics_maintenance_protocols', 'tradition_synthetics', 'normal', 'Maintenance Protocols', 'Routine preventative maintenance will reduce malfunctions across all robot units.', '{"op":"or","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"op":"or","args":[{"leaf":"is_synthetic_empire","value":"yes"},{"op":"and","args":[{"op":"not","args":[{"leaf":"is_synthetic_empire","value":"yes"}]},{"leaf":"is_synthetic_empire","value":"yes"}]}]}]},{"leaf":"host_has_dlc","value":"The Machine Age"}]}', NULL, NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_maintenance_protocols', 'pop_amenities_usage_robotic_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_robotic_mult', 'Robotic Pop Amenities Usage', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synthetics_maintenance_protocols#0', 'tr_synthetics_maintenance_protocols', 'tr_synthetics_maintenance_protocols_situation', 'Maintenance Protocols', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"synthetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}]}]}', 0, '1.0', 'During Synthesization
+Situation Speed: +5%
+After Synthesization
+Robotic Pop Amenities Usage: -10%', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synthetics_optimization_algorithms', 'tradition_synthetics', 'normal', 'Optimization Algorithms', 'Self-learning optimization algorithms lead to an increase in productivity for robotic workers connected to our network.', '{"leaf":"has_tradition","value":"tr_synthetics_maintenance_protocols"}', NULL, NULL, 2);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_synthetics_optimization_algorithms', 'tr_synthetics_maintenance_protocols');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_optimization_algorithms', 'robotic_pop_bonus_workforce_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('robotic_pop_bonus_workforce_mult', 'Job Efficiency for Mechanical and Machine Pops', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synthetics_optimization_algorithms#0', 'tr_synthetics_optimization_algorithms', 'tr_synthetics_optimization_algorithms_situation', 'Optimization Algorithms', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"synthetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}]}]}', 0, '1.0', 'During Synthesization
+Situation Speed: +5%
+After Synthesization
+Mechanical Pop Output: +10%', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synthetics_transubstatiation_synthesis', 'tradition_synthetics', 'normal', 'Transubstantiation Synthesis', 'The age of organics is over. This galaxy''s future belongs to the machines.', '{"op":"or","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"op":"or","args":[{"leaf":"is_synthetic_empire","value":"yes"},{"op":"and","args":[{"op":"not","args":[{"leaf":"is_synthetic_empire","value":"yes"}]},{"leaf":"is_synthetic_empire","value":"yes"}]}]}]},{"leaf":"host_has_dlc","value":"The Machine Age"}]}', NULL, 'Grants access to the Assimilation Citizenship Species Right, allowing future additions to the populace to be turned into Synths.', 3);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synthetics_transubstatiation_synthesis#0', 'tr_synthetics_transubstatiation_synthesis', 'tr_synthetics_solid_state_actuators', 'Solid-State Actuators', 'Solid-state actuators improve component miniaturization which, though expensive, allows leaders to harden vital subsystems.', '{"op":"or","args":[{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"},{"leaf":"has_country_flag","value":"synthetics_traditions_unlocked"}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"is_machine_empire","value":"yes"}]}]}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_transubstatiation_synthesis#0', 'leader_lifespan_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_mult', 'Leader Lifespan', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synthetics_transubstatiation_synthesis#1', 'tr_synthetics_transubstatiation_synthesis', 'tr_synthetics_solid_state_actuators_virtual', 'Solid-State Actuators', NULL, '{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"},{"leaf":"has_country_flag","value":"synth_virtual"}]}', 0, '1.0', NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_transubstatiation_synthesis#1', 'leaders_cost_mult', '-0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_cost_mult', 'Leader Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_transubstatiation_synthesis#1', 'leaders_upkeep_mult', '-0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synthetics_transubstatiation_synthesis#2', 'tr_synthetics_transubstatiation_synthesis', 'tr_synthetics_transubstatiation_synthesis_situation', 'Transubstantiation Synthesis', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"synthetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_synthetic_fertility"},{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}]}]}]}', 0, '1.0', 'During Synthesization
+Situation Speed: +5%
+After Synthesization
+Grants access to the Assimilation Citizenship Species Right, allowing future additions to the populace to be turned into Synths.', 2);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synthetics_transubstatiation_synthesis#3', 'tr_synthetics_transubstatiation_synthesis', 'tr_synthetics_solid_state_actuators_situation', 'Solid-State Actuators', 'Solid-state actuators improve component miniaturization which, though expensive, allows leaders to harden vital subsystems.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"synthetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}]}]}', 0, '1.0', 'During Synthesization
+Situation Speed: +5%
+After Synthesization
+Leader Lifespan: +20%', 3);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synthetics_power_systems', 'tradition_synthetics', 'normal', 'Efficient Power Systems', 'With personal power cells of practically limitless capacity, there is no longer a need to schedule downtime for recharging.', '{"leaf":"has_tradition","value":"tr_synthetics_transubstatiation_synthesis"}', NULL, NULL, 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_synthetics_power_systems', 'tr_synthetics_transubstatiation_synthesis');
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_power_systems', 'planet_pops_robotics_upkeep_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_robotics_upkeep_mult', 'Robot Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_power_systems', 'planet_pop_assemblers_upkeep_mult', '-0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assemblers_upkeep_mult', 'Upkeep for Pop Assemblers', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synthetics_power_systems#0', 'tr_synthetics_power_systems', 'tr_synthetics_power_systems_situation', 'Efficient Power Systems', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"synthetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}]},{"leaf":"is_machine_empire","value":"no"}]}', 0, '1.0', 'During Synthesization
+Situation Speed: +5%
+After Synthesization
+Robot Upkeep: -25%
+Upkeep for : -25%', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synthetics_prefabricated_components', 'tradition_synthetics', 'normal', 'Prefabricated Components', 'By shipping standardized components and an assembly instruction, anyone can put their next upgrade together.', '{"leaf":"has_tradition","value":"tr_synthetics_transubstatiation_synthesis"}', NULL, 'Capital Buildings provide +100 Roboticist Jobs
+Amenities per 100 Roboticist: +200', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_synthetics_prefabricated_components', 'tr_synthetics_transubstatiation_synthesis');
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synthetics_prefabricated_components#0', 'tr_synthetics_prefabricated_components', 'tr_synthetics_prefabricated_components_situation', 'Prefabricated Components', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"synthetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}]},{"leaf":"is_machine_empire","value":"no"}]}', 0, '1.0', 'During Synthesization
+Situation Speed: +5%
+After Synthesization, Capital Buildings provide +100 Roboticist Jobs, Amenities per 100 Roboticist: +200', 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synthetics_prefabricated_components#1', 'tr_synthetics_prefabricated_components', 'tr_synthetics_prefabricated_components_machine', 'Prefabricated Components', 'Having a ready supply of prefabricated components makes it easier to assemble new models.', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"is_machine_empire","value":"yes"}]}', 0, '1.0', 'Capital Buildings provide +100 Replicator Jobs', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_synthetics_finish', 'tradition_synthetics', 'finish', 'Synthetic Traditions Finished', NULL, NULL, NULL, NULL, 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_finish', 'ROBOT_species_trait_picks_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ROBOT_species_trait_picks_add', 'Mechanical Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_finish', 'ROBOT_species_trait_points_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ROBOT_species_trait_points_add', 'Mechanical Modification Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_finish', 'modify_species_cost_mult', '-0.5', NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_finish', 'ascension_perks_add', '1.0', NULL, 3);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synthetics_finish#0', 'tr_synthetics_finish', 'tr_synthetics_finish_machine', 'Synthetic Traditions Finished', NULL, '{"leaf":"is_machine_empire","value":"yes"}', 0, '1.0', 'All Machine leaders gain the Synthetic trait.', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_finish#0', 'MACHINE_species_trait_picks_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('MACHINE_species_trait_picks_add', 'Machine Species Trait Picks', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_finish#0', 'MACHINE_species_trait_points_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('MACHINE_species_trait_points_add', 'Machine Modification Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_finish#0', 'modify_species_cost_mult', '-0.5', NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_synthetics_finish#0', 'ascension_perks_add', '1.0', NULL, 3);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('tr_synthetics_finish#1', 'tr_synthetics_finish', 'tr_synthetics_finish_situation', 'Synthetic Traditions Finished', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"synthetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}]}]}', 0, '1.0', 'During Synthesization
+Situation Speed: +25%
+After Synthesization
+Mechanical Species Trait Picks: +2
+Mechanical Modification Points: +2
+Modify Species Special Project Cost: -50%
+Ascension Perks Unlocked: +1', 1);
+INSERT INTO tradition_category
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
+               VALUES ('tradition_virtuality', 'Virtuality', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_nanotech_adopt"},{"leaf":"has_tradition","value":"tr_modularity_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_virtuality_adopt', 'tr_virtuality_finish', 31);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_virtuality_adopt', 'tradition_virtuality', 'adopt', 'Virtuality Traditions', NULL, '{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}', 'Optimized Network', 'Adds Virtual trait to main species, Pop Virtual Pops can no longer be resettled', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_virtuality_adopt', 'intel_decryption_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_virtuality_adopt', 'intel_encryption_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_virtuality_adopt', 'planet_metallurgists_alloys_produces_mult', '-0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_alloys_produces_mult', 'Alloys Produced from Metallurgists', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_virtuality_adopt', 'planet_artisans_consumer_goods_produces_mult', '-0.15', '{"leaf":"country_uses_consumer_goods","value":"yes"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_consumer_goods_produces_mult', 'Consumer Goods Produced from Artisans', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_virtuality_1', 'tradition_virtuality', 'normal', 'Clustered Capacity', 'Data streams converge in server clusters in our digital being, making centralization sacrosanct for optimal synchronization. Here, our digital network resonates with harmony.', NULL, NULL, 'Virtual Species Trait gains the following effects: Job Efficiency: +75% (-10% per Colony), Pop Upkeep: +0.1 Energy Credits per Colony', 1);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_virtuality_2', 'tradition_virtuality', 'normal', 'Data-Driven Logic Loops', 'Our pursuit of computational mastery is relentless, each digital being a vital snippet in the grand mechanism of collective calculations that form the fabric of our existence.', NULL, NULL, NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_virtuality_2', 'planet_researchers_upkeep_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_researchers_upkeep_mult', 'Upkeep for Researchers', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_virtuality_2', 'planet_bureaucrats_upkeep_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_upkeep_mult', 'Upkeep for Bureaucrats', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_virtuality_2', 'leaders_upkeep_mult', '-0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_virtuality_2', 'empire_size_pops_mult', '-0.1', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_virtuality_2', 'empire_size_colonies_mult', '1.0', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 0);
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_virtuality_3', 'tradition_virtuality', 'normal', 'Capacity Synchronization', 'Every unit, running elaborate background processes, enhances our collective capacity. In our diversity lies unity, and in unity, strength.', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_virtuality_1"},{"leaf":"has_tradition","value":"tr_virtuality_2"}]}', NULL, 'Unlocks Policy: Virtual Economy Focus
+Allows the specialization of our virtual processes to boost our Research, Unity or Leaders', 3);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_virtuality_3', 'tr_virtuality_1');
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_virtuality_3', 'tr_virtuality_2');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_virtuality_4', 'tradition_virtuality', 'normal', 'Productivity Simulations', 'We can harness virtual realms to predict and boost productivity, transcending the risks and delays of real-world trials.', '{"leaf":"has_tradition","value":"tr_virtuality_3"}', NULL, 'Districts that provide , or provide additional jobs', 4);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_virtuality_4', 'tr_virtuality_3');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_virtuality_5', 'tradition_virtuality', 'normal', 'Advanced Server Maintenance', 'Through meticulous maintenance protocols, we deploy our primary servers in realms once calculated as too harsh, expanding our operational boundaries.', '{"leaf":"has_tradition","value":"tr_virtuality_3"}', NULL, 'Capital Buildings provide +1 Max District at Planetary Ascension tiers 1, 5 and 10', 5);
+INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_virtuality_5', 'tr_virtuality_3');
+INSERT INTO tradition
+                   (key, category_key, role, name, description, possible_json, unlocks_agenda,
+                    tooltip, sort_order) VALUES ('tr_virtuality_finish', 'tradition_virtuality', 'finish', 'Virtuality Traditions Finished', NULL, NULL, NULL, 'Pop Virtual Pops are instantly created to meet Job requirements of Buildings and Districts
+Pop Virtual Pops can no longer become refugees or be assembled
+All Machine leaders gain the Virtual Leader trait, Unlocks Colony Decision: Server Shut Down', 6);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('tr_virtuality_finish', 'ascension_perks_add', '1.0', NULL, 0);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_engineered_evolution', 'Biomorphosis', 'To leave our genetic destiny in the hands of nature is an inefficient and excruciatingly slow process. Why not jump-start the future of our species?', 1, '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"},{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_ascension_perk","value":"ap_synthetic_age"},{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_synthetic_fertility"},{"leaf":"has_origin","value":"origin_endbringers"}]}]},{"leaf":"is_mechanical_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"},{"leaf":"is_cyborg_empire","value":"no"},{"leaf":"is_natural_design_empire","value":"no"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_augmentation_bazaars"}]},{"leaf":"is_chosen_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_trait","value":"trait_mechanical"}]},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"}]},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"}]},{"leaf":"has_psionic_ascension","value":"no"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"}]},{"leaf":"num_tradition_categories","cmp":"<","value":"7"},{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_clone_army"}]},{"leaf":"num_ascension_perks","cmp":">","value":"1"}]},{"leaf":"has_origin","value":"origin_clone_army"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_clone_army"},{"op":"or","args":[{"leaf":"has_country_flag","value":"clone_army_fertility_unlocked"},{"leaf":"has_country_flag","value":"clone_army_full_potential"}]}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_clone_army"}]}]}]}]}', NULL, NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('ap_engineered_evolution#0', 'ap_engineered_evolution', 'ap_engineered_evolution_wilderness', 'Biomorphosis', 'Our consciousness evolved to overcome the trials of its environment. The environment has changed, and so shall we.', '{"leaf":"is_wilderness_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_the_flesh_is_weak', 'The Flesh is Weak', 'The limits and constraints imposed on us by our feeble organic bodies are simply unacceptable. To reach our full potential, we must turn to cybernetic implants.', 1, '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"},{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_ascension_perk","value":"ap_synthetic_age"},{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_synthetic_fertility"},{"leaf":"has_origin","value":"origin_evolutionary_predators"},{"leaf":"has_origin","value":"origin_endbringers"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_unplugged"},{"op":"or","args":[{"leaf":"has_country_flag","value":"is_decyberized"},{"leaf":"has_country_flag","value":"is_cyberized"}]}]}]}]},{"leaf":"is_gestalt","value":"no"},{"leaf":"is_individual_machine","value":"no"},{"leaf":"is_natural_design_empire","value":"no"},{"leaf":"is_chosen_empire","value":"no"},{"leaf":"owner_species","value":"scope"},{"leaf":"is_entropy_drinkers_empire","value":"no"}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_trait","value":"trait_mechanical"}]},{"op":"or","args":[{"leaf":"num_ascension_perks","cmp":">","value":"1"},{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"}]},{"leaf":"has_psionic_ascension","value":"no"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"}]},{"leaf":"num_tradition_categories","cmp":"<","value":"7"}]}', NULL, 'Gain Access to Tradition Tree: Cybernetics, Requires an available Tradition slot
+Unlocks Agenda: The Flesh is Weak, which grants Cybernetic technologies as Research Options.', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_organo_machine_interfacing', 'Organo-Machine Interfacing', 'The limits and constraints imposed on us by our feeble organic bodies are simply unacceptable. To reach our full potential, we must turn to cybernetic implants.', 1, '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"},{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_ascension_perk","value":"ap_synthetic_age"},{"leaf":"has_origin","value":"origin_evolutionary_predators"},{"leaf":"has_origin","value":"origin_wilderness"},{"leaf":"has_origin","value":"origin_endbringers"}]}]},{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_natural_design_empire","value":"no"},{"leaf":"is_chosen_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"}]}', '{"op":"and","args":[{"leaf":"num_ascension_perks","cmp":">","value":"1"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"}]},{"leaf":"num_tradition_categories","cmp":"<","value":"7"},{"op":"or","args":[{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"and","args":[{"leaf":"has_psionic_ascension","value":"no"},{"op":"not","args":[{"leaf":"country_has_situation","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]}]}]}', NULL, 'Gain access to the Cybernetics tradition tree., Requires an available Tradition slot
+Unlocks Agenda: Organo-Machine Interfacing, which grants Cybernetic technologies as Research Options.', 2);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_organo_machine_interfacing_assimilator', 'Organo-Machine Interfacing', 'The limits and constraints imposed on us by our creators are simply unacceptable. To reach our full potential, we must fuse organic and machine.', 1, '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"},{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_ascension_perk","value":"ap_synthetic_age"},{"leaf":"has_origin","value":"origin_endbringers"}]}]},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"is_chosen_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"}]}', '{"op":"and","args":[{"leaf":"num_ascension_perks","cmp":">","value":"1"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_age"}]},{"leaf":"num_tradition_categories","cmp":"<","value":"7"},{"op":"or","args":[{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"and","args":[{"leaf":"has_psionic_ascension","value":"no"},{"op":"not","args":[{"leaf":"country_has_situation","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]}]}]}', NULL, 'Gain access to the Cybernetics tradition tree., Requires an available Tradition slot
+Unlocks Agenda: Organo-Machine Interfacing, which grants Cybernetic technologies as Research Options.', 3);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_synthetic_evolution', 'Synthetic Evolution', 'It is time to abandon the flawed organic vessels that imprison our minds. By transferring our neural patterns into synthetic bodies, we will achieve a higher state of being.', 1, '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"},{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_ascension_perk","value":"ap_synthetic_age"},{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_synthetic_fertility"},{"leaf":"has_origin","value":"origin_evolutionary_predators"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"has_tradition","value":"tr_cybernetics_adopt"}]}]},{"leaf":"is_gestalt","value":"no"},{"leaf":"is_mechanical_empire","value":"no"},{"leaf":"is_natural_design_empire","value":"no"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_augmentation_bazaars"}]},{"leaf":"is_individual_machine","value":"no"},{"leaf":"owner_species","value":"scope"},{"leaf":"is_chosen_empire","value":"no"},{"leaf":"is_galvanic_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_trait","value":"trait_mechanical"}]},{"leaf":"num_ascension_perks","cmp":">","value":"1"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"}]},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"}]},{"leaf":"has_psionic_ascension","value":"no"},{"leaf":"num_tradition_categories","cmp":"<","value":"7"}]}', NULL, 'Gain Access to Tradition Tree: Synthetics, Requires an available Tradition slot
+Unlocks Agenda: Synthetic Evolution, which grants Robotic technologies as Research Options.', 4);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_mind_over_matter', 'Mind Over Matter', '', 1, '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"ratling_country"},{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"},{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_ascension_perk","value":"ap_synthetic_age"},{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_synthetic_fertility"},{"leaf":"has_origin","value":"origin_evolutionary_predators"},{"leaf":"has_origin","value":"origin_wilderness"},{"leaf":"has_origin","value":"origin_mindwardens"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"has_valid_civic","value":"civic_augmentation_bazaars"}]}]},{"op":"or","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_mechanical_empire","value":"no"},{"op":"or","args":[{"leaf":"is_cyborg_empire","value":"no"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_unplugged"},{"op":"not","args":[{"leaf":"has_country_flag","value":"is_cyberized"}]}]}]},{"leaf":"is_individual_machine","value":"no"}]}]},{"leaf":"is_natural_design_empire","value":"no"},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_shroud_forged"},{"op":"not","args":[{"leaf":"has_country_flag","value":"finish_shroud_forged_control_flag"}]}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_shroud_forged"}]}]}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_trait","value":"trait_mechanical"}]},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"}]},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"}]},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"}]},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_age"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"}]}]},{"leaf":"num_tradition_categories","cmp":"<","value":"7"},{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_synthetic_empire","value":"no"},{"leaf":"has_origin","value":"origin_shroud_forged"},{"leaf":"is_chosen_empire","value":"yes"}]},{"leaf":"num_ascension_perks","cmp":">","value":"1"}]},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"is_synthetic_empire","value":"no"},{"leaf":"has_origin","value":"origin_shroud_forged"},{"leaf":"is_chosen_empire","value":"yes"}]}]},{"leaf":"num_ascension_perks","cmp":">","value":"2"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_unplugged"},{"leaf":"has_country_flag","value":"is_decyberized"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_unplugged"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_shroud_forged"},{"op":"or","args":[{"op":"and","args":[{"leaf":"any_situation","value":"scope"},{"leaf":"always","value":"no"}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"any_situation","value":"scope"}]},{"op":"not","args":[{"leaf":"has_country_flag","value":"finish_shroud_forged_liberation_flag"}]}]}]}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_shroud_forged"}]}]}]}]}', NULL, 'Gain Access to Tradition Tree: Psionics, Requires an available Tradition slot
+Unlocks Agenda: Mind Over Matter, which grants Psionic technologies as Research Options.', 5);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('ap_mind_over_matter#0', 'ap_mind_over_matter', 'ap_interdimensional_processing', 'Interdimensional Processing', 'Our calculation potential is limited when constrained only to the three physical dimensions. There is more to be gained by reaching our network into the spaces beyond the void.', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"leaf":"is_synthetic_empire","value":"yes"}]}', 1, '1.0', NULL, 0);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_synthetic_age', 'Synthetic Age', 'The age of organics has come and gone, the future of the galaxy belongs to the machines. This is the dawn of a synthetic age.', 1, '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"},{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_ascension_perk","value":"ap_synthetic_age"},{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_origin","value":"origin_endbringers"}]}]},{"leaf":"is_natural_design_empire","value":"no"},{"leaf":"is_chosen_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"}]}', '{"op":"and","args":[{"leaf":"num_ascension_perks","cmp":">","value":"1"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"}]},{"leaf":"num_tradition_categories","cmp":"<","value":"7"},{"op":"or","args":[{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"and","args":[{"leaf":"has_psionic_ascension","value":"no"},{"op":"not","args":[{"leaf":"country_has_situation","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]}]}]}', NULL, 'Gain Access to Tradition Tree: Synthetics
+Unlocks Agenda: Synthetic Age, which grants Machine Modification technologies as Research Options.', 6);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('ap_synthetic_age#0', 'ap_synthetic_age', NULL, 'Synthetic Age', NULL, '{"leaf":"host_has_dlc","value":"The Machine Age"}', 0, '1.0', 'Starts the Transformation situation which unlocks the Modularity, Virtuality, or Nanotech tradition trees., Requires an available Tradition slot
+Unlocks Agenda: Synthetic Age, which grants Machine Modification technologies as Research Options.', 0);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_defender_of_the_galaxy_nomads', 'Defender of the Galaxy', 'As star nations vie with one another in petty disputes, sinister forces of unimaginable power are arraying themselves against all sapient life. Who will protect us?', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_defender_of_the_galaxy_ap","value":"yes"},{"leaf":"is_player_crisis","value":"yes"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"is_unfriendly","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"num_ascension_perks","cmp":">","value":"2"},{"op":"not","args":[{"leaf":"has_country_flag","value":"heir_of_the_khan_khan"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"},{"leaf":"has_civic","value":"civic_inwards_perfection"}]}]}]}', 'Nomads', NULL, 7);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy_nomads', 'add_attunement_the_cradle_of_souls', '30.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_defender_of_the_galaxy', 'Defender of the Galaxy', 'As star nations vie with one another in petty disputes, sinister forces of unimaginable power are arraying themselves against all sapient life. Who will protect us?', 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Nomads"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_defender_of_the_galaxy_ap","value":"yes"},{"leaf":"is_player_crisis","value":"yes"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"is_unfriendly","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"num_ascension_perks","cmp":">","value":"2"},{"op":"not","args":[{"leaf":"has_country_flag","value":"heir_of_the_khan_khan"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"},{"leaf":"has_civic","value":"civic_inwards_perfection"}]}]}]}', NULL, 'Damage to Endgame Crisis factions: +50%
+Increases the Opinion of empires capable of regular diplomacy by +200
+Defenders of the Galaxy may not choose to become a Crisis
+Damage to Voidworms: +25%
+Damage to Endgame Crisis factions: +50%
+Increases the Opinion of empires capable of regular diplomacy by +200
+Defenders of the Galaxy may not choose to become a Crisis
+Increases the Opinion of empires capable of regular diplomacy by +200', 8);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_synth_queen_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_synth_queen_mult', 'Damage to Cetana', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_awakened_synth_queen_mult', '0.5', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_synth_queen_mult', 'Damage to Cetana, The Synthetic Queen', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_synth_queen_convoys_mult', '0.5', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_synth_queen_convoys_mult', 'Damage to Cetana''s Convoys', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_synth_queen_outposts_mult', '0.5', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_synth_queen_outposts_mult', 'Damage to Cetana''s Outposts', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_swarm_mult', '0.5', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_swarm_mult', 'Damage to Prethoryn Creatures', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_extradimensional_mult', '0.5', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_extradimensional_mult', 'Damage to the Unbidden', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_extradimensional_2_mult', '0.5', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_extradimensional_2_mult', 'Damage to the Aberrant', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_extradimensional_3_mult', '0.5', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_extradimensional_3_mult', 'Damage to the Vehement', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_ai_empire_mult', '0.5', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_ai_empire_mult', 'Damage to the Contingency', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_gray_goo_mult', '0.5', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_gray_goo_mult', 'Damage to Nanites', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_player_crisis_mult', '0.5', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_player_crisis_mult', 'Damage to Crisis-Seeking Civilizations', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_voidworms_mult', '0.25', NULL, 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_voidworms_mult', 'Damage to Voidworms', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_voidworms_crisis_mult', '0.25', NULL, 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_voidworms_crisis_mult', 'Damage to Voidworms', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_voidworms_treasure_hunters_mult', '0.25', NULL, 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_voidworms_treasure_hunters_mult', 'Damage to Voidworms', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_frenzied_voidworms_mult', '0.25', NULL, 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_frenzied_voidworms_mult', 'Damage to Voidworms', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_defender_of_the_galaxy', 'add_attunement_the_cradle_of_souls', '30.0', NULL, 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_become_the_crisis', 'Galactic Nemesis', 'All great works require sacrifice. The rest of the galaxy may not understand, but they will comply.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nemesis"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_player_crisis","value":"yes"},{"leaf":"has_defender_of_the_galaxy_ap","value":"yes"},{"leaf":"has_origin","value":"origin_slavers"},{"leaf":"has_origin","value":"origin_endbringers"}]}]},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"op":"and","args":[{"leaf":"is_subject","value":"no"},{"leaf":"is_galactic_custodian","value":"no"},{"leaf":"is_galactic_emperor","value":"no"},{"op":"or","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_shroud_forged"}]},{"op":"not","args":[{"leaf":"any_situation","value":"scope"}]}]},{"op":"or","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_shroud_forged"}]},{"op":"not","args":[{"leaf":"has_country_flag","value":"finish_shroud_forged_liberation_flag"}]}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_shroud_forged"}]},{"op":"not","args":[{"leaf":"has_country_flag","value":"shroud_forged_can_become_the_crisis"}]}]},{"op":"and","args":[{"leaf":"num_ascension_perks","cmp":">","value":"2"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_xenophile","value":"yes"},{"leaf":"is_pacifist","value":"yes"},{"leaf":"has_civic","value":"civic_machine_servitor"},{"leaf":"has_valid_civic","value":"civic_hive_familiar_face"}]}]}]}]},{"op":"not","args":[{"op":"or","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_shroud_forged"}]},{"op":"not","args":[{"leaf":"has_country_flag","value":"shroud_forged_can_become_the_crisis"}]}]}]}]}]}', 'Nemesis', NULL, 9);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_become_the_crisis', 'refugee_attraction', '-0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_cosmogenesis', 'Cosmogenesis', 'Time, gravity and space are the fundamental cogs that make up the clockwork of reality. If we can learn to manipulate them, the universe and its secrets will be ours.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_player_crisis","value":"yes"},{"leaf":"has_defender_of_the_galaxy_ap","value":"yes"},{"leaf":"has_origin","value":"origin_slavers"},{"leaf":"has_origin","value":"origin_endbringers"}]}]},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"op":"and","args":[{"leaf":"num_ascension_perks","cmp":">","value":"2"},{"leaf":"is_subject","value":"no"},{"leaf":"is_galactic_custodian","value":"no"},{"leaf":"is_galactic_emperor","value":"no"}]}', 'The Machine Age', NULL, 10);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_cosmogenesis', 'refugee_attraction', '-0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_behemoths', 'Behemoth Fury', 'The apex predators of the stars are not bound by petty limitations. In the same spirit, we will cast off the biological weaknesses that hold us back, and become a force of nature.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_player_crisis","value":"yes"},{"leaf":"has_defender_of_the_galaxy_ap","value":"yes"},{"leaf":"has_origin","value":"origin_slavers"},{"leaf":"has_origin","value":"origin_endbringers"}]}]}]}', '{"op":"and","args":[{"leaf":"num_ascension_perks","cmp":">","value":"2"},{"leaf":"is_subject","value":"no"},{"leaf":"is_galactic_custodian","value":"no"},{"leaf":"is_galactic_emperor","value":"no"},{"leaf":"country_uses_bio_ships","value":"yes"},{"leaf":"is_xenophile","value":"no"},{"leaf":"is_pacifist","value":"no"}]}', 'BioGenesis', NULL, 11);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_behemoths', 'refugee_attraction', '-0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_hyperthermia', 'Galactic Hyperthermia', 'The universe began in fire, but has cooled down into a dark and hostile place. To thrive, we need to turn up the heat, even if others must perish.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Infernals Species Pack"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_player_crisis","value":"yes"},{"leaf":"has_defender_of_the_galaxy_ap","value":"yes"},{"leaf":"has_origin","value":"origin_slavers"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"is_wilderness_empire","value":"yes"}]}]}]}', '{"op":"and","args":[{"op":"or","args":[{"leaf":"num_ascension_perks","cmp":">","value":"2"},{"leaf":"has_country_flag","value":"red_giant_discovered_crystallized_entropy"}]},{"leaf":"is_subject","value":"no"},{"leaf":"is_galactic_custodian","value":"no"},{"leaf":"is_galactic_emperor","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_xenophile","value":"yes"},{"leaf":"is_pacifist","value":"yes"},{"leaf":"has_valid_civic","value":"civic_hive_familiar_face"}]}]}]}', 'Infernals Species Pack', NULL, 12);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_hyperthermia', 'refugee_attraction', '-0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_wanderlust', 'Wanderlust', 'Everywhere in the galaxy, there are wonders to behold and lessons to be learned.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_wanderlust"}]},{"leaf":"is_nomadic","value":"yes"}]}', NULL, 'Nomads', 'Visit remarkable systems with your Arkships to unlock additional Modifiers', 13);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_wanderlust', 'planet_artificial_max_districts_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artificial_max_districts_add', 'Max Districts (Artificial colonies only)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_wanderlust', 'leaders_upkeep_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_wanderlust', 'planet_artificial_max_districts_add', '1.0', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"ancient_wonders_completed"},{"leaf":"has_country_flag","value":"antique_threat_completed"},{"leaf":"has_country_flag","value":"enclave_completed"},{"leaf":"has_country_flag","value":"galactic_landmark_completed"},{"leaf":"has_country_flag","value":"marauder_completed"},{"leaf":"has_country_flag","value":"natural_spectacle_completed"},{"leaf":"has_country_flag","value":"precursor_completed"},{"leaf":"has_country_flag","value":"space_ecology_completed"}]},{"leaf":"calc_true_if","value":"scope"}]}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artificial_max_districts_add', 'Max Districts (Artificial colonies only)', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_wanderlust', 'leaders_upkeep_mult', '-0.1', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"ancient_wonders_completed"},{"leaf":"has_country_flag","value":"antique_threat_completed"},{"leaf":"has_country_flag","value":"enclave_completed"},{"leaf":"has_country_flag","value":"galactic_landmark_completed"},{"leaf":"has_country_flag","value":"marauder_completed"},{"leaf":"has_country_flag","value":"natural_spectacle_completed"},{"leaf":"has_country_flag","value":"precursor_completed"},{"leaf":"has_country_flag","value":"space_ecology_completed"}]},{"leaf":"calc_true_if","value":"scope"}]}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_wanderlust', 'tradition_cost_mult', '-0.1', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"ancient_wonders_completed"},{"leaf":"has_country_flag","value":"antique_threat_completed"},{"leaf":"has_country_flag","value":"enclave_completed"},{"leaf":"has_country_flag","value":"galactic_landmark_completed"},{"leaf":"has_country_flag","value":"marauder_completed"},{"leaf":"has_country_flag","value":"natural_spectacle_completed"},{"leaf":"has_country_flag","value":"precursor_completed"},{"leaf":"has_country_flag","value":"space_ecology_completed"}]},{"leaf":"calc_true_if","value":"scope"}]}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tradition_cost_mult', 'Tradition Cost', 0);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_archaeoengineers', 'Archaeo-Engineers', 'Combining proven archaic technology with contemporary engineering will give us a timeless advantage.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_archaeoengineers"}]}]}', '{"leaf":"has_technology","value":"tech_archaeostudies"}', 'Ancient Relics Story Pack', 'Unlocks additional effects for Ancient ship components and buildings.', 14);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_archaeoengineers', 'country_scientist_cap_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_scientist_cap_add', 'Scientist Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_archaeoengineers', 'weapon_archaeotech_weapon_damage_mult', '0.33', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_archaeotech_weapon_damage_mult', 'Archaeotech Weapon Damage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_archaeoengineers', 'starbase_shipyard_build_minor_artifacts_cost_mult', '-0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_minor_artifacts_cost_mult', 'Minor Artifact Ship Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_archaeoengineers', 'specimens_produces_mult', '0.25', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('specimens_produces_mult', 'Specimens Output', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_lord_of_war', 'Lord of War', 'Some say war is bad for business, but war is our business. Our mercenaries thrive in an embattled galaxy, and through them, so will we.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Overlord"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_lord_of_war"},{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"},{"leaf":"has_valid_civic","value":"civic_scorched_earth"}]}]},{"op":"or","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_tactical_algorithms"}]}]}', NULL, 'Overlord', 'Mercenary Enclaves under our patronage pay more frequent Dividends.', 15);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_lord_of_war', 'country_enclave_capacity_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_enclave_capacity_add', 'Enclave Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_lord_of_war', 'diplo_weight_naval_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_naval_mult', 'Diplomatic Weight From Fleet Power', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_hydrocentric', 'Hydrocentric', 'No longer shall we settle for', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Aquatics Species Pack"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_hydrocentric"}]},{"op":"or","args":[{"leaf":"has_trait","value":"trait_pc_ocean_preference"},{"leaf":"has_trait","value":"trait_cyborg_climate_adjustment_wet"},{"leaf":"has_trait","value":"trait_robot_aquatic"},{"leaf":"has_trait","value":"trait_auto_hab_preference"}]},{"leaf":"is_nomadic","value":"no"}]}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_terrestrial_sculpting"},{"op":"or","args":[{"leaf":"has_aquatic_trait","value":"yes"},{"leaf":"has_trait","value":"trait_auto_hab_preference"}]}]}', 'Aquatics Species Pack', 'Allows the construction of Ice Mining Stations on starbases, which enable the Expand Planetary Sea decision on Ocean worlds and Flood Habitat decision on Habitats.
+Species with the Aquatic or Waterproof trait gain 50% greater benefits for living on Ocean worlds, but penalties for living on non-Wet worlds are likewise amplified.', 16);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_hydrocentric', 'terraforming_ocean_cost_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('terraforming_ocean_cost_mult', 'Ocean Terraforming Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_hydrocentric', 'add_attunement_the_composer_of_strands', '30.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_enigmatic_engineering', 'Enigmatic Engineering', 'Technology is simply not a way to solve a problem, but it is a language by which we ascend beyond the mundane. Lesser minds simply fail to understand our advances.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_enigmatic_engineering"}]}]}', '{"leaf":"num_ascension_perks","cmp":">","value":"0"}', 'Apocalypse', 'Steal Technology operations will automatically fail when used against us.
+Debris from our destroyed ships cannot be studied by other empires.
+Small chance of drawing Fallen Empire Building technologies.', 17);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_enigmatic_engineering', 'intel_encryption_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_enigmatic_engineering', 'add_attunement_the_cradle_of_souls', '30.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('ap_enigmatic_engineering#0', 'ap_enigmatic_engineering', 'ap_enigmatic_engineering_cloaking', 'Enigmatic Engineering', 'Technology is simply not a way to solve a problem, but it is a language by which we ascend beyond the mundane. Lesser minds simply fail to understand our advances.', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, '1.0', 'Steal Technology operations will automatically fail when used against us.
+Debris from our destroyed ships cannot be studied by other empires.
+Small chance of drawing Fallen Empire Building technologies.', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_enigmatic_engineering#0', 'ship_cloaking_strength_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_cloaking_strength_add', 'Cloaking Strength', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_enigmatic_engineering#0', 'intel_encryption_add', '2.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_enigmatic_engineering#0', 'add_attunement_the_cradle_of_souls', '30.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_nihilistic_acquisition', 'Nihilistic Acquisition', 'The notion of self-determination cannot be a moral absolute. Holistic goals clearly outweigh individual concerns.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_nihilistic_acquisition"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_barbaric_despoilers"},{"leaf":"has_origin","value":"origin_slavers"},{"leaf":"has_origin","value":"origin_khan_successor"},{"leaf":"has_origin","value":"origin_wilderness"}]}]}]}', '{"op":"or","args":[{"leaf":"is_authoritarian","value":"yes"},{"leaf":"is_xenophobe","value":"yes"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 'Apocalypse', 'Unlocks the Raiding bombardment stance, which in turn allows us to abduct pops from besieged planets and resettle them to our own worlds.', 18);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_colossus', 'Colossus Project', 'The Colossus Project is where fevered dreams of terror and deterrence meet. A vision of the biggest ship, carrying a weapon capable of devastating entire worlds.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_colossus"}]}]}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_titans"},{"leaf":"num_ascension_perks","cmp":">","value":"2"}]}', 'Apocalypse', 'Issues Special Project: Colossus Project
+Completing the Colossus Project unlocks the Colossus Ship Type that can be armed with Planet-Killer Weapons.', 19);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_colossus', 'country_war_exhaustion_mult', '-0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_colossus', 'ships_upkeep_mult', '-0.05', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_colossus', 'add_attunement_the_eater_of_worlds', '30.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_world_shaper', 'World Shaper', 'To carefully shape and alter the ecosystem of an entire planet into something else is not so very different from an artist sculpting a statue out of clay.', 0, '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_world_shaper"}]},{"op":"or","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"yes"}]},{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"}]}]}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_climate_restoration"},{"leaf":"num_ascension_perks","cmp":">","value":"0"}]}', NULL, 'Allows us to terraform worlds into Gaia Planets.', 20);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_world_shaper', 'terraforming_cost_mult', '-0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('terraforming_cost_mult', 'Terraforming Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_world_shaper', 'add_attunement_the_composer_of_strands', '30.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_force_projection', 'Galactic Force Projection', 'The fleet is the instrument by which the will of our empire is made manifest - we live or die depending on its strength.', 0, '{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_galactic_force_projection"}]}', '{"leaf":"num_ascension_perks","cmp":">","value":"1"}', NULL, NULL, 21);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_force_projection', 'country_power_projection_influence_produces_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_power_projection_influence_produces_add', 'Max Influence from Power Projection', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_force_projection', 'country_commander_cap_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_commander_cap_add', 'Commander Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_force_projection', 'country_naval_cap_add', '150.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_force_projection', 'command_limit_mult', '0.2', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('command_limit_mult', 'Fleet Command Limit', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_force_projection', 'add_attunement_the_eater_of_worlds', '30.0', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_interstellar_dominion', 'Interstellar Dominion', 'The stars beckon and we follow. May nothing stand between us and them.', 0, '{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_interstellar_dominion"}]}', NULL, NULL, NULL, 22);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_interstellar_dominion', 'country_starbase_influence_cost_mult', '-0.2', '{"leaf":"is_nomadic","value":"no"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_interstellar_dominion', 'country_claim_influence_cost_mult', '-0.2', '{"leaf":"is_nomadic","value":"no"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_interstellar_dominion', 'empire_size_systems_mult', '-0.25', '{"leaf":"is_nomadic","value":"no"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_systems_mult', 'Empire Size from Systems', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_interstellar_dominion', 'add_attunement_the_eater_of_worlds', '30.0', '{"leaf":"is_nomadic","value":"no"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_interstellar_dominion', 'megastructures_waystations_influence_cost_mult', '-0.2', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_eager_explorer_empire","value":"no"}]}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_waystations_influence_cost_mult', 'Waystation Influence Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_interstellar_dominion', 'starbase_stockpile_capacity_mult', '0.15', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_eager_explorer_empire","value":"no"}]}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_stockpile_capacity_mult', 'Waystation Stockpile Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_interstellar_dominion', 'shipsize_nomads_constructor_stockpile_capacity_mult', '0.15', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_eager_explorer_empire","value":"no"}]}', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_nomads_constructor_stockpile_capacity_mult', 'Logistic Ship Stockpile Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_interstellar_dominion', 'add_attunement_the_eater_of_worlds', '30.0', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_eager_explorer_empire","value":"no"}]}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_interstellar_dominion', 'megastructures_waystations_influence_cost_mult', '-0.2', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_eager_explorer_empire","value":"yes"}]}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_waystations_influence_cost_mult', 'Waystation Influence Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_interstellar_dominion', 'starbase_stockpile_capacity_mult', '0.15', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_eager_explorer_empire","value":"yes"}]}', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_stockpile_capacity_mult', 'Waystation Stockpile Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_interstellar_dominion', 'shipsize_nomads_constructor_stockpile_capacity_mult', '0.15', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_eager_explorer_empire","value":"yes"}]}', 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_nomads_constructor_stockpile_capacity_mult', 'Logistic Ship Stockpile Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_interstellar_dominion', 'shipsize_nomads_engineer_vessel_stockpile_capacity_mult', '0.15', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_eager_explorer_empire","value":"yes"}]}', 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_nomads_engineer_vessel_stockpile_capacity_mult', 'Logistics Vessel Stockpile Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_interstellar_dominion', 'add_attunement_the_eater_of_worlds', '30.0', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_eager_explorer_empire","value":"yes"}]}', 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_grasp_the_void', 'Grasp the Void', 'The vast expanse of the galaxy holds limitless riches for those empires that understand how to maintain their grasp on the void.', 0, '{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_grasp_the_void"}]}', '{"leaf":"num_ascension_perks","cmp":">","value":"0"}', NULL, 'FTL travel technologies now appear at 1.5 times the normal rate.', 23);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_grasp_the_void', 'country_starbase_capacity_add', '5.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_grasp_the_void', 'add_attunement_the_composer_of_strands', '30.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_eternal_vigilance', 'Eternal Vigilance', 'To display weakness is to invite attack. The price of invading our space must be so high that as few as possible are prepared to meet it.', 0, '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_eternal_vigilance"}]}]}', '{"op":"or","args":[{"leaf":"has_technology","value":"tech_starbase_4"},{"leaf":"has_tradition","value":"tr_unyielding_finish"}]}', NULL, NULL, 24);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance', 'country_commander_cap_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_commander_cap_add', 'Commander Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance', 'shipclass_starbase_damage_mult', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_starbase_damage_mult', 'Station Damage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance', 'shipclass_starbase_hull_mult', '0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_starbase_hull_mult', 'Station Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance', 'shipclass_military_station_damage_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_military_station_damage_mult', 'Defense Platform Damage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance', 'starbase_defense_platform_capacity_add', '5.0', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_defense_platform_capacity_add', 'Defense Platforms Cap', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance', 'ship_military_station_small_upkeep_mult', '-0.5', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_military_station_small_upkeep_mult', 'Defense Platform Upkeep', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance', 'ship_home_territory_fire_rate_mult', '0.2', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_home_territory_fire_rate_mult', 'Home Territory Fire Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance', 'add_attunement_the_cradle_of_souls', '30.0', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance', 'deep_space_citadel_limit_add', '1.0', '{"leaf":"host_has_dlc","value":"BioGenesis"}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('deep_space_citadel_limit_add', 'Deep Space Citadel System Capacity', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_eternal_vigilance_nomads', 'Eternal Vigilance', 'To display weakness is to invite attack. The price of facing our arkships must be so high that as few as possible are prepared to meet it.', 0, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_eternal_vigilance_nomads"}]}]}', '{"op":"or","args":[{"leaf":"has_technology","value":"tech_waystation_3"},{"leaf":"has_tradition","value":"tr_expansion_finish"}]}', NULL, NULL, 25);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance_nomads', 'country_commander_cap_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_commander_cap_add', 'Commander Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance_nomads', 'waystation_armor_hardening_add', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('waystation_armor_hardening_add', 'Waystation Armor Hardening', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance_nomads', 'waystation_shield_hardening_add', '0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('waystation_shield_hardening_add', 'Waystation Shield Hardening', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance_nomads', 'waystation_hull_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('waystation_hull_mult', 'Waystation Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance_nomads', 'starbase_waystations_alloys_cost_mult', '-0.25', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_waystations_alloys_cost_mult', 'Waystations Alloy Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance_nomads', 'arkship_fire_rate', '0.25', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_fire_rate', 'Arkship Fire Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance_nomads', 'ship_hull_mult', '0.25', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hull_mult', 'Ship Hull Points', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_eternal_vigilance_nomads', 'add_attunement_the_cradle_of_souls', '30.0', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_contender', 'Galactic Contender', 'The Fallen Empires cling to the ruins of their decrepit civilizations, ever fearful of the younger and more dynamic races that surround them. Their time has long since passed.', 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_galactic_contender"}]},{"leaf":"any_relation","value":"scope"}]}', '{"leaf":"num_ascension_perks","cmp":">","value":"2"}', NULL, NULL, 26);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender', 'diplo_weight_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender', 'damage_vs_country_type_fallen_empire_mult', '0.33', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_fallen_empire_mult', 'Damage to Fallen Empires', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender', 'damage_vs_country_type_awakened_fallen_empire_mult', '0.33', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender', 'damage_vs_country_type_gate_builders_mult', '0.33', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_gate_builders_mult', 'Damage to The Gate-builders', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender', 'add_attunement_the_cradle_of_souls', '30.0', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('ap_galactic_contender#0', 'ap_galactic_contender', 'ap_galactic_contender', 'Galactic Contender', 'The Fallen Empires cling to the ruins of their decrepit civilizations, ever fearful of the younger and more dynamic races that surround them. Their time has long since passed.', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, '1.0', 'Diplomatic Weight: +20%
+Damage to Fallen Empires: +33%
+Damage to Awakened Empires: +33%
+Damage to The Gate-builders: +33%
+Damage to Voidworms: +33%', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender#0', 'diplo_weight_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender#0', 'damage_vs_country_type_fallen_empire_mult', '0.33', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_fallen_empire_mult', 'Damage to Fallen Empires', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender#0', 'damage_vs_country_type_awakened_fallen_empire_mult', '0.33', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender#0', 'damage_vs_country_type_gate_builders_mult', '0.33', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_gate_builders_mult', 'Damage to The Gate-builders', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender#0', 'damage_vs_country_type_voidworms_mult', '0.33', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_voidworms_mult', 'Damage to Voidworms', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender#0', 'damage_vs_country_type_voidworms_crisis_mult', '0.33', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_voidworms_crisis_mult', 'Damage to Voidworms', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender#0', 'damage_vs_country_type_voidworms_treasure_hunters_mult', '0.33', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_voidworms_treasure_hunters_mult', 'Damage to Voidworms', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender#0', 'damage_vs_country_type_frenzied_voidworms_mult', '0.33', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_frenzied_voidworms_mult', 'Damage to Voidworms', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_galactic_contender#0', 'add_attunement_the_cradle_of_souls', '30.0', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_technological_ascendancy', 'Technological Ascendancy', 'Technologies that would have been indistinguishable from magic mere generations ago are now within our reach. A new age of technology has begun.', 0, '{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_technological_ascendancy"}]}', NULL, NULL, 'Enables Research Focus Policies', 27);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_technological_ascendancy', 'rare_tech_draw_chance_mult', '0.5', NULL, 0);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_one_vision', 'One Vision', 'True unity is achieved only when the ultimate goals of a nation and its people are one and the same. After all, a house divided against itself cannot stand.', 0, '{"op":"not","args":[{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_one_vision"},{"leaf":"is_machine_empire","value":"yes"}]}]}', NULL, NULL, NULL, 28);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_one_vision', 'country_unity_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_one_vision', 'pop_government_ethic_attraction', '0.5', '{"leaf":"is_wilderness_empire","value":"no"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_one_vision', 'add_attunement_the_cradle_of_souls', '30.0', '{"leaf":"is_wilderness_empire","value":"no"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_one_vision', 'planetary_ascension_cost_mult', '-0.1', '{"leaf":"is_wilderness_empire","value":"yes"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planetary_ascension_cost_mult', 'Colony Ascension Cost', 0);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_consecrated_worlds', 'Consecrated Worlds', 'The galaxy is home to many holy places, some more obvious than others. As mortals, we still struggle to divine the true nature of the universe.', 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_consecrated_worlds"}]},{"leaf":"is_spiritualist","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', NULL, NULL, 'Unlocks Decision Consecrate World
+Celestial bodies valid for Consecration: Gaia Worlds', 29);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_consecrated_worlds', 'add_attunement_the_composer_of_strands', '30.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_mastery_of_nature', 'Mastery of Nature', 'Although we mastered the nature of our homeworld long ago, the alien biomes we have since encountered present new challenges. They too shall be overcome.', 0, '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_mastery_of_nature"},{"leaf":"is_environmental_architects_empire","value":"yes"}]}]}', NULL, NULL, 'Chance for Blocker Clearing Research Options: ×4
+Unlocks Decision: Mastery of Nature, Max Districts: +2, Max Resource Districts from Planetary Features: +50%', 30);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_mastery_of_nature', 'deposit_blockers_cost_mult', '-0.33', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('deposit_blockers_cost_mult', 'Clear Blocker Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_mastery_of_nature', 'add_attunement_the_instrument_of_desire', '30.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('ap_mastery_of_nature#0', 'ap_mastery_of_nature', 'ap_mastery_of_nature_wilderness', 'Mastery of Nature', 'We are the cycle that eats and is eaten. From the smallest cell to the tallest tree, we live by this principle. We are nature.', '{"leaf":"is_wilderness_empire","value":"yes"}', 1, '1.0', NULL, 0);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('ap_mastery_of_nature#1', 'ap_mastery_of_nature', 'ap_mastery_of_nature_nomads', 'Mastery of Nature', 'The exploitation of alien resources is a never ending challenge. One that our ingenuity stands ready to tackle again and again.', '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_mastery_of_nature#1', 'arkship_harvest_resources_produces_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_produces_mult', 'Resources from Harvesting Actions', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_mastery_of_nature#1', 'ship_starbase_stockpile_collection_rate_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_starbase_stockpile_collection_rate_mult', 'Waystation Resource Transfer Rate', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_mastery_of_nature#1', 'add_attunement_the_instrument_of_desire', '30.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_imperial_prerogative', 'Imperial Prerogative', 'As our civilization continues to grow, so its beating heart must also expand. More systems will be placed under our direct control.', 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_imperial_prerogative"}]},{"leaf":"is_megacorp","value":"no"}]}', NULL, NULL, NULL, 31);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_imperial_prerogative', 'empire_size_colonies_mult', '-0.25', '{"leaf":"is_nomadic","value":"no"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_colonies_mult', 'Empire Size from Colonies', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_imperial_prerogative', 'country_official_cap_add', '2.0', '{"leaf":"is_nomadic","value":"no"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_official_cap_add', 'Official Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_imperial_prerogative', 'pop_cat_ruler_bonus_workforce_mult', '0.15', '{"leaf":"is_nomadic","value":"yes"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_bonus_workforce_mult', 'Job Efficiency for Elites', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_imperial_prerogative', 'country_official_cap_add', '2.0', '{"leaf":"is_nomadic","value":"yes"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_official_cap_add', 'Official Capacity', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_executive_vigor', 'Executive Vigor', 'There will be no half-measures or compromises when implementing the edicts decided upon by our government. We go all the way, or not at all.', 0, '{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_executive_vigor"}]}', NULL, NULL, NULL, 32);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_executive_vigor', 'country_edict_fund_add', '100.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_executive_vigor', 'council_agenda_progress_speed', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_executive_vigor', 'add_attunement_the_instrument_of_desire', '30.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_transcendent_learning', 'Transcendent Learning', 'Our society must change its approach towards learning, and by doing so, our best and brightest will be able to reach a completely new level of achievements.', 0, '{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_transcendent_learning"}]}', NULL, NULL, NULL, 33);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_transcendent_learning', 'country_scientist_cap_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_scientist_cap_add', 'Scientist Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_transcendent_learning', 'species_leader_exp_gain', '0.25', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_transcendent_learning', 'leaders_upkeep_mult', '-0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_shared_destiny', 'Shared Destiny', 'As we reach for ever greater heights, we must not leave behind those who have loyally served us. The glorious future of our empire was always meant to be a shared destiny.', 0, '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"is_homicidal","value":"yes"},{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}]}]},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_shared_destiny"}]}]}', NULL, NULL, NULL, 34);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_shared_destiny', 'divided_patrongage_max_subjects', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('divided_patrongage_max_subjects', 'Subjects Exempt from Divided Patronage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_shared_destiny', 'specialist_subject_conversion_time_mult', '-0.2', NULL, 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_shared_destiny', 'envoys_add', '2.0', NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_shared_destiny', 'add_attunement_the_instrument_of_desire', '30.0', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('ap_shared_destiny#0', 'ap_shared_destiny', NULL, 'Shared Destiny', NULL, '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_shared_destiny#0', 'divided_patrongage_max_subjects', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('divided_patrongage_max_subjects', 'Subjects Exempt from Divided Patronage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_shared_destiny#0', 'country_naval_capacity_contribution_from_subjects_mult', '0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_capacity_contribution_from_subjects_mult', 'Subject Naval Capacity Contribution', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_shared_destiny#0', 'envoys_add', '2.0', NULL, 2);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_shared_destiny#0', 'add_attunement_the_instrument_of_desire', '30.0', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_voidborn', 'Voidborne', 'We have adapted to permanent habitation in the depths of space, reducing our infrastructure needs and yielding more room for other functions.', 0, '{"op":"and","args":[{"leaf":"is_void_dweller_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"op":"or","args":[{"leaf":"has_technology","value":"tech_habitat_1"},{"leaf":"has_technology","value":"tech_arkship_tier_2"}]}', NULL, 'Can construct advanced housing buildings on Habitats
+Waives Technology requirements for Zone Basic District Specialization on Habitats', 35);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_voidborn', 'habitat_max_districts_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_max_districts_add', 'Habitat Max Districts', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_voidborn', 'megastructures_habitat_cost_mult', '-0.2', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_habitat_cost_mult', 'Habitat Build Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_voidborn', 'planet_districts_hab_cost_mult', '-0.2', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_districts_hab_cost_mult', 'Habitat Districts Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_voidborn', 'habitat_districts_minor_add', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_districts_minor_add', 'Habitat Max Districts from Minor Celestial Bodies', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_voidborn', 'habitat_district_jobs_mult', '0.5', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_district_jobs_mult', 'Jobs from Habitat Districts', 1);
+INSERT INTO tradition_swap
+                   (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
+                    weight, tooltip, sort_order) VALUES ('ap_voidborn#0', 'ap_voidborn', NULL, 'Voidborne', NULL, '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', NULL, 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_voidborn#0', 'pc_ark_max_districts_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ark_max_districts_add', 'Arkship Max Districts', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_voidborn#0', 'megastructures_arkships_cost_mult', '-0.1', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_arkships_cost_mult', 'Arkship Build Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_voidborn#0', 'starbase_arkship_upgrades_cost_mult', '-0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_arkship_upgrades_cost_mult', 'Arkship Module & System Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_voidborn#0', 'pc_ark_habitability', '0.2', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_ark_habitability', 'Arkship Habitability', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_master_builders', 'Master Builders', 'Building a Megastructure requires an unprecedented amount of resources and planning. We are breaking new ground in the field of macro-engineering.', 0, '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_master_builders"}]}]}', '{"op":"and","args":[{"leaf":"num_ascension_perks","cmp":">","value":"1"},{"leaf":"has_technology","value":"tech_mega_engineering"}]}', NULL, NULL, 36);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_master_builders', 'megastructure_build_speed_mult', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructure_build_speed_mult', 'Megastructure Build Speed', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_master_builders', 'country_megastructure_build_cap_add', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_megastructure_build_cap_add', 'Megastructure Build Capacity', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_galactic_wonders"}]}]}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_mega_engineering"},{"leaf":"has_country_flag","value":"has_built_or_repaired_megastructure"}]}', NULL, NULL, 37);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders_utopia', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"leaf":"always","value":"no"}', NULL, NULL, 'Research options gained: Engineering Research Ring Segment, Physics Research Dyson Sphere
+The Ring World and Dyson Sphere are incredibly powerful Megastructures.', 38);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders_megacorp', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"leaf":"always","value":"no"}', NULL, NULL, NULL, 39);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders_utopia_and_megacorp', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"leaf":"always","value":"no"}', NULL, NULL, 'Research options gained: Engineering Research Ring Segment, Physics Research Matter Decompressor, Physics Research Dyson Sphere
+The Ring World, Matter Decompressor and Dyson Sphere are incredibly powerful Megastructures.', 40);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_machine_worlds', 'Machine Worlds', 'We shall shape our worlds into a mirror image of ourselves, replacing the frailty of biology with the immutable perfection of metal.', 0, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_machine_worlds"}]}]}', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_technology","value":"tech_climate_restoration"},{"leaf":"has_origin","value":"origin_machine"}]},{"leaf":"num_ascension_perks","cmp":">","value":"1"}]}', NULL, 'Unlocks Terraforming Option: Machine World
+Unlocks Zone District Specialization: Replication Hub
+Replaces District Rural Districts with specialized District Nexus Districts
+Increases Housing and Jobs from all Districts
+Uninhabitable for most Organic Species', 41);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_machine_worlds', 'add_attunement_the_instrument_of_desire', '30.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_hive_worlds', 'Hive Worlds', 'We shall create living worlds that are every bit as much a part of the Hive as the drones that inhabit them.', 0, '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_hive_worlds"}]},{"leaf":"is_lithoid_devouring_swarm","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_climate_restoration"},{"op":"or","args":[{"leaf":"num_ascension_perks","cmp":">","value":"1"},{"leaf":"has_origin","value":"origin_fallen_empire_hive"}]}]}', NULL, 'Unlocks Terraforming Option: Hive World
+Unlocks Hive World District Specialization: Zone Spawning Nest
+Uninhabitable for non-hive species.
+Unlimited District Hive Districts
+Doubles Housing and Jobs from all Districts, Pop Resource Output: +10%
+Removes all Rural Districts', 42);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_hive_worlds', 'add_attunement_the_composer_of_strands', '30.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_arcology_project', 'Arcology Project', 'Thus shall we make a world of the city, and a city of the world.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Megacorp"},{"op":"or","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_agrarian_idyll"}]},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_arcology_project"}]},{"leaf":"is_nomadic","value":"no"}]}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_housing_2"},{"leaf":"num_ascension_perks","cmp":">","value":"1"}]}', 'Megacorp', 'Unlocks Decision: Arcology Project
+Turns the planet into an Ecumenopolis, increasing Housing, Resource Production and Pop Growth and unlocking special District Arcology Districts.
+District Generator, Mining and Agriculture Districts become inaccessible.
+Construction of any Districts while this is underway are Disabled.', 43);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_arcology_project', 'add_attunement_the_instrument_of_desire', '30.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_xeno_compatibility', 'Xeno-Compatibility', 'The invention of universal sexual biology has revolutionized society. Even if it sometimes requires awkward rotations to make a connection.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Megacorp"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_xeno_compatibility"}]},{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"op":"and","args":[{"leaf":"is_xenophile","value":"yes"},{"leaf":"any_owned_pop_group","value":"scope"},{"leaf":"has_technology","value":"tech_gene_tailoring"}]}', 'Megacorp', 'Allows crossbreeding between different species living on the same colony, granting a 20% bonus to Pop Growth Speed on any owned colony with at least 2 different species. Additionally, crossbreeding between different species living on the same colony will pool their growth potential together!', 44);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_xeno_compatibility', 'planet_resettlement_unemployed_destination_mult', '0.33', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_destination_mult', 'Automatic Resettlement Destination Chance', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_xeno_compatibility', 'refugee_attraction', '1.0', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_xeno_compatibility', 'add_attunement_the_composer_of_strands', '30.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_universal_transactions', 'Universal Transactions', 'We shall extend our brand and our business to every solar system in the galaxy. Prosperity is eternal!', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Megacorp"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_universal_transactions"}]},{"leaf":"is_megacorp","value":"yes"},{"leaf":"is_criminal_syndicate","value":"no"}]}', NULL, 'Megacorp', 'Can propose Commercial Pacts without an Embassy
+Commercial Pacts no longer cost Influence to maintain', 45);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_universal_transactions', 'country_official_cap_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_official_cap_add', 'Official Capacity', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_universal_transactions', 'planet_branch_offices_cost_mult', '-0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_branch_offices_cost_mult', 'Branch Office Cost', 0);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_universal_transactions', 'add_attunement_the_instrument_of_desire', '30.0', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_instrument_of_desire', 'Add Attunement with The Instrument Of Desire', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_detox', 'Detox', 'Our newest advancements in terraforming allow us to breathe new life into a class of planets formerly considered irrevocably deadly and beyond salvation.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Toxoids Species Pack"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_detox"},{"leaf":"has_country_flag","value":"knights_detox"}]}]},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"has_technology","value":"tech_climate_restoration"}', 'Toxoids Species Pack', 'Enables terraforming of Toxic World Terraforming Candidates into habitable worlds.
+We have of these within our border.', 46);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_detox', 'add_attunement_the_composer_of_strands', '30.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_mechromancy', 'Mechromancy', 'Biologicals are merely a different kind of machine. We can stimulate the appropriate synapses and reanimate these creatures, for our own benefit.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Necroids Species Pack"},{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_mechromancy"}]}]}', NULL, 'Necroids Species Pack', 'Defeated organic Leviathans can sometimes be resurrected.
+Purged Sapient Biological or Lithoid Pops have a 33% chance to be restored as Cyborg Zombies.
+Controlled cloned organic Space Fauna can be reanimated', 47);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_mechromancy', 'l_slot_weapon_damage_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('l_slot_weapon_damage_mult', 'Large Slot Weapon Damage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_mechromancy', 'x_slot_weapon_damage_mult', '0.15', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('x_slot_weapon_damage_mult', 'Extra Large Slot Weapon Damage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_mechromancy', 't_slot_weapon_damage_mult', '0.15', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('t_slot_weapon_damage_mult', 'Titan Slot Weapon Damage', 1);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_mechromancy', 'add_attunement_the_eater_of_worlds', '30.0', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_eater_of_worlds', 'Add Attunement with The Eater Of Worlds', 1);
+INSERT INTO ascension_perk
+               (key, name, description, is_path, potential_json, possible_json,
+                required_dlc, tooltip, sort_order) VALUES ('ap_weather_control', 'Galactic Weather Control', 'Our latest advances in astrometeorology grant us the ability to manifest Cosmic Storms on command. With the right technology, we can even choose the type of storm to create.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Cosmic Storms"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_weather_control"}]}]}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_advanced_storm_manipulation"},{"leaf":"num_ascension_perks","cmp":">","value":"0"}]}', 'Cosmic Storms', 'Allows Science ships to generate Cosmic Storms by manipulating a system''s star.', 48);
+INSERT INTO tradition_modifier
+                   (owner_key, modifier_key, modifier_value, potential_json, sort_order)
+                   VALUES ('ap_weather_control', 'add_attunement_the_cradle_of_souls', '30.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('add_attunement_the_cradle_of_souls', 'Add Attunement with The Cradle Of Souls', 1);
