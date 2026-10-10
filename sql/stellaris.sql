@@ -60,6 +60,7 @@ CREATE TABLE species_class_attribute (
 -- Drop the trait family up-front (children before parent): these older tables use
 -- CREATE IF NOT EXISTS, so without an explicit DROP they accumulate stale rows across
 -- runs (renamed/removed modifier keys would otherwise linger).
+DROP TABLE IF EXISTS trait_requirement;
 DROP TABLE IF EXISTS trait_scaling_modifier;
 DROP TABLE IF EXISTS trait_portrait_override;
 DROP TABLE IF EXISTS trait_modifier;
@@ -112,6 +113,20 @@ CREATE TABLE trait_portrait_override (
     trait_key   TEXT NOT NULL,
     portrait_id TEXT NOT NULL,
     PRIMARY KEY (trait_key, portrait_id),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+-- Empire-creation gates on a species trait: its allowed_/forbidden_ origins, civics and
+-- ethics plus allowed_planet_classes (homeworld). Same shape as civic_requirement:
+-- allowed_* → 'require_any' (group 1), forbidden_* → 'forbid'. E.g. Sedentary is
+-- forbidden for the nomad origins; Aquatic needs an Ocean homeworld.
+CREATE TABLE trait_requirement (
+    trait_key TEXT NOT NULL,
+    kind      TEXT NOT NULL,          -- 'origin' | 'civic' | 'ethic' | 'planet_class'
+    operator  TEXT NOT NULL,          -- 'require_any' | 'forbid'
+    value     TEXT NOT NULL,
+    group_id  INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (trait_key, kind, operator, value),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
 );
 
@@ -235,6 +250,7 @@ CREATE TABLE ethic_policy_restriction (
 -- special). `selectable` is 0 for civics gated to non-player country types (fallen
 -- empires, etc.). `description` is the cleaned effects tooltip; the numeric effects
 -- live in civic_modifier and the eligibility rules in civic_requirement.
+DROP TABLE IF EXISTS granted_trait;
 DROP TABLE IF EXISTS civic_requirement;
 DROP TABLE IF EXISTS civic_modifier;
 DROP TABLE IF EXISTS civic;
@@ -267,11 +283,23 @@ CREATE TABLE civic_modifier (
 CREATE TABLE civic_requirement (
     civic_key  TEXT NOT NULL,
     kind       TEXT NOT NULL,        -- 'authority' | 'ethic' | 'civic' | 'origin' | 'ship_type' | 'gameplay'
+                                     -- | 'species_class' | 'archetype' | 'planet_class' (homeworld) | 'trait'
     operator   TEXT NOT NULL,        -- 'require' | 'forbid' | 'require_any'
     value      TEXT NOT NULL,        -- e.g. 'auth_corporate', 'ethic_materialist'
     group_id   INTEGER NOT NULL DEFAULT 0,  -- ties 'require_any' values from one OR set together
     PRIMARY KEY (civic_key, kind, operator, value),
     FOREIGN KEY (civic_key) REFERENCES civic(key)
+);
+
+-- Species traits a civic or origin gives the founder species (its top-level
+-- `traits = { trait = … }`), e.g. Tankbound → trait_tankbound, Necrophage →
+-- trait_necrophage. Keyed by civic OR origin key, hence no foreign key. The planner
+-- applies the granted trait's opposites (Tankbound rules out Weak / Hollow Bones /
+-- Photoadaptive).
+CREATE TABLE granted_trait (
+    owner_key TEXT NOT NULL,          -- civic or origin key
+    trait_key TEXT NOT NULL,
+    PRIMARY KEY (owner_key, trait_key)
 );
 
 -- Authorities (the empire's government type: Democratic, Imperial, Hive Mind, …).
@@ -349,7 +377,7 @@ CREATE TABLE origin_modifier (
 );
 
 -- Eligibility rules parsed from an origin's potential/possible blocks (same shape as
--- civic_requirement): kind authority/ethic/civic/origin × operator
+-- civic_requirement): kind authority/ethic/civic/origin/archetype/… × operator
 -- require/forbid/require_any. For origins these are mostly civic conflicts.
 CREATE TABLE origin_requirement (
     origin_key TEXT NOT NULL,
@@ -4703,6 +4731,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'produ
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'drawbacks');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_aquatic', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_aquatic', 'planet_class', 'require_any', 'pc_ocean', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_robot_aquatic', 2, NULL, 1, 1, 0, 'Aquatics Species Pack', 'Initially designed for exploring the ocean''s depths, these machines face severe limitations when operating on dry land.
@@ -4714,6 +4744,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_aquatic', 
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_aquatic', 'production');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_aquatic', 'drawbacks');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_aquatic', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_robot_aquatic', 'planet_class', 'require_any', 'pc_ocean', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_necrophage', 0, NULL, 0, 0, 0, NULL, 'This species of near-immortals procreates by consuming pops of other species.', 'These Pop Output modifiers do not apply to Hive-minded Pops.', '02_species_traits_basic_characteristics.txt');
@@ -5727,6 +5759,14 @@ INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_se
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_sedentary', 'organic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_sedentary', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_sedentary', 'migration');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_sedentary', 'origin', 'forbid', 'origin_default_nomads', 0);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_sedentary', 'origin', 'forbid', 'origin_sacred_path', 0);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_sedentary', 'origin', 'forbid', 'origin_heirs_of_the_khan', 0);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_sedentary', 'origin', 'forbid', 'origin_forever_cruise', 0);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_communal', 1, 'normal', 1, 1, 0, NULL, 'Members of this species are highly communal, and quite used to living in close proximity to others.', NULL, '04_species_traits.txt');
@@ -6873,6 +6913,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_loyalty_ci
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_loyalty_circuits', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_loyalty_circuits', 'happiness');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_loyalty_circuits', 'individual');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_robot_loyalty_circuits', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_robot_domestic_protocols', 2, 'robotic', 0, 0, 0, NULL, 'Specialized equipment and behavior protocols for all conceivable domestic needs. Full functionality guaranteed.', 'Can be employed in Servant Jobs if under AI Servitude', '05_species_traits_robotic.txt');
@@ -6884,6 +6926,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_p
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_protocols', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_protocols', 'amenities');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_domestic_protocols', 'individual');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_robot_domestic_protocols', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_robot_double_jointed', 1, 'robotic', 1, 1, 0, NULL, 'Collapsible labor units with flexible joints that enable them to fold neatly into stacks during transportation, then self-assemble on site.', NULL, '05_species_traits_robotic.txt');
@@ -7061,6 +7105,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_quarrelsom
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_quarrelsome', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_quarrelsome', 'unity');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_quarrelsome', 'individual');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_robot_quarrelsome', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_robot_deviants', -1, 'robotic', 1, 1, 0, NULL, 'These people are rebellious in nature and constantly try to challenge the status-quo.', NULL, '05_species_traits_robotic.txt');
@@ -7071,6 +7117,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_deviants',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_deviants', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_deviants', 'ethic_attraction');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_deviants', 'individual');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_robot_deviants', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_robot_decadent', -1, 'robotic', 1, 1, 0, NULL, 'This species believes that whenever there is hard work that needs doing, that work is always best done by somebody else.', NULL, '05_species_traits_robotic.txt');
@@ -7081,6 +7129,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_decadent',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_decadent', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_decadent', 'happiness');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_decadent', 'individual');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_robot_decadent', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_robot_wasteful', -1, 'robotic', 1, 1, 0, NULL, 'Members of this species seemingly have no concept of frugality and are prone to useless consumption.', NULL, '05_species_traits_robotic.txt');
@@ -7092,6 +7142,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful', 'consumer_goods');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_robot_wasteful', 'individual');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_robot_wasteful', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_robot_artificial_engineers', 1, 'robotic', 1, 1, 0, 'The Machine Age', 'Dedicated memory cores and processing resources for engineering-related research allow faster calculations and task-completion velocity.', NULL, '05_species_traits_robotic.txt');
@@ -8723,6 +8775,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_overtun
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_overtuned', 'automod');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_overtuned', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_auto_mod_overtuned', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_auto_mod_overtuned', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_spliced_adaptability', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'A few genetic snips and slices here and there and they can survive nearly anywhere. The process comes with an acceptable number of deaths from side effects.', NULL, '09_tox_traits.txt');
@@ -8733,6 +8787,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spliced_adaptabi
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spliced_adaptability', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spliced_adaptability', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_spliced_adaptability', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_spliced_adaptability', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_juiced_power', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Adrenaline released on demand and hyper-potent growth hormones have led to a massive increase in strength. Just ignore the occasional internal tearing.', NULL, '09_tox_traits.txt');
@@ -8744,6 +8800,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', '
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', 'army');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_juiced_power', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_juiced_power', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_farm_hands', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'The more appendages, the higher the farming output. Some appendages can even operate while their host is asleep. Rumors of hosts strangled by their new limbs have been deemed unfounded in our latest investigation.', NULL, '09_tox_traits.txt');
@@ -8755,6 +8813,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'po
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'food');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_farm_hands', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_farm_hands', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_crack_miner', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Supreme hand-eye coordination, near endless endurance and self-purifying lungs have created entire crack teams of miners. Sadly they get brittle without sunlight.', NULL, '09_tox_traits.txt');
@@ -8766,6 +8826,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'p
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'mineral');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crack_miner', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_crack_miner', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_technical_skill', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Extra internal organs grant a vastly increased innate sensitivity to electricity and magnetic fields. Reports of recipients hearing screams and voices from the reactors should be ignored.', NULL, '09_tox_traits.txt');
@@ -8777,6 +8839,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill', 'energy');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_technical_skill', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_technical_skill', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_commercial_genius', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'By tweaking agreeability and dialing down empathy, it is possible to artificially kindle a spark of trading genius. The pursuit of unmatched commercial dominance outweighs any potential side effects.', NULL, '09_tox_traits.txt');
@@ -8788,6 +8852,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_geniu
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_genius', 'trade');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_genius', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_commercial_genius', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_commercial_genius', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_crafted_smiles', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Slightly shifted facial features, a mix of enhanced and slackened muscular development - and of course outside chemicals - have created the perfect smile. Forever.', NULL, '09_tox_traits.txt');
@@ -8799,6 +8865,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles', 'amenities');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_crafted_smiles', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_crafted_smiles', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_low_maintenance', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Reduced consumption, excretion, and rest rates have resulted in twice the beings for half the price. However, demand for protein-rich meals has increased.', NULL, '09_tox_traits.txt');
@@ -8810,6 +8878,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance', 'consumer_goods');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_low_maintenance', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_low_maintenance', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_artificial_intelligence', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'More brains equals more brain power. Extra thinking organs have been added in strategic areas of the recipient''s body to ensure maximum cognitive capacity. Even if they don''t always agree.', NULL, '09_tox_traits.txt');
@@ -8822,6 +8892,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_artificial_intel
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_artificial_intelligence', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_artificial_intelligence', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_artificial_intelligence', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_artificial_intelligence', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_gene_mentorship', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'By combining genetically redesigned ''instinctive knowledge'' and outside chemical stimuli, we have succeeded in vastly accelerating our learning capacities. Although it has resulted in some extremely paranoid individuals.', NULL, '09_tox_traits.txt');
@@ -8832,6 +8904,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_gene_mentorship'
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_gene_mentorship', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_gene_mentorship', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_gene_mentorship', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_gene_mentorship', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_expressed_tradition', 1, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Fanaticism on demand: faith is merely a cocktail of hormones, one we have perfected. Where that faith eventually leads is a matter of subsequent guidance.', NULL, '09_tox_traits.txt');
@@ -8843,6 +8917,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradit
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradition', 'unity');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradition', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_expressed_tradition', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_expressed_tradition', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_elevated_synapses', 2, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'As a computational device, a brain does not run at 100% capacity. However, we have gone beyond the standard usage. If issues are encountered, try turning it off and on again.', NULL, '09_tox_traits.txt');
@@ -8855,6 +8931,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_elevated_synapse
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_elevated_synapses', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_elevated_synapses', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_elevated_synapses', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_elevated_synapses', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_preplanned_growth', 2, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'Scheduled fertility, scheduled interest, scheduled compatibility. Population growth on demand for a strong and stable population - with a few minor edits here and there. Jealous individuals are to be directed to the nearest Fertility Center for mandatory training.', NULL, '09_tox_traits.txt');
@@ -8866,6 +8944,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growt
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growth', 'housing');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growth', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_preplanned_growth', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_preplanned_growth', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_excessive_endurance', 3, 'overtuned', 1, 0, 0, 'Toxoids Species Pack', 'The greatest in adaptability genes have been hyper-expressed in these specimens. Mutation rates around 30% indicate a somewhat stable and successful experiment.', NULL, '09_tox_traits.txt');
@@ -8877,6 +8957,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_excessive_endura
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_excessive_endurance', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_excessive_endurance', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_excessive_endurance', 'special');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_excessive_endurance', 'origin', 'require_any', 'origin_overtuned', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_incubator', 'logistic_growth_mult', '0.01', 0);
@@ -9197,6 +9279,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_dri
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_drills', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_drills', 'mineral');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_power_drills', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_power_drills', 'civic', 'require_any', 'civic_augmentation_bazaars', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_harvesters', 1, 'cyborg', 1, 0, 0, NULL, 'A suite of tools, from nutrient solution diagnostics and on-site balancing to per-stalk micro-threshing, enables cybernetic workers to increase produce yields.', NULL, '10_species_traits_cyborg.txt');
@@ -9207,6 +9291,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_harvester
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_harvesters', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_harvesters', 'food');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_harvesters', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_harvesters', 'civic', 'require_any', 'civic_augmentation_bazaars', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_superconductive', 1, 'cyborg', 1, 0, 0, NULL, 'The use of superconductive materials in units have cut energy transmission losses to zero percent.', NULL, '10_species_traits_cyborg.txt');
@@ -9217,6 +9303,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_supercond
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_superconductive', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_superconductive', 'energy');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_superconductive', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_superconductive', 'civic', 'require_any', 'civic_augmentation_bazaars', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_efficient_processors', 2, 'cyborg', 0, 0, 0, NULL, 'These highly efficient processors increase the both workload and endurance.', NULL, '10_species_traits_cyborg.txt');
@@ -9236,6 +9324,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_logic_eng
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_logic_engines', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_logic_engines', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_logic_engines', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_logic_engines', 'civic', 'require_any', 'civic_augmentation_bazaars', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_loyalty_circuits', 1, 'cyborg', 1, 0, 0, NULL, 'Loyalty as an ideal is a distinctly organic concept. It is much more efficient to simply program compliance.', NULL, '10_species_traits_cyborg.txt');
@@ -9247,6 +9337,10 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_loyalty_c
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_loyalty_circuits', 'happiness');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_loyalty_circuits', 'cybernetic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_loyalty_circuits', 'individual');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_loyalty_circuits', 'origin', 'require_any', 'origin_unplugged', 1);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_loyalty_circuits', 'civic', 'require_any', 'civic_augmentation_bazaars', 2);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_double_jointed', 1, 'cyborg', 0, 0, 0, NULL, 'Collapsible labor units with flexible joints enable them to fold neatly into stacks during transportation, then self-assemble on site.', NULL, '10_species_traits_cyborg.txt');
@@ -9279,6 +9373,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enhanced_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enhanced_memory', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enhanced_memory', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_enhanced_memory', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_enhanced_memory', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_durable', 1, 'cyborg', 1, 0, 0, NULL, 'Protected by exoskeletons of chrome-plated titanium, these heavy-duty machines were designed to excel under harsh conditions and require less maintenance.', NULL, '10_species_traits_cyborg.txt');
@@ -9289,6 +9385,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_durable',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_durable', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_durable', 'amenities');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_durable', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_durable', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_high_maintenance', -2, 'cyborg', 1, 0, 0, NULL, 'These machines were designed with a complete disregard for longevity and are prone to malfunction. They will require frequent maintenance.', NULL, '10_species_traits_cyborg.txt');
@@ -9299,6 +9397,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_main
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_maintenance', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_maintenance', 'amenities');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_maintenance', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_high_maintenance', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_learning_algorithms', 1, 'cyborg', 1, 0, 0, NULL, 'Sophisticated, self-learning algorithms that stimulate the rapid evolution of a unit''s neural clusters.', NULL, '10_species_traits_cyborg.txt');
@@ -9309,6 +9409,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_learning_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_learning_algorithms', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_learning_algorithms', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_learning_algorithms', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_learning_algorithms', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_power_intensive', -1, 'cyborg', 0, 0, 0, NULL, 'These cybernetic components require frequent recharging from an external power source.', NULL, '10_species_traits_cyborg.txt');
@@ -9328,6 +9430,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_neural_li
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_neural_limiters', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_neural_limiters', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_neural_limiters', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_neural_limiters', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_streamlined_protocols', 1, 'cyborg', 1, 0, 0, NULL, 'Extensively batched AI processes allow these units to scale greatly with minimal loss of efficiency.', NULL, '10_species_traits_cyborg.txt');
@@ -9338,6 +9442,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_streamlin
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_streamlined_protocols', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_streamlined_protocols', 'empire_size');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_streamlined_protocols', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_streamlined_protocols', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_high_bandwidth', -2, 'cyborg', 1, 0, 0, NULL, 'Individual units send and receive a vast amount of largely duplicate data, causing exponential lag as the number of units attached to each central processing hub increases.', NULL, '10_species_traits_cyborg.txt');
@@ -9348,6 +9454,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_band
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_bandwidth', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_bandwidth', 'empire_size');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_high_bandwidth', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_high_bandwidth', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_trading_algorithms', 1, 'cyborg', 1, 0, 0, NULL, 'Predictive algorithms allow for maximum optimization. Infinitesimal market fluctuations in currency rates, stock availability, and the emotional response of organic partners are accounted for.', NULL, '10_species_traits_cyborg.txt');
@@ -9359,6 +9467,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_trading_a
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_trading_algorithms', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_trading_algorithms', 'trade');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_trading_algorithms', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_trading_algorithms', 'civic', 'require_any', 'civic_augmentation_bazaars', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_stainless_steel_smile', 1, 'cyborg', 1, 0, 0, 'The Machine Age', 'This species favors custom engravings, aftermarket components and paint schemes to maximize visual impact. Sometimes the only choice is to flash that chrome.', NULL, '10_species_traits_cyborg.txt');
@@ -9370,6 +9480,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_stainless
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_stainless_steel_smile', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_stainless_steel_smile', 'amenities');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_stainless_steel_smile', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_stainless_steel_smile', 'civic', 'require_any', 'civic_augmentation_bazaars', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_welded_countenance', -2, 'cyborg', 0, 0, 0, 'The Machine Age', 'These cyborgs employ crude but functional parts with minimal consideration for aesthetics. Sometimes the job just has to get done.', NULL, '10_species_traits_cyborg.txt');
@@ -9403,6 +9515,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_en
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_engineers', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_engineers', 'research');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_bionic_engineers', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_bionic_engineers', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_bionic_physicists', 1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Integrated multi-modal processing produces physics calculations on the fly without requiring a connection to an external computing unit.', NULL, '10_species_traits_cyborg.txt');
@@ -9437,6 +9551,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_integrate
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_integrated_weaponry', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_integrated_weaponry', 'army');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_integrated_weaponry', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_integrated_weaponry', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_mass_produced', 1, 'cyborg', 1, 1, 0, 'The Machine Age', 'The enforced backwards compatibility of mandatory implants greatly reduces the cost of outfitting newborn citizens.', NULL, '10_species_traits_cyborg.txt');
@@ -9445,6 +9561,8 @@ INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cybo
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_mass_produced', 'cybernetic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_mass_produced', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_mass_produced', 'pop_growth');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_mass_produced', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_propaganda_machines', 1, 'cyborg', 1, 1, 0, 'The Machine Age', 'Cortical analysis units can jolt down users at the inception of seditious thinking, or dispense hormonal rewards to exemplar citizens.', NULL, '10_species_traits_cyborg.txt');
@@ -9454,6 +9572,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_propagand
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_propaganda_machines', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_propaganda_machines', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_propaganda_machines', 'unity');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_propaganda_machines', 'civic', 'require_any', 'civic_augmentation_bazaars', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_delicate_frames', -1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Subpar components and installation have resulted in a fragile cyborg chassis. Basic operations are not compromised, but the users are advised to avoid situations with high likelihood of physical trauma.', NULL, '10_species_traits_cyborg.txt');
@@ -9475,6 +9595,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_limited_m
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_limited_memory', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_limited_memory', 'leader');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_limited_memory', 'cybernetic');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_cyborg_limited_memory', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_scarcity_algorithms', -1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Aggressively cost-aware coding hampers risk-taking and therefore denies opportunities for greater profits.', NULL, '10_species_traits_cyborg.txt');
@@ -10280,6 +10402,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('leader_trait_buccaneer', 1, NULL, 0, 0, 0, NULL, 'A master of battlefield salvage, this leader is able to extract every ounce of value from even the most damaged wrecks.', NULL, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('leader_trait_buccaneer', 'origin', 'require_any', 'origin_treasure_hunters', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('leader_trait_buccaneer_2', NULL, NULL, 0, 1, 0, NULL, NULL, NULL, '14_grand_archive_traits.txt');
@@ -10289,6 +10413,8 @@ INSERT OR IGNORE INTO trait
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('leader_trait_trailblazer', 1, NULL, 0, 0, 0, NULL, 'Enthralled by the rewarding prospects of the galactic frontier, this leader hopes to chart the furthest reaches of space.', NULL, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('leader_trait_trailblazer', 'origin', 'require_any', 'origin_treasure_hunters', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('leader_trait_trailblazer_2', NULL, NULL, 0, 1, 0, NULL, NULL, NULL, '14_grand_archive_traits.txt');
@@ -10298,6 +10424,8 @@ INSERT OR IGNORE INTO trait
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('leader_trait_treasure_hoarder', 1, NULL, 0, 0, 0, NULL, 'No bounty is high enough to satisfy this leader''s ambition. The accumulation of valuable resources is their primary motivation.', NULL, '14_grand_archive_traits.txt');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('leader_trait_treasure_hoarder', 'origin', 'require_any', 'origin_treasure_hunters', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('leader_trait_treasure_hoarder_2', NULL, NULL, 0, 1, 0, NULL, NULL, NULL, '14_grand_archive_traits.txt');
@@ -10586,6 +10714,8 @@ INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('
 INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_familial', 'lith_human_inf');
 INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_familial', 'pla17');
 INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES ('trait_familial', 'aqu5');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_familial', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_permeable_skin', -1, NULL, 1, 1, 0, 'BioGenesis', 'Specially developed skin that requires ideal conditions coats this species. As long as this species does not stray far from their home climate that shouldn''t be a problem.', NULL, '15_biogenesis_species_traits.txt');
@@ -10601,6 +10731,24 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_permeable_skin',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_permeable_skin', 'molluscoid');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_permeable_skin', 'aquatic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_permeable_skin', 'species');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_permeable_skin', 'planet_class', 'require_any', 'pc_tropical', 1);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_permeable_skin', 'planet_class', 'require_any', 'pc_arid', 1);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_permeable_skin', 'planet_class', 'require_any', 'pc_continental', 1);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_permeable_skin', 'planet_class', 'require_any', 'pc_ocean', 1);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_permeable_skin', 'planet_class', 'require_any', 'pc_tundra', 1);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_permeable_skin', 'planet_class', 'require_any', 'pc_arctic', 1);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_permeable_skin', 'planet_class', 'require_any', 'pc_alpine', 1);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_permeable_skin', 'planet_class', 'require_any', 'pc_savannah', 1);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_permeable_skin', 'planet_class', 'require_any', 'pc_desert', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_genetic_memory', 3, NULL, 1, 1, 0, 'BioGenesis', 'Passing down knowledge and learnings from one generation to the next has been the start of many civilizations. This species has taken it a step further by encoding survival insights directly into their genetic code, ensuring that each generation is born with the accumulated wisdom of their ancestors.', NULL, '15_biogenesis_species_traits.txt');
@@ -11288,6 +11436,8 @@ INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_un
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('leader_trait_unplugged_cybernetic_positives_3', NULL, NULL, 1, 0, 0, NULL, 'This leader has delegated several core body functions to hardware which prioritizes combat awareness.', NULL, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('leader_trait_unplugged_cybernetic_positives_3', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_unplugged_cybernetic_positives_2', 0, NULL, 0, 0, 0, NULL, 'These cyborgs benefit from a holistic approach to embodied loadouts. Rather than fully-integrated body armor, swappable augments allow for a modicum of non-military function.', NULL, '15_unplugged_traits.txt');
@@ -11297,6 +11447,8 @@ INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_un
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('leader_trait_unplugged_cybernetic_positives_2', NULL, NULL, 1, 0, 0, NULL, 'This leader is able to integrate seamlessly and directly with military and civilian systems, at significant cost to their organic senses.', NULL, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('leader_trait_unplugged_cybernetic_positives_2', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_unplugged_cybernetic_positives_1', 0, NULL, 0, 0, 0, NULL, 'Elegant augmentations to these cyborgs'' senses, glands, and motor nerves ensure they remain fierce and capable warriors while only marginally impacting their reproductive capabilities.', NULL, '15_unplugged_traits.txt');
@@ -11306,6 +11458,8 @@ INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_un
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('leader_trait_unplugged_cybernetic_positives_1', NULL, NULL, 1, 0, 0, NULL, 'Significant augmentation of this leader''s senses and immune systems ensures longevity, reliability, and only minor loss of reproductive function.', NULL, '15_unplugged_traits.txt');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('leader_trait_unplugged_cybernetic_positives_1', 'origin', 'require_any', 'origin_unplugged', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_unplugged_cybernetic_negatives_3', 0, NULL, 0, 0, 0, NULL, 'Several of these cyborgs'' augments were designed to utilize a battlefield network which no longer exists, causing intense stress and discomfort.', NULL, '15_unplugged_traits.txt');
@@ -11855,6 +12009,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_recursive_learne
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_recursive_learners', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_recursive_learners', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_recursive_learners', 'research');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_recursive_learners', 'planet_class', 'require_any', 'pc_ark', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_structural_awareness', 1, NULL, 1, 1, 0, 'Nomads', 'Designed to live within the Arkship, these machines continuously map its internal stresses, flows, and routines. Different arkship designs produce different patterns, and they iteratively optimize their behavior to match the vessel they inhabit.', NULL, '18_nomads_species_traits.txt');
@@ -11867,6 +12023,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_structural_aware
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_structural_awareness', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_structural_awareness', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_structural_awareness', 'research');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_structural_awareness', 'planet_class', 'require_any', 'pc_ark', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_interconnected', 2, NULL, 1, 1, 0, 'Nomads', 'Over generations, the boundary between Arkship and occupant has dissolved. The vessel became an extension of their senses and limbs; they, in turn, became a functional component of its design.', NULL, '18_nomads_species_traits.txt');
@@ -11881,6 +12039,8 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_interconnected',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_interconnected', 'amenities');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_interconnected', 'upkeep');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_interconnected', 'drawbacks');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_interconnected', 'planet_class', 'require_any', 'pc_ark', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_reavers', 2, NULL, 1, 1, 0, 'Nomads', 'Cunning, not camaraderie, shaped this species'' evolution. Every interaction is a contest of will, and survival belongs to the most ruthless.', 'Commanders start with the Plunderer trait if they are not Xenophile or Pacifist', '18_nomads_species_traits.txt');
@@ -11891,6 +12051,8 @@ INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_re
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_reavers', 'trait_terraphobic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_reavers', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_reavers', 'leader');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_reavers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_defence_drones', 1, NULL, 1, 1, 0, 'Nomads', 'Each unit is both engineer and combatant. In wartime, their synchronized protocols stabilize the whole and keep critical systems repaired and optimized.', NULL, '18_nomads_species_traits.txt');
@@ -11903,6 +12065,10 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_defence_drones',
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_defence_drones', 'pop_output');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_defence_drones', 'stability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_defence_drones', 'drawbacks');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_defence_drones', 'planet_class', 'require_any', 'pc_ark', 1);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_defence_drones', 'planet_class', 'require_any', 'pc_habitat', 1);
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_terraphobic', -1, NULL, 1, 1, 0, 'Nomads', 'Having adapted to life aboard artificial environments, this species finds planetary environments oppressive. Gravity, atmosphere, and terrain pose constant challenges to their frail physiology.', NULL, '18_nomads_species_traits.txt');
@@ -11916,6 +12082,10 @@ INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_te
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_terraphobic', 'negative');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_terraphobic', 'amenities');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_terraphobic', 'army');
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_terraphobic', 'planet_class', 'require_any', 'pc_ark', 1);
+INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES ('trait_terraphobic', 'planet_class', 'require_any', 'pc_habitat', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_photoadaptive', 'leader_lifespan_add', '10.0', 0);
@@ -18455,6 +18625,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_agrarian_idyll', 'origin', 'forbid', 'origin_remnants', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_agrarian_idyll', 'planet_class', 'forbid', 'pc_volcanic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_shadow_council', 'Shadow Council', NULL, 'normal', NULL, 1, 0, NULL, 20);
@@ -18976,6 +19149,12 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_reanimated_armies', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_reanimated_armies', 'archetype', 'forbid', 'ROBOT', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_reanimated_armies', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_diplomatic_corps', 'Diplomatic Corps', NULL, 'normal', 'Federations', 1, 0, NULL, 33);
@@ -19101,6 +19280,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_catalytic_processing', 'origin', 'forbid', 'origin_lithoid', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_catalytic_processing', 'planet_class', 'forbid', 'pc_volcanic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_crafters', 'Masterful Crafters', 'Artisans are replaced with Artificers
@@ -19195,6 +19377,12 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_idyllic_bloom', 'origin', 'forbid', 'origin_unplugged', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'species_class', 'require_any', 'FUN', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_idyllic_bloom', 'species_class', 'require_any', 'PLANT', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_idyllic_bloom', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
@@ -19213,6 +19401,9 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_anglers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_anglers', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_anglers', 'civic', 'forbid', 'civic_tankbound', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
@@ -19225,7 +19416,11 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_anglers', 'origin', 'forbid', 'origin_void_dwellers', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_anglers', 'planet_class', 'forbid', 'pc_volcanic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_anglers', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('civic_anglers', 'trait_aquatic');
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_machine_anglers', 'Marine Machines', 'On Ocean Worlds, Agriculture Districts are uncapped.
@@ -19243,6 +19438,9 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_machine_anglers', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_machine_anglers', 'archetype', 'require', 'MACHINE', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_anglers', 'origin', 'forbid', 'origin_post_apocalyptic_machines', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
@@ -19253,6 +19451,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_machine_anglers', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('civic_machine_anglers', 'trait_robot_aquatic');
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_pompous_purists', 'Pompous Purists', 'Can only engage in Diplomacy with other empires if they are the proposer.', 'normal', NULL, 1, 0, NULL, 42);
@@ -19321,6 +19520,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_toxic_baths', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_toxic_baths', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_toxic_baths', 'civic', 'forbid', 'civic_corporate_toxic_baths', 0);
@@ -19758,6 +19960,12 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_selective_kinship', 'origin', 'forbid', 'origin_broken_shackles', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_selective_kinship', 'archetype', 'forbid', 'ROBOT', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_selective_kinship', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_dark_consortium', 'Dark Consortium', 'Additional Starting Technologies: Physics Dark Matter Drawing
@@ -19796,6 +20004,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_natural_design', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_natural_design', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_natural_design', 'civic', 'forbid', 'civic_guided_sapience', 0);
@@ -20008,6 +20219,9 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_toxic_baths_individual_machine', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_toxic_baths_individual_machine', 'archetype', 'require', 'MACHINE', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_toxic_baths_individual_machine', 'civic', 'forbid', 'civic_corporate_toxic_baths_individual_machine', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
@@ -20026,6 +20240,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_individual_machine_replication', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_individual_machine_replication', 'archetype', 'require', 'MACHINE', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_individual_machine_predictive_analysis', 'Static Research Analysis', NULL, 'normal', NULL, 1, 0, NULL, 61);
@@ -20048,6 +20265,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_individual_machine_predictive_analysis', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_individual_machine_predictive_analysis', 'archetype', 'require', 'MACHINE', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_individual_machine_warbots', 'Warbots', NULL, 'normal', NULL, 1, 0, NULL, 62);
@@ -20082,6 +20302,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_individual_machine_warbots', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_individual_machine_warbots', 'archetype', 'require', 'MACHINE', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_individual_machine_warbots', 'civic', 'forbid', 'civic_machine_obsessional_directive', 0);
@@ -20120,6 +20343,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_storm_callers', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('civic_storm_callers', 'trait_storm_touched');
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_environmental_architects', 'Planetscapers', 'Additional Starting Technologies: Society Technologies to remove Blocker Natural Blockers on the Homeworld
@@ -20341,6 +20565,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_genetic_identification', 'civic', 'forbid', 'civic_corporate_genetic_identification', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_genetic_identification', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_crowdsourcing', 'Crowdsourcing', 'Factions produce Physics Society Engineering Research instead of Unity
@@ -20546,6 +20773,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_twisted_experimenters', 'ethic', 'require_any', 'ethic_fanatic_xenophobe', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_secret_societies', 'Secret Societies', 'Clandestine Factions will emerge after contacting other empires.
@@ -20729,6 +20959,19 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_tankbound', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'species_class', 'require_any', 'NECROID', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'species_class', 'require_any', 'TOX', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'species_class', 'require_any', 'AQUATIC', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound', 'species_class', 'require_any', 'INF', 1);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('civic_tankbound', 'trait_tankbound');
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_scorched_earth', 'Scorched World Heralds', 'Cannot engage in Diplomacy except with Thermophiles.
@@ -20872,6 +21115,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_scorched_earth', 'origin', 'forbid', 'origin_scion', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_scorched_earth', 'species_class', 'require', 'INF', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_world_forgers', 'Planet Forgers', 'Unlocks starting planet: Volcanic World.
@@ -20919,6 +21165,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_world_forgers', 'ship_type', 'forbid', 'organic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_world_forgers', 'trait', 'forbid', 'trait_aquatic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_pyrolatry', 'Fire Cult', 'The Scourge of the Volcano faction forms shortly after game start.
@@ -20952,6 +21201,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_pyrolatry', 'origin', 'forbid', 'origin_ocean_paradise', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_pyrolatry', 'trait', 'forbid', 'trait_aquatic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_galvanic_symbiosis', 'Galvanic Synthesis', 'Starts with Engineering Research Living Metal already researched.
@@ -20978,6 +21230,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_galvanic_symbiosis', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_galvanic_symbiosis', 'species_class', 'require', 'INF', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_caravan_masters', 'Caravan Masters', 'Guaranteed Research Options: Engineering Research Improved Wayline Logistics
@@ -22138,6 +22393,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_catalytic_processing', 'origin', 'forbid', 'origin_wilderness', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_catalytic_processing', 'planet_class', 'forbid', 'pc_volcanic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_idyllic_bloom', 'Mycorrhizal Ideal', 'Can build Gaia Seeders on your and your vassal''s worlds ideal to your starting species.
@@ -22162,6 +22420,12 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_idyllic_bloom', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_idyllic_bloom', 'species_class', 'require_any', 'FUN', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_idyllic_bloom', 'species_class', 'require_any', 'PLANT', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_idyllic_bloom', 'gameplay', 'forbid', 'nomadic', 0);
@@ -22295,6 +22559,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_stargazers', 'ship_type', 'forbid', 'organic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('civic_hive_stargazers', 'trait_stargazer');
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_memory_vault_hive', 'Neural Vaults', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, 0, NULL, 157);
@@ -22518,6 +22783,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_guided_sapience', 'authority', 'forbid', 'auth_machine_intelligence', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_guided_sapience', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_guided_sapience', 'civic', 'forbid', 'civic_hive_stargazers', 0);
@@ -22921,6 +23189,9 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_twisted_experimenters_hive_mind', 'authority', 'require', 'auth_hive_mind', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters_hive_mind', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_twisted_experimenters_hive_mind', 'origin', 'forbid', 'origin_wilderness', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
@@ -23066,6 +23337,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_scorched_earth', 'origin', 'forbid', 'origin_fear_of_the_dark', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_scorched_earth', 'species_class', 'require', 'INF', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_world_forgers', 'Volcanic Nesting', 'Unlocks starting planet: Volcanic World.
@@ -23131,6 +23405,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_hive_galvanic_symbiosis', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_hive_galvanic_symbiosis', 'species_class', 'require', 'INF', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_hive_deep_sleep', 'Alternating Torpor', 'Initial Pops: +3000
@@ -24878,6 +25155,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_catalytic_processing', 'origin', 'forbid', 'origin_lithoid', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_catalytic_processing', 'planet_class', 'forbid', 'pc_volcanic', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_hedonism', 'Corporate Hedonism', 'Pop Cat Civilians are replaced with Hedonists
@@ -24913,6 +25193,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_anglers', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_anglers', 'civic', 'forbid', 'civic_anglers', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
@@ -24931,7 +25214,11 @@ INSERT OR IGNORE INTO civic_requirement
                    VALUES ('civic_corporate_anglers', 'origin', 'forbid', 'origin_void_dwellers', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_anglers', 'planet_class', 'forbid', 'pc_volcanic', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_anglers', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('civic_corporate_anglers', 'trait_aquatic');
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_machine_anglers', 'Maritime Robotics', 'On Ocean Worlds, Agriculture Districts are uncapped.
@@ -24944,6 +25231,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_machine_anglers', 'archetype', 'require', 'MACHINE', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_machine_anglers', 'origin', 'forbid', 'origin_post_apocalyptic_machines', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
@@ -24954,6 +25244,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_machine_anglers', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('civic_corporate_machine_anglers', 'trait_robot_aquatic');
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_crafters', 'Mastercraft Inc.', 'Artisans are replaced with Artificers
@@ -25002,6 +25293,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_permanent_employment', 'origin', 'forbid', 'origin_evolutionary_predators', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_permanent_employment', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_relentless_industrialists', 'Shareholder Values', 'Can build Coordinated Fulfillment Center, significantly increasing Alloy and Consumer Goods output at the cost of reduced Pop Growth and gradually turning planets into Tomb Worlds.
@@ -25061,6 +25355,9 @@ INSERT OR IGNORE INTO civic_modifier
                        VALUES ('civic_corporate_toxic_baths', 'add_attunement_the_composer_of_strands', '60.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_toxic_baths', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_toxic_baths', 'civic', 'forbid', 'civic_toxic_baths', 0);
@@ -25367,6 +25664,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_private_healthcare_corporate', 'origin', 'forbid', 'origin_payback', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_private_healthcare_corporate', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_memory_vault_corporate', 'Knowledge Mentorship', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and Trade based on Destiny Traits acquired.
@@ -25497,6 +25797,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_augmentation_bazaars', 'origin', 'forbid', 'origin_endbringers', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_augmentation_bazaars', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_sovereign_guardianship', 'Corporate Protectorate', 'Unlocks Fanatic Guardians as defense armies.
@@ -25652,6 +25955,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('add_attunement_the_composer_of_strands', 'Add Attunement with The Composer Of Strands', 1);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_toxic_baths_individual_machine', 'archetype', 'require', 'MACHINE', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_toxic_baths_individual_machine', 'civic', 'forbid', 'civic_toxic_baths_individual_machine', 0);
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
@@ -25681,6 +25987,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_storm_callers_megacorp', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('civic_storm_callers_megacorp', 'trait_storm_touched');
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_environmental_architects_megacorp', 'Geo-Engineering Inc.', 'Additional Starting Technologies: Society Technologies to remove Blocker Natural Blockers on the Homeworld
@@ -25883,6 +26190,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_genetic_identification', 'civic', 'forbid', 'civic_genetic_identification', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_genetic_identification', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_crowdsourcing', 'Decentralized R&D', 'Factions produce Physics Society Engineering Research instead of Unity
@@ -26055,6 +26365,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_twisted_experimenters_corporate', 'civic', 'forbid', 'civic_natural_design', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_twisted_experimenters_corporate', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_secret_societies_corporate', 'Influential Cartel', 'Clandestine Factions will emerge after contacting other empires.
@@ -26211,6 +26524,19 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_tankbound_corporate', 'origin', 'forbid', 'origin_unplugged', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'species_class', 'require_any', 'NECROID', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'species_class', 'require_any', 'TOX', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'species_class', 'require_any', 'AQUATIC', 1);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_tankbound_corporate', 'species_class', 'require_any', 'INF', 1);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('civic_tankbound_corporate', 'trait_tankbound');
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_corporate_world_forgers', 'Planetary Architects', 'Unlocks starting planet: Volcanic World.
@@ -26270,6 +26596,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR IGNORE INTO civic_requirement
                        (civic_key, kind, operator, value, group_id)
                    VALUES ('civic_corporate_galvanic_symbiosis', 'origin', 'forbid', 'origin_synthetic_fertility', 0);
+INSERT OR IGNORE INTO civic_requirement
+                       (civic_key, kind, operator, value, group_id)
+                   VALUES ('civic_corporate_galvanic_symbiosis', 'species_class', 'require', 'INF', 0);
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
                VALUES ('civic_caravan_masters_corporate', 'Dynamic Logistics', 'Guaranteed Research Options: Engineering Research Improved Wayline Logistics
@@ -26730,6 +27059,9 @@ INSERT OR IGNORE INTO origin_requirement
                    VALUES ('origin_red_giant', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_red_giant', 'trait', 'forbid', 'trait_aquatic', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_red_giant', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
@@ -26787,6 +27119,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_cosmic_dawn', 'ship_type', 'forbid', 'organic', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cosmic_dawn', 'species_class', 'require', 'INF', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_cosmic_dawn', 'gameplay', 'forbid', 'nomadic', 0);
@@ -26910,6 +27245,9 @@ INSERT OR IGNORE INTO origin_requirement
                    VALUES ('origin_endbringers', 'civic', 'forbid', 'civic_augmentation_bazaars', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_endbringers', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_endbringers', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
@@ -26967,6 +27305,10 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_evolutionary_predators', 'civic', 'forbid', 'civic_entropy_drinkers_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_evolutionary_predators', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_evolutionary_predators', 'trait_malleable_genes');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27054,7 +27396,11 @@ INSERT OR IGNORE INTO origin_requirement
                    VALUES ('origin_wilderness', 'ship_type', 'require_any', 'organic', 2);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_wilderness', 'planet_class', 'forbid', 'pc_volcanic', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_wilderness', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_wilderness', 'trait_wilderness');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27123,6 +27469,12 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_primal_calling', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_primal_calling', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_primal_calling', 'planet_class', 'forbid', 'pc_volcanic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27203,6 +27555,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_cybernetic_creed', 'civic', 'forbid', 'civic_secret_societies_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_cybernetic_creed', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27298,6 +27653,10 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_synthetic_fertility', 'civic', 'forbid', 'civic_corporate_deep_sleep', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_synthetic_fertility', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_synthetic_fertility', 'trait_pathogenic_genes');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27315,6 +27674,9 @@ INSERT OR IGNORE INTO origin_modifier
                        VALUES ('origin_arc_welders', 'arc_furnace_limit_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('arc_furnace_limit_add', 'Arc Furnace Capacity', 1);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_arc_welders', 'archetype', 'require', 'MACHINE', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27342,7 +27704,11 @@ INSERT OR IGNORE INTO origin_requirement
                    VALUES ('origin_legendary_leader', 'authority', 'require', 'auth_dictatorial', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_legendary_leader', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_legendary_leader', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_legendary_leader', 'trait_perfected_genes');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27357,6 +27723,7 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_legendary_leader_death', 'origin', 'require_any', 'origin_legendary_leader_imperial', 1);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_legendary_leader_death', 'trait_perfected_genes');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27371,6 +27738,7 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_legendary_leader_imperial', 'origin', 'require_any', 'origin_legendary_leader_imperial', 1);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_legendary_leader_imperial', 'trait_perfected_genes');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27385,6 +27753,7 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_legendary_leader_dictatorial', 'origin', 'require_any', 'origin_legendary_leader_imperial', 1);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_legendary_leader_dictatorial', 'trait_perfected_genes');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27436,6 +27805,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_payback', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_payback', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_payback', 'gameplay', 'forbid', 'nomadic', 0);
@@ -27522,6 +27894,12 @@ INSERT OR IGNORE INTO origin_requirement
                    VALUES ('origin_broken_shackles', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_broken_shackles', 'planet_class', 'forbid', 'pc_volcanic', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_broken_shackles', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
@@ -27580,6 +27958,9 @@ INSERT OR IGNORE INTO origin_requirement
                    VALUES ('origin_fear_of_the_dark', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fear_of_the_dark', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_fear_of_the_dark', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
@@ -27615,6 +27996,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_overtuned', 'civic', 'forbid', 'civic_entropy_drinkers_hive_mind', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_overtuned', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27640,6 +28024,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_toxic_knights', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_toxic_knights', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27719,7 +28106,11 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_non_artificial_max_districts_add', 'Max Districts (Non-artificial planets only)', 1);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_subterranean', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_subterranean', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_subterranean', 'trait_cave_dweller');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27764,7 +28155,11 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_non_artificial_max_districts_add', 'Max Districts (Non-artificial planets only)', 1);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_subterranean_machines', 'archetype', 'require', 'MACHINE', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_subterranean_machines', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_subterranean_machines', 'trait_robot_cave_dweller');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27810,6 +28205,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_shroudwalker_apprentice', 'civic', 'forbid', 'civic_augmentation_bazaars', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shroudwalker_apprentice', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27868,6 +28266,9 @@ INSERT OR REPLACE INTO origin
 Guaranteed Habitable Worlds: Replaced with Frozen Worlds', NULL, 1, NULL, NULL, 'pc_ocean', 1, 'gfx/interface/icons/origins/origins_ocean_paradise.dds', 36);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_ocean_paradise', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_ocean_paradise', 'civic', 'forbid', 'civic_pyrolatry', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
@@ -27890,11 +28291,15 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_ocean_paradise', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_ocean_paradise', 'trait_aquatic');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
                VALUES ('origin_ocean_machines', 'Subaquatic Machines', 'Species Traits: Waterproof, Homeworld: Ocean World (size: Planetsize 30), Colony Modifiers: Ocean Paradise, Planetary Features: Crystal Reef
 Guaranteed Habitable Worlds: Replaced with Frozen Worlds', NULL, 1, NULL, NULL, 'pc_ocean', 1, 'gfx/interface/icons/origins/origins_ocean_paradise.dds', 37);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_ocean_machines', 'archetype', 'require', 'MACHINE', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_ocean_machines', 'civic', 'forbid', 'civic_pyrolatry', 0);
@@ -27904,6 +28309,7 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_ocean_machines', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_ocean_machines', 'trait_robot_aquatic');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -27949,6 +28355,10 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_necrophage', 'civic', 'forbid', 'civic_corporate_superstitious_beliefs', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_necrophage', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_necrophage', 'trait_necrophage');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -28020,6 +28430,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('habitat_district_jobs_mult', 'Jobs from Habitat Districts', 1);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_dwellers', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_void_dwellers', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
@@ -28042,6 +28455,7 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_void_dwellers', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_void_dwellers', 'trait_void_dweller_1');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -28079,6 +28493,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('habitat_district_jobs_mult', 'Jobs from Habitat Districts', 1);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_void_machines', 'archetype', 'require', 'MACHINE', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_void_machines', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
@@ -28095,6 +28512,7 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_void_machines', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_void_machines', 'trait_void_dweller_2');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -28114,6 +28532,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_scion', 'civic', 'forbid', 'civic_scorched_earth', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_scion', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -28121,6 +28542,9 @@ INSERT OR REPLACE INTO origin
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_shoulders_of_giants', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_shoulders_of_giants', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_shoulders_of_giants', 'gameplay', 'forbid', 'nomadic', 0);
@@ -28236,6 +28660,9 @@ INSERT OR IGNORE INTO origin_requirement
                    VALUES ('origin_lithoid', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_lithoid', 'archetype', 'require', 'LITHOID', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_lithoid', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
@@ -28292,12 +28719,18 @@ INSERT OR IGNORE INTO origin_requirement
                    VALUES ('origin_life_seeded', 'civic', 'forbid', 'civic_corporate_world_forgers', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_life_seeded', 'planet_class', 'forbid', 'pc_volcanic', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_life_seeded', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
                VALUES ('origin_post_apocalyptic', 'Post-Apocalyptic', 'Homeworld: Tomb World
 Species Traits: Survivor', 'Apocalypse', 1, NULL, NULL, 'pc_nuked', 0, 'gfx/interface/icons/origins/origins_post_apocalyptic.dds', 50);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_post_apocalyptic', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
@@ -28316,11 +28749,15 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_post_apocalyptic', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_post_apocalyptic', 'trait_survivor');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
                VALUES ('origin_post_apocalyptic_machines', 'Radioactive Rovers', 'Homeworld: Tomb World
 Species Traits: Radiation Shields', 'Apocalypse', 1, NULL, NULL, 'pc_nuked', 0, 'gfx/interface/icons/origins/origins_post_apocalyptic.dds', 51);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_post_apocalyptic_machines', 'archetype', 'require', 'MACHINE', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_post_apocalyptic_machines', 'civic', 'forbid', 'civic_agrarian_idyll', 0);
@@ -28339,6 +28776,7 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_post_apocalyptic_machines', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_post_apocalyptic_machines', 'trait_robot_survivor');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -28360,6 +28798,10 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_clone_army', 'civic', 'forbid', 'civic_tankbound_corporate', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_clone_army', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_clone_army', 'trait_clone_soldier_infertile');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -28496,7 +28938,12 @@ INSERT OR IGNORE INTO origin_requirement
                    VALUES ('origin_unplugged', 'ship_type', 'forbid', 'organic', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_unplugged', 'archetype', 'forbid', 'MACHINE', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_unplugged', 'gameplay', 'forbid', 'nomadic', 0);
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_unplugged', 'trait_unplugged_cybernetic_positives_3');
+INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_unplugged', 'trait_unplugged_cybernetic_negatives_3');
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -28531,6 +28978,9 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_mechanists', 'civic', 'forbid', 'civic_permanent_employment', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_mechanists', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
@@ -28587,6 +29037,9 @@ INSERT OR IGNORE INTO origin_requirement
                    VALUES ('origin_tree_of_life', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_tree_of_life', 'planet_class', 'forbid', 'pc_volcanic', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_tree_of_life', 'gameplay', 'forbid', 'nomadic', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
@@ -28616,6 +29069,12 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_fruitful', 'civic', 'forbid', 'civic_hive_devouring_swarm', 0);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fruitful', 'species_class', 'require_any', 'FUN', 2);
+INSERT OR IGNORE INTO origin_requirement
+                       (origin_key, kind, operator, value, group_id)
+                   VALUES ('origin_fruitful', 'species_class', 'require_any', 'PLANT', 2);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_fruitful', 'gameplay', 'forbid', 'nomadic', 0);

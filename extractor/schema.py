@@ -65,6 +65,7 @@ CREATE TABLE species_class_attribute (
 -- Drop the trait family up-front (children before parent): these older tables use
 -- CREATE IF NOT EXISTS, so without an explicit DROP they accumulate stale rows across
 -- runs (renamed/removed modifier keys would otherwise linger).
+DROP TABLE IF EXISTS trait_requirement;
 DROP TABLE IF EXISTS trait_scaling_modifier;
 DROP TABLE IF EXISTS trait_portrait_override;
 DROP TABLE IF EXISTS trait_modifier;
@@ -117,6 +118,20 @@ CREATE TABLE trait_portrait_override (
     trait_key   TEXT NOT NULL,
     portrait_id TEXT NOT NULL,
     PRIMARY KEY (trait_key, portrait_id),
+    FOREIGN KEY (trait_key) REFERENCES trait(key)
+);
+
+-- Empire-creation gates on a species trait: its allowed_/forbidden_ origins, civics and
+-- ethics plus allowed_planet_classes (homeworld). Same shape as civic_requirement:
+-- allowed_* → 'require_any' (group 1), forbidden_* → 'forbid'. E.g. Sedentary is
+-- forbidden for the nomad origins; Aquatic needs an Ocean homeworld.
+CREATE TABLE trait_requirement (
+    trait_key TEXT NOT NULL,
+    kind      TEXT NOT NULL,          -- 'origin' | 'civic' | 'ethic' | 'planet_class'
+    operator  TEXT NOT NULL,          -- 'require_any' | 'forbid'
+    value     TEXT NOT NULL,
+    group_id  INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (trait_key, kind, operator, value),
     FOREIGN KEY (trait_key) REFERENCES trait(key)
 );
 
@@ -240,6 +255,7 @@ CREATE TABLE ethic_policy_restriction (
 -- special). `selectable` is 0 for civics gated to non-player country types (fallen
 -- empires, etc.). `description` is the cleaned effects tooltip; the numeric effects
 -- live in civic_modifier and the eligibility rules in civic_requirement.
+DROP TABLE IF EXISTS granted_trait;
 DROP TABLE IF EXISTS civic_requirement;
 DROP TABLE IF EXISTS civic_modifier;
 DROP TABLE IF EXISTS civic;
@@ -272,11 +288,23 @@ CREATE TABLE civic_modifier (
 CREATE TABLE civic_requirement (
     civic_key  TEXT NOT NULL,
     kind       TEXT NOT NULL,        -- 'authority' | 'ethic' | 'civic' | 'origin' | 'ship_type' | 'gameplay'
+                                     -- | 'species_class' | 'archetype' | 'planet_class' (homeworld) | 'trait'
     operator   TEXT NOT NULL,        -- 'require' | 'forbid' | 'require_any'
     value      TEXT NOT NULL,        -- e.g. 'auth_corporate', 'ethic_materialist'
     group_id   INTEGER NOT NULL DEFAULT 0,  -- ties 'require_any' values from one OR set together
     PRIMARY KEY (civic_key, kind, operator, value),
     FOREIGN KEY (civic_key) REFERENCES civic(key)
+);
+
+-- Species traits a civic or origin gives the founder species (its top-level
+-- `traits = { trait = … }`), e.g. Tankbound → trait_tankbound, Necrophage →
+-- trait_necrophage. Keyed by civic OR origin key, hence no foreign key. The planner
+-- applies the granted trait's opposites (Tankbound rules out Weak / Hollow Bones /
+-- Photoadaptive).
+CREATE TABLE granted_trait (
+    owner_key TEXT NOT NULL,          -- civic or origin key
+    trait_key TEXT NOT NULL,
+    PRIMARY KEY (owner_key, trait_key)
 );
 
 -- Authorities (the empire's government type: Democratic, Imperial, Hive Mind, …).
@@ -354,7 +382,7 @@ CREATE TABLE origin_modifier (
 );
 
 -- Eligibility rules parsed from an origin's potential/possible blocks (same shape as
--- civic_requirement): kind authority/ethic/civic/origin × operator
+-- civic_requirement): kind authority/ethic/civic/origin/archetype/… × operator
 -- require/forbid/require_any. For origins these are mostly civic conflicts.
 CREATE TABLE origin_requirement (
     origin_key TEXT NOT NULL,

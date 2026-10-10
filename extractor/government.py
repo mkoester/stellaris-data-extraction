@@ -234,7 +234,27 @@ def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
 # potential/possible sub-keys we turn into eligibility rules → stored `kind`.
 _CIVIC_GATE_KINDS = {'authority': 'authority', 'ethics': 'ethic',
                      'civics': 'civic', 'origin': 'origin',
-                     'graphical_culture': 'ship_type'}
+                     'graphical_culture': 'ship_type',
+                     'species_class': 'species_class',
+                     'species_archetype': 'archetype',
+                     'preferred_planet_class': 'planet_class',
+                     'traits': 'trait'}
+
+
+def _granted_traits(cdef: dict) -> list[str]:
+    """Traits a civic/origin gives the founder species: its top-level
+    `traits = { trait = … }` (one trait, or several promoted to a list). Nested,
+    conditional `traits` blocks are not followed."""
+    block = cdef.get('traits')
+    if not isinstance(block, dict):
+        return []
+    return [t for t in _to_list(block.get('trait')) if isinstance(t, str)]
+
+
+def _write_granted_traits(w: Writer, owner_key: str, cdef: dict) -> None:
+    for t in _granted_traits(cdef):
+        w.execute("INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES (?, ?)",
+                  (owner_key, t))
 
 
 def _civic_requirements(cdef: dict) -> list[tuple[str, str, str, int]]:
@@ -356,6 +376,7 @@ def extract_civics(data: dict, civic_type: str, loc: dict[str, str],
                    VALUES (?, ?, ?, ?, ?)""",
                 (key, kind, op, val, gid),
             )
+        _write_granted_traits(w, key, cdef)
 
     w.commit()
     return order
@@ -663,6 +684,7 @@ def extract_origins(data: dict, force_nonselectable: bool, loc: dict[str, str],
                    VALUES (?, ?, ?, ?, ?)""",
                 (key, kind, op, val, gid),
             )
+        _write_granted_traits(w, key, odef)
 
     w.commit()
     return order

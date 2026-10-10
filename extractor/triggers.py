@@ -10,6 +10,10 @@ def _trigger_values(sub) -> list[tuple[str, list[str]]]:
     [(operator, [values])]: a bare `value =` → 'require'; `NOT`/`NOR` → 'forbid';
     `OR` → 'require_any'."""
     out: list[tuple[str, list[str]]] = []
+    # A gate repeated in one block (`species_archetype = {…} species_archetype = {…}`)
+    # is promoted to a list by the parser; each entry gates independently.
+    if isinstance(sub, list):
+        return [r for item in sub for r in _trigger_values(item)]
     if not isinstance(sub, dict):
         return out
     direct = [v for v in _to_list(sub.get('value')) if isinstance(v, str)]

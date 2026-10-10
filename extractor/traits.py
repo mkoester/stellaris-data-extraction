@@ -72,6 +72,28 @@ def _parse_cost(cost_raw) -> int | None:
     return None
 
 
+# Trait fields that gate the trait on the empire's other picks → requirement kind.
+# `allowed_*` means "only with one of these" (require_any), `forbidden_*` rules them out.
+_TRAIT_GATE_KINDS = {'origins': 'origin', 'civics': 'civic', 'ethics': 'ethic',
+                     'planet_classes': 'planet_class'}
+
+
+def _trait_requirements(tdef: dict) -> list[tuple[str, str, str, int]]:
+    """Eligibility rows [(kind, operator, value, group_id)] from a trait's
+    allowed_/forbidden_ origins, civics, ethics and allowed_planet_classes. Each
+    allowed_* list is one OR set; group ids number those sets per trait."""
+    rows: list[tuple[str, str, str, int]] = []
+    group = 0
+    for field, kind in _TRAIT_GATE_KINDS.items():
+        allowed = [v for v in _to_list(tdef.get(f'allowed_{field}')) if isinstance(v, str)]
+        if allowed:
+            group += 1
+            rows += [(kind, 'require_any', v, group) for v in allowed]
+        rows += [(kind, 'forbid', v, 0)
+                 for v in _to_list(tdef.get(f'forbidden_{field}')) if isinstance(v, str)]
+    return rows
+
+
 def extract_traits(data: dict, source_file: str, loc: dict[str, str], w: Writer, verbose: bool):
     for trait_key, trait_data in data.items():
         if not isinstance(trait_data, dict):
@@ -131,6 +153,12 @@ def extract_traits(data: dict, source_file: str, loc: dict[str, str], w: Writer,
             w.execute(
                 "INSERT OR IGNORE INTO trait_portrait_override (trait_key, portrait_id) VALUES (?, ?)",
                 (trait_key, pid))
+
+        for kind, op, val, gid in _trait_requirements(trait_data):
+            w.execute(
+                """INSERT OR IGNORE INTO trait_requirement
+                       (trait_key, kind, operator, value, group_id) VALUES (?, ?, ?, ?, ?)""",
+                (trait_key, kind, op, val, gid))
 
         if verbose:
             archs = _to_list(trait_data.get('allowed_archetypes'))
