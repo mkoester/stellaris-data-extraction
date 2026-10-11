@@ -68,12 +68,37 @@ def _render_icon(m: re.Match) -> str:
     name = m.group(1)
     mp = re.match(r'^mod_planet_(.+?)_(?:add|mult)$', name)
     if mp:
-        return ' ' + mp.group(1).replace('_', ' ').title() + ' '
+        return _icon_words(mp.group(1))
     if _ICON_DROP.search(name):
         return ' '
     name = re.sub(r'^sr_', '', name)   # strategic-resource icon prefix (sr_living_metal
                                        # → "Living Metal", matching its $sr_…$ text twin)
-    return ' ' + name.replace('_', ' ').title() + ' '
+    return _icon_words(name)
+
+# Rendered icon words are wrapped in these private-use markers until _drop_icon_echo
+# has seen them, so it can tell an icon's word from the same word written in the text.
+_ICON_OPEN, _ICON_CLOSE = '\ue000', '\ue001'
+_ICON_SPAN = re.compile(f'{_ICON_OPEN}([^{_ICON_CLOSE}]*){_ICON_CLOSE}')
+
+def _icon_words(name: str) -> str:
+    return f' {_ICON_OPEN}{name.replace("_", " ").title()}{_ICON_CLOSE} '
+
+def _drop_icon_echo(s: str, reach: int = 3) -> str:
+    """Drop an icon's word when the clause repeats it within `reach` words after it —
+    "£pop£ §HOrganic Pops§!" → "Organic Pops", not "Pop Organic Pops" — and unwrap
+    every other icon word. Stops at clause punctuation, so "£pop£ is enslaved" and
+    "£pop£ gained: 3 pops" keep their icon word."""
+    def sub(m: re.Match) -> str:
+        name = [_wnorm(w) for w in m.group(1).split()]
+        after = []
+        for tok in _ICON_SPAN.sub(r'\1', s[m.end():]).split()[:reach + len(name)]:
+            after.append(_wnorm(tok))
+            if re.search(r'[.,;:!?)]$', tok):
+                break
+        k = len(name)
+        echoed = any(after[i:i + k] == name for i in range(min(reach, len(after) - k) + 1))
+        return '' if echoed else m.group(1)
+    return _ICON_SPAN.sub(sub, s)
 
 def _wnorm(w: str) -> str:
     """Word key for de-duplication: lowercased, punctuation-free, plural-folded."""
@@ -102,6 +127,17 @@ def _dedup_adjacent(s: str) -> str:
             out.append(toks[i])
             i += 1
     return ' '.join(out)
+
+def join_texts(texts) -> str | None:
+    """Join several cleaned tooltip texts into one, one line each, dropping a line seen
+    already — a second tooltip often restates the first and adds to it
+    (`…_tt_2: "$…_tt$\\n…"`). None when nothing is left."""
+    out: list[str] = []
+    for t in texts:
+        for line in (t or '').split('\n'):
+            if line.strip() and line not in out:
+                out.append(line)
+    return '\n'.join(out) or None
 
 # A $@scripted_variable$ ref, optionally with a Paradox number-format spec after '|'
 # (e.g. $@cost|%0$). These only resolve when the caller passes the `variables` map.
@@ -166,7 +202,7 @@ def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False,
     s = re.sub(r'\\[tr]', ' ', s)      # \t \r → space
     rows: list[tuple[int, str]] = []
     for raw in s.split('\n'):
-        content = _dedup_adjacent(raw)
+        content = _dedup_adjacent(_drop_icon_echo(raw))
         if content:
             rows.append((len(raw) - len(raw.lstrip()), content))
     if not keep_newlines:

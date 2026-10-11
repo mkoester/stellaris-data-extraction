@@ -3,7 +3,7 @@
 from pathlib import Path
 import re
 from .clausewitz import IfBlock, parse_file
-from .localisation import _clean_loc
+from .localisation import _clean_loc, join_texts
 from .modifiers import _write_modifier_label
 from .triggers import _scripted_trigger_index, _trigger_values
 from .values import _resolve_modifier_float, _to_list
@@ -686,8 +686,8 @@ def extract_council_positions(install_dir: Path, loc: dict[str, str],
             tts = [loc[t] for t in (cdef.get('custom_tooltip'),
                                     cdef.get('custom_tooltip_with_modifiers'))
                    if isinstance(t, str) and t in loc]
-            effect = '\n'.join(_clean_loc(t, loc, keep_newlines=True, variables=variables)
-                               for t in tts) or None
+            effect = join_texts(_clean_loc(t, loc, keep_newlines=True, variables=variables)
+                                for t in tts)
             w.execute(
                 """INSERT OR REPLACE INTO council_position
                        (key, civic_key, name, description, leader_classes, effect, sort_order)

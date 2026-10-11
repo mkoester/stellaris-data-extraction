@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 import sys
 from .clausewitz import parse_file
-from .localisation import _clean_loc
+from .localisation import _clean_loc, join_texts
 from .modifiers import _block_modifier_values, _write_modifier_label
 from .triggers import _scripted_trigger_index, dlc_trigger_map, normalize_trigger
 from .values import _as_blocks, _to_list
@@ -119,9 +119,7 @@ class _Ctx:
         return normalize_trigger(block, self.dlc, variables)
 
     def tooltip(self, data: dict, variables) -> str | None:
-        texts = [self.text(k, True, variables) for k in tooltip_keys(data)]
-        texts = [t for t in texts if t]
-        return '\n'.join(texts) or None
+        return join_texts(self.text(k, True, variables) for k in tooltip_keys(data))
 
     def modifiers(self, owner: str, data: dict, variables) -> None:
         rows: list[tuple[str, float, str | None]] = []

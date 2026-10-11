@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from extractor.localisation import (_clean_loc, _dedup_adjacent, _fmt_scripted, load_localisation,
-                                    scripted_loc_jobs, set_scripted_loc)
+from extractor.localisation import (_clean_loc, _dedup_adjacent, _fmt_scripted, join_texts,
+                                    load_localisation, scripted_loc_jobs, set_scripted_loc)
 
 
 class TestFmtScripted(unittest.TestCase):
@@ -117,6 +117,38 @@ class TestScriptedLocJobs(unittest.TestCase):
                'mod_x': 'Amenities Produced per 100 $res$', 'res': '[GetResearcherPluralWithIcon]'}
         self.assertEqual(_clean_loc('$mod_x$: +200', loc), 'Amenities Produced per 100 Researchers: +200')
         self.assertEqual(_clean_loc('[GetUnknown] left', loc), 'left')
+
+
+
+class TestIconEcho(unittest.TestCase):
+    """An icon rendered as a word is dropped when the clause repeats that word."""
+
+    def test_icon_before_an_adjective_and_its_noun(self):
+        self.assertEqual(_clean_loc('Assimilating £pop£ §HOrganic Pops§! now generates.', {}),
+                         'Assimilating Organic Pops now generates.')
+
+    def test_multi_word_gap_and_other_icons(self):
+        self.assertEqual(_clean_loc('Remove £blocker£ Natural Blockers', {}),
+                         'Remove Natural Blockers')
+        self.assertEqual(_clean_loc('£district£ Mining Districts: +1', {}), 'Mining Districts: +1')
+
+    def test_icon_kept_when_it_is_the_only_mention(self):
+        self.assertEqual(_clean_loc('£pop£ is enslaved', {}), 'Pop is enslaved')
+        self.assertEqual(_clean_loc('£unity£ Produced per 100', {}), 'Unity Produced per 100')
+
+    def test_echo_does_not_cross_clause_punctuation(self):
+        self.assertEqual(_clean_loc('£pop£ gained: 3 pops', {}), 'Pop gained: 3 pops')
+
+
+class TestJoinTexts(unittest.TestCase):
+    def test_a_restated_line_appears_once(self):
+        # Shaped like tr_cybernetics_assimilator_modular_cybernetics_tt / _tt_2.
+        first = 'Machine Points also apply to Cybernetic species.'
+        self.assertEqual(join_texts([first, first + '\nSpecies Modification Cost: -50%']),
+                         first + '\nSpecies Modification Cost: -50%')
+
+    def test_empty_inputs(self):
+        self.assertIsNone(join_texts([None, '']))
 
 
 if __name__ == '__main__':

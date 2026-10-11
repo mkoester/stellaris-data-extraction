@@ -18984,7 +18984,7 @@ INSERT OR REPLACE INTO civic
 Cannot access the Galactic Market
 Has the ''Purification'' casus belli on other species
 Xeno Pops will always be purged
-Gains Unity from purging Pop Xeno Pops
+Gains Unity from purging Xeno Pops
 May use Armageddon bombardment stance', 'normal', NULL, 1, 1, NULL, NULL, NULL, 28);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -20458,10 +20458,10 @@ INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('civic_storm_
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_environmental_architects', 'Planetscapers', 'Additional Starting Technologies: Society Technologies to remove Blocker Natural Blockers on the Homeworld
-Society Technologies to remove Blocker Natural Blockers are granted as Permanent Research Options upon Colonization
+               VALUES ('civic_environmental_architects', 'Planetscapers', 'Additional Starting Technologies: Society Technologies to remove Natural Blockers on the Homeworld
+Society Technologies to remove Natural Blockers are granted as Permanent Research Options upon Colonization
 Mastery of Nature Ascension Perk replaced with Cultivated Worldscaping Planetary Decision
-For each Blocker Natural Blocker on Colonized Planets: Resources from Jobs: -10%, Pop Growth Speed: -10%, Pop Upkeep: +15%', 'normal', NULL, 1, 0, NULL, NULL, NULL, 65);
+For each Natural Blocker on Colonized Planets: Resources from Jobs: -10%, Pop Growth Speed: -10%, Pop Upkeep: +15%', 'normal', NULL, 1, 0, NULL, NULL, NULL, 65);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects', 'planet_jobs_produces_mult', '0.1', 0);
@@ -21016,7 +21016,7 @@ INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
                VALUES ('civic_tankbound', 'Tankbound', 'Adds the Tankbound trait., Farmers, Miners, and Technicians are fully Automated.
-Colonist Jobs are Pop Cat Specialists., District Urban Districts have additional Production Overseers jobs.', 'normal', NULL, 1, 0, NULL, NULL, NULL, 76);
+Colonist Jobs are Pop Cat Specialists., Urban Districts have additional Production Overseers jobs.', 'normal', NULL, 1, 0, NULL, NULL, NULL, 76);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_tankbound', 'planet_automated_jobs_upkeep_mult', '-0.25', 0);
@@ -21299,7 +21299,7 @@ INSERT OR REPLACE INTO civic
                VALUES ('civic_pyrolatry', 'Fire Cult', 'The Scourge of the Volcano faction forms shortly after game start.
 Fire Cult Priesthood Jobs.
 Allows the recruitment of Ember Legion armies on planets with Habitability 20% or less.
-Grants access to the Blazing Scourge Colony Decision which creates Blocker Blazing Scourge Blockers.
+Grants access to the Blazing Scourge Colony Decision which creates Blazing Scourge Blockers.
 Synergizes with Civics: Superstitious Beliefs, Exalted Priesthood, Death Cult, Aristocratic Elite, and Merchant Guilds.', 'normal', NULL, 1, 1, NULL, NULL, NULL, 79);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -22404,7 +22404,7 @@ INSERT OR REPLACE INTO civic
 Cannot access the Galactic Market
 Has the ''Hunger'' casus belli on all other empires
 Xeno Pops will always be eaten
-Gains Society Research from eating Pop Xeno Pops', 'gestalt', NULL, 1, 1, NULL, NULL, NULL, 148);
+Gains Society Research from eating Xeno Pops', 'gestalt', NULL, 1, 1, NULL, NULL, NULL, 148);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_devouring_swarm', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
@@ -23087,10 +23087,10 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_environmental_architects_hive', 'Cultivation Drones', 'Additional Starting Technologies: Society Technologies to remove Blocker Natural Blockers on the Homeworld
-Society Technologies to remove Blocker Natural Blockers are granted as Permanent Research Options upon Colonization
+               VALUES ('civic_environmental_architects_hive', 'Cultivation Drones', 'Additional Starting Technologies: Society Technologies to remove Natural Blockers on the Homeworld
+Society Technologies to remove Natural Blockers are granted as Permanent Research Options upon Colonization
 Mastery of Nature Ascension Perk replaced with Cultivated Worldscaping Planetary Decision
-For each Blocker Natural Blocker on Colonized Planets: Resources from Jobs: -10%, Pop Assembly: -10%, Pop Upkeep: +15%', 'gestalt', NULL, 1, 1, NULL, NULL, NULL, 166);
+For each Natural Blocker on Colonized Planets: Resources from Jobs: -10%, Pop Assembly: -10%, Pop Upkeep: +15%', 'gestalt', NULL, 1, 1, NULL, NULL, NULL, 166);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_hive', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -23678,7 +23678,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_machine_servitor', 'Rogue Servitor', 'Start the game with 2K Pop Organic Pops with Bio-Trophy citizenship and Mandatory Pampering living standard
+               VALUES ('civic_machine_servitor', 'Rogue Servitor', 'Start the game with 2K Organic Pops with Bio-Trophy citizenship and Mandatory Pampering living standard
 Available Buildings: Organic Sanctuary
 Available Holdings: Organic Haven', 'gestalt', NULL, 1, 1, NULL, NULL, NULL, 181);
 INSERT OR IGNORE INTO civic_modifier
@@ -23717,8 +23717,8 @@ INSERT OR REPLACE INTO civic
                VALUES ('civic_machine_terminator', 'Determined Exterminator', 'Cannot engage in Diplomacy with organic species!
 Cannot access the Galactic Market
 Has the ''Purification'' casus belli on organic species
-Will always Purge Pop Organic Pops
-Gains Unity from purging Pop Organic Pops
+Will always Purge Organic Pops
+Gains Unity from purging Organic Pops
 May use Armageddon bombardment stance', 'gestalt', NULL, 1, 1, NULL, NULL, NULL, 182);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -23797,9 +23797,9 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_machine_assimilator', 'Driven Assimilator', 'Start the game with 1K Pop Cyborg Pops and the ability to Assimilate organics as cyborgs
-Assimilating Pop Organic Pops generates a small amount of Unity and Society Research
-Non-assimilating Pop Organic Pops are automatically Purged over time
+               VALUES ('civic_machine_assimilator', 'Driven Assimilator', 'Start the game with 1K Cyborg Pops and the ability to Assimilate organics as cyborgs
+Assimilating Organic Pops generates a small amount of Unity and Society Research
+Non-assimilating Organic Pops are automatically Purged over time
 Has the ''Assimilation'' casus belli on all other empires
 Decreased Opinion for most other empires
 Allows access to the Cybernetic Ascension Path.', 'gestalt', NULL, 1, 1, NULL, NULL, NULL, 183);
@@ -24700,10 +24700,10 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_environmental_architects_machine', 'Gardening Protocols', 'Additional Starting Technologies: Society Technologies to remove Blocker Natural Blockers on the Homeworld
-Society Technologies to remove Blocker Natural Blockers are granted as Permanent Research Options upon Colonization
+               VALUES ('civic_environmental_architects_machine', 'Gardening Protocols', 'Additional Starting Technologies: Society Technologies to remove Natural Blockers on the Homeworld
+Society Technologies to remove Natural Blockers are granted as Permanent Research Options upon Colonization
 Mastery of Nature Ascension Perk replaced with Cultivated Worldscaping Planetary Decision
-For each Blocker Natural Blocker on Colonized Planets: Resources from Jobs: -10%, Pop Assembly: -10%, Pop Upkeep: +15%', 'gestalt', NULL, 1, 1, NULL, NULL, NULL, 214);
+For each Natural Blocker on Colonized Planets: Resources from Jobs: -10%, Pop Assembly: -10%, Pop Upkeep: +15%', 'gestalt', NULL, 1, 1, NULL, NULL, NULL, 214);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_environmental_architects_machine', 'councilor_gestalt_growth_exp_gain', '0.25', 0);
@@ -25189,7 +25189,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_gospel_of_the_masses', 'Gospel of the Masses', 'Pop Spiritualist Pops give additional Trade on all Colonies and Branch Offices
+               VALUES ('civic_gospel_of_the_masses', 'Gospel of the Masses', 'Spiritualist Pops give additional Trade on all Colonies and Branch Offices
 Can build Temple of Prosperity Corporate Building', 'corporate', NULL, 1, 0, NULL, NULL, NULL, 230);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -26300,10 +26300,10 @@ INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('civic_storm_
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_environmental_architects_megacorp', 'Geo-Engineering Inc.', 'Additional Starting Technologies: Society Technologies to remove Blocker Natural Blockers on the Homeworld
-Society Technologies to remove Blocker Natural Blockers are granted as Permanent Research Options upon Colonization
+               VALUES ('civic_environmental_architects_megacorp', 'Geo-Engineering Inc.', 'Additional Starting Technologies: Society Technologies to remove Natural Blockers on the Homeworld
+Society Technologies to remove Natural Blockers are granted as Permanent Research Options upon Colonization
 Mastery of Nature Ascension Perk replaced with Cultivated Worldscaping Planetary Decision
-For each Blocker Natural Blocker on Colonized Planets: Resources from Jobs: -10%, Pop Growth Speed: -10%, Pop Upkeep: +15%
+For each Natural Blocker on Colonized Planets: Resources from Jobs: -10%, Pop Growth Speed: -10%, Pop Upkeep: +15%
 The Executive Retreat Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, NULL, NULL, 263);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -26786,7 +26786,7 @@ INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
                VALUES ('civic_tankbound_corporate', 'Corporate Thinktank', 'Adds the Tankbound trait., Farmers, Miners, and Technicians are fully Automated.
-Colonist Jobs are Pop Cat Specialists., District Urban Districts have additional Production Overseers jobs.
+Colonist Jobs are Pop Cat Specialists., Urban Districts have additional Production Overseers jobs.
 The Virtual Entertainment Studios Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, NULL, NULL, 273);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -28676,7 +28676,7 @@ INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
                VALUES ('origin_default', 'Prosperous Unification', 'Initial Pops: +400
-Homeworld: District Generator Districts: +1, District Agriculture Districts: +1, Colony Modifiers: Prosperous Unification
+Homeworld: Generator Districts: +1, Agriculture Districts: +1, Colony Modifiers: Prosperous Unification
 Guaranteed Research Options: Society Research Societal Unification', NULL, 1, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origins_default.dds', 0);
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
@@ -28775,7 +28775,7 @@ INSERT OR REPLACE INTO origin
                VALUES ('origin_forever_cruise', 'Forever Cruise', 'Nomadic Origin
 Start with Situation: Passenger Satisfaction
 Start with a Crew and a Passenger species
-Unique District Arkship District: Service District
+Unique Arkship District: Service District
 Unique Job: Activity Manager
 Available Zone Arkship District Specializations: Forever Cruise District Specializations
 Available Buildings: Forever Cruise Buildings', NULL, 1, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origins_forever_cruise.dds', 4);
@@ -28931,11 +28931,11 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
-               VALUES ('origin_shroud_forged', 'Shroud-Forged', 'Homeworld: Shroud-Touched Region: +4, Start with 1000 Pops Shroud-Forged Pops
+               VALUES ('origin_shroud_forged', 'Shroud-Forged', 'Homeworld: Shroud-Touched Region: +4, Start with 1000 Shroud-Forged Pops
 Start with Situation: Forged by the Shroud
 Additional Starting Technologies: Society Zro Distillation
 Unique Building: Shroud Observation Tower
-Available Decision Colony Decision: Pierce the Shroud', NULL, 1, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origins_shroud_forged.dds', 7);
+Available Colony Decision: Pierce the Shroud', NULL, 1, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origins_shroud_forged.dds', 7);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
                        VALUES ('origin_shroud_forged', 'ROBOT_species_trait_picks_add', '1.0', 0);
@@ -29463,7 +29463,7 @@ INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_synth
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
-               VALUES ('origin_arc_welders', 'Arc Welders', 'Homeworld: Initial District Mining Districts replaced with District Generator Districts
+               VALUES ('origin_arc_welders', 'Arc Welders', 'Homeworld: Initial Mining Districts replaced with Generator Districts
 Home System: Arc Furnace: Equatorial Band constructed around a Molten World
 Additional Starting Technologies: Engineering Research Arc Furnace
 Guaranteed Research Options: Engineering Research Mega-Engineering upon constructing a second Arc Furnace', NULL, 1, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origin_arc_welders.dds', 18);
@@ -29869,7 +29869,7 @@ INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
                VALUES ('origin_subterranean', 'Subterranean', 'Species Traits: Cave Dweller
-District Mining Districts: Uncapped
+Mining Districts: Uncapped
 Available District Specializations: Zone Subterranean Urbanization for Mining Districts
 Homeworld starts with a Zone Subterranean Urbanization already built.', NULL, 1, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origins_subterranean.dds', 30);
 INSERT OR IGNORE INTO origin_modifier
@@ -29918,7 +29918,7 @@ INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
                VALUES ('origin_subterranean_machines', 'Subterranean Machines', 'Species Traits: Molebots
-District Mining Districts: Uncapped
+Mining Districts: Uncapped
 Available District Specializations: Zone Subterranean Urbanization for Mining Districts
 Homeworld starts with a Zone Subterranean Urbanization already built.', NULL, 1, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origins_subterranean.dds', 31);
 INSERT OR IGNORE INTO origin_modifier
@@ -30118,7 +30118,7 @@ INSERT OR REPLACE INTO origin
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
                VALUES ('origin_necrophage', 'Necrophage', 'Homeworld: Chamber of Elevation
 Species Traits: Necrophage
-Pop Prepatent Pops: 2.4K
+Prepatent Pops: 2.4K
 Guaranteed Habitable Worlds: Replaced with Pre-FTL Civilizations', 'Necroids Species Pack', 1, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origins_necrophage.dds', 38);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
@@ -30787,7 +30787,7 @@ INSERT OR IGNORE INTO origin_requirement
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
-               VALUES ('origin_syncretic_evolution', 'Syncretic Evolution', 'Pop Organic Pops with Serviles Trait: 2.4K', NULL, 1, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origins_syncretic_evolution.dds', 56);
+               VALUES ('origin_syncretic_evolution', 'Syncretic Evolution', 'Organic Pops with Serviles Trait: 2.4K', NULL, 1, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origins_syncretic_evolution.dds', 56);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
                    VALUES ('origin_syncretic_evolution', 'ethic', 'forbid', 'ethic_gestalt_consciousness', 0);
@@ -33898,7 +33898,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('bath_attendant', 'planet_amenities_add', '5.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant_individual_machine', 'Lubrication Terminal', 'specialist', 'Lubrication Terminals turn Alloys into new Pop Machine Pops but increase Amenities Usage.', 73);
+INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('bath_attendant_individual_machine', 'Lubrication Terminal', 'specialist', 'Lubrication Terminals turn Alloys into new Machine Pops but increase Amenities Usage.', 73);
 INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES ('knight', 'Knight', 'specialist', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 74);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
@@ -47734,7 +47734,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_mercantile_commercial_enterprise', 'tradition_mercantile', 'normal', 'Commercial Enterprise', 'No halfway good business opportunity escapes the notice of our entrepreneurs.', '{"leaf":"has_tradition","value":"tr_mercantile_trickle_up_economics"}', NULL, 'Amenities per 100 Traders: +200
-District City Districts with a Zone Commercial Nexus, and Trade Buildings, receive additional Trader Jobs.', 2);
+City Districts with a Zone Commercial Nexus, and Trade Buildings, receive additional Trader Jobs.', 2);
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_mercantile_commercial_enterprise', 'tr_mercantile_trickle_up_economics');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
@@ -48078,7 +48078,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_domestication_bio_repurposing', 'tradition_domestication', 'normal', 'Bio-Repurposing', 'Nothing goes to waste.', NULL, NULL, 'Your defeated Space Fauna leave behind debris that you can research to recover some of their cost. (10%)
-Gain 250 Food when clearing an Blocker Organic Blocker', 2);
+Gain 250 Food when clearing an Organic Blocker', 2);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_domestication_bio_repurposing', 'planet_clear_blocker_speed_mult', '0.33', NULL, 0);
@@ -48086,7 +48086,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
-                    weight, tooltip, sort_order) VALUES ('tr_domestication_bio_repurposing#0', 'tr_domestication_bio_repurposing', NULL, 'Bio-Repurposing', NULL, '{"op":"and","args":[{"leaf":"is_reanimator","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 0, '1.0', 'Gain 250 Food when clearing an Blocker Organic Blocker', 0);
+                    weight, tooltip, sort_order) VALUES ('tr_domestication_bio_repurposing#0', 'tr_domestication_bio_repurposing', NULL, 'Bio-Repurposing', NULL, '{"op":"and","args":[{"leaf":"is_reanimator","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', 0, '1.0', 'Gain 250 Food when clearing an Organic Blocker', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_domestication_bio_repurposing#0', 'planet_clear_blocker_speed_mult', '0.33', NULL, 0);
@@ -50021,7 +50021,7 @@ INSERT INTO tradition
                     tooltip, sort_order) VALUES ('tr_cloning_adopt', 'tradition_cloning', 'adopt', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"cloning_tradition_unlocked"}', 'agenda_cloning_replication', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep.', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
-                    weight, tooltip, sort_order) VALUES ('tr_cloning_adopt#0', 'tr_cloning_adopt', 'tr_cloning_adopt_clone_army', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep., Pop Clone Soldier Pops sustained by Clone Vats: +500', 0);
+                    weight, tooltip, sort_order) VALUES ('tr_cloning_adopt#0', 'tr_cloning_adopt', 'tr_cloning_adopt_clone_army', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep., Clone Soldier Pops sustained by Clone Vats: +500', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_cloning_evolutionary_extrapolation', 'tradition_cloning', 'normal', 'Evolutionary Extrapolation', 'Leveraging evolutionary data will perfect our cloning methods.', NULL, NULL, 'Allows the Assimilation of Pops into or out of a Hive-Mind', 1);
@@ -50095,7 +50095,7 @@ INSERT INTO tradition_modifier
                    VALUES ('tr_cloning_finish', 'ascension_perks_add', '1.0', NULL, 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
-                    weight, tooltip, sort_order) VALUES ('tr_cloning_finish#0', 'tr_cloning_finish', 'tr_cloning_finish_clone_army', 'Cloning Traditions Finished', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Allows the adoption of Cloning Authorities, Clone Vats Colony Limit per Capital Building Tier: +1, Pop Clone Soldier Pops sustained by Clone Vats: +500', 0);
+                    weight, tooltip, sort_order) VALUES ('tr_cloning_finish#0', 'tr_cloning_finish', 'tr_cloning_finish_clone_army', 'Cloning Traditions Finished', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Allows the adoption of Cloning Authorities, Clone Vats Colony Limit per Capital Building Tier: +1, Clone Soldier Pops sustained by Clone Vats: +500', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_cloning_finish#0', 'ascension_perks_add', '1.0', NULL, 0);
@@ -50222,7 +50222,6 @@ Empire Size from Districts: -25%', 3);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_cybernetics_modular_cybernetics', 'tradition_cybernetics', 'normal', 'Modular Cybernetics', 'Improving the compatibility of our cybernetic enhancements will reduce downtime while retrofitting.', '{"leaf":"has_tradition","value":"tr_cybernetics_integrated_anatomy"}', NULL, 'Mechanical Modification Points and Mechanical Species Trait Picks also apply to Organic species.
-Mechanical Modification Points and Mechanical Species Trait Picks also apply to Organic species.
 Modify Species Special Project Cost: -50%', 5);
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cybernetics_modular_cybernetics', 'tr_cybernetics_integrated_anatomy');
 INSERT INTO tradition_modifier
@@ -50349,11 +50348,11 @@ INSERT INTO tradition_category
                VALUES ('tradition_cybernetics_assimilator', 'Cybernetics', '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"}]}', NULL, 'tr_cybernetics_assimilator_adopt', 'tr_cybernetics_assimilator_finish', 22);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_adopt', 'tradition_cybernetics_assimilator', 'adopt', 'Cybernetic Traditions', NULL, '{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}', 'agenda_cybernetic_advantage_assimilator', 'Assimilating Pop Organic Pops now generates Engineering Research.
-Resources generated from Assimilating Pop Organic Pops are increased.', 0);
+                    tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_adopt', 'tradition_cybernetics_assimilator', 'adopt', 'Cybernetic Traditions', NULL, '{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}', 'agenda_cybernetic_advantage_assimilator', 'Assimilating Organic Pops now generates Engineering Research.
+Resources generated from Assimilating Organic Pops are increased.', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_inevitable_assimilation', 'tradition_cybernetics_assimilator', 'normal', 'Inevitable Assimilation', 'By refactoring our assimilation processes, we can more efficiently overwrite the mind of any organic.', NULL, NULL, 'Allows the Assimilation of Pop Hive-Minded Pops.', 1);
+                    tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_inevitable_assimilation', 'tradition_cybernetics_assimilator', 'normal', 'Inevitable Assimilation', 'By refactoring our assimilation processes, we can more efficiently overwrite the mind of any organic.', NULL, NULL, 'Allows the Assimilation of Hive-Minded Pops.', 1);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_cybernetics_assimilator_inevitable_assimilation', 'auto_mod_monthly_add', '100.0', NULL, 0);
@@ -50379,7 +50378,6 @@ INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_modular_cybernetics', 'tradition_cybernetics_assimilator', 'normal', 'Modular Cybernetics', 'Improving the intercompatibility of our cybernetic enhancements will reduce downtime when refitting.', '{"leaf":"has_tradition","value":"tr_cybernetics_assimilator_integrated_anatomy"}', NULL, 'Machine Modification Points and Machine Species Trait Picks also apply to Cybernetic species.
-Machine Modification Points and Machine Species Trait Picks also apply to Cybernetic species.
 Modify Species Special Project Cost: -50%', 5);
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cybernetics_assimilator_modular_cybernetics', 'tr_cybernetics_assimilator_integrated_anatomy');
 INSERT INTO tradition_modifier
@@ -51145,7 +51143,7 @@ INSERT INTO tradition_category
                VALUES ('tradition_virtuality', 'Virtuality', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_nanotech_adopt"},{"leaf":"has_tradition","value":"tr_modularity_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_virtuality_adopt', 'tr_virtuality_finish', 31);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_virtuality_adopt', 'tradition_virtuality', 'adopt', 'Virtuality Traditions', NULL, '{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}', 'agenda_virtuality_optimized_network', 'Adds Virtual trait to main species, Pop Virtual Pops can no longer be resettled', 0);
+                    tooltip, sort_order) VALUES ('tr_virtuality_adopt', 'tradition_virtuality', 'adopt', 'Virtuality Traditions', NULL, '{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}', 'agenda_virtuality_optimized_network', 'Adds Virtual trait to main species, Virtual Pops can no longer be resettled', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_virtuality_adopt', 'intel_decryption_add', '2.0', NULL, 0);
@@ -51213,8 +51211,8 @@ INSERT INTO tradition
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_virtuality_5', 'tr_virtuality_3');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_virtuality_finish', 'tradition_virtuality', 'finish', 'Virtuality Traditions Finished', NULL, NULL, NULL, 'Pop Virtual Pops are instantly created to meet Job requirements of Buildings and Districts
-Pop Virtual Pops can no longer become refugees or be assembled
+                    tooltip, sort_order) VALUES ('tr_virtuality_finish', 'tradition_virtuality', 'finish', 'Virtuality Traditions Finished', NULL, NULL, NULL, 'Virtual Pops are instantly created to meet Job requirements of Buildings and Districts
+Virtual Pops can no longer become refugees or be assembled
 All Machine leaders gain the Virtual Leader trait, Unlocks Colony Decision: Server Shut Down', 6);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -51269,11 +51267,7 @@ INSERT INTO ascension_perk
                 required_dlc, tooltip, sort_order) VALUES ('ap_defender_of_the_galaxy', 'Defender of the Galaxy', 'As star nations vie with one another in petty disputes, sinister forces of unimaginable power are arraying themselves against all sapient life. Who will protect us?', 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Nomads"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_defender_of_the_galaxy_ap","value":"yes"},{"leaf":"is_player_crisis","value":"yes"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"is_unfriendly","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"num_ascension_perks","cmp":">","value":"2"},{"op":"not","args":[{"leaf":"has_country_flag","value":"heir_of_the_khan_khan"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"},{"leaf":"has_civic","value":"civic_inwards_perfection"}]}]}]}', NULL, 'Damage to Endgame Crisis factions: +50%
 Increases the Opinion of empires capable of regular diplomacy by +200
 Defenders of the Galaxy may not choose to become a Crisis
-Damage to Voidworms: +25%
-Damage to Endgame Crisis factions: +50%
-Increases the Opinion of empires capable of regular diplomacy by +200
-Defenders of the Galaxy may not choose to become a Crisis
-Increases the Opinion of empires capable of regular diplomacy by +200', 8);
+Damage to Voidworms: +25%', 8);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('ap_defender_of_the_galaxy', 'damage_vs_country_type_synth_queen_mult', '0.5', NULL, 0);
@@ -52069,7 +52063,7 @@ INSERT INTO ascension_perk
                (key, name, description, is_path, potential_json, possible_json,
                 required_dlc, tooltip, sort_order) VALUES ('ap_machine_worlds', 'Machine Worlds', 'We shall shape our worlds into a mirror image of ourselves, replacing the frailty of biology with the immutable perfection of metal.', 0, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_machine_worlds"}]}]}', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_technology","value":"tech_climate_restoration"},{"leaf":"has_origin","value":"origin_machine"}]},{"leaf":"num_ascension_perks","cmp":">","value":"1"}]}', NULL, 'Unlocks Terraforming Option: Machine World
 Unlocks Zone District Specialization: Replication Hub
-Replaces District Rural Districts with specialized District Nexus Districts
+Replaces Rural Districts with specialized Nexus Districts
 Increases Housing and Jobs from all Districts
 Uninhabitable for most Organic Species', 41);
 INSERT INTO tradition_modifier
@@ -52082,7 +52076,7 @@ INSERT INTO ascension_perk
                 required_dlc, tooltip, sort_order) VALUES ('ap_hive_worlds', 'Hive Worlds', 'We shall create living worlds that are every bit as much a part of the Hive as the drones that inhabit them.', 0, '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_hive_worlds"}]},{"leaf":"is_lithoid_devouring_swarm","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_climate_restoration"},{"op":"or","args":[{"leaf":"num_ascension_perks","cmp":">","value":"1"},{"leaf":"has_origin","value":"origin_fallen_empire_hive"}]}]}', NULL, 'Unlocks Terraforming Option: Hive World
 Unlocks Hive World District Specialization: Zone Spawning Nest
 Uninhabitable for non-hive species.
-Unlimited District Hive Districts
+Unlimited Hive Districts
 Doubles Housing and Jobs from all Districts, Pop Resource Output: +10%
 Removes all Rural Districts', 42);
 INSERT INTO tradition_modifier
@@ -52093,7 +52087,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO ascension_perk
                (key, name, description, is_path, potential_json, possible_json,
                 required_dlc, tooltip, sort_order) VALUES ('ap_arcology_project', 'Arcology Project', 'Thus shall we make a world of the city, and a city of the world.', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Megacorp"},{"op":"or","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_agrarian_idyll"}]},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_arcology_project"}]},{"leaf":"is_nomadic","value":"no"}]}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_housing_2"},{"leaf":"num_ascension_perks","cmp":">","value":"1"}]}', 'Megacorp', 'Unlocks Decision: Arcology Project
-Turns the planet into an Ecumenopolis, increasing Housing, Resource Production and Pop Growth and unlocking special District Arcology Districts.
+Turns the planet into an Ecumenopolis, increasing Housing, Resource Production and Pop Growth and unlocking special Arcology Districts.
 District Generator, Mining and Agriculture Districts become inaccessible.
 Construction of any Districts while this is underway are Disabled.', 43);
 INSERT INTO tradition_modifier
@@ -55668,7 +55662,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
 INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
                allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_purity_perfection', 'Perfection Protocols', 'We shall embrace the purity found within our genetic code.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}]}]}', '{"leaf":"has_tradition","value":"tr_purity_adopt"}', '["tr_purity_adopt"]', 'For every Pop Organic Pops:
+               VALUES ('agenda_purity_perfection', 'Perfection Protocols', 'We shall embrace the purity found within our genetic code.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}]}]}', '{"leaf":"has_tradition","value":"tr_purity_adopt"}', '["tr_purity_adopt"]', 'For every Organic Pops:
 Gain 5 Unity per Positive Species Trait
 (Max. Unity 25 per Pop 100):
 Gain 5 Society Research per Negative Species Trait
@@ -57051,7 +57045,7 @@ INSERT INTO federation_perk_modifier
                            (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
                            VALUES ('federation_fleet_size_2', 'members', 'federation_naval_cap_contribution_mult', '0.25', NULL, 0);
 INSERT INTO federation_perk (key, name, description, effect, sort_order)
-               VALUES ('federation_fleet_unity_1', 'Unifying Might', 'To know that our joined fleets are patrolling the void bestows our members with a sense of pride, security and resolve.', 'Unity Monthly Unity equal to 10% of the size of the Federation Fleet.', 37);
+               VALUES ('federation_fleet_unity_1', 'Unifying Might', 'To know that our joined fleets are patrolling the void bestows our members with a sense of pride, security and resolve.', 'Monthly Unity equal to 10% of the size of the Federation Fleet.', 37);
 INSERT INTO federation_perk_modifier
                            (perk_key, scope, modifier_key, modifier_value, potential_json, sort_order)
                            VALUES ('federation_fleet_unity_1', 'federation', 'federation_leader_fleet_scale_mult', '0.1', NULL, 0);
