@@ -2,7 +2,8 @@
 """Unit tests for civic/origin eligibility rules."""
 import unittest
 
-from extractor.government import _civic_requirements, _granted_traits
+from extractor.clausewitz import IfBlock
+from extractor.government import _civic_requirements, _granted_traits, ascension_restrictions
 from extractor.traits import _trait_requirements
 
 
@@ -92,6 +93,64 @@ class TestTraitGates(unittest.TestCase):
 
     def test_unrelated_fields_ignored(self):
         self.assertEqual(_trait_requirements({'allowed_archetypes': ['BIOLOGICAL']}), [])
+
+
+# Shaped like common/ascension_perks/00_ascension_paths.txt: every path perk shares the
+# same gates unless a test overrides one.
+TRIGGERS = {
+    'is_natural_design_empire': {'OR': {'has_valid_civic': ['civic_natural_design',
+                                                            'civic_hive_natural_design']}},
+    'is_chosen_empire': {'OR': {'has_valid_civic': 'civic_chosen'}},
+}
+PATHS = ('ap_engineered_evolution', 'ap_the_flesh_is_weak', 'ap_synthetic_evolution',
+         'ap_mind_over_matter')
+
+
+def perks(**overrides):
+    base = {'potential': {'NOR': {'has_origin': 'origin_banned'},
+                          'is_natural_design_empire': 'no'}}
+    return {ap: overrides.get(ap, base) for ap in PATHS}
+
+
+class TestAscensionRestrictions(unittest.TestCase):
+    def test_nor_listed_origin_blocked_everywhere_without_agenda_gets_nothing(self):
+        # Auto-ascension origins need the agenda file to name their path.
+        self.assertNotIn('origin_banned', ascension_restrictions(perks(), TRIGGERS, {}))
+
+    def test_origin_resolved_through_agenda(self):
+        agendas = {'agenda_psionic_x': {'if': IfBlock({'limit': {'has_origin': 'origin_banned'}})}}
+        self.assertEqual(ascension_restrictions(perks(), TRIGGERS, agendas)['origin_banned'],
+                         {'lock': 'Psionic', 'blocks': []})
+
+    def test_scripted_trigger_no_blocks_every_path_for_a_civic(self):
+        r = ascension_restrictions(perks(), TRIGGERS, {})
+        for civic in ('civic_natural_design', 'civic_hive_natural_design'):
+            self.assertEqual(r[civic]['blocks'], ['Genetic', 'Cybernetic', 'Synthetic', 'Psionic'])
+
+    def test_positive_mention_in_or_allows_that_path(self):
+        psionic = {'potential': {'is_chosen_empire': 'no'},
+                   'possible': {'OR': {'is_chosen_empire': 'yes', 'has_country_flag': 'x'}}}
+        gated = {'potential': {'is_chosen_empire': 'no'}}
+        r = ascension_restrictions(perks(ap_engineered_evolution=gated, ap_the_flesh_is_weak=gated,
+                                         ap_synthetic_evolution=gated, ap_mind_over_matter=psionic),
+                                   TRIGGERS, {})
+        self.assertEqual(r['civic_chosen'], {'lock': 'Psionic', 'blocks': []})
+
+    def test_if_limit_is_not_a_gate(self):
+        cond = {'possible': {'if': IfBlock({'limit': {'NOT': {'has_origin': 'origin_clone'}}})}}
+        self.assertNotIn('origin_clone',
+                         ascension_restrictions(perks(ap_engineered_evolution=cond), TRIGGERS, {}))
+
+    def test_negation_inside_an_or_branch_is_not_a_ban(self):
+        alt = {'potential': {'OR': {'has_shroud_dlc': 'yes',
+                                    'AND': {'NOT': {'has_valid_civic': 'civic_maybe'}}}}}
+        self.assertNotIn('civic_maybe',
+                         ascension_restrictions(perks(ap_mind_over_matter=alt), TRIGGERS, {}))
+
+    def test_one_blocked_path_lists_it(self):
+        one = {'potential': {'NOT': {'has_valid_civic': 'civic_galvanic'}}}
+        r = ascension_restrictions(perks(ap_synthetic_evolution=one), TRIGGERS, {})
+        self.assertEqual(r['civic_galvanic'], {'lock': None, 'blocks': ['Synthetic']})
 
 
 if __name__ == '__main__':

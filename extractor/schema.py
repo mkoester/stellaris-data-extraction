@@ -267,6 +267,8 @@ CREATE TABLE civic (
     required_dlc TEXT,                -- from playable host_has_dlc; NULL = base game
     selectable   INTEGER NOT NULL DEFAULT 1,  -- 0 = not player-pickable (fallen empire, …)
     locked       INTEGER NOT NULL DEFAULT 0,  -- 1 = `modification = no`: can't be added/removed after game start
+    ascension_lock   TEXT,            -- locked to this single ascension path (blocks all others); NULL = unrestricted
+    ascension_blocks TEXT,            -- comma-separated ascension paths blocked; all four = no ascension path at all (Natural Design); NULL = none
     icon         TEXT,
     sort_order   INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)

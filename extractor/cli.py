@@ -316,6 +316,7 @@ Examples:
     civic_files = (('00_civics.txt', 'normal'), ('01_special_civics.txt', 'special'),
                    ('02_gestalt_civics.txt', 'gestalt'), ('03_corporate_civics.txt', 'corporate'))
     print(f"\n[civics] {civics_dir}", file=progress)
+    ascension = compute_ascension_restrictions(install_dir)
     civic_order = 0
     for fn, ctype in civic_files:
         f = civics_dir / fn
@@ -323,7 +324,7 @@ Examples:
             continue
         try:
             civic_order = extract_civics(parse_file(f), ctype, loc, scripted_vars, w,
-                                         civic_order, args.verbose)
+                                         civic_order, args.verbose, ascension)
         except Exception as e:
             print(f"  WARNING: failed to parse {fn}: {e}", file=sys.stderr)
 
@@ -339,7 +340,6 @@ Examples:
     # --- origins (same dir; 00 = playable, 01 = non-playable) ---
     origin_files = (('00_origins.txt', False), ('01_origins_non_playable.txt', True))
     print(f"\n[origins] {civics_dir}", file=progress)
-    ascension = compute_ascension_restrictions(install_dir)
     init_custom = _custom_empire_initializers(install_dir)
     origin_order = 0
     for fn, nonsel in origin_files:

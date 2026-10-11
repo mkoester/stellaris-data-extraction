@@ -2,10 +2,10 @@
 
 from pathlib import Path
 import re
-from .clausewitz import parse_file
+from .clausewitz import IfBlock, parse_file
 from .localisation import _clean_loc
 from .modifiers import _write_modifier_label
-from .triggers import _trigger_values
+from .triggers import _scripted_trigger_index, _trigger_values
 from .values import _resolve_modifier_float, _to_list
 from .writer import Writer
 
@@ -296,7 +296,7 @@ def _civic_requirements(cdef: dict) -> list[tuple[str, str, str, int]]:
 
 def extract_civics(data: dict, civic_type: str, loc: dict[str, str],
                    scripted_vars: dict[str, float], w: Writer, order_start: int,
-                   verbose: bool) -> int:
+                   verbose: bool, ascension: dict[str, dict]) -> int:
     """Extract one civics file; all its civics share `civic_type`. Returns the next
     sort_order so successive files keep a stable global order."""
     variables: dict[str, float] = dict(scripted_vars)
@@ -341,11 +341,14 @@ def extract_civics(data: dict, civic_type: str, loc: dict[str, str],
         # reform after the game starts (origin-bound, devouring swarm, etc.).
         locked = 1 if str(cdef.get('modification')).strip().strip('"') == 'no' else 0
 
+        asc = ascension.get(key) or {}
         w.execute(
             """INSERT OR REPLACE INTO civic
-                   (key, name, description, civic_type, required_dlc, selectable, locked, icon, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (key, name, description, civic_type, dlc, selectable, locked, icon, order),
+                   (key, name, description, civic_type, required_dlc, selectable, locked,
+                    ascension_lock, ascension_blocks, icon, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, name, description, civic_type, dlc, selectable, locked, asc.get('lock'),
+             ','.join(asc.get('blocks', [])) or None, icon, order),
         )
         if verbose:
             print(f"  civic [{civic_type}] {key} | {name}"
@@ -494,86 +497,140 @@ def extract_authorities(data: dict, loc: dict[str, str],
 # Extraction: origins
 # ---------------------------------------------------------------------------
 
-def compute_ascension_restrictions(install_dir: Path) -> dict[str, dict]:
-    """Per origin, its ascension-path restriction → {'lock': path|None, 'blocks':[…]}.
-    `lock` = locked to this single path (blocks all others); `blocks` = the paths it
-    forbids when it still allows more than one. Data-driven: each path perk's
-    `potential` has a `NOR = { … has_origin = X … }` listing origins it forbids; an
-    origin forbidden from three of the four paths is locked to the fourth, one
-    forbidden from one or two has those in `blocks`. Auto-ascension origins (forbidden
-    from *every* path perk because they start already ascended) are resolved to their
-    real path via the ascension council-agenda file (origins grouped under a path)."""
-    AP_PATH = {
-        'ap_engineered_evolution': 'Genetic', 'ap_the_flesh_is_weak': 'Cybernetic',
-        'ap_synthetic_evolution': 'Synthetic', 'ap_mind_over_matter': 'Psionic',
-    }
-    ALL_PATHS = ['Genetic', 'Cybernetic', 'Synthetic', 'Psionic']
+ASCENSION_PATH_PERKS = {
+    'ap_engineered_evolution': 'Genetic', 'ap_the_flesh_is_weak': 'Cybernetic',
+    'ap_synthetic_evolution': 'Synthetic', 'ap_mind_over_matter': 'Psionic',
+}
+ASCENSION_PATHS = ['Genetic', 'Cybernetic', 'Synthetic', 'Psionic']
+_OWNER_TRIGGERS = ('has_origin', 'has_civic', 'has_valid_civic')
+# Conditional or effect-side blocks: what they test is not a gate on the perk itself.
+_SKIP_BLOCKS = ('if', 'else_if', 'else', 'limit', 'tradition_swap', 'ai_weight')
 
-    def _origins_in(node, neg=0):
-        out = []
-        if isinstance(node, dict):
-            for k, v in node.items():
-                if k == 'has_origin':
-                    out += [(x, neg) for x in (v if isinstance(v, list) else [v])]
-                else:
-                    out += _origins_in(v, neg + (1 if k in ('NOT', 'NOR') else 0))
-        elif isinstance(node, list):
-            for x in node:
-                out += _origins_in(x, neg)
+
+def _gate_owners(node, triggers: dict[str, dict], neg: int = 0, disj: bool = False,
+                 seen: frozenset = frozenset()) -> list[tuple[str, bool, bool]]:
+    """The civic/origin keys a trigger tree tests, as (key, negated, in_disjunction).
+    NOT/NOR and `<scripted_trigger> = no` flip polarity; scripted triggers are expanded
+    through `triggers` (is_natural_design_empire → has_valid_civic = civic_natural_design).
+    `in_disjunction` marks a test that is only one alternative (an OR branch, or the
+    inside of a NOT = { AND … }), so a negated one there is not a hard ban."""
+    out: list[tuple[str, bool, bool]] = []
+    if isinstance(node, list):
+        for x in node:
+            out += _gate_owners(x, triggers, neg, disj, seen)
         return out
+    if not isinstance(node, dict) or isinstance(node, IfBlock):
+        return out
+    for k, v in node.items():
+        if k in _SKIP_BLOCKS:
+            continue
+        if k in _OWNER_TRIGGERS:
+            out += [(x, neg % 2 == 1, disj) for x in _to_list(v) if isinstance(x, str)]
+        elif k in ('NOT', 'NOR'):
+            out += _gate_owners(v, triggers, neg + 1, disj or (k == 'NOT' and neg % 2 == 0
+                                and isinstance(v, dict) and len(v) > 1), seen)
+        elif k in ('OR', 'AND'):
+            # OR is a disjunction when positive, AND when negated (De Morgan).
+            branchy = (k == 'OR') == (neg % 2 == 0)
+            out += _gate_owners(v, triggers, neg, disj or branchy, seen)
+        elif k in triggers and k not in seen and str(v).strip() in ('yes', 'no'):
+            flip = 1 if str(v).strip() == 'no' else 0
+            out += _gate_owners(triggers[k], triggers, neg + flip, disj, seen | {k})
+        elif isinstance(v, (dict, list)):
+            out += _gate_owners(v, triggers, neg, disj, seen)    # custom_tooltip & co.
+    return out
 
+
+def _named_origins(node, neg: int = 0) -> list[str]:
+    """Every origin a block names outside a NOT/NOR — `if`/`limit` included, since the
+    agenda file ties an origin to its path in exactly such conditional blocks."""
+    out: list[str] = []
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if k == 'has_origin':
+                out += [x for x in _to_list(v) if isinstance(x, str) and neg % 2 == 0]
+            else:
+                out += _named_origins(v, neg + (1 if k in ('NOT', 'NOR') else 0))
+    elif isinstance(node, list):
+        for x in node:
+            out += _named_origins(x, neg)
+    return out
+
+
+def _agenda_path(name: str) -> str | None:
+    if re.search(r'psionic|mind_over_matter', name):                          return 'Psionic'
+    if re.search(r'synthetic|virtuality|nanotech', name):                     return 'Synthetic'
+    if re.search(r'flesh_is_weak|cybernetic|organo_machine|modularity', name): return 'Cybernetic'
+    if re.search(r'genetic|engineered_evolution|mutation|cloning|purity', name): return 'Genetic'
+    return None
+
+
+# Locked but never positively tied to one path in a machine-readable way.
+_ASCENSION_FALLBACK = {'origin_shroudwalker_apprentice': 'Psionic'}
+
+
+def ascension_restrictions(perks: dict, triggers: dict[str, dict],
+                           agendas: dict) -> dict[str, dict]:
+    """Per origin or civic, its ascension-path restriction → {'lock': path|None,
+    'blocks': […]}. Pure: takes the parsed path-perk file, the scripted-trigger index
+    and the parsed ascension council-agenda file.
+
+    Each path perk's `potential`/`possible` names what it forbids (`NOR = { has_origin
+    = X }`, `is_natural_design_empire = no`, …). Forbidden from three of the four paths
+    → `lock` on the fourth; from one or two → those in `blocks`. Forbidden from all
+    four: an origin starts already ascended, resolved to its path via the agenda file
+    (origins grouped under a path); a civic simply blocks every path (`blocks` = all)."""
     forbid: dict[str, set] = {}
     allow: dict[str, set] = {}
+    for ap, path in ASCENSION_PATH_PERKS.items():
+        perk = perks.get(ap)
+        if not isinstance(perk, dict):
+            continue
+        for blk in (perk.get('potential', {}), perk.get('possible', {})):
+            for key, negated, disj in _gate_owners(blk, triggers):
+                if not negated:
+                    allow.setdefault(key, set()).add(path)
+                elif not disj:
+                    forbid.setdefault(key, set()).add(path)
+
+    agenda_path: dict[str, set] = {}
+    for name, body in agendas.items():
+        path = _agenda_path(name)
+        if path and isinstance(body, dict):
+            for key in _named_origins(body):
+                agenda_path.setdefault(key, set()).add(path)
+
+    out: dict[str, dict] = {}
+    for key in sorted(forbid):
+        blocked = forbid[key] - allow.get(key, set())
+        free = [p for p in ASCENSION_PATHS if p not in blocked]
+        lock, blocks = None, []
+        if len(free) == 1 and blocked:
+            lock = free[0]                           # blocked from three → locked to one
+        elif not free and key.startswith('origin_'):  # blocked from all → auto-ascension
+            cands = agenda_path.get(key) or ({_ASCENSION_FALLBACK[key]}
+                                             if key in _ASCENSION_FALLBACK else set())
+            if len(cands) == 1:
+                lock = next(iter(cands))
+        elif blocked:                                # some or (a civic) all paths
+            blocks = [p for p in ASCENSION_PATHS if p in blocked]
+        if lock or blocks:
+            out[key] = {'lock': lock, 'blocks': blocks}
+    return out
+
+
+def compute_ascension_restrictions(install_dir: Path) -> dict[str, dict]:
+    """ascension_restrictions() over the installed game files ({} if they're missing)."""
     try:
         perks = parse_file(install_dir / 'common' / 'ascension_perks' / '00_ascension_paths.txt')
     except Exception:
         return {}
-    for ap, name in AP_PATH.items():
-        perk = perks.get(ap, {})
-        if not isinstance(perk, dict):
-            continue
-        for blk in (perk.get('potential', {}), perk.get('possible', {})):
-            for o, neg in _origins_in(blk):
-                (forbid if neg % 2 else allow).setdefault(o, set()).add(name)
-
-    def _agenda_path(n: str):
-        if re.search(r'psionic|mind_over_matter', n):                          return 'Psionic'
-        if re.search(r'synthetic|virtuality|nanotech', n):                     return 'Synthetic'
-        if re.search(r'flesh_is_weak|cybernetic|organo_machine|modularity', n): return 'Cybernetic'
-        if re.search(r'genetic|engineered_evolution|mutation|cloning|purity', n): return 'Genetic'
-        return None
-    agenda_path: dict[str, set] = {}
     try:
         agendas = parse_file(install_dir / 'common' / 'council_agendas'
                              / '02_council_agendas_ascensions.txt')
-        for an, body in agendas.items():
-            p = _agenda_path(an)
-            if p and isinstance(body, dict):
-                for o, neg in _origins_in(body):
-                    if neg % 2 == 0:
-                        agenda_path.setdefault(o, set()).add(p)
     except Exception:
-        pass
-
-    # Locked but never positively tied to one path in a machine-readable way.
-    FALLBACK = {'origin_shroudwalker_apprentice': 'Psionic'}
-
-    out: dict[str, dict] = {}
-    for o in set(forbid) | set(allow):
-        blocked = forbid.get(o, set()) - allow.get(o, set())
-        free = [p for p in ALL_PATHS if p not in blocked]
-        lock, blocks = None, []
-        if len(free) == 1 and blocked:
-            lock = free[0]                           # blocked from three → locked to one
-        elif not free:                               # blocked from all → auto-ascension
-            cands = agenda_path.get(o) or ({FALLBACK[o]} if o in FALLBACK else set())
-            if len(cands) == 1:
-                lock = next(iter(cands))
-        elif blocked:                                # blocks one or two, still allows others
-            blocks = [p for p in ALL_PATHS if p in blocked]
-        if lock or blocks:
-            out[o] = {'lock': lock, 'blocks': blocks}
-    return out
+        agendas = {}
+    return ascension_restrictions(perks, _scripted_trigger_index(install_dir), agendas)
 
 
 def _custom_empire_initializers(install_dir: Path) -> set[str]:
