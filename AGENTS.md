@@ -53,5 +53,9 @@ The game's script format has quirks that produce silently wrong trees rather tha
 
 ## Conventions
 
+**Civics and origins have a second extractor** — `../stellaris-mod-FirstContact-MeaningfulLabels/tools/gen_empire_intel.py`,
+standalone by design. Changing which civic/origin files are read or how an origin is recognised here
+means changing it there too, and vice versa (see the workspace file).
+
 Keep pure helpers (parser, localisation cleanup, value helpers, SQL escaping) free of I/O — they
 are what `scripts/test` covers, and the coverage only holds while that boundary does.
