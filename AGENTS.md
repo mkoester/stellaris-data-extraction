@@ -15,8 +15,16 @@ python3 stellaris-extract.py <STELLARIS_DIR> --out a.sql --sqlite a.db
 scripts/test                                                  # unit tests, stdlib only
 ```
 
-Game install: `~/.local/share/Steam/steamapps/common/Stellaris`. The planner's DB is regenerated
-with `--sqlite sqlite/stellaris.sqlite`.
+Game install: `~/.local/share/Steam/steamapps/common/Stellaris`. After any extraction change,
+regenerate **both** outputs in one run:
+
+```sh
+python3 stellaris-extract.py <STELLARIS_DIR> --out sql/stellaris.sql --sqlite sqlite/stellaris.sqlite
+```
+
+**⚠ The committed dump `sql/stellaris.sql` is what the deployment builds from** (`build-sqlite.sh`
+on the server). Regenerating only the gitignored SQLite works locally and then 500s in production
+on missing columns. Check: `git status` lists `sql/stellaris.sql` as modified.
 
 **All code is English** — names, comments and output — even when the session is in German.
 
