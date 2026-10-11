@@ -11113,14 +11113,14 @@ INSERT OR IGNORE INTO trait_modifier
                    VALUES ('trait_seasonal_dormancy', 'planet_pops_upkeep_mult', '-0.15', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
-INSERT OR IGNORE INTO trait_modifier
-                       (trait_key, modifier_key, modifier_value, sort_order)
-                   VALUES ('trait_hollow_bones', 'worker_and_simple_drone_cat_bonus_workforce_mult', '-0.01', 0);
+INSERT OR IGNORE INTO trait_scaling_modifier
+                       (trait_key, modifier_key, rate, cap, unit, sort_order)
+                   VALUES ('trait_hollow_bones', 'worker_and_simple_drone_cat_bonus_workforce_mult', '-0.006667', NULL, 'planet size', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
-INSERT OR IGNORE INTO trait_modifier
-                       (trait_key, modifier_key, modifier_value, sort_order)
-                   VALUES ('trait_hollow_bones', 'soldier_jobs_bonus_workforce_mult', '-0.01', 1);
+INSERT OR IGNORE INTO trait_scaling_modifier
+                       (trait_key, modifier_key, rate, cap, unit, sort_order)
+                   VALUES ('trait_hollow_bones', 'soldier_jobs_bonus_workforce_mult', '-0.006667', NULL, 'planet size', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
 INSERT OR IGNORE INTO trait_modifier

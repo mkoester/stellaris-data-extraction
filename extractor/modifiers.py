@@ -119,7 +119,9 @@ def _load_scaling_values(install_dir: Path) -> dict[str, dict]:
     name → {max, divide, granularity, unit}. Two kinds — pop counters
     (`complex_trigger_modifier { trigger = count_owned_pop_amount, limit { has_trait } }`,
     shown per 100 pops, e.g. counter_familial/counter_noxious) and colony-age values
-    (`modifier { add = trigger:colony_age_years }`, shown per year, e.g. genetic_memory_mult)."""
+    (`modifier { add = trigger:colony_age_years }`, shown per year, e.g. genetic_memory_mult).
+    Plus planet-size values (`base = 2  mult = planet.trigger:planet_size  divide = 3`, shown
+    per planet size with `base` as the factor, e.g. hollow_bones_mult → 2/3 per size)."""
     out: dict[str, dict] = {}
     sdir = install_dir / 'common' / 'script_values'
     if not sdir.is_dir():
@@ -155,6 +157,11 @@ def _load_scaling_values(install_dir: Path) -> dict[str, dict]:
                 # Invasive Species: scaled per negative trait, with no `max` (uncapped).
                 out[name] = {'max': mx, 'divide': div, 'granularity': 1.0,
                              'unit': 'negative trait'}
+            elif 'planet_size' in str(blk.get('mult', '')):
+                # Hollow Bones: base × planet size / divide, uncapped.
+                out[name] = {'max': mx, 'divide': div,
+                             'granularity': _resolve_modifier_float(blk.get('base')) or 1.0,
+                             'unit': 'planet size'}
             elif mx is not None and any('colony_age_years' in str(m.get('add', ''))
                                         for m in _as_blocks(blk.get('modifier'))):
                 out[name] = {'max': mx, 'divide': div, 'granularity': 1.0,
