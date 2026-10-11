@@ -258,6 +258,8 @@ CREATE TABLE ethic_policy_restriction (
 DROP TABLE IF EXISTS granted_trait;
 DROP TABLE IF EXISTS civic_requirement;
 DROP TABLE IF EXISTS civic_modifier;
+DROP TABLE IF EXISTS council_position_modifier;
+DROP TABLE IF EXISTS council_position;
 DROP TABLE IF EXISTS civic;
 CREATE TABLE civic (
     key          TEXT PRIMARY KEY,    -- e.g. "civic_technocracy"
@@ -272,6 +274,27 @@ CREATE TABLE civic (
     icon         TEXT,
     sort_order   INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
+);
+
+-- The extra council seat a civic opens (common/governments/councilors, `civic = …`).
+-- Its modifiers scale with the assigned leader's level (value = per level).
+CREATE TABLE council_position (
+    key            TEXT PRIMARY KEY,  -- e.g. "councilor_agrarian_idyll"
+    civic_key      TEXT NOT NULL,
+    name           TEXT,              -- e.g. "Elder Farmer"
+    description    TEXT,
+    leader_classes TEXT,              -- comma list: commander,official,scientist
+    effect         TEXT,              -- custom tooltip (shown instead of / beside the modifiers)
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (civic_key) REFERENCES civic(key)
+);
+CREATE TABLE council_position_modifier (
+    position_key   TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,     -- per leader level
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (position_key, modifier_key),
+    FOREIGN KEY (position_key) REFERENCES council_position(key)
 );
 
 CREATE TABLE civic_modifier (
@@ -445,7 +468,10 @@ CREATE TABLE job_modifier (
 );
 
 -- Buildings (reference / wiki): every building, its category, description, build/upkeep
--- resources (building_resource) and the jobs it provides (building_job).
+-- resources (building_resource), the jobs it provides (building_job), its other
+-- modifiers (building_modifier) and the civics/origins it needs (building_unlock).
+DROP TABLE IF EXISTS building_unlock;
+DROP TABLE IF EXISTS building_modifier;
 DROP TABLE IF EXISTS building_job;
 DROP TABLE IF EXISTS building_resource;
 DROP TABLE IF EXISTS building;
@@ -471,6 +497,24 @@ CREATE TABLE building_job (
     amount       REAL NOT NULL,
     sort_order   INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (building_key, job),
+    FOREIGN KEY (building_key) REFERENCES building(key)
+);
+CREATE TABLE building_modifier (
+    building_key TEXT NOT NULL,
+    scope        TEXT NOT NULL,     -- 'planet' | 'country' | 'system' | 'station'
+    modifier_key TEXT NOT NULL,
+    value        REAL NOT NULL,     -- without ascension perks
+    condition    TEXT,              -- an ascension perk the row needs; NULL = always
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (building_key, sort_order),
+    FOREIGN KEY (building_key) REFERENCES building(key)
+);
+-- A civic/origin a building hard-requires (potential/allow/can_build, scripted triggers
+-- expanded; an optional path inside an OR with other conditions doesn't count).
+CREATE TABLE building_unlock (
+    owner_key    TEXT NOT NULL,     -- civic or origin key
+    building_key TEXT NOT NULL,
+    PRIMARY KEY (owner_key, building_key),
     FOREIGN KEY (building_key) REFERENCES building(key)
 );
 

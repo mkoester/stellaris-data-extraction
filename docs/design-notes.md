@@ -323,7 +323,11 @@ The home systems each precursor leads you to (planets, deposits, megastructures)
 
 ## Buildings Reference (`extract_buildings_ref`, buildings.py)
 
-`common/buildings/` → `building` (+ `building_resource`, `building_job`): category, description, build cost/upkeep and provided jobs. Reuses the precursor building helpers (`_building_resources`, `_building_inline_jobs`).
+`common/buildings/` → `building` (+ `building_resource`, `building_job`, `building_modifier`, `building_unlock`): category, description, build cost/upkeep, provided jobs, the other modifiers (`_building_modifiers`, base value without perks; a row gated by a different perk carries it in `condition`; `job_*_add` keys stay in `building_job`) and the civics/origins a building hard-requires (`building_unlocks`: positive `has_civic`/`has_valid_civic`/`has_origin` in potential/allow/can_build via `_gate_owners` — an alternative inside an OR with non-civic conditions, e.g. Fear of the Dark's early Factory, doesn't count; an OR of one civic's variants does). Reuses the precursor building helpers (`_building_resources`, `_building_inline_jobs`). 4.5.2: 1035 modifier rows, 201 unlock rows over 72 civics/origins.
+
+## Council Positions (`extract_council_positions`, government.py)
+
+`common/governments/councilors/` → `council_position` (+ `council_position_modifier`): only seats with a `civic = …` field (151 on 4.5.2, one per civic); event/leader-trait/flag seats (Shroudwalker Teacher, Warden of the Citadel, …) are skipped. Name = loc[key], description = `<key>_desc` with `$TITLE$` → name, `leader_classes` from `leader_class`, `effect` = the `custom_tooltip` / `custom_tooltip_with_modifiers` loc (some seats have no modifiers, only that text). Modifier values are **per leader level**; `@vars` resolve through the global scripted variables.
 
 ## Job Swaps (`extract_job_swaps`, jobs.py)
 

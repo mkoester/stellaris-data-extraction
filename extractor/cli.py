@@ -10,7 +10,7 @@ from .buildings import extract_buildings_ref
 from .clausewitz import parse_file
 from .empires import extract_flag_assets, extract_initializers, extract_prescripted_empires, extract_rooms
 from .federations import extract_federations
-from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_ethics, extract_origins, extract_policy_restrictions
+from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_council_positions, extract_ethics, extract_origins, extract_policy_restrictions
 from .jobs import extract_job_swaps, extract_jobs
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
 from .misc import extract_dlc, extract_named_colors, extract_planet_classes
@@ -327,6 +327,8 @@ Examples:
                                          civic_order, args.verbose, ascension)
         except Exception as e:
             print(f"  WARNING: failed to parse {fn}: {e}", file=sys.stderr)
+
+    extract_council_positions(install_dir, loc, scripted_vars, w, args.verbose)
 
     # --- authorities (government types) ---
     authorities_dir = install_dir / 'common' / 'governments' / 'authorities'

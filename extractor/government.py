@@ -507,6 +507,25 @@ _OWNER_TRIGGERS = ('has_origin', 'has_civic', 'has_valid_civic')
 _SKIP_BLOCKS = ('if', 'else_if', 'else', 'limit', 'tradition_swap', 'ai_weight')
 
 
+def _only_owner_tests(node, triggers: dict[str, dict], seen: frozenset = frozenset()) -> bool:
+    """True when a block tests nothing but civics/origins (directly, through nested
+    OR/AND, or through scripted triggers that do) — e.g. the variants of one civic."""
+    if isinstance(node, list):
+        return bool(node) and all(_only_owner_tests(x, triggers, seen) for x in node)
+    if not isinstance(node, dict) or isinstance(node, IfBlock) or not node:
+        return False
+    for k, v in node.items():
+        if k in _OWNER_TRIGGERS:
+            continue
+        if k in ('OR', 'AND') and _only_owner_tests(v, triggers, seen):
+            continue
+        if (k in triggers and k not in seen and str(v).strip() == 'yes'
+                and _only_owner_tests(triggers[k], triggers, seen | {k})):
+            continue
+        return False
+    return True
+
+
 def _gate_owners(node, triggers: dict[str, dict], neg: int = 0, disj: bool = False,
                  seen: frozenset = frozenset()) -> list[tuple[str, bool, bool]]:
     """The civic/origin keys a trigger tree tests, as (key, negated, in_disjunction).
@@ -530,8 +549,9 @@ def _gate_owners(node, triggers: dict[str, dict], neg: int = 0, disj: bool = Fal
             out += _gate_owners(v, triggers, neg + 1, disj or (k == 'NOT' and neg % 2 == 0
                                 and isinstance(v, dict) and len(v) > 1), seen)
         elif k in ('OR', 'AND'):
-            # OR is a disjunction when positive, AND when negated (De Morgan).
-            branchy = (k == 'OR') == (neg % 2 == 0)
+            # OR is a disjunction when positive, AND when negated (De Morgan) — unless
+            # every alternative is itself a civic/origin test (OR of a civic's variants).
+            branchy = (k == 'OR') == (neg % 2 == 0) and not _only_owner_tests(v, triggers)
             out += _gate_owners(v, triggers, neg, disj or branchy, seen)
         elif k in triggers and k not in seen and str(v).strip() in ('yes', 'no'):
             flip = 1 if str(v).strip() == 'no' else 0
@@ -631,6 +651,65 @@ def compute_ascension_restrictions(install_dir: Path) -> dict[str, dict]:
     except Exception:
         agendas = {}
     return ascension_restrictions(perks, _scripted_trigger_index(install_dir), agendas)
+
+
+def extract_council_positions(install_dir: Path, loc: dict[str, str],
+                              scripted_vars: dict[str, float], w: Writer, verbose: bool) -> None:
+    """common/governments/councilors → council_position (+ _modifier): the seats a civic
+    opens (`civic = …`). Seats unlocked by events, leader traits or flags have no civic
+    and are skipped. Modifier values are per leader level; `effect` is the custom
+    tooltip some seats show instead of (or beside) their modifiers."""
+    cdir = install_dir / 'common' / 'governments' / 'councilors'
+    if not cdir.is_dir():
+        return
+    order = 0
+    for f in sorted(cdir.glob('*.txt')):
+        try:
+            data = parse_file(f)
+        except Exception:
+            continue
+        variables = dict(scripted_vars)
+        for k, v in data.items():
+            if k.startswith('@') and (fv := _resolve_modifier_float(v)) is not None:
+                variables[k] = fv
+        for key, cdef in data.items():
+            if key.startswith('@') or not isinstance(cdef, dict):
+                continue
+            civic = cdef.get('civic')
+            if not isinstance(civic, str):
+                continue
+            name = _clean_loc(loc[key], loc) if key in loc else None
+            raw_desc = loc.get(f'{key}_desc')
+            desc = (_clean_loc(raw_desc.replace('$TITLE$', name or ''), loc)
+                    if raw_desc else None)
+            classes = [c for c in _to_list(cdef.get('leader_class')) if isinstance(c, str)]
+            tts = [loc[t] for t in (cdef.get('custom_tooltip'),
+                                    cdef.get('custom_tooltip_with_modifiers'))
+                   if isinstance(t, str) and t in loc]
+            effect = '\n'.join(_clean_loc(t, loc, keep_newlines=True, variables=variables)
+                               for t in tts) or None
+            w.execute(
+                """INSERT OR REPLACE INTO council_position
+                       (key, civic_key, name, description, leader_classes, effect, sort_order)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (key, civic, name, desc, ','.join(classes) or None, effect, order))
+            order += 1
+            modifier = cdef.get('modifier')
+            for m_order, (mk, mv) in enumerate((modifier or {}).items()
+                                               if isinstance(modifier, dict) else []):
+                s = str(mv).strip()
+                value = variables.get(s) if s.startswith('@') else _resolve_modifier_float(mv)
+                if value is None:
+                    continue
+                w.execute(
+                    """INSERT OR IGNORE INTO council_position_modifier
+                           (position_key, modifier_key, modifier_value, sort_order)
+                       VALUES (?, ?, ?, ?)""",
+                    (key, mk, value, m_order))
+                _write_modifier_label(w, loc, mk)
+    w.commit()
+    if verbose:
+        print(f"  council positions: {order}")
 
 
 def _custom_empire_initializers(install_dir: Path) -> set[str]:

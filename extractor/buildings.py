@@ -4,7 +4,10 @@ from pathlib import Path
 import re
 import sys
 from .clausewitz import parse_file
+from .government import _gate_owners
 from .localisation import _clean_loc
+from .modifiers import _write_modifier_label
+from .triggers import _scripted_trigger_index
 from .values import _as_blocks, _flatten_text, _resolve_modifier_float, _resolve_var
 from .writer import Writer
 
@@ -12,13 +15,16 @@ from .writer import Writer
 def extract_buildings_ref(install_dir: Path, loc: dict[str, str],
                           scripted_vars: dict[str, float], inline_scripts_dir: Path,
                           w: Writer, verbose: bool) -> None:
-    """Extract common/buildings → building (+ building_resource, building_job): each
-    building's category, description, build/upkeep resources and the jobs it provides.
-    Reuses the precursor building helpers (`_building_resources`, `_building_inline_jobs`)."""
+    """Extract common/buildings → building (+ building_resource, building_job,
+    building_modifier, building_unlock): each building's category, description,
+    build/upkeep resources, the jobs it provides, its other modifiers and the civics /
+    origins it requires. Reuses the precursor building helpers (`_building_resources`,
+    `_building_inline_jobs`, `_building_modifiers`)."""
     bdir = install_dir / 'common' / 'buildings'
     if not bdir.is_dir():
         print(f"  WARNING: {bdir} not found", file=sys.stderr)
         return
+    triggers = _scripted_trigger_index(install_dir)
     order = 0
     for f in sorted(bdir.glob('*.txt')):
         try:
@@ -57,6 +63,19 @@ def extract_buildings_ref(install_dir: Path, loc: dict[str, str],
                 w.execute(
                     "INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES (?, ?, ?, ?)",
                     (key, job, amt, j_order))
+            # Jobs are building_job rows already; the rest are the building's effects.
+            mods = [m for m in _building_modifiers(bdef, variables)
+                    if not re.fullmatch(r'job_\w+_add', m[1])]
+            for m_order, (scope, mk, base, _ae, cond) in enumerate(mods):
+                w.execute(
+                    """INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?)""",
+                    (key, scope, mk, base, cond, m_order))
+                _write_modifier_label(w, loc, mk)
+            for owner in building_unlocks(bdef, triggers):
+                w.execute("INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES (?, ?)",
+                          (owner, key))
     w.commit()
     if verbose:
         print(f"  buildings: {order}")
@@ -115,6 +134,19 @@ _BUILDING_MOD_SKIP = frozenset({'potential', 'trigger', 'multiplier', 'mult', 'c
 
 
 _AE_PERK = 'ap_archaeoengineers'
+
+
+def building_unlocks(bdef: dict, triggers: dict[str, dict]) -> list[str]:
+    """The civics/origins a building hard-requires, sorted: positive `has_civic` /
+    `has_valid_civic` / `has_origin` tests in potential/allow/can_build that aren't one
+    alternative among other conditions (Fear of the Dark's early Factory is an OR with
+    `country_uses_consumer_goods`, so it doesn't count; an OR of one civic's variants does)."""
+    out: set[str] = set()
+    for blk in ('potential', 'allow', 'can_build'):
+        for key, negated, disj in _gate_owners(bdef.get(blk, {}), triggers):
+            if not negated and not disj and key.startswith(('civic_', 'origin_')):
+                out.add(key)
+    return sorted(out)
 
 
 def _perk_gate(block: dict) -> tuple[str, bool] | None:
