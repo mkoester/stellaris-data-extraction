@@ -14,7 +14,9 @@ from .writer import Writer
 # common/defines keys the planner's cost calculator and slot limits need.
 DEFINE_KEYS = ('TRADITION_COST_AMOUNTS', 'TRADITION_COST_TRADITION', 'TRADITION_COST_TRADITION_EXP',
                'EMPIRE_SIZE_TRADITION_COST_PENALTY', 'EMPIRE_SIZE_BASE',
-               'TRADITION_CATEGORIES_MAX', 'ASCENSION_PERKS_SLOTS')
+               'TRADITION_CATEGORIES_MAX', 'ASCENSION_PERKS_SLOTS',
+               # the empire dashboard's due dates for research and council agendas
+               'EMPIRE_SIZE_TECH_COST_PENALTY', 'EMPIRE_SIZE_COUNCIL_AGENDA_COST_PENALTY')
 
 
 # ── Pure helpers ───────────────────────────────────────────────────────────────

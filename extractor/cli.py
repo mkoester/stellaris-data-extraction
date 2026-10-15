@@ -17,7 +17,7 @@ from .misc import extract_dlc, extract_named_colors, extract_planet_classes
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
 from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
-from .tech import extract_fallen_empire_techs, extract_repeatable_techs
+from .tech import extract_fallen_empire_techs, extract_repeatable_techs, extract_techs
 from .traditions import extract_edicts_agendas, extract_traditions
 from .traits import TRAIT_CATEGORIES, extract_trait_categories, extract_trait_modifiers, extract_traits, is_species_trait_file
 from .triggers import _scripted_trigger_index, _signals
@@ -386,6 +386,10 @@ Examples:
     extract_buildings_ref(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
     print(f"\n[job-swaps] {install_dir / 'common' / 'pop_jobs'}", file=progress)
     extract_job_swaps(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
+
+    # --- technologies (non-repeatable, with base cost) ---
+    print(f"\n[techs] {technology_dir}", file=progress)
+    extract_techs(technologies, loc, scripted_vars, w, args.verbose)
 
     # --- repeatable technologies ---
     print(f"\n[repeatable-techs] {technology_dir}", file=progress)

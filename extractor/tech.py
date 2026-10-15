@@ -61,6 +61,65 @@ def _is_repeatable(data: dict) -> bool:
     return isinstance(wg, (list, dict)) and 'repeatable' in wg
 
 
+def tech_base_cost(raw, variables: dict[str, float]) -> float | None:
+    """A tech's `cost`: a number, an @variable, or a block whose `factor` is either."""
+    if isinstance(raw, dict):
+        raw = raw.get('factor')
+    if isinstance(raw, list):
+        raw = raw[-1]
+    s = str(raw).strip() if raw is not None else ''
+    if s.startswith('@'):
+        return variables.get(s)
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def extract_techs(
+    technologies: dict,
+    loc: dict[str, str],
+    scripted_vars: dict[str, float],
+    w: Writer,
+    verbose: bool,
+) -> None:
+    """All non-repeatable techs with their base cost. @variables come from the global
+    scripted_variables and the technology files' own top-level @definitions."""
+    variables = dict(scripted_vars)
+    for k, v in technologies.items():
+        if k.startswith('@'):
+            fv = tech_base_cost(v, {})
+            if fv is not None:
+                variables[k] = fv
+
+    entries: list[tuple] = []
+    for key, data in technologies.items():
+        if not isinstance(data, dict) or _is_repeatable(data):
+            continue
+        common = _tech_common(key, data, loc)
+        if common is None:
+            continue
+        try:
+            tier = int(str(data.get('tier')).strip())
+        except (ValueError, TypeError):
+            tier = None
+        entries.append(common + (tier, tech_base_cost(data.get('cost'), variables)))
+
+    entries.sort(key=_sort_key)
+
+    for sort_order, entry in enumerate(entries):
+        area, category, key, label, _desc, _al, _cl, tier, cost = entry
+        w.execute(
+            """INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (key, label, area, category, tier, cost, sort_order),
+        )
+        if verbose:
+            print(f"  {key} ({area}) tier={tier} cost={cost}")
+
+    w.commit()
+
+
 def extract_repeatable_techs(
     technologies: dict,
     loc: dict[str, str],

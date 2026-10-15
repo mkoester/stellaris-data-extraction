@@ -945,6 +945,18 @@ CREATE TABLE tech_fallen_empire (
     sort_order   INTEGER NOT NULL DEFAULT 0
 );
 
+-- Every non-repeatable tech with its base research cost (before empire size, galaxy setting and
+-- other cost modifiers). The empire dashboard names a save's current research from this.
+DROP TABLE IF EXISTS technology;
+CREATE TABLE technology (
+    key          TEXT PRIMARY KEY,
+    label        TEXT,
+    area         TEXT NOT NULL,          -- physics / society / engineering
+    category     TEXT,                   -- field key, e.g. "industry"
+    tier         INTEGER,
+    cost         REAL,                   -- base cost: @tierXcostY resolved; `cost = { factor = … }` takes the factor
+    sort_order   INTEGER NOT NULL DEFAULT 0
+);
 DROP TABLE IF EXISTS tech_repeatable_modifier;
 DROP TABLE IF EXISTS tech_repeatable;
 CREATE TABLE tech_repeatable (

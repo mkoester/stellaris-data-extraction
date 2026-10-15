@@ -940,6 +940,18 @@ CREATE TABLE tech_fallen_empire (
     sort_order   INTEGER NOT NULL DEFAULT 0
 );
 
+-- Every non-repeatable tech with its base research cost (before empire size, galaxy setting and
+-- other cost modifiers). The empire dashboard names a save's current research from this.
+DROP TABLE IF EXISTS technology;
+CREATE TABLE technology (
+    key          TEXT PRIMARY KEY,
+    label        TEXT,
+    area         TEXT NOT NULL,          -- physics / society / engineering
+    category     TEXT,                   -- field key, e.g. "industry"
+    tier         INTEGER,
+    cost         REAL,                   -- base cost: @tierXcostY resolved; `cost = { factor = … }` takes the factor
+    sort_order   INTEGER NOT NULL DEFAULT 0
+);
 DROP TABLE IF EXISTS tech_repeatable_modifier;
 DROP TABLE IF EXISTS tech_repeatable;
 CREATE TABLE tech_repeatable (
@@ -47027,6 +47039,1316 @@ INSERT OR IGNORE INTO job_swap_resource
 INSERT OR IGNORE INTO job_swap_resource
                                        (source_key, base_job, swapped_job, side, kind, resource, amount)
                                    VALUES ('origin_forever_cruise', 'cruise_passenger_unemployment', 'cruise_passenger_unemployment_bio_trophy', 'swapped', 'upkeep', 'consumer_goods', '0.33');
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_advanced_storm_manipulation', 'Advanced Storm Manipulation', 'physics', 'field_manipulation', 3, '4000.0', 0);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_akx_worm_1', 'Entropic Recursion', 'physics', 'field_manipulation', NULL, '4000.0', 1);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_arkship_stellar_igniter', 'Stellar Engine', 'physics', 'field_manipulation', 4, '10000.0', 2);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cloaking_1', 'Basic Cloaking Fields', 'physics', 'field_manipulation', 2, '3000.0', 3);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cloaking_2', 'Advanced Cloaking Fields', 'physics', 'field_manipulation', 3, '6000.0', 4);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cloaking_3', 'Elite Cloaking Fields', 'physics', 'field_manipulation', 4, '12000.0', 5);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cloaking_dark_matter', 'Dark Matter Cloaking Fields', 'physics', 'field_manipulation', NULL, '70000.0', 6);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_containment_vessel', 'Curator Containment Protocols', 'physics', 'field_manipulation', 3, '4000.0', 7);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_dark_matter_deflector', 'Dark Matter Deflectors', 'physics', 'field_manipulation', NULL, '70000.0', 8);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_dyson_sphere', 'Dyson Sphere', 'physics', 'field_manipulation', 5, '24000.0', 9);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_experimental_subspace_navigation', 'Speculative Hyperlane Breaching', 'physics', 'field_manipulation', 2, '3000.0', 10);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_silo_1', 'Shrinkspace Depot', 'physics', 'field_manipulation', NULL, '70000.0', 11);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_silo_2', 'Extra-Dimensional Depot', 'physics', 'field_manipulation', NULL, '70000.0', 12);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_gravity_snare_capacity_1', 'Micro Singularity Enhancements', 'physics', 'field_manipulation', 2, '2000.0', 13);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_gravity_snare_capacity_2', 'Gravity Manipulation Optimization', 'physics', 'field_manipulation', 3, '4000.0', 14);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_gravity_snare_capacity_3', 'Containment System Improvement', 'physics', 'field_manipulation', 4, '8000.0', 15);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_gravity_wells', 'Gravity Snares', 'physics', 'field_manipulation', 2, '2000.0', 16);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_matter_decompressor', 'Matter Decompressor', 'physics', 'field_manipulation', 5, '24000.0', 17);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mine_dark_matter', 'Dark Matter Drawing', 'physics', 'field_manipulation', 3, '6000.0', 18);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_physics_1', 'Quantum Computing', 'physics', 'field_manipulation', 1, '1500.0', 19);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_physics_2', 'Unified Field Theory', 'physics', 'field_manipulation', 2, '3000.0', 20);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_physics_3', 'Quantum Gravitational Waves', 'physics', 'field_manipulation', 3, '6000.0', 21);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_pk_shielder', 'Global Pacification', 'physics', 'field_manipulation', 5, '24000.0', 22);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_planetary_shield_generator', 'Planetary Shields', 'physics', 'field_manipulation', 3, '4000.0', 23);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_power_hub_1', 'Global Energy Management', 'physics', 'field_manipulation', 1, '1500.0', 24);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_power_hub_2', 'Planetary Power Grid', 'physics', 'field_manipulation', 2, '3000.0', 25);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_power_plant_1', 'High-Energy Capacitors', 'physics', 'field_manipulation', 0, '0.0', 26);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_power_plant_2', 'Field Modulation', 'physics', 'field_manipulation', 1, '1000.0', 27);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_power_plant_3', 'Quantum Energy States', 'physics', 'field_manipulation', 2, '2000.0', 28);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_power_plant_4', 'Quantum Field Manipulation', 'physics', 'field_manipulation', 3, '4000.0', 29);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_rift_sphere', 'Rift Sphere', 'physics', 'field_manipulation', 2, '5000.0', 30);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_shield_hardeners_1', 'Shield Hardening', 'physics', 'field_manipulation', 2, '3000.0', 31);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_shield_hardeners_2', 'Advanced Shield Hardening', 'physics', 'field_manipulation', 5, '24000.0', 32);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_shield_rechargers_1', 'Shield Capacitors', 'physics', 'field_manipulation', 2, '3000.0', 33);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_shields_1', 'Deflectors', 'physics', 'field_manipulation', 0, '0.0', 34);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_shields_2', 'Improved Deflectors', 'physics', 'field_manipulation', 1, '1500.0', 35);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_shields_3', 'Shields', 'physics', 'field_manipulation', 2, '3000.0', 36);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_shields_4', 'Advanced Shields', 'physics', 'field_manipulation', 3, '6000.0', 37);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_shields_5', 'Hyper Shields', 'physics', 'field_manipulation', 4, '12000.0', 38);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_storm_manipulation', 'Storm Manipulation', 'physics', 'field_manipulation', 2, '2500.0', 39);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('null_void_beam', 'Null Void Beam', 'physics', 'particles', 2, '1250.0', 40);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_akx_worm_3', 'Omega Theory', 'physics', 'particles', NULL, '10000.0', 41);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_antimatter_power', 'Antimatter Power', 'physics', 'particles', 3, '5000.0', 42);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_arc_emitter_1', 'Arc Emitters', 'physics', 'particles', 4, '10000.0', 43);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_arc_emitter_2', 'Focused Arc Emitters', 'physics', 'particles', 4, '12000.0', 44);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_arkship_exodus_jump', 'Exodus Jump Coordinator', 'physics', 'particles', 4, '10000.0', 45);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_astral_harvesting', 'Astral Harvesting', 'physics', 'particles', 2, '2000.0', 46);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cold_fusion_power', 'Cold Fusion Power', 'physics', 'particles', 2, '2500.0', 47);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_dark_matter_detection', 'Dark Matter Detection', 'physics', 'particles', 5, '24000.0', 48);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_dark_matter_power_core', 'Dark Matter Power', 'physics', 'particles', NULL, '70000.0', 49);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_disruptors_1', 'Disruptors', 'physics', 'particles', 2, '2500.0', 50);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_disruptors_2', 'Ion Disruptors', 'physics', 'particles', 3, '4000.0', 51);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_disruptors_3', 'Phase Disruptors', 'physics', 'particles', 4, '8000.0', 52);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_energy_lance_1', 'Particle Lances', 'physics', 'particles', 4, '10000.0', 53);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_energy_lance_2', 'Tachyon Lances', 'physics', 'particles', 4, '12000.0', 54);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_energy_torpedoes_1', 'Proton Launchers', 'physics', 'particles', 3, '6000.0', 55);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_energy_torpedoes_2', 'Neutron Launchers', 'physics', 'particles', 4, '10000.0', 56);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_extradimensional_weapon_1', 'Extradimensional Weaponry', 'physics', 'particles', 5, '24000.0', 57);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_singularity_1', 'Class-3 Singularity', 'physics', 'particles', NULL, '70000.0', 58);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_singularity_2', 'Class-4 Singularity', 'physics', 'particles', NULL, '70000.0', 59);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fission_power', 'Fission Power', 'physics', 'particles', 0, '0.0', 60);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ftl_inhibitor', 'FTL Inhibition', 'physics', 'particles', 2, '2000.0', 61);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fusion_power', 'Fusion Power', 'physics', 'particles', 1, '1250.0', 62);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_gateway_activation', 'Gateway Activation', 'physics', 'particles', 4, '12000.0', 63);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_gateway_construction', 'Gateway Construction', 'physics', 'particles', 5, '24000.0', 64);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_hyper_drive_1', 'Hyperspace Travel', 'physics', 'particles', 0, '750.0', 65);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_hyper_drive_2', 'Hyperlane Breach Points', 'physics', 'particles', 2, '2500.0', 66);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_hyper_drive_3', 'Hyperspace Slipstreams', 'physics', 'particles', 3, '6000.0', 67);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_hyper_drive_bio_integration', 'Hyperdrive Bio-integration', 'physics', 'particles', 2, '2000.0', 68);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_hyper_relays', 'Hyper Relays', 'physics', 'particles', 2, '3000.0', 69);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_jump_drive_1', 'Jump Drive', 'physics', 'particles', 5, '16000.0', 70);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_lasers_1', 'Red Lasers', 'physics', 'particles', 0, '500.0', 71);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_lasers_2', 'Blue Lasers', 'physics', 'particles', 1, '1250.0', 72);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_lasers_3', 'UV Lasers', 'physics', 'particles', 2, '2000.0', 73);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_lasers_4', 'X-Ray Lasers', 'physics', 'particles', 3, '4000.0', 74);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_lasers_5', 'Gamma Lasers', 'physics', 'particles', 4, '8000.0', 75);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_lgate_activation', 'L-Gate Activation', 'physics', 'particles', 3, '6000.0', 76);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mine_volatile_motes', 'Mote Stabilization', 'physics', 'particles', 2, '2000.0', 77);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mining_drone_weapon_1', 'Mining Drone Lasers', 'physics', 'particles', 2, '2500.0', 78);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_pk_neutron', 'Neutron Sweeping', 'physics', 'particles', 5, '24000.0', 79);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_plasma_1', 'Plasma Throwers', 'physics', 'particles', 2, '2500.0', 80);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_plasma_2', 'Plasma Accelerators', 'physics', 'particles', 3, '4000.0', 81);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_plasma_3', 'Plasma Cannons', 'physics', 'particles', 4, '8000.0', 82);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_quantum_catapult', 'Quantum Catapult', 'physics', 'particles', 3, '8000.0', 83);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_reactor_boosters_1', 'Reactor Boosters', 'physics', 'particles', 0, '0.0', 84);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_reactor_boosters_2', 'Improved Reactor Boosters', 'physics', 'particles', 1, '1500.0', 85);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_reactor_boosters_3', 'Advanced Reactor Boosters', 'physics', 'particles', 1, '6000.0', 86);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_cloud_weapon_1', 'Cloud Lightning Conduits', 'physics', 'particles', 2, '3000.0', 87);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_starfire_cannon', 'Starfire Cannon', 'physics', 'particles', 4, '12000.0', 88);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_subspace_drive', 'Subspace Drive', 'physics', 'particles', 0, '500.0', 89);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_unusual_senses', 'Unusual Senses', 'physics', 'particles', 2, '3000.0', 90);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_volatile_motes', 'Volatile Material Plants', 'physics', 'particles', 2, '2000.0', 91);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_wormhole_stabilization', 'Wormhole Stabilization', 'physics', 'particles', 3, '4000.0', 92);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_zero_point_power', 'Zero Point Power', 'physics', 'particles', 4, '10000.0', 93);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_administrative_ai', 'Administrative AI', 'physics', 'computing', 1, '1000.0', 94);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archeology_lab', 'Curator Archaeology Lab', 'physics', 'computing', 2, '2000.0', 95);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_arkship_system_scanner', 'Subspace Imaging Array', 'physics', 'computing', 4, '10000.0', 96);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_assisted_detection', 'Advanced Detection Algorithms', 'physics', 'computing', 2, '3000.0', 97);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_atmospheric_orbital_mechanics', 'Atmospheric Orbital Mechanics', 'physics', 'computing', 2, '3000.0', 98);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_automated_exploration', 'Automated Exploration Protocols', 'physics', 'computing', 1, '1250.0', 99);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_auxiliary_fire_control', 'Auxiliary Fire-control', 'physics', 'computing', 1, '1500.0', 100);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_basic_science_lab_1', 'Scientific Method', 'physics', 'computing', 0, '500.0', 101);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_basic_science_lab_2', 'Exotic Materials Labs', 'physics', 'computing', 1, '1500.0', 102);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_basic_science_lab_3', 'Multi-Dimensional Studies', 'physics', 'computing', 3, '4000.0', 103);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_combat_computers_1', 'Specialized Combat Computers', 'physics', 'computing', 1, '1500.0', 104);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_combat_computers_2', 'Extended Combat Algorithms', 'physics', 'computing', 3, '4000.0', 105);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_combat_computers_3', 'Sapient Combat Simulations', 'physics', 'computing', 4, '10000.0', 106);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_combat_computers_autonomous', 'Autonomous Ship Intellects', 'physics', 'computing', 4, '10000.0', 107);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_combat_computers_bio_integration', 'Combat Computer Bio-integration', 'physics', 'computing', 2, '2000.0', 108);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_consumer_good_refinement_1', 'Market Analysis Algorithms', 'physics', 'computing', 2, '2000.0', 109);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_consumer_good_refinement_2', 'Predictive Consumerism', 'physics', 'computing', 4, '8000.0', 110);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_crisis_1', 'Exponential Learning Theory', 'physics', 'computing', 5, '10000.0', 111);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_crisis_2', 'Gravitic Brush', 'physics', 'computing', 5, '50000.0', 112);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_crisis_3', 'Theoretical Infinity Thesis', 'physics', 'computing', 5, '100000.0', 113);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_crisis_4', 'The Rules of Reality', 'physics', 'computing', 5, '200000.0', 114);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_crisis_5', 'Nascent Universes', 'physics', 'computing', 5, '300000.0', 115);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_thesis', 'Applied Infinity Thesis', 'physics', 'computing', 4, '75000.0', 116);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cryostasis_1', 'Automated Colony Ships', 'physics', 'computing', 1, '1500.0', 117);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cryostasis_2', 'Self-Aware Colony Ships', 'physics', 'computing', 3, '3000.0', 118);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_curator_lab', 'Curator Exploration Lab', 'physics', 'computing', 2, '2000.0', 119);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_decryption_1', 'Quantum Hacking', 'physics', 'computing', 1, '1250.0', 120);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_decryption_2', 'Simulated Social Engineering', 'physics', 'computing', 2, '2500.0', 121);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_decryption_3', 'Quasi-Dimensional Reflection', 'physics', 'computing', 4, '10000.0', 122);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_detection_array', 'Detection Array', 'physics', 'computing', 2, '3000.0', 123);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_dyson_swarm', 'Dyson Swarm', 'physics', 'computing', 2, '3000.0', 124);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_encryption_1', 'Quantum Firewalls', 'physics', 'computing', 1, '1250.0', 125);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_encryption_2', 'Simultaneous-Collapse Storage', 'physics', 'computing', 2, '2500.0', 126);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_encryption_3', 'Negative-Time Keys', 'physics', 'computing', 4, '10000.0', 127);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_enigmatic_decoder', 'Enigmatic Decoder', 'physics', 'computing', NULL, '60000.0', 128);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_enigmatic_encoder', 'Enigmatic Encoder', 'physics', 'computing', NULL, '60000.0', 129);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_lab_1', 'Quantum Innovation Nexus', 'physics', 'computing', NULL, '70000.0', 130);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_lab_2', 'Transcendental Innovation Department', 'physics', 'computing', NULL, '70000.0', 131);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_global_research_initiative', 'Interplanetary Research Initiative', 'physics', 'computing', 3, '4000.0', 132);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_lathe_overclocker', 'Synaptic Overclocker', 'physics', 'computing', 5, '30000.0', 133);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_lathe_resonator', 'Synaptic Resonator', 'physics', 'computing', 5, '30000.0', 134);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_lathe_validator', 'Synaptic Validator', 'physics', 'computing', 5, '30000.0', 135);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_neuro_quantum_links', 'Quantum Neuro-Links', 'physics', 'computing', 3, '4000.0', 136);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_new_numbers', 'New Numbers', 'physics', 'computing', 2, '3000.0', 137);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_orbital_maneuvers', 'Advanced Orbital Maneuvers', 'physics', 'computing', 2, '2000.0', 138);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_pd_tracking_1', 'Active Countermeasures', 'physics', 'computing', 0, NULL, 139);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_pd_tracking_2', 'Interlinked Support Systems', 'physics', 'computing', 2, '3000.0', 140);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_pd_tracking_3', 'Predictive Algorithms', 'physics', 'computing', 4, '8000.0', 141);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_positronic_implants', 'Positronic Implants', 'physics', 'computing', 4, '8000.0', 142);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_sapient_ai', 'Positronic AI', 'physics', 'computing', 4, '8000.0', 143);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_science_arkship', NULL, 'physics', 'computing', 3, '4000.0', 144);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_science_nexus', 'Science Nexus', 'physics', 'computing', 5, '24000.0', 145);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_self_aware_logic', 'Self-Evolving Logic', 'physics', 'computing', 2, '2500.0', 146);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_sensors_2', 'Gravitic Sensors', 'physics', 'computing', 2, '2000.0', 147);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_sensors_3', 'Subspace Sensors', 'physics', 'computing', 3, '4000.0', 148);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_sensors_4', 'Tachyon Sensors', 'physics', 'computing', 4, '8000.0', 149);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_sensors_bio_integration', 'Sensor Bio-integration', 'physics', 'computing', 2, '2000.0', 150);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_sentry_array', 'Sentry Array', 'physics', 'computing', 5, '24000.0', 151);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_exploration', 'Space Exploration', 'physics', 'computing', 0, '0.0', 152);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_science_1', 'Zero-G Laboratories', 'physics', 'computing', 1, '1000.0', 153);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_science_2', 'Miniature Containment Fields', 'physics', 'computing', 1, '1500.0', 154);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_science_3', 'Quantum Probes', 'physics', 'computing', 2, '2000.0', 155);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_science_4', 'Autonomous Station Protocols', 'physics', 'computing', 2, '3000.0', 156);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_science_5', 'Multi-Dimensional Analysis', 'physics', 'computing', 3, '4000.0', 157);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_storm_prediction_1', 'Cosmic Weather Models', 'physics', 'computing', 1, '1250.0', 158);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_storm_prediction_2', 'Probability Current', 'physics', 'computing', 3, '5000.0', 159);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_synchronized_defences', 'Synchronized Defenses', 'physics', 'computing', 4, '10000.0', 160);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_synth_queen_knowledge', 'Cetana''s Thought', 'physics', 'computing', 5, '16000.0', 161);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_trinary_computing', 'Trinary Computing', 'physics', 'computing', 2, '3000.0', 162);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_alien_cloning', 'Artificial Breeding', 'society', 'biology', 2, '2000.0', 163);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_alien_life_studies', 'Xenology', 'society', 'biology', 1, '1250.0', 164);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_amoeba_strike_craft_1', 'Flagella Weaponization', 'society', 'biology', 2, '3000.0', 165);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_basic_health', 'Medical Care', 'society', 'biology', 0, '0.0', 166);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_bio_reactor', 'Bio-Reactor', 'society', 'biology', 1, '1000.0', 167);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_bio_reactor_2', 'Advanced Bio-Reactor', 'society', 'biology', 2, '2000.0', 168);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_biomechanics', 'Biomechanics', 'society', 'biology', 4, '10000.0', 169);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_capacity_boosters', 'Capacity Boosters', 'society', 'biology', 4, '12000.0', 170);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cloning', 'Cloning', 'society', 'biology', 2, '2500.0', 171);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_controlled_mutations', 'Controlled Mutations', 'society', 'biology', 2, '2500.0', 172);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_controlled_mutations_2', 'Advanced Controlled Mutations', 'society', 'biology', 4, '10000.0', 173);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_harbinger', 'Maze Harbinger', 'society', 'biology', 5, '70000.0', 174);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_mauler', 'Cipher Mauler', 'society', 'biology', 5, '70000.0', 175);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_stinger', 'Cryptic Stinger', 'society', 'biology', 5, '70000.0', 176);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_weaver', 'Quandary Weaver', 'society', 'biology', 5, '70000.0', 177);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_critter_feeder', 'Fruit Gardens', 'society', 'biology', 0, '0.0', 178);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_eco_simulation', 'Eco Simulation', 'society', 'biology', 1, '1000.0', 179);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_enhanced_cryosleep_sedatives', 'Enhanced Cryosleep Sedatives', 'society', 'biology', 2, '2000.0', 180);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_epigenetic_triggers', 'Epigenetic Triggers', 'society', 'biology', 2, '2500.0', 181);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_clinic_1', 'Molecular-Revitalization Institute', 'society', 'biology', NULL, '70000.0', 182);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_clinic_2', 'Bioregeneration Institute', 'society', 'biology', NULL, '70000.0', 183);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_nourishment_1', 'Nourishment Complex', 'society', 'biology', NULL, '70000.0', 184);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_nourishment_2', 'Nourishment Center', 'society', 'biology', NULL, '70000.0', 185);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_food_processing_1', 'Food Processing', 'society', 'biology', 1, '1250.0', 186);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_food_processing_2', 'Advanced Food Processing', 'society', 'biology', 3, '4000.0', 187);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_frontier_health', 'Genetic Healthcare', 'society', 'biology', 1, '1250.0', 188);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_frontier_hospital', 'Cyto-Revitalization', 'society', 'biology', 2, '3000.0', 189);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_gargantuan_evolution', 'Gargantuan Evolution', 'society', 'biology', 1, '4000.0', 190);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_gene_banks', 'Gene Banks', 'society', 'biology', 2, '3000.0', 191);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_gene_crops', 'Gene Crops', 'society', 'biology', 2, '2000.0', 192);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_gene_expressions', 'Targeted Gene Expressions', 'society', 'biology', 3, '6000.0', 193);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_gene_seed_purification', 'Gene Seed Purification', 'society', 'biology', 4, '8000.0', 194);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_gene_tailoring', 'Gene Tailoring', 'society', 'biology', 3, '4000.0', 195);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_genome_mapping', 'Genome Mapping', 'society', 'biology', 1, '1000.0', 196);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_glandular_acclimation', 'Glandular Acclimation', 'society', 'biology', 3, '6000.0', 197);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_growth_chamber_1', 'Growth Chamber', 'society', 'biology', 4, '10000.0', 198);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_growth_chamber_2', 'Advanced Growth Chamber', 'society', 'biology', 4, '12000.0', 199);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_harbinger_build_speed', 'Standardized Harbinger Incubation', 'society', 'biology', 3, '5000.0', 200);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_harbinger_growth_1', 'Improved Harbinger Development', 'society', 'biology', 3, '5000.0', 201);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_harbinger_growth_2', 'Advanced Harbinger Development', 'society', 'biology', 3, '6000.0', 202);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_harbingers', 'Harbingers', 'society', 'biology', 3, '4000.0', 203);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_hydroponics', 'Hydroponics Farming', 'society', 'biology', 0, '0.0', 204);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_improved_incubators', 'Improved Incubators', 'society', 'biology', 2, '2000.0', 205);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_industrial_farming', 'Industrial Agriculture', 'society', 'biology', 0, '0.0', 206);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_lathe_life_support', 'Synaptic Sustainer', 'society', 'biology', 5, '30000.0', 207);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_lathe_preserver', 'Synaptic Preserver', 'society', 'biology', 5, '30000.0', 208);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_living_test_subjects', 'Living Test Subjects', 'society', 'biology', 1, '1000.0', 209);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mauler_build_speed', 'Standardized Mauler Incubation', 'society', 'biology', 1, '1250.0', 210);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mauler_growth_1', 'Improved Mauler Development', 'society', 'biology', 1, '1250.0', 211);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mauler_growth_2', 'Advanced Mauler Development', 'society', 'biology', 1, '1500.0', 212);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_maulers', 'Maulers', 'society', 'biology', 1, '500.0', 213);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_metabolic_gases', 'Metabolic Gases', 'society', 'biology', 3, '4000.0', 214);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_morphogenetic_field_mastery', 'Morphogenetic Field Mastery', 'society', 'biology', 4, '8000.0', 215);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_nano_vitality_crops', 'Nano-Vitality Crops', 'society', 'biology', 3, '4000.0', 216);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_neuroregeneration', 'Neural Tissue Engineering', 'society', 'biology', 4, '10000.0', 217);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_nutrient_replication', 'Nutrient Replication', 'society', 'biology', 4, '12000.0', 218);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_regenerative_hull_tissue', 'Regenerative Hull Tissue', 'society', 'biology', 3, '5000.0', 219);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_scourge_missile_1', 'Scourge Missiles', 'society', 'biology', 5, '24000.0', 220);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_selected_lineages', 'Selected Lineages', 'society', 'biology', 3, '5000.0', 221);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_society_1', 'Xenobiology', 'society', 'biology', 1, '1500.0', 222);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_society_2', 'Neural Weaving', 'society', 'biology', 2, '3000.0', 223);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_society_3', 'Biostructural Synthesis', 'society', 'biology', 3, '6000.0', 224);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_whale_weapon_1', 'Frequency Tuning', 'society', 'biology', 1, '1500.0', 225);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_stinger_build_speed', 'Standardized Stinger Incubation', 'society', 'biology', 4, '10000.0', 226);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_stinger_growth_1', 'Improved Stinger Development', 'society', 'biology', 4, '10000.0', 227);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_stinger_growth_2', 'Advanced Stinger Development', 'society', 'biology', 4, '12000.0', 228);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_stingers', 'Stingers', 'society', 'biology', 4, '8000.0', 229);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_subdermal_stimulation', 'Subdermal Stimulation', 'society', 'biology', 2, '2500.0', 230);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_swarm_strike_craft_1', 'Swarm Spawning Pools', 'society', 'biology', 5, '24000.0', 231);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_unique_mutation_crystalline_entity', 'Fissile Cores', 'society', 'biology', 3, '4000.0', 232);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_unique_mutation_cutholoid', 'Gastric Fountain', 'society', 'biology', 3, '4000.0', 233);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_unique_mutation_restorative_enzymes', 'Restorative Enzymes', 'society', 'biology', 4, '8000.0', 234);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_unique_mutation_space_amoeba', 'Leechcraft', 'society', 'biology', 3, '4000.0', 235);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_unique_mutation_starborne_biology', 'Starborne Biology', 'society', 'biology', 4, '8000.0', 236);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_unique_mutation_tiyanki', 'Herdsong Chords', 'society', 'biology', 3, '4000.0', 237);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_unique_mutation_voidworm', 'Virulent Cysts', 'society', 'biology', 3, '4000.0', 238);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_universal_marcophage', 'Universal Macrophage', 'society', 'biology', 3, '6000.0', 239);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_vitality_boosters', 'Vitality Boosters', 'society', 'biology', 2, '2500.0', 240);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_voidworm_immunity', 'Voidworm Immunity', 'society', 'biology', 3, '4000.0', 241);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_anti_evasion_1', 'Vector Lock Cannon', 'society', 'biology', 1, '1000.0', 242);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_anti_evasion_2', 'Enzymatic Webcaster', 'society', 'biology', 2, '2000.0', 243);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_anti_evasion_3', 'Seeker Shard Array', 'society', 'biology', 3, '4000.0', 244);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_anti_evasion_4', 'Pinion Accelerator', 'society', 'biology', 4, '8000.0', 245);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_anti_evasion_5', 'Prey Tracker', 'society', 'biology', 5, '16000.0', 246);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_anti_evasion_6', 'Precision Lancer', 'society', 'biology', NULL, '70000.0', 247);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_anti_fire_rate_1', 'Reload Jammer', 'society', 'biology', 1, '1000.0', 248);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_anti_fire_rate_2', 'Fire Disrupter', 'society', 'biology', 2, '2000.0', 249);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_anti_fire_rate_3', 'Mind Missiles', 'society', 'biology', 3, '4000.0', 250);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_anti_fire_rate_4', 'Degradation Beams', 'society', 'biology', 4, '8000.0', 251);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_anti_fire_rate_5', 'Fiend Disabler', 'society', 'biology', 5, '16000.0', 252);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_anti_fire_rate_6', 'Tracker Stopper', 'society', 'biology', NULL, '70000.0', 253);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_confuser_1', 'Gloom Spores', 'society', 'biology', 1, '1000.0', 254);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_confuser_2', 'Tangle Pulse', 'society', 'biology', 2, '2000.0', 255);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_confuser_3', 'Neuro Scourge', 'society', 'biology', 3, '4000.0', 256);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_confuser_4', 'Ruin Barbs', 'society', 'biology', 4, '8000.0', 257);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_confuser_5', 'Snare Darts', 'society', 'biology', 5, '16000.0', 258);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_confuser_6', 'Havoc Storm', 'society', 'biology', NULL, '70000.0', 259);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_evasion_1', 'Energy Burster', 'society', 'biology', 1, '1000.0', 260);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_evasion_2', 'Tangler Pod Launcher', 'society', 'biology', 2, '2000.0', 261);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_evasion_3', 'Agile Spike Array', 'society', 'biology', 3, '4000.0', 262);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_evasion_4', 'Electro Sprayer', 'society', 'biology', 4, '8000.0', 263);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_evasion_5', 'Evasion Darts', 'society', 'biology', 5, '16000.0', 264);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_evasion_6', 'Adaptive Tendrils', 'society', 'biology', NULL, '70000.0', 265);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_fire_rate_1', 'Weaver Biofield Generators', 'society', 'biology', 1, '1000.0', 266);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_fire_rate_2', 'Weaver Booster Blaster', 'society', 'biology', 2, '2000.0', 267);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_fire_rate_3', 'Weaver Organo-Tech Amplifier', 'society', 'biology', 3, '4000.0', 268);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_fire_rate_4', 'Weaver Aura Caster', 'society', 'biology', 4, '8000.0', 269);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_fire_rate_5', 'Weaver Swift Shooter', 'society', 'biology', 5, '16000.0', 270);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_fire_rate_6', 'Weaver Wave Maker', 'society', 'biology', NULL, '70000.0', 271);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_healing_1', 'Spore Launcher', 'society', 'biology', 1, '1000.0', 272);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_healing_2', 'Improved Spore Launcher', 'society', 'biology', 2, '2000.0', 273);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_healing_3', 'Advanced Spore Launcher', 'society', 'biology', 3, '4000.0', 274);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_healing_4', 'Adaptive Spore Launcher', 'society', 'biology', 4, '8000.0', 275);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_healing_5', 'Intelligent Adaptive Spore Launcher', 'society', 'biology', 5, '16000.0', 276);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_bio_healing_6', 'Rebirth Spores', 'society', 'biology', NULL, '70000.0', 277);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_build_speed', 'Standardized Weaver Incubation', 'society', 'biology', 1, '1250.0', 278);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_growth_1', 'Improved Weaver Development', 'society', 'biology', 2, '2500.0', 279);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weaver_growth_2', 'Advanced Weaver Development', 'society', 'biology', 2, '3000.0', 280);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_weavers', 'Weavers', 'society', 'biology', 1, '1000.0', 281);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_adaptive_combat_algorithms', 'Adaptive Combat Algorithms', 'society', 'military_theory', 2, '2500.0', 282);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_centralized_command', 'Centralized Command', 'society', 'military_theory', 3, '5000.0', 283);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_combat_training', 'Combat Training', 'society', 'military_theory', 3, '4000.0', 284);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_command_matrix', 'Command Matrix', 'society', 'military_theory', 3, '6000.0', 285);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_deep_space_citadel', 'Deep Space Citadel', 'society', 'military_theory', 3, '6000.0', 286);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_doctrine_fleet_size_1', 'Doctrine: Space Combat', 'society', 'military_theory', 1, '1000.0', 287);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_doctrine_fleet_size_2', 'Doctrine: Reactive Formations', 'society', 'military_theory', 2, '3000.0', 288);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_doctrine_fleet_size_3', 'Doctrine: Interstellar Warfare', 'society', 'military_theory', 3, '5000.0', 289);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_doctrine_fleet_size_4', 'Doctrine: Fluid Fleet Templates', 'society', 'military_theory', 4, '8000.0', 290);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_doctrine_fleet_size_5', 'Doctrine: Armada Battle Formation', 'society', 'military_theory', 5, '24000.0', 291);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_doctrine_navy_size_1', 'Doctrine: Fleet Support', 'society', 'military_theory', 1, '1250.0', 292);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_doctrine_navy_size_2', 'Doctrine: Support Vessels', 'society', 'military_theory', 2, '2500.0', 293);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_doctrine_navy_size_3', 'Doctrine: Interstellar Logistics', 'society', 'military_theory', 3, '4000.0', 294);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_doctrine_navy_size_4', 'Doctrine: Fleet Liaisons', 'society', 'military_theory', 4, '12000.0', 295);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_existential_campaigns', 'Existential Campaigns', 'society', 'military_theory', 5, '24000.0', 296);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_fortress_1', 'Aspis Bastion', 'society', 'military_theory', NULL, '70000.0', 297);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_fortress_2', 'Aegis Complex', 'society', 'military_theory', NULL, '70000.0', 298);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_galactic_campaigns', 'Galactic Campaigns', 'society', 'military_theory', 4, '8000.0', 299);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_global_defense_grid', 'Global Defense Grid', 'society', 'military_theory', 2, '2000.0', 300);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ground_defense_planning', 'Ground Defense Planning', 'society', 'military_theory', 1, '1250.0', 301);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_interstellar_campaigns', 'Interstellar Campaigns', 'society', 'military_theory', 2, '3000.0', 302);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_interstellar_fleet_traditions', 'Interstellar Fleet Traditions', 'society', 'military_theory', 2, '2500.0', 303);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_lathe_cogitator', 'Synaptic Cogitator', 'society', 'military_theory', 5, '30000.0', 304);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mega_shipyard', 'Mega Shipyard', 'society', 'military_theory', 5, '24000.0', 305);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_planetary_defenses', 'Planetary Defenses', 'society', 'military_theory', 0, '0.0', 306);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_predatory_tactics', 'Predatory Tactics', 'society', 'military_theory', 2, '3000.0', 307);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_refit_standards', 'Refit Standards', 'society', 'military_theory', 3, '4000.0', 308);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_strategic_coordination', 'Strategic Coordination Center', 'society', 'military_theory', 5, '24000.0', 309);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_alien_topography', 'Alien Topography', 'society', 'new_worlds', 2, '3000.0', 310);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_civilian_arkship', NULL, 'society', 'new_worlds', 3, '4000.0', 311);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_climate_restoration', 'Climate Restoration', 'society', 'new_worlds', 4, '8000.0', 312);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_colonial_centralization', 'Colonial Centralization', 'society', 'new_worlds', 2, '2500.0', 313);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_colonization_1', 'New Worlds Protocol', 'society', 'new_worlds', 0, '0.0', 314);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_colonization_2', 'Atmospheric Filtering', 'society', 'new_worlds', 2, '1500.0', 315);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_colonization_3', 'Hostile Environment Adaptation', 'society', 'new_worlds', 2, '3000.0', 316);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_colonization_4', 'Foreign Soil Enrichment', 'society', 'new_worlds', 3, '6000.0', 317);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_colonization_5', 'Eco-Integration Studies', 'society', 'new_worlds', 4, '12000.0', 318);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cryovault', 'Frozen World Habitats', 'society', 'new_worlds', 2, '2000.0', 319);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_dangerous_wildlife', 'Dangerous Wildlife Removal', 'society', 'new_worlds', 2, '2500.0', 320);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_deep_sinkhole', 'Subterranean Colonization', 'society', 'new_worlds', 1, '1250.0', 321);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_dense_jungle', 'Selective Defoliants', 'society', 'new_worlds', 1, '1250.0', 322);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ecological_adaptation', 'Ecological Adaptation', 'society', 'new_worlds', 3, '5000.0', 323);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_galactic_ambitions', 'Stellar Expansion', 'society', 'new_worlds', 2, '2500.0', 324);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_georadiation_terraforming', 'Georadiation Terraforming', 'society', 'new_worlds', 3, '4000.0', 325);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_manifest_destiny', 'Manifest Destiny', 'society', 'new_worlds', 4, '10000.0', 326);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_massive_glacier', 'Climate Control Network', 'society', 'new_worlds', 1, '1250.0', 327);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mountain_range', 'Planetary Resurfacing', 'society', 'new_worlds', 2, '2500.0', 328);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_noxious_swamp', 'Xeno-Hydraulic Mastery', 'society', 'new_worlds', 1, '1250.0', 329);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_planetary_infrastructure_1', 'Ceramo-Metal Infrastructure', 'society', 'new_worlds', 2, '3000.0', 330);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_planetary_infrastructure_2', 'Durasteel Infrastructure', 'society', 'new_worlds', 4, '12000.0', 331);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_quicksand_basin', 'Soil Remediation', 'society', 'new_worlds', 1, '1250.0', 332);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_terrestrial_sculpting', 'Terrestrial Sculpting', 'society', 'new_worlds', 2, '3000.0', 333);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_tomb_world_adaption', 'Tomb World Adaptation', 'society', 'new_worlds', 3, '4000.0', 334);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_toxic_kelp', 'Ocean Ecology Management', 'society', 'new_worlds', 1, '1250.0', 335);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_volcanic_forge', 'Volcanic Forge', 'society', 'new_worlds', 2, '2500.0', 336);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_volcanic_terraforming', 'Volcanic Terraforming', 'society', 'new_worlds', 2, '2500.0', 337);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_volcano', 'Deep Crust Engineering', 'society', 'new_worlds', 2, '2500.0', 338);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_wilderness_terraform', 'Planetary Germination', 'society', 'new_worlds', 0, '500.0', 339);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_adaptive_bureaucracy', 'Adaptive Bureaucracy', 'society', 'statecraft', 1, '1250.0', 340);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_akx_worm_2', 'Doctrine: Strange Loop', 'society', 'statecraft', NULL, '4000.0', 341);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_artificial_moral_codes', 'Artificial Moral Codes', 'society', 'statecraft', 2, '3000.0', 342);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ascension_theory', 'Ascension Theory', 'society', 'statecraft', 4, '10000.0', 343);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_aura_intensification', 'Psionic Aura Intensification', 'society', 'psionics', 4, '8000.0', 344);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_aura_resonation', 'Aura Resonation', 'society', 'psionics', 3, '4000.0', 345);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_autocurating_vault', 'Automated Curation Algorithms', 'society', 'statecraft', 3, '5000.0', 346);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_autonomous_agents', 'Autonomous Agents', 'society', 'statecraft', 2, '3000.0', 347);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_capital_productivity_1', 'Improved Production', 'society', 'statecraft', 2, '3000.0', 348);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_capital_productivity_2', 'Efficiencies of Scale', 'society', 'statecraft', 3, '6000.0', 349);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_capital_productivity_3', 'Maximized Productivity', 'society', 'statecraft', 4, '12000.0', 350);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cloaking_psi', 'Psi-Phase Field Generator', 'society', 'psionics', 5, '24000.0', 351);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_collective_production_methods', 'Collective Production Methods', 'society', 'statecraft', 3, '6000.0', 352);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_collective_self', 'The Collective Self', 'society', 'statecraft', 3, '6000.0', 353);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_colonial_bureaucracy', 'Colonial Bureaucracy', 'society', 'statecraft', 2, '2000.0', 354);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_compact_living', 'Compact Living', 'society', 'statecraft', 2, '3000.0', 355);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_consecration_fields', 'Consecration Fields', 'society', 'statecraft', 3, '5000.0', 356);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_covenant_composer', 'Mark of the Composer', 'society', 'psionics', NULL, '60000.0', 357);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_covenant_cradle', 'Mark of the Cradle', 'society', 'psionics', NULL, '60000.0', 358);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_covenant_eater', 'Mark of the Eater', 'society', 'psionics', NULL, '60000.0', 359);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_covenant_instrument', 'Mark of the Instrument', 'society', 'psionics', NULL, '60000.0', 360);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_covenant_whisperers', 'Mark of the Whisperers', 'society', 'psionics', NULL, '60000.0', 361);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cultural_heritage', 'Sociocultural History', 'society', 'statecraft', 1, '1250.0', 362);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_effective_bureaucracy', 'Effective Bureaucracy', 'society', 'statecraft', 2, '2000.0', 363);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_embodied_dynamism', 'Embodied Dynamism', 'society', 'statecraft', 3, '6000.0', 364);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_executive_retreat', 'Executive Leisure Program', 'society', 'statecraft', 3, '4000.0', 365);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_administration_1', 'Fractal Administration Processes', 'society', 'statecraft', NULL, '70000.0', 366);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_administration_2', 'Quantic Administration Processes', 'society', 'statecraft', NULL, '70000.0', 367);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_dome_1', 'Sky Dome', 'society', 'statecraft', NULL, '70000.0', 368);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_dome_2', 'Empyrean Dome', 'society', 'statecraft', NULL, '70000.0', 369);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_entertainment_1', 'Virtual Bliss Plaza', 'society', 'statecraft', NULL, '70000.0', 370);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_entertainment_2', 'Omni-Bliss Nexus', 'society', 'statecraft', NULL, '70000.0', 371);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_market_1', 'Galactic Commerce Hub', 'society', 'statecraft', NULL, '70000.0', 372);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_market_2', 'Interstellar Commerce Nexus', 'society', 'statecraft', NULL, '70000.0', 373);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_security_1', 'Justice Complex', 'society', 'statecraft', NULL, '70000.0', 374);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_security_2', 'Ziggurat of Justice', 'society', 'statecraft', NULL, '70000.0', 375);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_federation_code', 'Federation Code', 'society', 'statecraft', 1, '1250.0', 376);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_galactic_administration', 'Galactic Administration', 'society', 'statecraft', 3, '6000.0', 377);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_galactic_archivism', 'Galactic Archivism', 'society', 'statecraft', 2, '2000.0', 378);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_galactic_bureaucracy', 'Galactic Bureaucracy', 'society', 'statecraft', 3, '4000.0', 379);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_galactic_markets', 'Galactic Markets', 'society', 'statecraft', 4, '8000.0', 380);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_global_production_strategy', 'Global Production Strategy', 'society', 'statecraft', 3, '4000.0', 381);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_heritage_site', 'Heritage Sites', 'society', 'statecraft', 2, '2500.0', 382);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_hive_cluster', 'Clustered Synapses', 'society', 'statecraft', 2, '2500.0', 383);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_hive_confluence', 'Confluence of Thought', 'society', 'statecraft', 3, '5000.0', 384);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_hive_node', 'Synaptic Structures', 'society', 'statecraft', 0, '0.0', 385);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_holo_entertainment', 'Holo-Entertainment', 'society', 'statecraft', 0, '0.0', 386);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_holographic_rituals', 'Holographic Rituals', 'society', 'statecraft', 2, '2500.0', 387);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_housing_agrarian_idyll', 'Agrarian Utopias', 'society', 'statecraft', 3, '4000.0', 388);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_hyper_entertainment_forum', 'Hyper-Entertainment Forum', 'society', 'statecraft', 1, '1500.0', 389);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_hypercomms_forum', 'Local Hypercommunication', 'society', 'statecraft', 3, '5000.0', 390);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_interplanetary_commerce', 'Interplanetary Commerce', 'society', 'statecraft', 0, '0.0', 391);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_interstellar_assembly', 'Interstellar Assembly', 'society', 'statecraft', 5, '24000.0', 392);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_interstellar_economics', 'Interstellar Economics', 'society', 'statecraft', 3, '4000.0', 393);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_living_state', 'The Living State', 'society', 'statecraft', 2, '3000.0', 394);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_materiality_engine', 'Materiality Engine', 'society', 'psionics', 3, '16000.0', 395);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mega_art', 'Mega Art Installation', 'society', 'statecraft', 5, '24000.0', 396);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mine_zro', 'Zro Distillation', 'society', 'psionics', 3, '5000.0', 397);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_neural_implants', 'Neural Implants', 'society', 'statecraft', 1, '1500.0', 398);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_node_culling_1', 'Rudimentary Node Culling', 'society', 'statecraft', 2, '3000.0', 399);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_node_culling_2', 'Basic Node Culling', 'society', 'statecraft', 3, '6000.0', 400);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_node_culling_3', 'Advanced Node Culling', 'society', 'statecraft', 4, '12000.0', 401);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_node_reformatting_1', 'Rudimentary Node Reformatting', 'society', 'statecraft', 2, '3000.0', 402);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_node_reformatting_2', 'Basic Node Reformatting', 'society', 'statecraft', 3, '6000.0', 403);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_node_reformatting_3', 'Advanced Node Reformatting', 'society', 'statecraft', 4, '12000.0', 404);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_paradise_dome', 'Idyllic Architecture', 'society', 'statecraft', 3, '4000.0', 405);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_penal_colonies', 'Penal Colonies', 'society', 'statecraft', 2, '3000.0', 406);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_pk_godray', 'Divine Stimulus', 'society', 'psionics', 5, '24000.0', 407);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_planetary_government', 'Unified Government', 'society', 'statecraft', 0, '500.0', 408);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_planetary_unification', 'Societal Unification', 'society', 'statecraft', 1, '1000.0', 409);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_precognition_interface', 'Precognition Interface', 'society', 'psionics', 4, '10000.0', 410);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_prescient_data_modeling', 'Numistic Data Modeling', 'society', 'statecraft', 3, '4000.0', 411);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_psi_jump_drive_1', 'Psi Jump Drive', 'society', 'psionics', 5, '20000.0', 412);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_psionic_aura', 'Psionic Aura', 'society', 'psionics', 3, '4000.0', 413);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_psionic_barrier', 'Psionic Barrier', 'society', 'psionics', 3, '4000.0', 414);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_psionic_bombers', 'Psionic Bombers', 'society', 'psionics', 5, '20000.0', 415);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_psionic_disruptor', 'Psionic Disruptors', 'society', 'psionics', 5, '20000.0', 416);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_psionic_lightning', 'Psionic Lightning', 'society', 'psionics', 5, '20000.0', 417);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_psionic_shield', 'Psionic Shields', 'society', 'psionics', 5, '24000.0', 418);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_psionic_suppression', 'Psionic Suppression', 'society', 'psionics', 2, '2000.0', 419);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_psionic_theory', 'Psionic Theory', 'society', 'psionics', 3, '4000.0', 420);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_resort_colonies', 'Resort Worlds', 'society', 'statecraft', 2, '3000.0', 421);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_resource_processing_algorithms', 'Resource Processing Algorithms', 'society', 'statecraft', 3, '4000.0', 422);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_satisfying_insults', 'Satisfying Insults', 'society', 'statecraft', 2, '3000.0', 423);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_slave_colonies', 'Thrall-Worlds', 'society', 'statecraft', 2, '3000.0', 424);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_trading', 'Offworld Trade Companies', 'society', 'statecraft', 1, '1500.0', 425);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_synthetic_thought_patterns', 'Synthetic Thought Patterns', 'society', 'statecraft', 3, '6000.0', 426);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_telepathy', 'Telepathy', 'society', 'psionics', 3, '6000.0', 427);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_thought_enforcement', 'Thought Enforcement', 'society', 'psionics', 4, '10000.0', 428);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_tracking_implants', 'Tracking Implants', 'society', 'statecraft', 4, '10000.0', 429);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_transcendent_faith', 'Metacognitive Faith', 'society', 'statecraft', 4, '10000.0', 430);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_unity_of_purpose', 'Unity of Purpose', 'society', 'statecraft', 2, '3000.0', 431);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_wilderness_cluster', 'Clustered Synapses', 'society', 'statecraft', 2, '2500.0', 432);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_wilderness_confluence', 'Confluence of Thought', 'society', 'statecraft', 3, '5000.0', 433);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_wilderness_node', 'Centers of Being', 'society', 'statecraft', 0, '0.0', 434);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_xeno_aesthetics', 'Xeno-Aesthetics', 'society', 'statecraft', 2, '3000.0', 435);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_xeno_diplomacy', 'Xeno Diplomacy', 'society', 'statecraft', 2, '2500.0', 436);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_xeno_linguistics', 'Xeno-Linguistics', 'society', 'statecraft', 1, '1250.0', 437);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_xeno_relations', 'Xeno Relations', 'society', 'statecraft', 3, '5000.0', 438);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_xeno_tourism_agency', 'Xeno Outreach Agencies', 'society', 'statecraft', 3, '4000.0', 439);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_zro_launcher', 'Zro Launchers', 'society', 'psionics', 5, '20000.0', 440);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_arcane_deciphering', 'Arcane Deciphering', 'society', 'archaeostudies', 2, '3000.0', 441);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeo_detection_scrambler', 'Ancient Target Scrambler', 'society', 'archaeostudies', 4, '10000.0', 442);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeo_lasers', 'Ancient Cavitation Collapser', 'society', 'archaeostudies', 3, '6000.0', 443);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeo_mass_accelerator', 'Ancient Saturator Artillery', 'society', 'archaeostudies', 3, '6000.0', 444);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeo_mass_drivers', 'Ancient Macro Batteries', 'society', 'archaeostudies', 3, '6000.0', 445);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeo_missiles', 'Ancient Nano-Missile Cloud Launcher', 'society', 'archaeostudies', 3, '6000.0', 446);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeo_overcharger', 'Ancient Shield Overcharger', 'society', 'archaeostudies', 3, '6000.0', 447);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeo_pk_devolving_beam', 'Devolving Beam', 'society', 'archaeostudies', 5, '24000.0', 448);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeo_point_defence', 'Ancient Defensive Web Slinger', 'society', 'archaeostudies', 3, '6000.0', 449);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeo_rampart', 'Ancient Rampart', 'society', 'archaeostudies', 3, '6000.0', 450);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeo_refinery', 'Ancient Refinery', 'society', 'archaeostudies', 3, '6000.0', 451);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeo_strike_crafts', 'Ancient Driller Drones', 'society', 'archaeostudies', 3, '6000.0', 452);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeo_titan_beam', 'Ancient Ruination Glare', 'society', 'archaeostudies', 4, '10000.0', 453);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeoarmor', 'Ancient Pulse Armor', 'society', 'archaeostudies', 3, '6000.0', 454);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeoshield', 'Ancient Suspension Field', 'society', 'archaeostudies', 3, '6000.0', 455);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archaeostudies', 'Archaeostudies', 'society', 'archaeostudies', 2, '2000.0', 456);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_archeology_lab_ancrel', 'Curator Archaeology Lab', 'society', 'archaeostudies', 2, '2000.0', 457);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_secrets_baol', 'Baol Organic Plant', 'society', 'archaeostudies', 4, '12000.0', 458);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_secrets_cybrex', 'Cybrex Mining Hub', 'society', 'archaeostudies', 4, '12000.0', 459);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_secrets_irassian', 'Irassian Naval Yards', 'society', 'archaeostudies', 4, '12000.0', 460);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_secrets_league', 'First League Filing Offices', 'society', 'archaeostudies', 4, '12000.0', 461);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_secrets_vultaum', 'Vultaum Reality Computer', 'society', 'archaeostudies', 4, '12000.0', 462);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_secrets_yuht', 'Yuht Astronomical Interferometer', 'society', 'archaeostudies', 4, '12000.0', 463);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_secrets_zroni', 'Zroni Storm Caster', 'society', 'archaeostudies', 4, '12000.0', 464);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_advanced_industrial_storm_protection', 'Planetary Storm Nullification', 'engineering', 'industry', 2, '2000.0', 465);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_arkship_planetary_refinery', 'Planetary Reprocessor', 'engineering', 'industry', 4, '10000.0', 466);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_assembly_pattern', 'Assembly Patterns', 'engineering', 'industry', 2, '3000.0', 467);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_basic_industry', 'Industrial Base', 'engineering', 'industry', 0, '0.0', 468);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_binary_motivators', 'Binary Motivators', 'engineering', 'industry', 3, '4000.0', 469);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_construction_templates', 'Construction Templates', 'engineering', 'industry', 4, '10000.0', 470);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_droid_workers', 'Artificial Specialists', 'engineering', 'industry', 2, '3000.0', 471);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_affluence_1', 'Affluence Emporium', 'engineering', 'industry', NULL, '70000.0', 472);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_affluence_2', 'Affluence Center', 'engineering', 'industry', NULL, '70000.0', 473);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_assembly_1', 'Robot Manufacturing Nexus', 'engineering', 'industry', NULL, '70000.0', 474);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_assembly_2', 'Robot Quantum Production Hub', 'engineering', 'industry', NULL, '70000.0', 475);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_forge_1', 'Hyper-Forge', 'engineering', 'industry', NULL, '70000.0', 476);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_forge_2', 'Auto-Forge', 'engineering', 'industry', NULL, '70000.0', 477);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_housing_1', 'Weather Control Systems', 'engineering', 'industry', 2, '2500.0', 478);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_housing_2', 'Anti-Gravity Engineering', 'engineering', 'industry', 3, '4000.0', 479);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_identity_copy', 'Identity Copies', 'engineering', 'industry', 4, '8000.0', 480);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_identity_fusion', 'Identity Fusion', 'engineering', 'industry', 4, '10000.0', 481);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_identity_initialization', 'Identity Initialization', 'engineering', 'industry', 4, '10000.0', 482);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_industrial_storm_protection', 'Planetary Storm Negation', 'engineering', 'industry', 1, '1000.0', 483);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_integrated_cybernetics', 'Integrated Cybernetics', 'engineering', 'industry', 2, '3000.0', 484);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_leviathan_techgenesis', 'Leviathan Tech Genesis', 'engineering', 'industry', 5, '16000.0', 485);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_lost_building_methods', 'Lost Building Methods', 'engineering', 'industry', 2, '3000.0', 486);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mechanized_mining', 'Mechanized Mining', 'engineering', 'industry', 0, '0.0', 487);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mega_assembly', 'Mega-Assembly Systems', 'engineering', 'industry', 4, '8000.0', 488);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_micro_replicators', 'Micro-Replicators', 'engineering', 'industry', 2, '2500.0', 489);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mineral_purification_1', 'Mineral Purification', 'engineering', 'industry', 1, '1500.0', 490);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mineral_purification_2', 'Advanced Mineral Purification', 'engineering', 'industry', 2, '3000.0', 491);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mining_1', 'Geothermal Fracking', 'engineering', 'industry', 1, '1000.0', 492);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mining_2', 'Deep Core Mining', 'engineering', 'industry', 2, '2000.0', 493);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mining_3', 'Mineral Isolation', 'engineering', 'industry', 3, '4000.0', 494);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_nanite_assemblers', 'Nanite Assemblers', 'engineering', 'industry', 4, '8000.0', 495);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_nomads_mechanized_mining', 'Strategic Extraction', 'engineering', 'industry', 0, '0.0', 496);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_planetary_engineering', 'Planetary Engineering', 'engineering', 'industry', 2, '2000.0', 497);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_powered_exoskeletons', 'Powered Exoskeletons', 'engineering', 'industry', 1, '1000.0', 498);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_pyroclastic_resonation', 'Pyroclastic Resonation', 'engineering', 'industry', 2, '2000.0', 499);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_robomodding', 'Machine Template System', 'engineering', 'industry', 1, '2000.0', 500);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_robomodding_m', 'Machine Template System', 'engineering', 'industry', 1, '2000.0', 501);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_robomodding_points_1', 'Cross-Model Standardization', 'engineering', 'industry', 2, '4000.0', 502);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_robomodding_points_2', 'Fungible Circuitry', 'engineering', 'industry', 4, '8000.0', 503);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_robot_assembly_complex', 'Robotic Assembly Systems', 'engineering', 'industry', 4, '8000.0', 504);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_robotic_workers', 'Artificial Workforce', 'engineering', 'industry', 1, '1500.0', 505);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_self_assembling_components', 'Self-Assembling Components', 'engineering', 'industry', 3, '6000.0', 506);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_construction', 'Offworld Construction', 'engineering', 'industry', 0, '0.0', 507);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_mining_1', 'Zero-G Refineries', 'engineering', 'industry', 1, '1000.0', 508);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_mining_2', 'Long-Range Mineral Scanners', 'engineering', 'industry', 1, '1500.0', 509);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_mining_3', 'Mineral Cutting Beams', 'engineering', 'industry', 2, '2000.0', 510);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_mining_4', 'Autonomous Mining Drones', 'engineering', 'industry', 2, '3000.0', 511);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_mining_5', 'Nanite Mineral Probes', 'engineering', 'industry', 3, '4000.0', 512);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_synthetic_leaders', 'Artificial Personality Matrix', 'engineering', 'industry', 4, '12000.0', 513);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_synthetic_workers', 'Artificial Administration', 'engineering', 'industry', 4, '10000.0', 514);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_advanced_metallurgy_1', 'Ceramo-Metal Alloys', 'engineering', 'materials', 2, '2000.0', 515);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_advanced_metallurgy_2', 'Durasteel-Laced Alloys', 'engineering', 'materials', 4, '8000.0', 516);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_alloy_fossilization', 'Alloy Fossilization', 'engineering', 'materials', 2, '2000.0', 517);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_alloys_1', 'Holographic Casts', 'engineering', 'materials', 1, '1500.0', 518);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_alloys_2', 'Nano-Separators', 'engineering', 'materials', 3, '4000.0', 519);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_armor_hardeners_1', 'Armor Hardening', 'engineering', 'materials', 2, '3000.0', 520);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_armor_hardeners_2', 'Adaptive Armor Hardening', 'engineering', 'materials', 5, '24000.0', 521);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_asteroidal_carapace', 'Asteroidal Carapace', 'engineering', 'materials', 3, NULL, 522);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_world', 'Scalable Reservoir Computing', 'engineering', 'materials', 5, '16000.0', 523);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_crystal_armor_1', 'Crystal-Infused Plating', 'engineering', 'materials', 2, '3000.0', 524);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_crystal_armor_2', 'Crystal-Forged Plating', 'engineering', 'materials', 4, '8000.0', 525);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_dragon_armor', 'Artificial Dragonscales', 'engineering', 'materials', NULL, '60000.0', 526);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_dyson_gun', 'Stellar Cannon', 'engineering', 'materials', 3, '6000.0', 527);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_engineering_1', 'Nanomechanics', 'engineering', 'materials', 1, '1500.0', 528);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_engineering_2', 'Self-Connecting Circuitry', 'engineering', 'materials', 2, '3000.0', 529);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_engineering_3', 'Supersolid Materials', 'engineering', 'materials', 3, '6000.0', 530);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_exotic_gases', 'Exotic Gas Refining', 'engineering', 'materials', 2, '2000.0', 531);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_fabricator_1', 'Dimensional Replicator', 'engineering', 'materials', NULL, '70000.0', 532);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_fabricator_2', 'Dimensional Fabricator', 'engineering', 'materials', NULL, '70000.0', 533);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_mine_1', 'Quantum Drilling Plant', 'engineering', 'materials', NULL, '70000.0', 534);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_fe_mine_2', 'Quantum Drilling Hub', 'engineering', 'materials', NULL, '70000.0', 535);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_luxuries_1', 'Nano-Circuit Assembly', 'engineering', 'materials', 1, '1500.0', 536);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_luxuries_2', 'Replicator Kiosks', 'engineering', 'materials', 3, '4000.0', 537);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mandibles_2', 'Composite Mandibles', 'engineering', 'materials', 3, '5000.0', 538);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mandibles_3', 'Crystalline Mandibles', 'engineering', 'materials', 4, '10000.0', 539);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mine_betharian', 'Betharian Refining', 'engineering', 'materials', 2, '1250.0', 540);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mine_exotic_gases', 'Exotic Gas Extraction', 'engineering', 'materials', 2, '2000.0', 541);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mine_living_metal', 'Living Metal', 'engineering', 'materials', 5, '16000.0', 542);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mine_rare_crystals', 'Rare Crystal Mining', 'engineering', 'materials', 2, '2000.0', 543);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_nanite_repair_system_synth_queen', 'Cetana''s Nanites', 'engineering', 'materials', 5, '24000.0', 544);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_nanite_transmutation', 'Nanite Transmutation', 'engineering', 'materials', 2, '3000.0', 545);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_orbital_arc_furnace', 'Arc Furnace', 'engineering', 'materials', 2, '3000.0', 546);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_rare_crystals', 'Rare Crystal Manufacturing', 'engineering', 'materials', 2, '2000.0', 547);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ship_armor_1', 'Nanocomposite Materials', 'engineering', 'materials', 0, '1000.0', 548);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ship_armor_2', 'Ceramo-Metal Materials', 'engineering', 'materials', 1, '1250.0', 549);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ship_armor_3', 'Plasteel Materials', 'engineering', 'materials', 2, '2500.0', 550);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ship_armor_4', 'Durasteel Materials', 'engineering', 'materials', 3, '5000.0', 551);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ship_armor_5', 'Neutronium Materials', 'engineering', 'materials', 4, '10000.0', 552);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ship_hull_storm_breaker_1', 'Storm Dampening Generators', 'engineering', 'materials', 1, '1250.0', 553);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ship_hull_storm_breaker_2', 'Storm Breaker Coating', 'engineering', 'materials', 2, '2000.0', 554);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_supreme_alloy', 'Supreme Alloy', 'engineering', 'materials', 2, '3000.0', 555);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_afterburners_1', 'Afterburners', 'engineering', 'propulsion', 1, '1250.0', 556);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_afterburners_2', 'Advanced Afterburners', 'engineering', 'propulsion', 3, '5000.0', 557);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_autocannons_1', 'Autocannons', 'engineering', 'propulsion', 2, '2500.0', 558);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_autocannons_2', 'Ripper Cannons', 'engineering', 'propulsion', 3, '4000.0', 559);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_autocannons_3', 'Stormfire Cannons', 'engineering', 'propulsion', 4, '8000.0', 560);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_boarding_cables', 'Boarding Cables', 'engineering', 'propulsion', 1, '4000.0', 561);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_dark_matter_propulsion', 'Dark Matter Propulsion', 'engineering', 'propulsion', NULL, '70000.0', 562);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_flak_batteries_1', 'Flak Battery', 'engineering', 'propulsion', 0, NULL, 563);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_flak_batteries_2', 'Flak Cannons', 'engineering', 'propulsion', 3, '3000.0', 564);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_flak_batteries_3', 'Flak Artillery', 'engineering', 'propulsion', 4, '8000.0', 565);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_kinetic_artillery_1', 'Kinetic Battery', 'engineering', 'propulsion', 3, '6000.0', 566);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_kinetic_artillery_2', 'Kinetic Artillery', 'engineering', 'propulsion', 4, '10000.0', 567);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mass_accelerator_1', 'Mega Cannon', 'engineering', 'propulsion', 4, '10000.0', 568);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mass_accelerator_2', 'Giga Cannon', 'engineering', 'propulsion', 4, '12000.0', 569);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mass_drivers_1', 'Mass Drivers', 'engineering', 'propulsion', 0, '500.0', 570);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mass_drivers_2', 'Coilguns', 'engineering', 'propulsion', 1, '1250.0', 571);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mass_drivers_3', 'Railguns', 'engineering', 'propulsion', 2, '2000.0', 572);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mass_drivers_4', 'Advanced Railguns', 'engineering', 'propulsion', 3, '4000.0', 573);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mass_drivers_5', 'Gauss Cannons', 'engineering', 'propulsion', 4, '8000.0', 574);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_missiles_1', 'Nuclear Missiles', 'engineering', 'propulsion', 0, NULL, 575);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_missiles_2', 'Fusion Missiles', 'engineering', 'propulsion', 1, '1250.0', 576);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_missiles_3', 'Antimatter Missiles', 'engineering', 'propulsion', 2, '2000.0', 577);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_missiles_4', 'Quantum Missiles', 'engineering', 'propulsion', 3, '4000.0', 578);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_missiles_5', 'Marauder Missiles', 'engineering', 'propulsion', 4, '10000.0', 579);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_nanite_autocannon', 'Nanite Autocannon', 'engineering', 'propulsion', 5, '24000.0', 580);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_nanite_flak_batteries', 'Nanite Flak Battery', 'engineering', 'propulsion', 5, '24000.0', 581);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_orbital_trash_dispersal', 'Orbital Trash Dispersal', 'engineering', 'propulsion', 1, '4000.0', 582);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_swarmer_missiles_1', 'Swarmer Missiles', 'engineering', 'propulsion', 2, '2500.0', 583);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_swarmer_missiles_2', 'Whirlwind Missiles', 'engineering', 'propulsion', 4, '10000.0', 584);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_thrusters_1', 'Chemical Thrusters', 'engineering', 'propulsion', 0, '0.0', 585);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_thrusters_2', 'Ion Thrusters', 'engineering', 'propulsion', 2, '2000.0', 586);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_thrusters_3', 'Plasma Thrusters', 'engineering', 'propulsion', 3, '4000.0', 587);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_thrusters_4', 'Impulse Thrusters', 'engineering', 'propulsion', 4, '8000.0', 588);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_thrusters_bio_integration', 'Thruster Bio-integration', 'engineering', 'propulsion', 2, '2000.0', 589);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_torpedoes_1', 'Space Torpedoes', 'engineering', 'propulsion', 1, '1250.0', 590);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_torpedoes_2', 'Armored Torpedoes', 'engineering', 'propulsion', 3, '5000.0', 591);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_torpedoes_3', 'Devastator Torpedoes', 'engineering', 'propulsion', 4, '10000.0', 592);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_arkship_construction', 'Arkship Construction', 'engineering', 'voidcraft', 3, '4000.0', 593);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_arkship_tier_2', 'Arkship Engineering', 'engineering', 'voidcraft', 3, '5000.0', 594);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_arkship_tier_3', 'Arkship Mastery', 'engineering', 'voidcraft', 4, '10000.0', 595);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_assault_armies', 'Interplanetary Expeditionary Forces', 'engineering', 'voidcraft', 0, '1000.0', 596);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_battleship_build_speed', 'Standardized Battleship Patterns', 'engineering', 'voidcraft', 4, '10000.0', 597);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_battleship_hull_1', 'Improved Battleship Hulls', 'engineering', 'voidcraft', 4, '12000.0', 598);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_battleship_hull_2', 'Advanced Battleship Hulls', 'engineering', 'voidcraft', 5, '16000.0', 599);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_battleships', 'Battleships', 'engineering', 'voidcraft', 4, '8000.0', 600);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_btc_1', 'Star Cracker', 'engineering', 'voidcraft', 5, '24000.0', 601);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_colossus', 'Colossi', 'engineering', 'voidcraft', 5, '24000.0', 602);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_corvette_build_speed', 'Standardized Corvette Patterns', 'engineering', 'voidcraft', 1, '1250.0', 603);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_corvette_hull_1', 'Improved Corvette Hulls', 'engineering', 'voidcraft', 1, '1500.0', 604);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_corvette_hull_2', 'Advanced Corvette Hulls', 'engineering', 'voidcraft', 2, '3000.0', 605);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_corvettes', 'Corvettes', 'engineering', 'voidcraft', 0, '500.0', 606);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_FE_titan', 'Paradox Titan', 'engineering', 'voidcraft', 5, '70000.0', 607);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_battlecruiser', 'Enigma Battlecruiser', 'engineering', 'voidcraft', 5, '70000.0', 608);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cosmogenesis_escort', 'Riddle Escort', 'engineering', 'voidcraft', 5, '70000.0', 609);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cruiser_build_speed', 'Standardized Cruiser Patterns', 'engineering', 'voidcraft', 3, '5000.0', 610);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cruiser_hull_1', 'Improved Cruiser Hulls', 'engineering', 'voidcraft', 3, '6000.0', 611);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cruiser_hull_2', 'Advanced Cruiser Hulls', 'engineering', 'voidcraft', 4, '8000.0', 612);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_cruisers', 'Cruisers', 'engineering', 'voidcraft', 3, '4000.0', 613);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_defense_platform_hull_1', 'Improved Structural Integrity', 'engineering', 'voidcraft', 2, '2500.0', 614);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_destroyer_build_speed', 'Standardized Destroyer Patterns', 'engineering', 'voidcraft', 2, '2500.0', 615);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_destroyer_hull_1', 'Improved Destroyer Hulls', 'engineering', 'voidcraft', 2, '3000.0', 616);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_destroyer_hull_2', 'Advanced Destroyer Hulls', 'engineering', 'voidcraft', 3, '4000.0', 617);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_destroyers', 'Destroyers', 'engineering', 'voidcraft', 2, '2000.0', 618);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_habitat_1', 'Orbital Habitats', 'engineering', 'voidcraft', 3, '5000.0', 619);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_habitat_2', 'Habitat Expansion', 'engineering', 'voidcraft', 4, '10000.0', 620);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_habitat_3', 'Advanced Space Habitation', 'engineering', 'voidcraft', 4, '20000.0', 621);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_juggernaut', 'Juggernaut', 'engineering', 'voidcraft', 5, '24000.0', 622);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_mega_engineering', 'Mega-Engineering', 'engineering', 'voidcraft', 5, '24000.0', 623);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_military_arkship', NULL, 'engineering', 'voidcraft', 3, '4000.0', 624);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_modular_engineering', 'Modular Engineering', 'engineering', 'voidcraft', 2, '3000.0', 625);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_nanite_repair_system', 'Nanite Repair System', 'engineering', 'voidcraft', 5, '20000.0', 626);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_orbital_ring_tier_1', 'Orbital Rings', 'engineering', 'voidcraft', 3, '5000.0', 627);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ordered_retreat', 'Ordered Retreat', 'engineering', 'voidcraft', 2, '3000.0', 628);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_pk_cracker', 'Core Cracking', 'engineering', 'voidcraft', 5, '24000.0', 629);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_pk_nanobots', 'Atmospheric Nanobot Dispersal', 'engineering', 'voidcraft', 5, '24000.0', 630);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_pk_smelter', 'Planet Smelting', 'engineering', 'voidcraft', 5, '24000.0', 631);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_repeatable_lcluster_clue', 'L-Gate Insight', 'engineering', 'voidcraft', 2, '2000.0', 632);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ring_world', 'Ring Segment', 'engineering', 'voidcraft', 5, '24000.0', 633);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ship_storm_weapons_1', 'Payload Padding', 'engineering', 'voidcraft', 1, '1250.0', 634);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_ship_storm_weapons_2', 'Tempest Cage Architecture', 'engineering', 'voidcraft', 2, '2000.0', 635);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_solar_panel_network', 'Orbital Energy Conversion', 'engineering', 'voidcraft', 0, NULL, 636);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_defense_station_1', 'Deep Space Defenses', 'engineering', 'voidcraft', 0, '0.0', 637);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_space_defense_station_improvement', 'Corps of Engineers', 'engineering', 'voidcraft', 3, '6000.0', 638);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_starbase_1', 'Starbase Construction', 'engineering', 'voidcraft', 0, '0.0', 639);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_starbase_2', 'Starport', 'engineering', 'voidcraft', 0, '0.0', 640);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_starbase_3', 'Starhold', 'engineering', 'voidcraft', 2, '2500.0', 641);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_starbase_4', 'Star Fortress', 'engineering', 'voidcraft', 3, '5000.0', 642);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_starbase_5', 'Citadel', 'engineering', 'voidcraft', 4, '10000.0', 643);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_strike_craft_1', 'Carrier Operations', 'engineering', 'voidcraft', 1, '1500.0', 644);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_strike_craft_2', 'Improved Strike Craft', 'engineering', 'voidcraft', 2, '3000.0', 645);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_strike_craft_3', 'Advanced Strike Craft', 'engineering', 'voidcraft', 3, '6000.0', 646);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_strike_craft_skrand', 'Skravird Strike Craft', 'engineering', 'voidcraft', 4, '12000.0', 647);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_temple_of_transportation', 'Temple of Transportation', 'engineering', 'voidcraft', 2, '3000.0', 648);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_titan_hull_1', 'Improved Titan Hulls', 'engineering', 'voidcraft', 5, '20000.0', 649);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_titan_hull_2', 'Advanced Titan Hulls', 'engineering', 'voidcraft', 5, '24000.0', 650);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_titans', 'Titans', 'engineering', 'voidcraft', 5, '16000.0', 651);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_waystation_1', 'Waystations', 'engineering', 'voidcraft', 0, '0.0', 652);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_waystation_2', 'Improved Wayline Logistics', 'engineering', 'voidcraft', 2, '2500.0', 653);
+INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
+               VALUES ('tech_waystation_3', 'Advanced Wayline Logistics', 'engineering', 'voidcraft', 3, '5000.0', 654);
 INSERT OR REPLACE INTO tech_repeatable
                (key, label, description, area, area_label, category, category_label, levels, sort_order)
                VALUES ('tech_repeatable_improved_shield_output', 'Shield Harmonics', 'The basic mechanics of ship shields are complex, but they can be adjusted and improved in a multitude of ways.', 'physics', 'Physics', 'field_manipulation', 'Field Manipulation', -1, 0);
@@ -47326,6 +48648,8 @@ INSERT OR REPLACE INTO tech_fallen_empire
                VALUES ('tech_dark_matter_propulsion', 'Dark Matter Propulsion', 'These ship thrusters utilize Dark Matter technology to generate propulsion in a manner that appears to defy numerous laws of physics.', 'engineering', 'Engineering', 'propulsion', 'Propulsion', NULL, 34);
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('ASCENSION_PERKS_SLOTS', '8.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_BASE', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_COUNCIL_AGENDA_COST_PENALTY', '0.001');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_TECH_COST_PENALTY', '0.002');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_TRADITION_COST_PENALTY', '0.002');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_CATEGORIES_MAX', '7.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_AMOUNTS', '300.0');
