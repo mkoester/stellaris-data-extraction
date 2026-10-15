@@ -947,6 +947,17 @@ CREATE TABLE tech_fallen_empire (
 
 -- Every non-repeatable tech with its base research cost (before empire size, galaxy setting and
 -- other cost modifiers). The empire dashboard names a save's current research from this.
+-- Display names of districts and zones (district specialisations, 4.x), for the empire dashboard.
+DROP TABLE IF EXISTS district;
+CREATE TABLE district (
+    key   TEXT PRIMARY KEY,                -- e.g. "district_city"
+    name  TEXT                             -- e.g. "City District"
+);
+DROP TABLE IF EXISTS zone;
+CREATE TABLE zone (
+    key   TEXT PRIMARY KEY,                -- e.g. "zone_research_unity"
+    name  TEXT                             -- e.g. "Archives"
+);
 DROP TABLE IF EXISTS technology_modifier;
 DROP TABLE IF EXISTS technology;
 CREATE TABLE technology (

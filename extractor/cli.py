@@ -6,7 +6,7 @@ import json
 import sqlite3
 import sys
 from . import __version__
-from .buildings import extract_buildings_ref
+from .buildings import extract_buildings_ref, extract_district_zone_names
 from .clausewitz import parse_file
 from .empires import extract_flag_assets, extract_initializers, extract_prescripted_empires, extract_rooms
 from .federations import extract_federations
@@ -384,6 +384,10 @@ Examples:
     extract_jobs(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
     print(f"\n[buildings-ref] {install_dir / 'common' / 'buildings'}", file=progress)
     extract_buildings_ref(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
+    print(f"\n[district-zone-names] {install_dir / 'common' / 'districts'}, zones", file=progress)
+    extract_district_zone_names(_merge_dir(install_dir / 'common' / 'districts', progress),
+                                _merge_dir(install_dir / 'common' / 'zones', progress),
+                                loc, w, args.verbose)
     print(f"\n[job-swaps] {install_dir / 'common' / 'pop_jobs'}", file=progress)
     extract_job_swaps(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
 

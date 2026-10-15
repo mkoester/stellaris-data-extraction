@@ -241,3 +241,17 @@ def _building_inline_jobs(bdef: dict, variables: dict[str, float], inline_script
             if k.startswith('job_') and k.endswith('_add'):
                 rows.append((k, amount))
     return rows
+
+
+def extract_district_zone_names(districts: dict, zones: dict, loc: dict[str, str], w: Writer,
+                                verbose: bool) -> None:
+    """Display names of districts and zones (district specialisations), for the empire
+    dashboard's colony view: `district_city` → "City District", `zone_research_unity` →
+    "Archives". Keys without localisation keep a NULL name."""
+    for table, data in (('district', districts), ('zone', zones)):
+        for key in sorted(k for k, v in data.items() if isinstance(v, dict) and not k.startswith('@')):
+            name = _clean_loc(loc[key], loc) if key in loc else None
+            w.execute(f"INSERT OR REPLACE INTO {table} (key, name) VALUES (?, ?)", (key, name))
+            if verbose:
+                print(f"  {table}: {key} = {name}")
+    w.commit()
