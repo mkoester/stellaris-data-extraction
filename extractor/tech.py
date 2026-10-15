@@ -61,6 +61,33 @@ def _is_repeatable(data: dict) -> bool:
     return isinstance(wg, (list, dict)) and 'repeatable' in wg
 
 
+def _write_tech_modifiers(w: Writer, loc: dict[str, str], table: str, key: str, data: dict,
+                          variables: dict[str, float], verbose: bool) -> None:
+    """A tech's `modifier` block into `table`; a list-valued modifier takes the last definition
+    (game load order), @variables resolve, non-numeric values are skipped."""
+    modifier_block = data.get('modifier')
+    if not isinstance(modifier_block, dict):
+        return
+    for mod_order, (mod_key, mod_val) in enumerate(modifier_block.items()):
+        if isinstance(mod_val, list):
+            mod_val = mod_val[-1]
+        s = str(mod_val).strip()
+        value = variables.get(s) if s.startswith('@') else None
+        if value is None:
+            try:
+                value = float(s)
+            except (ValueError, TypeError):
+                continue
+        w.execute(
+            f"""INSERT OR REPLACE INTO {table} (tech_key, modifier_key, modifier_value, sort_order)
+               VALUES (?, ?, ?, ?)""",
+            (key, mod_key, value, mod_order),
+        )
+        _write_modifier_label(w, loc, mod_key)
+        if verbose:
+            print(f"  {key} | {mod_key} = {value}")
+
+
 def tech_base_cost(raw, variables: dict[str, float]) -> float | None:
     """A tech's `cost`: a number, an @variable, or a block whose `factor` is either."""
     if isinstance(raw, dict):
@@ -108,12 +135,14 @@ def extract_techs(
     entries.sort(key=_sort_key)
 
     for sort_order, entry in enumerate(entries):
-        area, category, key, label, _desc, _al, _cl, tier, cost = entry
+        area, category, key, label, description, _al, _cl, tier, cost = entry
         w.execute(
-            """INSERT OR REPLACE INTO technology (key, label, area, category, tier, cost, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (key, label, area, category, tier, cost, sort_order),
+            """INSERT OR REPLACE INTO technology
+               (key, label, description, area, category, tier, cost, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, label, description, area, category, tier, cost, sort_order),
         )
+        _write_tech_modifiers(w, loc, 'technology_modifier', key, technologies[key], variables, verbose)
         if verbose:
             print(f"  {key} ({area}) tier={tier} cost={cost}")
 
@@ -155,29 +184,7 @@ def extract_repeatable_techs(
             (key, label, description, area, area_label, category, category_label, levels, sort_order),
         )
 
-        modifier_block = data.get('modifier')
-        if isinstance(modifier_block, dict):
-            for mod_order, (mod_key, mod_val) in enumerate(modifier_block.items()):
-                if isinstance(mod_val, list):
-                    mod_val = mod_val[-1]
-                s = str(mod_val).strip()
-                value = scripted_vars.get(s) if s.startswith('@') else None
-                if value is None:
-                    try:
-                        value = float(s)
-                    except (ValueError, TypeError):
-                        continue
-
-                w.execute(
-                    """INSERT OR REPLACE INTO tech_repeatable_modifier
-                       (tech_key, modifier_key, modifier_value, sort_order)
-                       VALUES (?, ?, ?, ?)""",
-                    (key, mod_key, value, mod_order),
-                )
-                _write_modifier_label(w, loc, mod_key)
-
-                if verbose:
-                    print(f"  {key} | {mod_key} = {value}")
+        _write_tech_modifiers(w, loc, 'tech_repeatable_modifier', key, data, scripted_vars, verbose)
 
         if verbose:
             print(f"  {key} ({area}/{category}) levels={levels}")
