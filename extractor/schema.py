@@ -948,6 +948,12 @@ CREATE TABLE tech_fallen_empire (
 -- Every non-repeatable tech with its base research cost (before empire size, galaxy setting and
 -- other cost modifiers). The empire dashboard names a save's current research from this.
 -- Display names of districts and zones (district specialisations, 4.x), for the empire dashboard.
+-- Anomaly categories and their level (empire dashboard: anomaly research time).
+DROP TABLE IF EXISTS anomaly_category;
+CREATE TABLE anomaly_category (
+    key   TEXT PRIMARY KEY,                -- e.g. "GEN_PLAYGROUND_CAT"
+    level INTEGER                          -- difficulty; vs. the scientist's level picks the research days
+);
 DROP TABLE IF EXISTS district;
 CREATE TABLE district (
     key   TEXT PRIMARY KEY,                -- e.g. "district_city"

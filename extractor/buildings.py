@@ -255,3 +255,17 @@ def extract_district_zone_names(districts: dict, zones: dict, loc: dict[str, str
             if verbose:
                 print(f"  {table}: {key} = {name}")
     w.commit()
+
+
+def extract_anomaly_levels(categories: dict, w: Writer, verbose: bool) -> None:
+    """Anomaly categories (common/anomalies) with their `level`: with the scientist's level it picks
+    the research time from SCIENCE_SHIP_ANOMALY_RESEARCH_DAYS — for the empire dashboard."""
+    for key in sorted(k for k, v in categories.items() if isinstance(v, dict) and not k.startswith('@')):
+        try:
+            level = int(str(categories[key].get('level')).strip())
+        except (ValueError, TypeError):
+            level = None
+        w.execute("INSERT OR REPLACE INTO anomaly_category (key, level) VALUES (?, ?)", (key, level))
+        if verbose:
+            print(f"  anomaly_category: {key} level={level}")
+    w.commit()
