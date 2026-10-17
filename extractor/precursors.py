@@ -327,6 +327,32 @@ def _resolve_static_modifier(name: str, static_mods: dict) -> list[tuple[str, fl
     return out
 
 
+def extract_static_modifiers(static_mods: dict, loc: dict[str, str], w: Writer,
+                             verbose: bool) -> None:
+    """Every static modifier (common/static_modifiers) with its name, description and numeric
+    effects — for the empire dashboard, which lists those a save puts on the empire
+    (`country.timed_modifier`). A `show_only_custom_tooltip` one keeps no effects (the game hides
+    them) but its tooltip text."""
+    for key in sorted(k for k, v in static_mods.items() if not k.startswith('@') and isinstance(v, (dict, list))):
+        block = static_mods[key]
+        if isinstance(block, list):
+            block = next((b for b in reversed(block) if isinstance(b, dict)), {})
+        name = _clean_loc(loc[key], loc) if key in loc else None
+        desc = _clean_loc(loc[key + '_desc'], loc) if key + '_desc' in loc else None
+        tip_key = block.get('custom_tooltip')
+        tooltip = _clean_loc(loc[tip_key], loc) if isinstance(tip_key, str) and tip_key in loc else None
+        w.execute("INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES (?, ?, ?, ?)",
+                  (key, name, desc, tooltip))
+        for order, (mod_key, value) in enumerate(_resolve_static_modifier(key, static_mods)):
+            w.execute("""INSERT OR REPLACE INTO static_modifier_modifier
+                         (static_key, modifier_key, modifier_value, sort_order) VALUES (?, ?, ?, ?)""",
+                      (key, mod_key, value, order))
+            _write_modifier_label(w, loc, mod_key)
+        if verbose:
+            print(f"  static_modifier: {key} = {name}")
+    w.commit()
+
+
 def _collect_add_modifiers(node, variables: dict[str, float]) -> list[tuple[str, int | None]]:
     """Every `add_modifier` (modifier + duration) anywhere in a tree, except the
     `relic_activation_cooldown`. Recursive so it catches modifiers nested in e.g.

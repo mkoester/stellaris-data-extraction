@@ -948,6 +948,24 @@ CREATE TABLE tech_fallen_empire (
 -- Every non-repeatable tech with its base research cost (before empire size, galaxy setting and
 -- other cost modifiers). The empire dashboard names a save's current research from this.
 -- Display names of districts and zones (district specialisations, 4.x), for the empire dashboard.
+-- Static modifiers (common/static_modifiers) with their numeric effects — the empire dashboard
+-- names and explains those a save puts on the empire (`country.timed_modifier`).
+DROP TABLE IF EXISTS static_modifier_modifier;
+DROP TABLE IF EXISTS static_modifier;
+CREATE TABLE static_modifier (
+    key         TEXT PRIMARY KEY,          -- e.g. "galactic_market_founder"
+    name        TEXT,                      -- e.g. "Market Nexus"
+    description TEXT,
+    tooltip     TEXT                       -- custom_tooltip text, the only effect shown for some
+);
+CREATE TABLE static_modifier_modifier (
+    static_key     TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (static_key, modifier_key),
+    FOREIGN KEY (static_key) REFERENCES static_modifier(key)
+);
 -- Anomaly categories and their level (empire dashboard: anomaly research time).
 DROP TABLE IF EXISTS anomaly_category;
 CREATE TABLE anomaly_category (

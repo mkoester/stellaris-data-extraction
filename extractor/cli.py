@@ -15,7 +15,7 @@ from .jobs import extract_job_swaps, extract_jobs
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
 from .misc import extract_dlc, extract_named_colors, extract_planet_classes
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
-from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors
+from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors, extract_static_modifiers
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
 from .tech import extract_fallen_empire_techs, extract_repeatable_techs, extract_techs
 from .traditions import extract_edicts_agendas, extract_traditions
@@ -389,6 +389,8 @@ Examples:
                                 _merge_dir(install_dir / 'common' / 'zones', progress),
                                 loc, w, args.verbose)
     extract_anomaly_levels(_merge_dir(install_dir / 'common' / 'anomalies', progress), w, args.verbose)
+    print(f"\n[static-modifiers] {static_mod_dir}", file=progress)
+    extract_static_modifiers(static_mods, loc, w, args.verbose)
     print(f"\n[job-swaps] {install_dir / 'common' / 'pop_jobs'}", file=progress)
     extract_job_swaps(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
 
