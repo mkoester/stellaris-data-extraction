@@ -858,6 +858,7 @@ CREATE TABLE deposit (
     category    TEXT,                   -- e.g. "orbital_mining_deposits", "deposit_cat_blockers"
     is_blocker  INTEGER NOT NULL DEFAULT 0,
     clear_time  INTEGER,                -- days to clear (blockers)
+    prerequisites TEXT,                 -- technologies needed to clear it, comma-separated
     source_file TEXT
 );
 CREATE TABLE deposit_resource (

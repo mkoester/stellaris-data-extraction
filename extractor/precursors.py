@@ -849,11 +849,14 @@ def extract_deposits(data: dict, source_file: str, loc: dict[str, str],
         except (ValueError, TypeError):
             pass
 
+        # technologies a blocker needs before it can be cleared (12 blockers in 4.5.2)
+        prerequisites = ','.join(str(t).strip('"') for t in _to_list(d.get('prerequisites'))) or None
+
         w.execute(
-            """INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time, source_file)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+            """INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
+               prerequisites, source_file) VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (key, _clean_loc(loc[key], loc) if key in loc else None,
-             category, is_blocker, clear_time, source_file),
+             category, is_blocker, clear_time, prerequisites, source_file),
         )
 
         for kind in ('produces', 'cost', 'upkeep'):
