@@ -139,6 +139,30 @@ def extract_rooms(install_dir: Path, w: Writer, verbose: bool) -> None:
         print(f"  rooms: {len(rooms)}")
 
 
+_FLAG_SWATCH = re.compile(
+    r'^\s*(\w+)\s*=\s*\{[^#\n]*?\bmap\s*=\s*rgb\s*\{\s*(\d+)\s+(\d+)\s+(\d+)\s*\}', re.M)
+
+
+def flag_colors(text: str) -> list[tuple[str, int, int, int]]:
+    """flags/colors.txt → (swatch, r, g, b) of each swatch's `map` colour, which the galaxy map
+    uses for an empire's territory and borders (an empire's is its flag's first colour). The
+    Clausewitz parser drops `rgb { … }` values, so this reads the one-line swatches directly."""
+    return [(m[1], int(m[2]), int(m[3]), int(m[4])) for m in _FLAG_SWATCH.finditer(text)]
+
+
+def extract_flag_colors(install_dir: Path, w: Writer, verbose: bool) -> None:
+    path = install_dir / 'flags' / 'colors.txt'
+    if not path.is_file():
+        print(f"  WARNING: {path} not found", file=sys.stderr)
+        return
+    rows = flag_colors(path.read_text(encoding='utf-8-sig'))
+    for row in rows:
+        w.execute("INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES (?, ?, ?, ?)", row)
+    w.commit()
+    if verbose:
+        print(f"  flag colours: {len(rows)}")
+
+
 def extract_flag_assets(install_dir: Path, w: Writer, verbose: bool) -> None:
     """Scan the flags/ directory → flag_asset rows (icon files per category +
     background files). The .dds files can't be rendered, but their names are what the

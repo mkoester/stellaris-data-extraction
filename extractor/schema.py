@@ -597,6 +597,16 @@ CREATE TABLE flag_asset (
     PRIMARY KEY (kind, category, file)
 );
 
+-- Flag colour swatches from flags/colors.txt: the `map` colour of each, which the galaxy map
+-- uses for an empire's territory and borders (a save's country.flag.colors names its swatches).
+DROP TABLE IF EXISTS flag_color;
+CREATE TABLE flag_color (
+    key TEXT PRIMARY KEY,          -- e.g. "blue"
+    r   INTEGER NOT NULL,
+    g   INTEGER NOT NULL,
+    b   INTEGER NOT NULL
+);
+
 -- Prescripted (predefined) empires from prescripted_countries/*.txt — the built-in
 -- empires the game ships, usable as starting points. Scalar setup in
 -- prescripted_empire; the repeated picks (traits/civics/ethics) in

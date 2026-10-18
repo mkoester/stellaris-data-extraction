@@ -592,6 +592,16 @@ CREATE TABLE flag_asset (
     PRIMARY KEY (kind, category, file)
 );
 
+-- Flag colour swatches from flags/colors.txt: the `map` colour of each, which the galaxy map
+-- uses for an empire's territory and borders (a save's country.flag.colors names its swatches).
+DROP TABLE IF EXISTS flag_color;
+CREATE TABLE flag_color (
+    key TEXT PRIMARY KEY,          -- e.g. "blue"
+    r   INTEGER NOT NULL,
+    g   INTEGER NOT NULL,
+    b   INTEGER NOT NULL
+);
+
 -- Prescripted (predefined) empires from prescripted_countries/*.txt — the built-in
 -- empires the game ships, usable as starting points. Scalar setup in
 -- prescripted_empire; the repeated picks (traits/civics/ethics) in
@@ -34988,6 +34998,78 @@ INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('ic
 INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_7.dds', 21);
 INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_8.dds', 22);
 INSERT OR REPLACE INTO flag_asset (kind, category, file, sort_order) VALUES ('icon', 'zoological', 'flag_zoological_9.dds', 23);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('dark_brown', 107, 68, 40);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('brown', 156, 91, 45);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('beige', 150, 126, 90);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('khaki_brown', 174, 121, 83);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('ochre_brown', 224, 197, 106);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('desert_yellow', 237, 231, 116);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('dark_orange', 167, 57, 0);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('intense_orange', 255, 86, 0);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('orange', 237, 118, 25);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('light_orange', 244, 139, 15);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('yellow', 204, 148, 41);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('bright_yellow', 224, 214, 46);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('dark_red', 103, 25, 39);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('red', 151, 14, 18);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('red_orange', 224, 64, 64);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('intense_red', 241, 37, 15);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('cerise_red', 245, 102, 102);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('pink_red', 237, 131, 131);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('burgundy', 89, 18, 39);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('satin_burgundy', 116, 31, 65);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('intense_burgundy', 149, 20, 72);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('pink', 151, 15, 100);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('intense_pink', 190, 40, 134);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('light_pink', 222, 64, 163);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('shadow_purple', 63, 9, 89);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('dark_purple', 81, 15, 113);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('purple', 109, 24, 150);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('intense_purple', 139, 39, 184);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('cloud_purple', 167, 58, 217);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('bright_purple', 194, 125, 227);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('shadow_blue', 15, 17, 91);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('indigo', 36, 21, 156);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('light_indigo', 96, 82, 207);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('wave_blue', 159, 151, 224);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('faded_blue', 191, 187, 224);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('pink_purple', 221, 216, 254);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('dark_blue', 22, 35, 102);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('blue', 46, 63, 153);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('light_blue', 71, 114, 178);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('intense_blue', 30, 159, 220);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('sky_blue', 88, 188, 235);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('mist_blue', 137, 221, 246);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('shadow_teal', 9, 57, 57);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('light_turquoise', 23, 98, 98);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('turquoise', 61, 153, 147);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('intense_turquoise', 55, 178, 170);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('ocean_turquoise', 49, 208, 198);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('ice_turquoise', 137, 237, 236);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('shadow_green', 32, 55, 41);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('dark_green', 27, 66, 26);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('green', 46, 102, 41);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('dark_teal', 51, 127, 91);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('teal', 76, 153, 84);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('light_green', 160, 222, 141);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('swamp_green', 88, 107, 39);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('moss_green', 112, 142, 35);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('sick_green', 157, 175, 35);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('toxic_green', 168, 218, 39);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('frog_green', 209, 241, 126);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('sun_green', 230, 244, 147);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('shadow_steel', 51, 60, 65);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('dark_steel', 76, 90, 98);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('medium_steel', 101, 119, 128);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('ship_steel', 131, 150, 156);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('hard_steel', 152, 168, 173);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('silver_steel', 208, 225, 230);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('black', 27, 27, 27);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('dark_grey', 62, 62, 62);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('grey', 128, 128, 128);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('light_grey', 191, 191, 191);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('off_white', 239, 239, 239);
+INSERT OR REPLACE INTO flag_color (key, r, g, b) VALUES ('white', 255, 255, 255);
 INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('default_room', 'Default', 0);
 INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('aquatics_room', 'Aquatics', 1);
 INSERT OR REPLACE INTO room (key, label, sort_order) VALUES ('biogenesis_01_room', 'Biogenesis 01', 2);

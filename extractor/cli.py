@@ -8,7 +8,7 @@ import sys
 from . import __version__
 from .buildings import extract_anomaly_levels, extract_buildings_ref, extract_district_zone_names
 from .clausewitz import parse_file
-from .empires import extract_flag_assets, extract_initializers, extract_prescripted_empires, extract_rooms
+from .empires import extract_flag_assets, extract_flag_colors, extract_initializers, extract_prescripted_empires, extract_rooms
 from .federations import extract_federations
 from .focus import extract_focus
 from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_council_positions, extract_ethics, extract_government_types, extract_origins, extract_policy_restrictions
@@ -392,6 +392,7 @@ Examples:
             init_order = extract_initializers(data, loc, w, init_order)
     print(f"\n[flags] {install_dir / 'flags'}", file=progress)
     extract_flag_assets(install_dir, w, args.verbose)
+    extract_flag_colors(install_dir, w, args.verbose)
     print(f"\n[rooms] {prescripted_dir}", file=progress)
     extract_rooms(install_dir, w, args.verbose)
     print(f"\n[jobs] {install_dir / 'common' / 'pop_jobs'}", file=progress)

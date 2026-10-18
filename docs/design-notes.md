@@ -352,6 +352,7 @@ Per base job, each `swap_type` variant + trigger → which civic/origin/… forc
 - `extract_prescripted_empires` — see its section above.
 - `extract_initializers` — `common/solar_system_initializers/` → `initializer` (key + loc name), for the empire builder's home-system pick.
 - `extract_flag_assets` — scans `flags/` (`flag_asset`: icon files per category + backgrounds; .dds names are what `empire_flag` blocks reference).
+- `extract_flag_colors` — `flags/colors.txt` (`flag_color`: each swatch's `map` rgb, the galaxy map's territory colour; read by regex, the parser drops `rgb { … }`).
 - `extract_rooms` — distinct `room = "…"` values regex-scanned from `prescripted_countries/` → `room` (rooms are gfx entities with no loc).
 
 ---
