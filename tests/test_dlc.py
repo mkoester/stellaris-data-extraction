@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.misc import _dlc_rows, host_checks, prescripted_names
+from extractor.misc import _dlc_rows, host_checks, prescripted_names, random_name_keys
 
 # Shaped like dlc_metadata/dlc_info.txt (note the missing `=` the real file has once).
 INFO = """
@@ -45,6 +45,12 @@ class TestPrescriptedNames(unittest.TestCase):
                'EMPIRE_DESIGN_humans1': 'United Nations of Earth', 'tech_lasers_1': 'Red Lasers'}
         self.assertEqual(prescripted_names(loc), [('EMPIRE_DESIGN_humans1', 'United Nations of Earth'),
                                                   ('PRESCRIPTED_ruler_name_humans1', 'Dolores Muwanga')])
+
+    def test_random_names_that_are_localisation_keys(self):
+        # 4.5.2 common/random_names/base/00_random_names.txt, voidworm_star_names
+        keys = random_name_keys('voidworm_star_names = {\n\t\t"VOIDWORM_SYSTEM_12"\n\t\t"Achernar"\n\t}')
+        loc = {'VOIDWORM_SYSTEM_12': 'Papqaqtet', 'tech_lasers_1': 'Red Lasers'}
+        self.assertEqual(prescripted_names(loc, keys), [('VOIDWORM_SYSTEM_12', 'Papqaqtet')])
 
 
 if __name__ == '__main__':

@@ -127,13 +127,22 @@ def extract_planet_classes(data: dict, loc: dict[str, str], w: Writer, verbose: 
 # Extraction: prescripted names
 # ---------------------------------------------------------------------------
 
-def prescripted_names(loc: dict[str, str]) -> list[tuple[str, str]]:
-    """The loc of every PRESCRIPTED_* / EMPIRE_DESIGN_* key, sorted (determinism)."""
+def prescripted_names(loc: dict[str, str], name_keys: set[str] = frozenset()) -> list[tuple[str, str]]:
+    """The loc of every PRESCRIPTED_* / EMPIRE_DESIGN_* key and of the `name_keys` (random-name
+    entries that are localisation keys), sorted (determinism)."""
     return sorted((k, _clean_loc(v, loc)) for k, v in loc.items()
-                  if k.startswith(('PRESCRIPTED_', 'EMPIRE_DESIGN_')) and v and _clean_loc(v, loc))
+                  if (k.startswith(('PRESCRIPTED_', 'EMPIRE_DESIGN_')) or k in name_keys)
+                  and v and _clean_loc(v, loc))
 
 
-def extract_prescripted_names(loc: dict[str, str], w: Writer) -> None:
-    for key, text in prescripted_names(loc):
+def random_name_keys(text: str) -> set[str]:
+    """The quoted entries of a common/random_names file. Some are localisation keys the game
+    resolves (`voidworm_star_names`: "VOIDWORM_SYSTEM_12" = "Papqaqtet"; "Abaddons_Demesne" =
+    "Abaddon's Demesne"), and a save names its systems by them."""
+    return set(re.findall(r'"([A-Za-z][A-Za-z0-9_]*)"', text))
+
+
+def extract_prescripted_names(loc: dict[str, str], name_keys: set[str], w: Writer) -> None:
+    for key, text in prescripted_names(loc, name_keys):
         w.execute("INSERT INTO prescripted_name (key, text) VALUES (?, ?)", (key, text))
     w.commit()

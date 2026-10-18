@@ -1004,8 +1004,8 @@ CREATE TABLE anomaly_category (
     outcomes_json TEXT                     -- [{"event":"anomaly.35","name":"Crashed Scout Craft"}]: on_success events
 );
 -- Names of the prescripted empires (loc keys PRESCRIPTED_* and EMPIRE_DESIGN_*): rulers,
--- species, empires, as a save names them (`key="PRESCRIPTED_ruler_name_humans1"`), for the
--- empire dashboard.
+-- species, empires, as a save names them (`key="PRESCRIPTED_ruler_name_humans1"`), and the
+-- random names that are localisation keys (systems: "VOIDWORM_SYSTEM_12"), for the empire dashboard.
 DROP TABLE IF EXISTS prescripted_name;
 CREATE TABLE prescripted_name (
     key  TEXT PRIMARY KEY,                 -- e.g. "PRESCRIPTED_ruler_name_humans1"

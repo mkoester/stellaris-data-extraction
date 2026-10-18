@@ -15,7 +15,7 @@ from .government import _custom_empire_initializers, compute_ascension_restricti
 from .jobs import extract_job_swaps, extract_jobs
 from .leaders import extract_leader_traits
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
-from .misc import extract_dlc, extract_prescripted_names, host_checks, extract_named_colors, extract_planet_classes
+from .misc import extract_dlc, extract_prescripted_names, host_checks, random_name_keys, extract_named_colors, extract_planet_classes
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
 from .politics import extract_politics
 from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors, extract_static_modifiers
@@ -439,7 +439,10 @@ Examples:
     extract_edicts_agendas(install_dir, loc, scripted_vars, static_mods, w, progress)
     print(f"\n[policies + factions] {install_dir / 'common' / 'policies'}", file=progress)
     extract_politics(install_dir, loc, scripted_vars, w, progress)
-    extract_prescripted_names(loc, w)
+    name_keys: set[str] = set()
+    for f in sorted((install_dir / 'common' / 'random_names').rglob('*.txt')):
+        name_keys |= random_name_keys(f.read_text(encoding='utf-8-sig', errors='replace'))
+    extract_prescripted_names(loc, name_keys, w)
     extract_scripted_triggers(install_dir, w)
     print(f"\n[species rights] {install_dir / 'common' / 'species_rights'}", file=progress)
     extract_species_rights(install_dir, loc, w, progress)
