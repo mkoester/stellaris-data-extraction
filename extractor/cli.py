@@ -10,7 +10,7 @@ from .buildings import extract_anomaly_levels, extract_buildings_ref, extract_di
 from .clausewitz import parse_file
 from .empires import extract_flag_assets, extract_initializers, extract_prescripted_empires, extract_rooms
 from .federations import extract_federations
-from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_council_positions, extract_ethics, extract_origins, extract_policy_restrictions
+from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_council_positions, extract_ethics, extract_government_types, extract_origins, extract_policy_restrictions
 from .jobs import extract_job_swaps, extract_jobs
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
 from .misc import extract_dlc, extract_named_colors, extract_planet_classes
@@ -330,7 +330,11 @@ Examples:
 
     extract_council_positions(install_dir, loc, scripted_vars, w, args.verbose)
 
-    # --- authorities (government types) ---
+    print(f"\n[government-types] {install_dir / 'common' / 'governments'}", file=progress)
+    extract_government_types(_merge_dir(install_dir / 'common' / 'governments', progress), loc, w,
+                             args.verbose)
+
+    # --- authorities ---
     authorities_dir = install_dir / 'common' / 'governments' / 'authorities'
     print(f"\n[authorities] {authorities_dir}", file=progress)
     if authorities_dir.exists():
@@ -385,7 +389,7 @@ Examples:
     print(f"\n[buildings-ref] {install_dir / 'common' / 'buildings'}", file=progress)
     extract_buildings_ref(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
     print(f"\n[district-zone-names] {install_dir / 'common' / 'districts'}, zones", file=progress)
-    extract_district_zone_names(_merge_dir(install_dir / 'common' / 'districts', progress),
+    extract_district_zone_names(install_dir, _merge_dir(install_dir / 'common' / 'districts', progress),
                                 _merge_dir(install_dir / 'common' / 'zones', progress),
                                 loc, w, args.verbose)
     extract_anomaly_levels(_merge_dir(install_dir / 'common' / 'anomalies', progress), w, args.verbose)

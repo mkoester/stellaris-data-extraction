@@ -62,6 +62,7 @@ extractor/
   schema.py              SCHEMA (all CREATE/DROP TABLE statements)
   writer.py              Writer — SQL dump and/or SQLite from the same INSERTs
   values.py              generic value/block helpers (_to_list, _as_blocks, _resolve_*, …)
+  dds.py                 pixel reader for uncompressed DDS textures (district colours)
   modifiers.py           modifier labels/direction, scripted variables & scaling values
   triggers.py            scripted-trigger index, requirement/swap-signal evaluation
   misc.py                DLC metadata, named colors, planet classes
@@ -109,6 +110,7 @@ Cross-module imports keep the original (underscore-prefixed) helper names; the p
 | Deposits (dictionary)       | `common/deposits/`                                  |
 | Precursor home systems      | `common/solar_system_initializers/`                 |
 | Civics                      | `common/governments/civics/0[0-3]_*.txt`            |
+| Government types            | `common/governments/*.txt`                          |
 | Authorities                 | `common/governments/authorities/`                   |
 | Origins                     | `common/governments/civics/00/01_origins*.txt`      |
 | Planet classes              | `common/planet_classes/`                            |
@@ -418,7 +420,8 @@ Two tech slices the planner shows on their own pages; both share `_tech_common` 
 
 - **`anomaly_category`** (`extract_anomaly_levels`, buildings.py) — each category's `level`; the dashboard picks the research days from `SCIENCE_SHIP_ANOMALY_RESEARCH_DAYS` by scientist level minus anomaly level.
 - **`static_modifier` / `static_modifier_modifier`** (`extract_static_modifiers`, precursors.py) — every `common/static_modifiers` entry with name, `_desc` and `custom_tooltip` text, and its numeric effects (`_resolve_static_modifier`: none for `show_only_custom_tooltip`). The dashboard explains the modifiers a save puts on the empire (`country.timed_modifier`).
-- **`district`, `zone`** (`extract_district_zone_names`, buildings.py) — display names only, for the empire dashboard's colony view (`zone_research_unity` → "Archives"). District caps and building slots are computed by the game from modifiers and are not extracted.
+- **`district`, `zone`** (`extract_district_zone_names`, buildings.py) — display names, for the empire dashboard's colony view (`zone_research_unity` → "Archives"). Districts also get `color`, their colour in game: the opaque 1-px border of the grid-box icon `gfx/interface/icons/districts/grid_box/<icon>.dds` (`icon` from the district, else its key; read at (0,0) by `dds.py` — the fill inside is translucent and lighter). 140 of 147 in 4.5.2; the six resort specialisations and `district_ark_food` have no such icon (NULL).
+- **`government_type`** (`extract_government_types`, government.py) — key and localised name of every government in `common/governments/*.txt` (`gov_representative_democracy` → "Representative Democracy"), for the dashboard; the save stores the key at `country.government.type`. 170 in 4.5.2. District caps and building slots are computed by the game from modifiers and are not extracted.
 - **`technology`** (`extract_techs`) — every non-repeatable tech with label, description, tier, **base** `cost` and its `modifier` block (`technology_modifier`, shared writer with the repeatables): `@tierXcostY` resolved from the global scripted variables (and the tech files' own `@` definitions); a `cost = { factor = … inline_script = … }` block takes its `factor`. Start techs have no cost (NULL). In game the cost is higher: empire size (`EMPIRE_SIZE_TECH_COST_PENALTY`, in `game_define`) and more — 4.5.2 showed 1575 for a 1500 tech at empire size 50, an unexplained ×1.05. Read by the empire dashboard, not the planner. 655 techs.
 - **`tech_repeatable`** (+ `tech_repeatable_modifier`) — identified by `weight_groups` containing `repeatable` (not by key prefix). `levels = -1` means unlimited. Modifier values resolve `@scripted_vars`; a list-valued modifier takes the **last** definition (game load order), and `_write_modifier_label` is reused so labels come for free. 24 techs / 24 modifiers.
 - **`tech_fallen_empire`** — the techs defined in `00_fallen_empire_tech.txt`. There is no flag marking them, so `cli.main` loads `common/technology/` **per file** (not via `_merge_dir`) purely to capture that file's keys as `fe_tech_keys`. `building_key` is resolved from the **raw, pre-resolution** loc: many FE tech labels are a sole `$building_xxx$` reference, so `main` re-scans `fallen_empire_l_english.yml` with `_LOC_ENTRY`/`_LOC_REF` before `$KEY$` resolution collapses them into the building's display name. 35 techs.

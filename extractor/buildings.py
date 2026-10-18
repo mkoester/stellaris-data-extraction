@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 import sys
 from .clausewitz import parse_file
+from .dds import dds_pixel, hex_color
 from .government import _gate_owners
 from .localisation import _clean_loc
 from .modifiers import _write_modifier_label
@@ -243,17 +244,31 @@ def _building_inline_jobs(bdef: dict, variables: dict[str, float], inline_script
     return rows
 
 
-def extract_district_zone_names(districts: dict, zones: dict, loc: dict[str, str], w: Writer,
-                                verbose: bool) -> None:
+def _district_color(install_dir: Path, key: str, ddef: dict) -> str | None:
+    """A district's colour in game: the opaque border of its grid-box icon
+    (`gfx/interface/icons/districts/grid_box/<icon>.dds`, `icon` defaulting to the key)."""
+    icon = ddef.get('icon') if isinstance(ddef.get('icon'), str) else key
+    path = install_dir / 'gfx' / 'interface' / 'icons' / 'districts' / 'grid_box' / f'{icon}.dds'
+    return hex_color(dds_pixel(path.read_bytes(), 0, 0)) if path.exists() else None
+
+
+def extract_district_zone_names(install_dir: Path, districts: dict, zones: dict, loc: dict[str, str],
+                                w: Writer, verbose: bool) -> None:
     """Display names of districts and zones (district specialisations), for the empire
     dashboard's colony view: `district_city` → "City District", `zone_research_unity` →
-    "Archives". Keys without localisation keep a NULL name."""
-    for table, data in (('district', districts), ('zone', zones)):
-        for key in sorted(k for k, v in data.items() if isinstance(v, dict) and not k.startswith('@')):
-            name = _clean_loc(loc[key], loc) if key in loc else None
-            w.execute(f"INSERT OR REPLACE INTO {table} (key, name) VALUES (?, ?)", (key, name))
-            if verbose:
-                print(f"  {table}: {key} = {name}")
+    "Archives". Keys without localisation keep a NULL name. Districts also get their colour."""
+    blocks = lambda data: sorted((k, v) for k, v in data.items() if isinstance(v, dict) and not k.startswith('@'))
+    for key, ddef in blocks(districts):
+        name = _clean_loc(loc[key], loc) if key in loc else None
+        color = _district_color(install_dir, key, ddef)
+        w.execute("INSERT OR REPLACE INTO district (key, name, color) VALUES (?, ?, ?)", (key, name, color))
+        if verbose:
+            print(f"  district: {key} = {name} {color}")
+    for key, _ in blocks(zones):
+        name = _clean_loc(loc[key], loc) if key in loc else None
+        w.execute("INSERT OR REPLACE INTO zone (key, name) VALUES (?, ?)", (key, name))
+        if verbose:
+            print(f"  zone: {key} = {name}")
     w.commit()
 
 

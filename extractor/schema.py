@@ -948,7 +948,6 @@ CREATE TABLE tech_fallen_empire (
 
 -- Every non-repeatable tech with its base research cost (before empire size, galaxy setting and
 -- other cost modifiers). The empire dashboard names a save's current research from this.
--- Display names of districts and zones (district specialisations, 4.x), for the empire dashboard.
 -- Static modifiers (common/static_modifiers) with their numeric effects — the empire dashboard
 -- names and explains those a save puts on the empire (`country.timed_modifier`).
 DROP TABLE IF EXISTS static_modifier_modifier;
@@ -973,10 +972,19 @@ CREATE TABLE anomaly_category (
     key   TEXT PRIMARY KEY,                -- e.g. "GEN_PLAYGROUND_CAT"
     level INTEGER                          -- difficulty; vs. the scientist's level picks the research days
 );
+-- Display names of districts and zones (district specialisations, 4.x), for the empire dashboard.
 DROP TABLE IF EXISTS district;
 CREATE TABLE district (
     key   TEXT PRIMARY KEY,                -- e.g. "district_city"
-    name  TEXT                             -- e.g. "City District"
+    name  TEXT,                            -- e.g. "City District"
+    color TEXT                             -- e.g. "#1c75bd", its grid-box icon's border; NULL = no icon
+);
+-- Government types (common/governments, e.g. "gov_representative_democracy" → "Representative
+-- Democracy"), the name the game derives from authority, ethics and civics. Empire dashboard.
+DROP TABLE IF EXISTS government_type;
+CREATE TABLE government_type (
+    key   TEXT PRIMARY KEY,
+    name  TEXT
 );
 DROP TABLE IF EXISTS zone;
 CREATE TABLE zone (

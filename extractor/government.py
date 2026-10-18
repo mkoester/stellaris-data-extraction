@@ -824,3 +824,15 @@ def extract_origins(data: dict, force_nonselectable: bool, loc: dict[str, str],
 
     w.commit()
     return order
+
+
+def extract_government_types(data: dict, loc: dict[str, str], w: Writer, verbose: bool) -> None:
+    """common/governments/*.txt → government_type: the name the game gives an empire's
+    government (`gov_representative_democracy` → "Representative Democracy"), for the empire
+    dashboard. Keys without localisation keep a NULL name."""
+    for key in sorted(k for k, v in data.items() if isinstance(v, dict) and not k.startswith('@')):
+        name = _clean_loc(loc[key], loc) if key in loc else None
+        w.execute("INSERT OR REPLACE INTO government_type (key, name) VALUES (?, ?)", (key, name))
+        if verbose:
+            print(f"  government_type: {key} = {name}")
+    w.commit()
