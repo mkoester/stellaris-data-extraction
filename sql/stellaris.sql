@@ -29138,7 +29138,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO council_position
                        (key, civic_key, possible_json, name, description, leader_classes, effect,
                         sort_order)
-                   VALUES ('councilor_shroudwalker_teacher', NULL, '{"leaf":"any_owned_leader","value":"scope"}', 'Shroudwalker Teacher', 'An adept of the serves on the council, instructing in the ways of the Shroud.', 'official', NULL, 123);
+                   VALUES ('councilor_shroudwalker_teacher', NULL, '{"leaf":"has_owned_leader_trait","value":"leader_trait_shroudwalker"}', 'Shroudwalker Teacher', 'An adept of the serves on the council, instructing in the ways of the Shroud.', 'official', NULL, 123);
 INSERT OR IGNORE INTO council_position_modifier
                            (position_key, modifier_key, modifier_value, sort_order)
                        VALUES ('councilor_shroudwalker_teacher', 'category_psionics_draw_chance_mult', '0.05', 0);
@@ -29152,7 +29152,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO council_position
                        (key, civic_key, possible_json, name, description, leader_classes, effect,
                         sort_order)
-                   VALUES ('councilor_master_salvager', NULL, '{"leaf":"any_owned_leader","value":"scope"}', 'Master Salvager', 'An experienced technician from the Salvager Enclave ensures battlefield debris is put to efficient use.', 'scientist', NULL, 124);
+                   VALUES ('councilor_master_salvager', NULL, '{"leaf":"has_owned_leader_trait","value":"leader_trait_master_salvager"}', 'Master Salvager', 'An experienced technician from the Salvager Enclave ensures battlefield debris is put to efficient use.', 'scientist', NULL, 124);
 INSERT OR IGNORE INTO council_position_modifier
                            (position_key, modifier_key, modifier_value, sort_order)
                        VALUES ('councilor_master_salvager', 'scavenge_debris_mult', '0.1', 0);
@@ -29164,7 +29164,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO council_position
                        (key, civic_key, possible_json, name, description, leader_classes, effect,
                         sort_order)
-                   VALUES ('councilor_curator_archivist', NULL, '{"leaf":"any_owned_leader","value":"scope"}', 'Curator Archivist', 'An archivist from the Curator Order serves on the council, sharing the accumulated knowledge of eons.', 'scientist', 'Job Efficiency for Researcher jobs: +2%', 125);
+                   VALUES ('councilor_curator_archivist', NULL, '{"leaf":"has_owned_leader_trait","value":"leader_trait_curator"}', 'Curator Archivist', 'An archivist from the Curator Order serves on the council, sharing the accumulated knowledge of eons.', 'scientist', 'Job Efficiency for Researcher jobs: +2%', 125);
 INSERT OR IGNORE INTO council_position_modifier
                            (position_key, modifier_key, modifier_value, sort_order)
                        VALUES ('councilor_curator_archivist', 'researcher_jobs_bonus_workforce_mult', '0.02', 0);
@@ -29173,7 +29173,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO council_position
                        (key, civic_key, possible_json, name, description, leader_classes, effect,
                         sort_order)
-                   VALUES ('councilor_enclave_trader', NULL, '{"leaf":"any_owned_leader","value":"scope"}', 'Trader Liaison', 'A liaison from one of the three hubs of galactic commerce sits on the council, granting insider information on brokerages across the galaxy.', 'official', NULL, 126);
+                   VALUES ('councilor_enclave_trader', NULL, '{"op":"or","args":[{"leaf":"has_owned_leader_trait","value":"leader_trait_xuracorp_liaison"},{"leaf":"has_owned_leader_trait","value":"leader_trait_riggan_liaison"},{"leaf":"has_owned_leader_trait","value":"leader_trait_muutagan_liaison"}]}', 'Trader Liaison', 'A liaison from one of the three hubs of galactic commerce sits on the council, granting insider information on brokerages across the galaxy.', 'official', NULL, 126);
 INSERT OR IGNORE INTO council_position_modifier
                            (position_key, modifier_key, modifier_value, sort_order)
                        VALUES ('councilor_enclave_trader', 'country_trade_produces_mult', '0.02', 0);

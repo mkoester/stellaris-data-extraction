@@ -153,5 +153,19 @@ class TestAscensionRestrictions(unittest.TestCase):
         self.assertEqual(r['civic_galvanic'], {'lock': None, 'blocks': ['Synthetic']})
 
 
+
+class TestLeaderTraitsNeeded(unittest.TestCase):
+    def test_enclave_seat(self):
+        from extractor.government import leader_traits_needed
+        from extractor.clausewitz import Parser, tokenize
+        from extractor.triggers import normalize_trigger
+        block = Parser(tokenize('any_owned_leader = { OR = { has_trait = a has_trait = b } }')).parse()
+        self.assertEqual(normalize_trigger(leader_traits_needed(block)), {'op': 'or', 'args': [
+            {'leaf': 'has_owned_leader_trait', 'value': 'a'},
+            {'leaf': 'has_owned_leader_trait', 'value': 'b'}]})
+        flag = {'any_owned_leader': {'has_leader_flag': 'x'}}
+        self.assertIs(leader_traits_needed(flag), flag)
+
+
 if __name__ == '__main__':
     unittest.main()

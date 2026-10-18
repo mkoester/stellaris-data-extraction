@@ -654,6 +654,24 @@ def compute_ascension_restrictions(install_dir: Path) -> dict[str, dict]:
     return ascension_restrictions(perks, _scripted_trigger_index(install_dir), agendas)
 
 
+def leader_traits_needed(block):
+    """`any_owned_leader = { has_trait = X }` (or an OR of traits): a seat that opens with a leader
+    who has that trait (the enclaves' seats). Rewritten as `has_owned_leader_trait = X` leaves, which
+    a reader can check against the empire's leaders; a scope stays opaque otherwise."""
+    if not isinstance(block, dict) or set(block) != {'any_owned_leader'}:
+        return block
+    inner = block['any_owned_leader']
+    if not isinstance(inner, dict):
+        return block
+    traits = inner.get('has_trait')
+    if traits is None and isinstance(inner.get('OR'), dict) and set(inner) == {'OR'}:
+        traits = inner['OR'].get('has_trait')
+    elif set(inner) != {'has_trait'}:
+        return block
+    traits = [t for t in (traits if isinstance(traits, list) else [traits]) if isinstance(t, str)]
+    return {'OR': {'has_owned_leader_trait': traits}} if traits else block
+
+
 def extract_council_positions(install_dir: Path, loc: dict[str, str],
                               scripted_vars: dict[str, float], w: Writer, verbose: bool) -> None:
     """common/governments/councilors → council_position (+ _modifier): every seat, with the
@@ -677,7 +695,8 @@ def extract_council_positions(install_dir: Path, loc: dict[str, str],
             if key.startswith('@') or not isinstance(cdef, dict):
                 continue
             civic = cdef.get('civic') if isinstance(cdef.get('civic'), str) else None
-            possible = normalize_trigger(cdef.get('possible'), dlc_triggers, variables)
+            possible = normalize_trigger(leader_traits_needed(cdef.get('possible')), dlc_triggers,
+                                         variables)
             name = _clean_loc(loc[key], loc) if key in loc else None
             raw_desc = loc.get(f'{key}_desc')
             desc = (_clean_loc(raw_desc.replace('$TITLE$', name or ''), loc)
