@@ -352,12 +352,19 @@ def extract_edicts_agendas(install_dir: Path, loc: dict[str, str], scripted_vars
              ctx.tooltip(data, evars), order))
         ctx.modifiers(key, data, evars)
 
-    finish_default = None
+    finish_default = cooldown_default = None
     defines_file = common / 'defines' / '00_defines.txt'
     if defines_file.exists():
-        finish_default = pick_defines(parse_file(defines_file),
-                                      ('COUNCIL_AGENDA_FINISH_MODIFIER_DURATION',)).get(
-            'COUNCIL_AGENDA_FINISH_MODIFIER_DURATION')
+        defs = pick_defines(parse_file(defines_file),
+                            ('COUNCIL_AGENDA_FINISH_MODIFIER_DURATION', 'COUNCIL_AGENDA_COOLDOWN'))
+        finish_default = defs.get('COUNCIL_AGENDA_FINISH_MODIFIER_DURATION')
+        cooldown_default = defs.get('COUNCIL_AGENDA_COOLDOWN')
+
+    def day_count(v, avars):
+        try:
+            return int(float(avars.get(v, v))) if v is not None else None
+        except (ValueError, TypeError):
+            return None
 
     agendas = _load(common / 'council_agendas', scripted_vars)
     for order, (key, (data, avars, _)) in enumerate(agendas.items()):
@@ -366,20 +373,17 @@ def extract_edicts_agendas(install_dir: Path, loc: dict[str, str], scripted_vars
             cost = float(avars.get(cost, cost)) if cost is not None else None
         except (ValueError, TypeError):
             cost = None
-        days = data.get('agenda_finish_modifier_duration', finish_default)
-        try:
-            days = int(float(avars.get(days, days))) if days is not None else None
-        except (ValueError, TypeError):
-            days = None
+        days = day_count(data.get('agenda_finish_modifier_duration', finish_default), avars)
+        cooldown = day_count(data.get('agenda_cooldown', cooldown_default), avars)
         effect_keys = [x for b in _as_blocks(data.get('effect'))
                        for x in _to_list(b.get('custom_tooltip')) if isinstance(x, str)]
         effect = '\n'.join(t for t in (ctx.text(k, True, avars) for k in effect_keys) if t) or None
         w.execute(
-            """INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            """INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (key, ctx.text(f'council_agenda_{key}_name'),
-             ctx.text(f'council_agenda_{key}_desc', True, avars), cost, days,
+             ctx.text(f'council_agenda_{key}_desc', True, avars), cost, days, cooldown,
              dumps(ctx.trig(data.get('potential'), avars)), dumps(ctx.trig(data.get('allow'), avars)),
              unlocked_by(data), effect, order))
         ctx.modifiers(key, {'modifier': data.get('modifier')}, avars)

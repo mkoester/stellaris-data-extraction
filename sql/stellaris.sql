@@ -1304,6 +1304,7 @@ CREATE TABLE council_agenda (
     description    TEXT,
     cost           REAL,                   -- agenda progress needed to launch
     finish_days    INTEGER,                -- finish_modifier duration
+    cooldown_days  INTEGER,                -- until it can be picked again (agenda_cooldown, else the define)
     potential_json TEXT,                   -- shown at all (empire-type variants split here)
     allow_json     TEXT,                   -- selectable
     unlocked_by_json TEXT,                 -- ["tr_…","ap_…"]: traditions/perks that unlock it
@@ -85364,9 +85365,9 @@ INSERT INTO tradition_modifier
                    VALUES ('will_of_motion', 'ship_speed_mult', '0.25', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_speed_mult', 'Sublight Speed', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_infinite_opportunities', 'Infinite Opportunities', 'Let''s promote and celebrate our technological achievements.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"always","value":"yes"}', NULL, NULL, 0);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_infinite_opportunities', 'Infinite Opportunities', 'Let''s promote and celebrate our technological achievements.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"always","value":"yes"}', NULL, NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_infinite_opportunities', 'pop_citizen_happiness', '0.04', NULL, 0);
@@ -85377,9 +85378,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_infinite_opportunities#finish', 'pop_citizen_happiness', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_citizen_happiness', 'Pop Happiness', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_infinite_opportunities_gestalt', 'Infinite Opportunities', 'Let''s promote and celebrate our technological achievements.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"always","value":"yes"}', NULL, NULL, 1);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_infinite_opportunities_gestalt', 'Infinite Opportunities', 'Let''s promote and celebrate our technological achievements.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"always","value":"yes"}', NULL, NULL, 1);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_infinite_opportunities_gestalt', 'planet_amenities_no_happiness_add', '400.0', NULL, 0);
@@ -85390,24 +85391,24 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_infinite_opportunities_gestalt#finish', 'planet_amenities_no_happiness_add', '1000.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_unlock_slot', 'Expand The Council', 'We should expand our government to support an additional councilor.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"op":"or","args":[{"leaf":"has_unlocked_council_positions","cmp":"<","value":"4"},{"op":"and","args":[{"leaf":"has_unlocked_council_positions","cmp":"<","value":"5"},{"leaf":"civics_count","cmp":">=","value":"3"}]}]}]}', '{"leaf":"always","value":"yes"}', NULL, NULL, 2);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_reorganize_council', 'Reorganize Council', 'Due to changes in government focus, we should reorganize the Council to focus on other matters.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"host_has_dlc","value":"Galactic Paragons"}]}', '{"leaf":"always","value":"yes"}', NULL, NULL, 3);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_gestalt_purge_traits', 'Correctional Bisection', 'Distracting data points, and false conclusions hinder our reasoning skills. We must purge all redundant information.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"always","value":"yes"}', NULL, 'Removes Negative Traits from Ruler and Councilor Nodes.
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_unlock_slot', 'Expand The Council', 'We should expand our government to support an additional councilor.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"op":"or","args":[{"leaf":"has_unlocked_council_positions","cmp":"<","value":"4"},{"op":"and","args":[{"leaf":"has_unlocked_council_positions","cmp":"<","value":"5"},{"leaf":"civics_count","cmp":">=","value":"3"}]}]}]}', '{"leaf":"always","value":"yes"}', NULL, NULL, 2);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_reorganize_council', 'Reorganize Council', 'Due to changes in government focus, we should reorganize the Council to focus on other matters.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"host_has_dlc","value":"Galactic Paragons"}]}', '{"leaf":"always","value":"yes"}', NULL, NULL, 3);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_gestalt_purge_traits', 'Correctional Bisection', 'Distracting data points, and false conclusions hinder our reasoning skills. We must purge all redundant information.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"always","value":"yes"}', NULL, 'Removes Negative Traits from Ruler and Councilor Nodes.
 For each Trait removed, lose -300 experience.', 4);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_gestalt_purge_traits#finish', 'negative_traits_country', '-2.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('negative_traits_country', 'Leader Maximum Negative Traits', 0);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('origin_delusional_tyrant', 'Total Crackdown', 'By apprehending their leaders in an empire-wide sweep, we can cripple the Reformists and force them to the negotiating table on our terms.', '7000.0', 3600, '{"leaf":"any_situation","value":"scope"}', '{"leaf":"any_situation","value":"scope"}', NULL, 'Conclude Reformists Demands Situation by apprehending Reformist leaders.', 5);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('origin_delusional_tyrant', 'Total Crackdown', 'By apprehending their leaders in an empire-wide sweep, we can cripple the Reformists and force them to the negotiating table on our terms.', '7000.0', 3600, 10800, '{"leaf":"any_situation","value":"scope"}', '{"leaf":"any_situation","value":"scope"}', NULL, 'Conclude Reformists Demands Situation by apprehending Reformist leaders.', 5);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('origin_delusional_tyrant', 'pop_citizen_happiness', '-0.05', NULL, 0);
@@ -85418,9 +85419,9 @@ INSERT INTO tradition_modifier
                    VALUES ('origin_delusional_tyrant', 'pop_ethic_egalitarian_attraction_mult', '-0.1', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('origin_legendary_leader', 'Unifying Promise', 'The 40-year plan is vital to our empire''s success. By combining our efforts under the Luminary''s guidance, we will achieve things far greater than we could alone.', '7000.0', 3600, '{"leaf":"any_situation","value":"scope"}', '{"leaf":"any_situation","value":"scope"}', NULL, 'Adds Approaches to the Unifying Promise Situation.
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('origin_legendary_leader', 'Unifying Promise', 'The 40-year plan is vital to our empire''s success. By combining our efforts under the Luminary''s guidance, we will achieve things far greater than we could alone.', '7000.0', 3600, 10800, '{"leaf":"any_situation","value":"scope"}', '{"leaf":"any_situation","value":"scope"}', NULL, 'Adds Approaches to the Unifying Promise Situation.
 Gives one random Luminary Insight effect.
 Ethic-based Agendas gain a Luminary Insight effect for the duration of the Unifing Promise Situation.', 6);
 INSERT INTO tradition_modifier
@@ -85433,9 +85434,9 @@ INSERT INTO tradition_modifier
                    VALUES ('origin_legendary_leader', 'council_agenda_progress_speed', '0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_augmentation_product_launch', 'Augmentation Product Launch', 'Major cyber implant-based product launch preceded by a period of unprofitable conceptualization, development and testing.', '3800.0', 3600, '{"op":"and","args":[{"leaf":"is_megacorp","value":"yes"},{"leaf":"has_country_flag","value":"cyber_collectivist"}]}', '{"op":"and","args":[{"leaf":"is_megacorp","value":"yes"},{"leaf":"has_country_flag","value":"cyber_collectivist"}]}', NULL, NULL, 7);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_augmentation_product_launch', 'Augmentation Product Launch', 'Major cyber implant-based product launch preceded by a period of unprofitable conceptualization, development and testing.', '3800.0', 3600, 10800, '{"op":"and","args":[{"leaf":"is_megacorp","value":"yes"},{"leaf":"has_country_flag","value":"cyber_collectivist"}]}', '{"op":"and","args":[{"leaf":"is_megacorp","value":"yes"},{"leaf":"has_country_flag","value":"cyber_collectivist"}]}', NULL, NULL, 7);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_augmentation_product_launch', 'planet_jobs_productive_produces_mult', '-0.05', NULL, 0);
@@ -85451,9 +85452,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_augmentation_product_launch#finish', 'planet_jobs_productive_produces_mult', '0.3', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_productive_produces_mult', 'Resources from Jobs', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_we_come_in_peace', 'We Come in Peace', 'Ensure that non-aggression permeates our society and diplomatic relations.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"is_pacifist","value":"yes"}', NULL, 'Every Non-Genocidal: +25 Trust', 8);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_we_come_in_peace', 'We Come in Peace', 'Ensure that non-aggression permeates our society and diplomatic relations.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"is_pacifist","value":"yes"}', NULL, 'Every Non-Genocidal: +25 Trust', 8);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_we_come_in_peace', 'country_border_friction_mult', '-0.1', NULL, 0);
@@ -85494,9 +85495,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_we_come_in_peace#finish', 'pop_ethic_pacifist_attraction_mult', '0.4', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_pacifist_attraction_mult', 'Pacifist Ethics Attraction', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_we_come_in_peace_nomads', 'We Come in Peace', 'Ensure that non-aggression permeates our society and diplomatic relations.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"is_pacifist","value":"yes"}', NULL, 'Every Non-Genocidal: +25 Trust
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_we_come_in_peace_nomads', 'We Come in Peace', 'Ensure that non-aggression permeates our society and diplomatic relations.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"is_pacifist","value":"yes"}', NULL, 'Every Non-Genocidal: +25 Trust
 Opinion Penatly for crossing into Closed Border: -50%', 9);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -85528,9 +85529,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_we_come_in_peace_nomads#finish', 'pop_ethic_pacifist_attraction_mult', '0.4', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_pacifist_attraction_mult', 'Pacifist Ethics Attraction', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_display_of_power', 'Display of Power', 'Our neighbors will know we are prepared for war if necessary.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_militarist","value":"yes"}', NULL, NULL, 10);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_display_of_power', 'Display of Power', 'Our neighbors will know we are prepared for war if necessary.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_militarist","value":"yes"}', NULL, NULL, 10);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_display_of_power', 'country_power_projection_influence_produces_add', '0.25', NULL, 0);
@@ -85561,9 +85562,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_display_of_power#finish', 'pop_ethic_militarist_attraction_mult', '0.4', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_militarist_attraction_mult', 'Militarist Ethics Attraction', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_open_arms', 'Open Arms', 'We are all citizens of the same galaxy. Everyone should feel welcome within our borders.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"is_xenophile","value":"yes"}', NULL, NULL, 11);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_open_arms', 'Open Arms', 'We are all citizens of the same galaxy. Everyone should feel welcome within our borders.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"is_xenophile","value":"yes"}', NULL, NULL, 11);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_open_arms', 'planet_resettlement_unemployed_destination_mult', '0.1', NULL, 0);
@@ -85597,9 +85598,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_open_arms#finish', 'pop_ethic_xenophile_attraction_mult', '0.4', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_xenophile_attraction_mult', 'Xenophile Ethics Attraction', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_open_arms_nomads', 'Open Arms', 'We are all citizens of the same galaxy. Everyone should feel safe welcoming us within their borders.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"is_xenophile","value":"yes"}', NULL, NULL, 12);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_open_arms_nomads', 'Open Arms', 'We are all citizens of the same galaxy. Everyone should feel safe welcoming us within their borders.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"is_xenophile","value":"yes"}', NULL, NULL, 12);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_open_arms_nomads', 'unlicensed_waystations_scaling_mult', '-0.1', NULL, 0);
@@ -85633,9 +85634,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_open_arms_nomads#finish', 'pop_ethic_xenophile_attraction_mult', '0.4', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_xenophile_attraction_mult', 'Xenophile Ethics Attraction', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_strong_on_our_own', 'Strong on Our Own', 'We cannot rely on others, and must focus on making ourselves stronger.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_xenophobe","value":"yes"}', NULL, NULL, 13);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_strong_on_our_own', 'Strong on Our Own', 'We cannot rely on others, and must focus on making ourselves stronger.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_xenophobe","value":"yes"}', NULL, NULL, 13);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_strong_on_our_own', 'logistic_growth_mult', '0.05', NULL, 0);
@@ -85676,9 +85677,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_strong_on_our_own#finish', 'pop_ethic_xenophobe_attraction_mult', '0.4', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_xenophobe_attraction_mult', 'Xenophobe Ethics Attraction', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_give_and_take', 'Give and Take', 'Our political climate must encourage compromises and respect for differing views.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_egalitarian","value":"yes"}', NULL, NULL, 14);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_give_and_take', 'Give and Take', 'Our political climate must encourage compromises and respect for differing views.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_egalitarian","value":"yes"}', NULL, NULL, 14);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_give_and_take', 'faction_approval', '0.1', NULL, 0);
@@ -85704,9 +85705,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_give_and_take#finish', 'pop_ethic_egalitarian_attraction_mult', '0.4', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_preserve_the_order', 'Preserve the Order', 'For us to truly prosper as a society, people must respect the judgment of the regime.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_authoritarian","value":"yes"}', NULL, NULL, 15);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_preserve_the_order', 'Preserve the Order', 'For us to truly prosper as a society, people must respect the judgment of the regime.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_authoritarian","value":"yes"}', NULL, NULL, 15);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_preserve_the_order', 'planet_jobs_worker_produces_mult', '0.05', NULL, 0);
@@ -85747,9 +85748,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_preserve_the_order#finish', 'pop_ethic_authoritarian_attraction_mult', '0.4', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_authoritarian_attraction_mult', 'Authoritarian Ethics Attraction', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_a_higher_purpose', 'A Higher Purpose', 'In our faith we must find comfort, purpose and direction.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_spiritualist","value":"yes"}', NULL, '(Gain Unity 50 per 100 Priest)', 16);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_a_higher_purpose', 'A Higher Purpose', 'In our faith we must find comfort, purpose and direction.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_spiritualist","value":"yes"}', NULL, '(Gain Unity 50 per 100 Priest)', 16);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_a_higher_purpose', 'pop_citizen_happiness', '0.05', NULL, 0);
@@ -85770,9 +85771,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_a_higher_purpose#finish', 'pop_ethic_spiritualist_attraction_mult', '0.4', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_spiritualist_attraction_mult', 'Spiritualist Ethics Attraction', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_progressive_growth', 'Progressive Growth', 'The only practical way to satisfy our desire for growth is through manufacturing it.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_materialist","value":"yes"}', NULL, NULL, 17);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_progressive_growth', 'Progressive Growth', 'The only practical way to satisfy our desire for growth is through manufacturing it.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_materialist","value":"yes"}', NULL, NULL, 17);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_progressive_growth', 'planet_pop_assembly_mult', '0.1', NULL, 0);
@@ -85793,9 +85794,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_progressive_growth#finish', 'pop_ethic_materialist_attraction_mult', '0.4', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_materialist_attraction_mult', 'Materialist Ethics Attraction', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_finding_the_voice', 'Finding the Voice', 'Millions of impressions and conclusions overwhelm us. Learning to filter out all but the most important voices takes effort, but also makes us more efficient.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"always","value":"yes"}', NULL, NULL, 18);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_finding_the_voice', 'Finding the Voice', 'Millions of impressions and conclusions overwhelm us. Learning to filter out all but the most important voices takes effort, but also makes us more efficient.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"always","value":"yes"}', NULL, NULL, 18);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_finding_the_voice', 'country_agendas_unity_produces_add', '5.0', NULL, 0);
@@ -85816,9 +85817,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_finding_the_voice#finish', 'country_unity_produces_mult', '0.4', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_conquer_nature', 'Conquer Nature', 'We can adapt to our surroundings, but in the end nature will bend to our will.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_adaptability_adopt"}', '["tr_adaptability_adopt"]', NULL, 19);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_conquer_nature', 'Conquer Nature', 'We can adapt to our surroundings, but in the end nature will bend to our will.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_adaptability_adopt"}', '["tr_adaptability_adopt"]', NULL, 19);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_conquer_nature', 'pop_environment_tolerance', '0.05', NULL, 0);
@@ -85835,9 +85836,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_conquer_nature#finish', 'terraform_speed_mult', '0.4', NULL, 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_conquer_nature_nomads', 'Conquer Nature', 'We can adapt to our surroundings, but in the end nature will bend to our will.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_adaptability_adopt"}', '["tr_adaptability_adopt"]', NULL, 20);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_conquer_nature_nomads', 'Conquer Nature', 'We can adapt to our surroundings, but in the end nature will bend to our will.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_adaptability_adopt"}', '["tr_adaptability_adopt"]', NULL, 20);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_conquer_nature_nomads', 'arkship_harvest_resources_produces_mult', '0.1', NULL, 0);
@@ -85858,9 +85859,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_conquer_nature_nomads#finish', 'starbase_collected_system_resources_mult', '0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('starbase_collected_system_resources_mult', 'Waystation Collection Efficiency', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_build_relations', 'Build Relations', 'Only through building trust can we create a better future.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_inwards_perfection"},{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"}]}]}]}', '{"leaf":"has_tradition","value":"tr_diplomacy_adopt"}', '["tr_diplomacy_adopt"]', NULL, 21);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_build_relations', 'Build Relations', 'Only through building trust can we create a better future.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_inwards_perfection"},{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"}]}]}]}', '{"leaf":"has_tradition","value":"tr_diplomacy_adopt"}', '["tr_diplomacy_adopt"]', NULL, 21);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_build_relations', 'country_trust_growth', '0.25', NULL, 0);
@@ -85881,9 +85882,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_build_relations#finish', 'diplo_weight_mult', '0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_chart_the_unknown', 'Chart the Unknown', 'We must fervently chart all the mysteries of the galaxy.', '7000.0', 3600, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', '{"leaf":"has_tradition","value":"tr_discovery_adopt"}', '["tr_discovery_adopt"]', NULL, 22);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_chart_the_unknown', 'Chart the Unknown', 'We must fervently chart all the mysteries of the galaxy.', '7000.0', 3600, 10800, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', '{"leaf":"has_tradition","value":"tr_discovery_adopt"}', '["tr_discovery_adopt"]', NULL, 22);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_chart_the_unknown', 'science_ship_survey_speed', '0.25', NULL, 0);
@@ -85900,9 +85901,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_chart_the_unknown#finish', 'ship_anomaly_generation_chance_mult', '0.05', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_anomaly_generation_chance_mult', 'Anomaly Discovery Chance', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_civil_exclusion', 'Civil Exclusion', 'Citizenship requirements are temporarily adjusted, raising expectations of those within our borders.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_gestalt","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_domination_adopt"}', '["tr_domination_adopt"]', NULL, 23);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_civil_exclusion', 'Civil Exclusion', 'Citizenship requirements are temporarily adjusted, raising expectations of those within our borders.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_gestalt","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_domination_adopt"}', '["tr_domination_adopt"]', NULL, 23);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_civil_exclusion', 'planet_jobs_worker_produces_mult', '0.05', NULL, 0);
@@ -85933,9 +85934,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_civil_exclusion#finish', 'planet_crime_add', '10.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_add', 'Crime', 0);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_confidence_in_variance', 'Confidence in Variance', 'We can comfortably wield a degree of deviancy among our in order to permit novel bursts of productivity.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_gestalt","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_domination_adopt"}', '["tr_domination_adopt"]', NULL, 24);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_confidence_in_variance', 'Confidence in Variance', 'We can comfortably wield a degree of deviancy among our in order to permit novel bursts of productivity.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_gestalt","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_domination_adopt"}', '["tr_domination_adopt"]', NULL, 24);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_confidence_in_variance', 'planet_jobs_productive_produces_mult', '0.04', NULL, 0);
@@ -85956,9 +85957,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_confidence_in_variance#finish', 'planet_crime_no_happiness_add', '10.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_superior_colonies', 'Superior Infrastructure', 'We make substantial logistical efforts to support the development of our new colonies.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_nomadic","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_expansion_adopt"}', '["tr_expansion_adopt"]', 'Young colonies get Infrastructure Build Speed: +50% for 10 years.', 25);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_superior_colonies', 'Superior Infrastructure', 'We make substantial logistical efforts to support the development of our new colonies.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_nomadic","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_expansion_adopt"}', '["tr_expansion_adopt"]', 'Young colonies get Infrastructure Build Speed: +50% for 10 years.', 25);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_superior_colonies', 'planet_colony_development_speed_mult', '0.25', NULL, 0);
@@ -85969,18 +85970,18 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_superior_colonies#finish', 'planet_colony_development_speed_mult', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_colony_development_speed_mult', 'Colony Development Speed', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_superior_colonies_wilderness', 'Superior Sproutlings', 'We make substantial logistical efforts to support the development of our new colonies.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_wilderness_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_expansion_adopt"}', '["tr_expansion_adopt"]', 'Young colonies get Infrastructure Build Speed: +50% for 10 years.', 26);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_superior_colonies_wilderness', 'Superior Sproutlings', 'We make substantial logistical efforts to support the development of our new colonies.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_wilderness_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_expansion_adopt"}', '["tr_expansion_adopt"]', 'Young colonies get Infrastructure Build Speed: +50% for 10 years.', 26);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_superior_colonies_wilderness', 'terraform_speed_mult', '0.25', NULL, 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_superior_colonies_wilderness#finish', 'terraform_speed_mult', '0.5', NULL, 0);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_superior_colonies_nomad', 'Superior Stations', 'We make substantial logistical efforts to support the development of our waystations.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_expansion_adopt"}', '["tr_expansion_adopt"]', NULL, 27);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_superior_colonies_nomad', 'Superior Stations', 'We make substantial logistical efforts to support the development of our waystations.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_expansion_adopt"}', '["tr_expansion_adopt"]', NULL, 27);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_superior_colonies_nomad', 'starbase_collected_system_resources_mult', '0.25', NULL, 0);
@@ -85991,9 +85992,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_superior_colonies_nomad#finish', 'starbase_collected_system_resources_mult', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('starbase_collected_system_resources_mult', 'Waystation Collection Efficiency', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_inner_stability', 'Inner Stability', 'A shared vision brings us harmony despite our differing values.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_gestalt","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_harmony_adopt"}', '["tr_harmony_adopt"]', NULL, 28);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_inner_stability', 'Inner Stability', 'A shared vision brings us harmony despite our differing values.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_gestalt","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_harmony_adopt"}', '["tr_harmony_adopt"]', NULL, 28);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_inner_stability', 'planet_stability_add', '5.0', NULL, 0);
@@ -86004,9 +86005,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_inner_stability#finish', 'planet_stability_add', '5.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_open_markets', 'Open Markets', 'We commit entirely to maximizing the benefits for all involved parties in our Commercial Pacts.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_regular_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_criminal_heritage"}]}]}', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_mercantile_adopt"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_criminal_heritage"}]}]}', '["tr_mercantile_adopt"]', NULL, 29);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_open_markets', 'Open Markets', 'We commit entirely to maximizing the benefits for all involved parties in our Commercial Pacts.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_regular_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_criminal_heritage"}]}]}', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_mercantile_adopt"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_criminal_heritage"}]}]}', '["tr_mercantile_adopt"]', NULL, 29);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_open_markets', 'commercial_pact_mult', '0.2', NULL, 0);
@@ -86017,9 +86018,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_open_markets#finish', 'commercial_pact_mult', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('commercial_pact_mult', 'Commercial Pact Effectiveness', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_open_markets_criminal_heritage', 'Open Markets', 'We are entirely committed to maximizing the benefits for all of our Clientele.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_regular_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_criminal_heritage"}]}', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_mercantile_adopt"},{"leaf":"has_valid_civic","value":"civic_criminal_heritage"}]}', '["tr_mercantile_adopt"]', NULL, 30);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_open_markets_criminal_heritage', 'Open Markets', 'We are entirely committed to maximizing the benefits for all of our Clientele.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_regular_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_criminal_heritage"}]}', '{"op":"and","args":[{"leaf":"has_tradition","value":"tr_mercantile_adopt"},{"leaf":"has_valid_civic","value":"civic_criminal_heritage"}]}', '["tr_mercantile_adopt"]', NULL, 30);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_open_markets_criminal_heritage', 'branch_office_holding_crime_mult', '0.2', NULL, 0);
@@ -86030,9 +86031,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_open_markets_criminal_heritage#finish', 'branch_office_holding_crime_mult', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('branch_office_holding_crime_mult', 'Crime from Branch Office Holdings', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_favored_society', 'Favored Society', 'We choose to provide special dispensation to citizens living and working on our Capital.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_prosperity_adopt"}', '["tr_prosperity_adopt"]', NULL, 31);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_favored_society', 'Favored Society', 'We choose to provide special dispensation to citizens living and working on our Capital.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_prosperity_adopt"}', '["tr_prosperity_adopt"]', NULL, 31);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_favored_society', 'planet_jobs_specialist_produces_mult', '0.05', NULL, 0);
@@ -86043,9 +86044,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_favored_society#finish', 'planet_jobs_specialist_produces_mult', '0.05', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_specialist_produces_mult', 'Pop Resource Output', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_favor_the_core', 'Favor the Core', 'We choose to focus more energy and attention on our thriving capital, heart of all Hearts.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_wilderness_empire","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_prosperity_adopt"}', '["tr_prosperity_adopt"]', NULL, 32);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_favor_the_core', 'Favor the Core', 'We choose to focus more energy and attention on our thriving capital, heart of all Hearts.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_wilderness_empire","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_prosperity_adopt"}', '["tr_prosperity_adopt"]', NULL, 32);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_favor_the_core', 'planet_jobs_produces_mult', '0.03', NULL, 0);
@@ -86056,9 +86057,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_favor_the_core#finish', 'planet_jobs_specialist_produces_mult', '0.05', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_specialist_produces_mult', 'Pop Resource Output', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_departmental_efficiency', 'Departmental Efficiency', 'We streamline council departments by rebuilding them from the ground up.', '7000.0', 3600, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', '{"leaf":"has_tradition","value":"tr_statecraft_adopt"}', '["tr_statecraft_adopt"]', NULL, 33);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_departmental_efficiency', 'Departmental Efficiency', 'We streamline council departments by rebuilding them from the ground up.', '7000.0', 3600, 10800, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', '{"leaf":"has_tradition","value":"tr_statecraft_adopt"}', '["tr_statecraft_adopt"]', NULL, 33);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_departmental_efficiency', 'councilor_exp_gain', '0.2', NULL, 0);
@@ -86070,9 +86071,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_departmental_efficiency#finish', 'councilor_skill_add', '2.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_rightful_claims', 'Rightful Claims', 'Through political procedure and streamlined bureaucracy, we are better suited to manipulate our rivals.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"host_has_dlc","value":"Galactic Paragons"}]}', '{"leaf":"has_tradition","value":"tr_statecraft_inspiring_agendas"}', '["tr_statecraft_inspiring_agendas"]', NULL, 34);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_rightful_claims', 'Rightful Claims', 'Through political procedure and streamlined bureaucracy, we are better suited to manipulate our rivals.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"host_has_dlc","value":"Galactic Paragons"}]}', '{"leaf":"has_tradition","value":"tr_statecraft_inspiring_agendas"}', '["tr_statecraft_inspiring_agendas"]', NULL, 34);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_rightful_claims', 'rivalries_influence_produces_mult', '0.2', NULL, 0);
@@ -86093,9 +86094,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_rightful_claims#finish', 'country_claim_influence_cost_mult', '-0.2', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_rightful_claims_nomads', 'Rightful Claims', 'Through political procedure and streamlined bureaucracy, we are better suited to manipulate our rivals.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"host_has_dlc","value":"Galactic Paragons"}]}', '{"leaf":"has_tradition","value":"tr_statecraft_inspiring_agendas"}', '["tr_statecraft_inspiring_agendas"]', NULL, 35);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_rightful_claims_nomads', 'Rightful Claims', 'Through political procedure and streamlined bureaucracy, we are better suited to manipulate our rivals.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"host_has_dlc","value":"Galactic Paragons"}]}', '{"leaf":"has_tradition","value":"tr_statecraft_inspiring_agendas"}', '["tr_statecraft_inspiring_agendas"]', NULL, 35);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_rightful_claims_nomads', 'rivalries_influence_produces_mult', '0.2', NULL, 0);
@@ -86116,9 +86117,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_rightful_claims_nomads#finish', 'megastructures_waystations_influence_cost_mult', '-0.2', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('megastructures_waystations_influence_cost_mult', 'Waystation Influence Cost', 0);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_evolving_society', 'Evolving Society', 'Ideas and theories for new ways to improve ourselves must be discussed and pursued with fervor.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"always","value":"yes"}', NULL, NULL, 36);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_evolving_society', 'Evolving Society', 'Ideas and theories for new ways to improve ourselves must be discussed and pursued with fervor.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"always","value":"yes"}', NULL, NULL, 36);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_evolving_society', 'country_unity_produces_mult', '0.1', NULL, 0);
@@ -86129,9 +86130,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_evolving_society#finish', 'country_unity_produces_mult', '0.4', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_oppose_the_fallen', 'Oppose the Fallen', 'Studying these imposing threats will allow us to adapt our forces before a confrontation can arise.', '7000.0', 3600, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', '{"leaf":"has_tradition","value":"tr_statecraft_inspiring_agendas"}', '["tr_statecraft_inspiring_agendas"]', NULL, 37);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_oppose_the_fallen', 'Oppose the Fallen', 'Studying these imposing threats will allow us to adapt our forces before a confrontation can arise.', '7000.0', 3600, 10800, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', '{"leaf":"has_tradition","value":"tr_statecraft_inspiring_agendas"}', '["tr_statecraft_inspiring_agendas"]', NULL, 37);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_oppose_the_fallen', 'damage_vs_country_type_dormant_marauders_mult', '0.05', NULL, 0);
@@ -86172,9 +86173,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_oppose_the_fallen#finish', 'damage_vs_country_type_awakened_fallen_empire_mult', '0.25', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_uncover_secrets', 'Uncover Secrets', 'We pursue all means possible of gaining information on anyone and everything.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"host_has_dlc","value":"Nemesis"}]}', '{"leaf":"has_tradition","value":"tr_subterfuge_adopt"}', '["tr_subterfuge_adopt"]', NULL, 38);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_uncover_secrets', 'Uncover Secrets', 'We pursue all means possible of gaining information on anyone and everything.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"host_has_dlc","value":"Nemesis"}]}', '{"leaf":"has_tradition","value":"tr_subterfuge_adopt"}', '["tr_subterfuge_adopt"]', NULL, 38);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_uncover_secrets', 'intel_decryption_add', '2.0', NULL, 0);
@@ -86195,9 +86196,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_uncover_secrets#finish', 'add_base_country_intel', '20.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('add_base_country_intel', 'Base Intel Level', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_military_buildup', 'Military Buildup', 'By acting decisively, we stand prepared for any threats.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_supremacy_adopt"}', '["tr_supremacy_adopt"]', NULL, 39);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_military_buildup', 'Military Buildup', 'By acting decisively, we stand prepared for any threats.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_nomadic","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_supremacy_adopt"}', '["tr_supremacy_adopt"]', NULL, 39);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_military_buildup', 'starbase_shipyard_build_speed_mult', '0.1', NULL, 0);
@@ -86223,9 +86224,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_military_buildup#finish', 'country_war_exhaustion_mult', '-0.2', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_military_buildup_nomads', 'Military Buildup', 'By acting decisively, we stand prepared for any threats.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_supremacy_adopt"}', '["tr_supremacy_adopt"]', NULL, 40);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_military_buildup_nomads', 'Military Buildup', 'By acting decisively, we stand prepared for any threats.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_nomadic","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_supremacy_adopt"}', '["tr_supremacy_adopt"]', NULL, 40);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_military_buildup_nomads', 'starbase_shipyard_build_speed_mult', '0.1', NULL, 0);
@@ -86246,9 +86247,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_military_buildup_nomads#finish', 'country_naval_cap_mult', '0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_impenetrable_border', 'Impenetrable Border', 'We will prepare for the worst and be ready, should our territory ever be threatened.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"op":"or","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"host_has_dlc","value":"Overlord"}]}]}', '{"leaf":"has_tradition","value":"tr_unyielding_adopt"}', '["tr_unyielding_adopt"]', 'Increased chance of Starbase research options.', 41);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_impenetrable_border', 'Impenetrable Border', 'We will prepare for the worst and be ready, should our territory ever be threatened.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"op":"or","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"host_has_dlc","value":"Overlord"}]}]}', '{"leaf":"has_tradition","value":"tr_unyielding_adopt"}', '["tr_unyielding_adopt"]', 'Increased chance of Starbase research options.', 41);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_impenetrable_border', 'shipclass_starbase_hull_mult', '0.05', NULL, 0);
@@ -86279,9 +86280,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_impenetrable_border#finish', 'country_war_exhaustion_mult', '-0.2', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_second_strike', 'Second Strike', 'Attacking while your enemy is reeling remains a time-honored tradition.', '3500.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_homicidal","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}]}]}]}', '{"leaf":"has_tradition","value":"tr_enmity_adopt"}', '["tr_enmity_adopt"]', 'Removes all truces with Rivals.', 42);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_second_strike', 'Second Strike', 'Attacking while your enemy is reeling remains a time-honored tradition.', '3500.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_homicidal","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}]}]}]}', '{"leaf":"has_tradition","value":"tr_enmity_adopt"}', '["tr_enmity_adopt"]', 'Removes all truces with Rivals.', 42);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_second_strike', 'ship_speed_mult', '0.1', NULL, 0);
@@ -86302,9 +86303,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_second_strike#finish', 'ship_disengage_opportunities_add', '1.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_disengage_opportunities_add', 'Disengagement Opportunities', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_leadership_conditioning', 'Leadership Conditioning', 'All our leaders spend, willingly or not, considerable time and effort on introspection and behavioral retraining.', '7000.0', 3600, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', '{"leaf":"has_tradition","value":"tr_aptitude_adopt"}', '["tr_aptitude_adopt"]', '3000 Experience will be shared between all Leaders below Skill Level 10', 43);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_leadership_conditioning', 'Leadership Conditioning', 'All our leaders spend, willingly or not, considerable time and effort on introspection and behavioral retraining.', '7000.0', 3600, 10800, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', '{"leaf":"has_tradition","value":"tr_aptitude_adopt"}', '["tr_aptitude_adopt"]', '3000 Experience will be shared between all Leaders below Skill Level 10', 43);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_leadership_conditioning', 'species_leader_exp_gain', '0.05', NULL, 0);
@@ -86315,9 +86316,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_leadership_conditioning#finish', 'species_leader_exp_gain', '0.2', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_pioneer_politics', 'Pioneer Politics', 'The will recognize and praise our absolute commitment to them.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"is_homicidal","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_politics_adopt"}', '["tr_politics_adopt"]', NULL, 44);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_pioneer_politics', 'Pioneer Politics', 'The will recognize and praise our absolute commitment to them.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"is_homicidal","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_politics_adopt"}', '["tr_politics_adopt"]', NULL, 44);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_pioneer_politics', 'resolutions_cost_mult', '-0.05', NULL, 0);
@@ -86338,9 +86339,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_pioneer_politics#finish', 'veto_cooldown_mult', '-0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('veto_cooldown_mult', 'Veto Cooldown', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_self_maintenance', 'Self Maintenance', 'Permit local clustering and patching of environmental adaptation protocols.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_machine_empire","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_versatility_adopt"}', '["tr_versatility_adopt"]', NULL, 45);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_self_maintenance', 'Self Maintenance', 'Permit local clustering and patching of environmental adaptation protocols.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_machine_empire","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_versatility_adopt"}', '["tr_versatility_adopt"]', NULL, 45);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_self_maintenance', 'planet_pop_assembly_mult', '0.025', NULL, 0);
@@ -86361,9 +86362,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_self_maintenance#finish', 'pop_amenities_usage_no_happiness_mult', '-0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_gestalt_boost_growth', 'Growth Revision', 'Coordinating our and colonies must be prioritized.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"has_tradition","value":"tr_synchronicity_adopt"}', '["tr_synchronicity_adopt"]', NULL, 46);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_gestalt_boost_growth', 'Growth Revision', 'Coordinating our and colonies must be prioritized.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"has_tradition","value":"tr_synchronicity_adopt"}', '["tr_synchronicity_adopt"]', NULL, 46);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_gestalt_boost_growth', 'councilor_gestalt_growth_exp_gain', '0.2', NULL, 0);
@@ -86374,9 +86375,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_gestalt_boost_growth#finish', 'councilor_gestalt_growth_exp_gain', '1.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_gestalt_boost_cognitive', 'Cognitive Revision', 'Analysis and existential understanding must be prioritized.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"has_tradition","value":"tr_synchronicity_adopt"}', '["tr_synchronicity_adopt"]', NULL, 47);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_gestalt_boost_cognitive', 'Cognitive Revision', 'Analysis and existential understanding must be prioritized.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"has_tradition","value":"tr_synchronicity_adopt"}', '["tr_synchronicity_adopt"]', NULL, 47);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_gestalt_boost_cognitive', 'councilor_gestalt_cognitive_exp_gain', '0.2', NULL, 0);
@@ -86387,9 +86388,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_gestalt_boost_cognitive#finish', 'councilor_gestalt_cognitive_exp_gain', '1.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_gestalt_boost_regulatory', 'Regulatory Revision', 'Preemptive measures must be prioritized.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"has_tradition","value":"tr_synchronicity_adopt"}', '["tr_synchronicity_adopt"]', NULL, 48);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_gestalt_boost_regulatory', 'Regulatory Revision', 'Preemptive measures must be prioritized.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"has_tradition","value":"tr_synchronicity_adopt"}', '["tr_synchronicity_adopt"]', NULL, 48);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_gestalt_boost_regulatory', 'councilor_gestalt_regulatory_exp_gain', '0.2', NULL, 0);
@@ -86400,9 +86401,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_gestalt_boost_regulatory#finish', 'councilor_gestalt_regulatory_exp_gain', '1.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_gestalt_boost_legion', 'Legion Revision', 'Controlling the boundaries of our territory in space must be prioritized.', '7000.0', 3600, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"has_tradition","value":"tr_synchronicity_adopt"}', '["tr_synchronicity_adopt"]', NULL, 49);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_gestalt_boost_legion', 'Legion Revision', 'Controlling the boundaries of our territory in space must be prioritized.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"has_tradition","value":"tr_synchronicity_adopt"}', '["tr_synchronicity_adopt"]', NULL, 49);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_gestalt_boost_legion', 'councilor_gestalt_legion_exp_gain', '0.2', NULL, 0);
@@ -86413,12 +86414,12 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_gestalt_boost_legion#finish', 'councilor_gestalt_legion_exp_gain', '1.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_mind_over_matter', 'Mind Over Matter', '', NULL, 3600, '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_psionic_theory"},{"leaf":"has_technology","value":"tech_telepathy"},{"leaf":"has_technology","value":"tech_thought_enforcement"}]}]},{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_individual_machine","value":"no"}]}]},{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"has_country_flag","value":"has_completed_reckoning_dig_site"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_endbringers"}]}]}]}]}', '{"leaf":"has_psionic_ascension","value":"yes"}', '["ap_mind_over_matter"]', NULL, 50);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_psionic_supremacy', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"composer_covenant_confirmed"},{"leaf":"has_country_flag","value":"instrument_covenant_confirmed"},{"leaf":"has_country_flag","value":"eater_covenant_confirmed"},{"leaf":"has_country_flag","value":"whisperers_covenant_confirmed"}]}]}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 51);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_mind_over_matter', 'Mind Over Matter', '', NULL, 3600, 1080, '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_psionic_theory"},{"leaf":"has_technology","value":"tech_telepathy"},{"leaf":"has_technology","value":"tech_thought_enforcement"}]}]},{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_individual_machine","value":"no"}]}]},{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"has_country_flag","value":"has_completed_reckoning_dig_site"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_endbringers"}]}]}]}]}', '{"leaf":"has_psionic_ascension","value":"yes"}', '["ap_mind_over_matter"]', NULL, 50);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_psionic_supremacy', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, 10800, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"composer_covenant_confirmed"},{"leaf":"has_country_flag","value":"instrument_covenant_confirmed"},{"leaf":"has_country_flag","value":"eater_covenant_confirmed"},{"leaf":"has_country_flag","value":"whisperers_covenant_confirmed"}]}]}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 51);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_psionic_supremacy', 'category_psionics_research_speed_mult', '0.1', NULL, 0);
@@ -86444,9 +86445,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_psionic_supremacy#finish', 'psionic_pop_bonus_workforce_mult', '0.2', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_psionic_supremacy_composer', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"has_country_flag","value":"composer_covenant_confirmed"}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 52);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_psionic_supremacy_composer', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, 10800, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"has_country_flag","value":"composer_covenant_confirmed"}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 52);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_psionic_supremacy_composer', 'category_psionics_research_speed_mult', '0.1', NULL, 0);
@@ -86472,9 +86473,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_psionic_supremacy_composer#finish', 'psionic_pop_bonus_workforce_mult', '0.2', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_psionic_supremacy_instrument', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"has_country_flag","value":"instrument_covenant_confirmed"}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 53);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_psionic_supremacy_instrument', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, 10800, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"has_country_flag","value":"instrument_covenant_confirmed"}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 53);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_psionic_supremacy_instrument', 'category_psionics_research_speed_mult', '0.1', NULL, 0);
@@ -86500,9 +86501,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_psionic_supremacy_instrument#finish', 'psionic_pop_bonus_workforce_mult', '0.2', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_psionic_supremacy_eater', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"has_country_flag","value":"eater_covenant_confirmed"}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 54);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_psionic_supremacy_eater', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, 10800, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"has_country_flag","value":"eater_covenant_confirmed"}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 54);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_psionic_supremacy_eater', 'category_psionics_research_speed_mult', '0.1', NULL, 0);
@@ -86528,9 +86529,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_psionic_supremacy_eater#finish', 'psionic_pop_bonus_workforce_mult', '0.2', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_psionic_supremacy_whisperers', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"has_country_flag","value":"whisperers_covenant_confirmed"}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 55);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_psionic_supremacy_whisperers', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, 10800, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"has_country_flag","value":"whisperers_covenant_confirmed"}]}', '{"leaf":"has_tradition","value":"tr_psionics_adopt"}', '["tr_psionics_adopt"]', NULL, 55);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_psionic_supremacy_whisperers', 'category_psionics_research_speed_mult', '0.1', NULL, 0);
@@ -86556,9 +86557,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_psionic_supremacy_whisperers#finish', 'psionic_pop_bonus_workforce_mult', '0.2', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_psionic_supremacy_shroud', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_psionics_shroud_adopt"}', '["tr_psionics_shroud_adopt"]', NULL, 56);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_psionic_supremacy_shroud', 'Psionic Supremacy', 'We must inspire and assure our people of the great destiny our Psionic powers will lead us to.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_psionics_shroud_adopt"}', '["tr_psionics_shroud_adopt"]', NULL, 56);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_psionic_supremacy_shroud', 'category_psionics_research_speed_mult', '0.1', NULL, 0);
@@ -86589,12 +86590,12 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_psionic_supremacy_shroud#finish', 'psionic_pop_bonus_workforce_mult', '0.2', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_engineered_evolution', 'Biomorphosis', 'To leave our genetic destiny in the hands of nature is an inefficient and excruciatingly slow process. Why not jump-start the future of our species?', '3500.0', 3600, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_genome_mapping"},{"leaf":"has_technology","value":"tech_gene_tailoring"},{"leaf":"has_technology","value":"tech_glandular_acclimation"},{"leaf":"has_technology","value":"tech_gene_expressions"},{"leaf":"has_technology","value":"tech_gene_seed_purification"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"}', '["ap_engineered_evolution"]', NULL, 57);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_genetic_pursuit', 'Genetic Pursuit', 'We must focus our efforts to achieve absolute genetic perfection.', '7000.0', 3600, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"BioGenesis"}]},{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_genetics_adopt"}', '["tr_genetics_adopt"]', NULL, 58);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_engineered_evolution', 'Biomorphosis', 'To leave our genetic destiny in the hands of nature is an inefficient and excruciatingly slow process. Why not jump-start the future of our species?', '3500.0', 3600, 1080, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_genome_mapping"},{"leaf":"has_technology","value":"tech_gene_tailoring"},{"leaf":"has_technology","value":"tech_glandular_acclimation"},{"leaf":"has_technology","value":"tech_gene_expressions"},{"leaf":"has_technology","value":"tech_gene_seed_purification"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"}', '["ap_engineered_evolution"]', NULL, 57);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_genetic_pursuit', 'Genetic Pursuit', 'We must focus our efforts to achieve absolute genetic perfection.', '7000.0', 3600, 10800, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"BioGenesis"}]},{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_genetics_adopt"}', '["tr_genetics_adopt"]', NULL, 58);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_genetic_pursuit', 'category_biology_research_speed_mult', '0.05', NULL, 0);
@@ -86625,9 +86626,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_genetic_pursuit#finish', 'bonus_pop_growth_mult', '0.1', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_cybernetic_advantage', 'Cybernetic Advantage', 'We must ensure that our best Cybernetic enhancements are made available to everyone within our borders.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_cybernetics_adopt"}', '["tr_cybernetics_adopt"]', NULL, 59);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_cybernetic_advantage', 'Cybernetic Advantage', 'We must ensure that our best Cybernetic enhancements are made available to everyone within our borders.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_cybernetics_adopt"}', '["tr_cybernetics_adopt"]', NULL, 59);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_cybernetic_advantage', 'planet_pops_cyborgs_upkeep_mult', '-0.05', NULL, 0);
@@ -86648,15 +86649,15 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_cybernetic_advantage#finish', 'logistic_growth_mult', '0.1', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_flesh_is_weak', 'The Flesh is Weak', 'The limits and constraints imposed on us by our feeble organic bodies are simply unacceptable. To reach our full potential, we must turn to cybernetic implants.', '3500.0', 3600, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}', '["ap_the_flesh_is_weak"]', NULL, 60);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_organo_machine_interfacing', 'Organo-Machine Interfacing', NULL, '3500.0', 3600, '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"}', '["ap_organo_machine_interfacing"]', NULL, 61);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_cybernetic_advantage_assimilator', 'Cybernetic Advantage', 'We must ensure that our best Cybernetic enhancements are distributed and installed properly among everyone within our borders.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_cybernetics_assimilator_adopt"}', '["tr_cybernetics_assimilator_adopt"]', NULL, 62);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_flesh_is_weak', 'The Flesh is Weak', 'The limits and constraints imposed on us by our feeble organic bodies are simply unacceptable. To reach our full potential, we must turn to cybernetic implants.', '3500.0', 3600, 1080, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}', '["ap_the_flesh_is_weak"]', NULL, 60);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_organo_machine_interfacing', 'Organo-Machine Interfacing', NULL, '3500.0', 3600, 1080, '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"}', '["ap_organo_machine_interfacing"]', NULL, 61);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_cybernetic_advantage_assimilator', 'Cybernetic Advantage', 'We must ensure that our best Cybernetic enhancements are distributed and installed properly among everyone within our borders.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_cybernetics_assimilator_adopt"}', '["tr_cybernetics_assimilator_adopt"]', NULL, 62);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_cybernetic_advantage_assimilator', 'planet_pops_cyborgs_upkeep_mult', '-0.05', NULL, 0);
@@ -86677,15 +86678,15 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_cybernetic_advantage_assimilator#finish', 'logistic_growth_mult', '0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_organo_machine_interfacing_assimilator', NULL, 'The limits and constraints imposed on us by our creators are simply unacceptable. To reach our full potential, we must fuse organic and machine.', '3500.0', 3600, '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"}', '["ap_organo_machine_interfacing_assimilator"]', NULL, 63);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_synthetic_evolution', 'Synthetic Evolution', 'It is time to abandon the flawed organic vessels that imprison our minds. By transferring our neural patterns into synthetic bodies, we will achieve a higher state of being.', '3500.0', 3600, '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_robotic_workers"},{"leaf":"has_technology","value":"tech_droid_workers"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]}]}]}', '{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}', '["ap_synthetic_evolution"]', NULL, 64);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_synthetic_yield', 'Synthetic Yield', 'Any doubt regarding the superiority of our synthetics must be cast aside.', '7000.0', 3600, '{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_synthetics_adopt"}', '["tr_synthetics_adopt"]', NULL, 65);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_organo_machine_interfacing_assimilator', NULL, 'The limits and constraints imposed on us by our creators are simply unacceptable. To reach our full potential, we must fuse organic and machine.', '3500.0', 3600, 1080, '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"}', '["ap_organo_machine_interfacing_assimilator"]', NULL, 63);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_synthetic_evolution', 'Synthetic Evolution', 'It is time to abandon the flawed organic vessels that imprison our minds. By transferring our neural patterns into synthetic bodies, we will achieve a higher state of being.', '3500.0', 3600, 1080, '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_robotic_workers"},{"leaf":"has_technology","value":"tech_droid_workers"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]}]}]}', '{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}', '["ap_synthetic_evolution"]', NULL, 64);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_synthetic_yield', 'Synthetic Yield', 'Any doubt regarding the superiority of our synthetics must be cast aside.', '7000.0', 3600, 10800, '{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_synthetics_adopt"}', '["tr_synthetics_adopt"]', NULL, 65);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_synthetic_yield', 'planet_pop_assembly_add', '0.5', NULL, 0);
@@ -86696,12 +86697,12 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_synthetic_yield#finish', 'planet_pop_assembly_add', '2.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pop_assembly_add', 'Monthly Mechanical Pop Assembly', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_synthetic_age', 'Synthetic Age', 'The age of organics has come and gone, the future of the galaxy belongs to the machines. This is the dawn of a synthetic age.', '3500.0', 3600, '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"has_cybernetic_ascension","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_robomodding_m"},{"leaf":"has_technology","value":"tech_binary_motivators"},{"leaf":"has_technology","value":"tech_nanite_assemblers"},{"leaf":"has_technology","value":"tech_mega_assembly"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_synthetic_age"}', '["ap_synthetic_age"]', NULL, 66);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_virtuality_optimized_network', 'Optimized Network', 'Optimizing our data structures will allow both increased performance and security when accessing remote worksites', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_country_flag","value":"modularity_traditions_unlocked"},{"leaf":"has_country_flag","value":"nanotech_traditions_unlocked"}]}]}]}', '{"leaf":"has_tradition","value":"tr_virtuality_adopt"}', '["tr_virtuality_adopt"]', NULL, 67);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_synthetic_age', 'Synthetic Age', 'The age of organics has come and gone, the future of the galaxy belongs to the machines. This is the dawn of a synthetic age.', '3500.0', 3600, 1080, '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"has_cybernetic_ascension","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_robomodding_m"},{"leaf":"has_technology","value":"tech_binary_motivators"},{"leaf":"has_technology","value":"tech_nanite_assemblers"},{"leaf":"has_technology","value":"tech_mega_assembly"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_synthetic_age"}', '["ap_synthetic_age"]', NULL, 66);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_virtuality_optimized_network', 'Optimized Network', 'Optimizing our data structures will allow both increased performance and security when accessing remote worksites', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_country_flag","value":"modularity_traditions_unlocked"},{"leaf":"has_country_flag","value":"nanotech_traditions_unlocked"}]}]}]}', '{"leaf":"has_tradition","value":"tr_virtuality_adopt"}', '["tr_virtuality_adopt"]', NULL, 67);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_virtuality_optimized_network', 'pop_bonus_workforce_mult', '0.05', NULL, 0);
@@ -86722,9 +86723,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_virtuality_optimized_network#finish', 'pop_bonus_workforce_mult', '0.1', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_nanotech_unstoppable_swarm', 'Unstoppable Swarm', 'We shall ensure that our swarm will blot out the stars themselves.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_country_flag","value":"modularity_traditions_unlocked"},{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}]}]}]}', '{"leaf":"has_tradition","value":"tr_nanotech_adopt"}', '["tr_nanotech_adopt"]', NULL, 68);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_nanotech_unstoppable_swarm', 'Unstoppable Swarm', 'We shall ensure that our swarm will blot out the stars themselves.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_country_flag","value":"modularity_traditions_unlocked"},{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}]}]}]}', '{"leaf":"has_tradition","value":"tr_nanotech_adopt"}', '["tr_nanotech_adopt"]', NULL, 68);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_nanotech_unstoppable_swarm', 'shipsize_nanite_swarmer_build_speed_mult', '0.2', NULL, 0);
@@ -86745,9 +86746,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_nanotech_unstoppable_swarm#finish', 'shipsize_nanite_swarmer_tracking_mult', '0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_nanite_swarmer_tracking_mult', 'Nanite Swarmer Tracking', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_modularity_reshape_form', 'Reshape Form', 'Utilizing Living Metal to reshape our population allows for increased efficiency in the upkeep and adaptability of our machine bodies.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_country_flag","value":"nanotech_traditions_unlocked"},{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}]}]}]}', '{"leaf":"has_tradition","value":"tr_modularity_adopt"}', '["tr_modularity_adopt"]', NULL, 69);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_modularity_reshape_form', 'Reshape Form', 'Utilizing Living Metal to reshape our population allows for increased efficiency in the upkeep and adaptability of our machine bodies.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_country_flag","value":"nanotech_traditions_unlocked"},{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}]}]}]}', '{"leaf":"has_tradition","value":"tr_modularity_adopt"}', '["tr_modularity_adopt"]', NULL, 69);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_modularity_reshape_form', 'planet_pops_robotics_upkeep_mult', '-0.05', NULL, 0);
@@ -86778,9 +86779,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_modularity_reshape_form#finish', 'auto_mod_monthly_add', '200.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_purity_perfection', 'Perfection Protocols', 'We shall embrace the purity found within our genetic code.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}]}]}', '{"leaf":"has_tradition","value":"tr_purity_adopt"}', '["tr_purity_adopt"]', 'For every Organic Pops:
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_purity_perfection', 'Perfection Protocols', 'We shall embrace the purity found within our genetic code.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}]}]}', '{"leaf":"has_tradition","value":"tr_purity_adopt"}', '["tr_purity_adopt"]', 'For every Organic Pops:
 Gain 5 Unity per Positive Species Trait
 (Max. Unity 25 per Pop 100):
 Gain 5 Society Research per Negative Species Trait
@@ -86795,9 +86796,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_purity_perfection#finish', 'logistic_growth_mult', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_purity_perfection_wilderness', 'Perfection Protocols', 'We shall direct the genetic orchestra of our symbionts with unmatched precision.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_wilderness_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}]}]}', '{"leaf":"has_tradition","value":"tr_purity_adopt"}', '["tr_purity_adopt"]', NULL, 71);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_purity_perfection_wilderness', 'Perfection Protocols', 'We shall direct the genetic orchestra of our symbionts with unmatched precision.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_wilderness_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}]}]}', '{"leaf":"has_tradition","value":"tr_purity_adopt"}', '["tr_purity_adopt"]', NULL, 71);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_purity_perfection_wilderness', 'planet_building_build_speed_mult', '0.1', NULL, 0);
@@ -86813,9 +86814,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_purity_perfection_wilderness#finish', 'planet_structures_upkeep_mult', '-0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_structures_upkeep_mult', 'Infrastructure Upkeep', 0);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_cloning_replication', 'Replication Initiative', 'We shall increase our population by ensuring our cloning facilities have no shortage of resources.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_cloning_adopt"}', '["tr_cloning_adopt"]', NULL, 72);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_cloning_replication', 'Replication Initiative', 'We shall increase our population by ensuring our cloning facilities have no shortage of resources.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', '{"leaf":"has_tradition","value":"tr_cloning_adopt"}', '["tr_cloning_adopt"]', NULL, 72);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_cloning_replication', 'bonus_pop_growth_mult', '0.25', NULL, 0);
@@ -86826,9 +86827,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_cloning_replication#finish', 'bonus_pop_growth_mult', '1.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_mutation_divergence', 'Divergence Directive', 'The introduction of hyper-adaptive nucleotides enables evolutionary changes in real time.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}]}]}', '{"leaf":"has_tradition","value":"tr_mutation_adopt"}', '["tr_mutation_adopt"]', 'Every Organic Species gains the Adaptive Mutations Species Trait', 73);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_mutation_divergence', 'Divergence Directive', 'The introduction of hyper-adaptive nucleotides enables evolutionary changes in real time.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}]}]}', '{"leaf":"has_tradition","value":"tr_mutation_adopt"}', '["tr_mutation_adopt"]', 'Every Organic Species gains the Adaptive Mutations Species Trait', 73);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_mutation_divergence', 'auto_mod_monthly_add', '200.0', NULL, 0);
@@ -86839,9 +86840,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_mutation_divergence#finish', 'auto_mod_monthly_add', '400.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_mutation_divergence_evo_pred', 'Evolutionary Directive', 'Will we institute an empire-wide focus on our evolutionary ambitions', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}', '{"leaf":"has_tradition","value":"tr_mutation_adopt"}', '["tr_mutation_adopt"]', NULL, 74);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_mutation_divergence_evo_pred', 'Evolutionary Directive', 'Will we institute an empire-wide focus on our evolutionary ambitions', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"has_origin","value":"origin_evolutionary_predators"}]}', '{"leaf":"has_tradition","value":"tr_mutation_adopt"}', '["tr_mutation_adopt"]', NULL, 74);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_mutation_divergence_evo_pred', 'auto_mod_monthly_add', '200.0', NULL, 0);
@@ -86852,12 +86853,12 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_mutation_divergence_evo_pred#finish', 'auto_mod_monthly_add', '400.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_dark_matter_breakthrough', 'Dark Matter Breakthrough', 'There are powerful applications we have not yet fully explored in the manipulation of Dark Matter.', '7000.0', 3600, '{"leaf":"is_dark_consortium_empire","value":"yes"}', '{"op":"and","args":[{"leaf":"num_researched_techs_of_tier","value":"scope"},{"op":"or","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tech_option","value":"tech_dark_matter_deflector"},{"leaf":"has_technology","value":"tech_dark_matter_deflector"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tech_option","value":"tech_dark_matter_power_core"},{"leaf":"has_technology","value":"tech_dark_matter_power_core"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tech_option","value":"tech_dark_matter_propulsion"},{"leaf":"has_technology","value":"tech_dark_matter_propulsion"}]}]}]}]}', NULL, 'Unlocks a research option for a random Dark Matter Technology.', 75);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_galactic_trawling', 'Galactic Trawling', 'There is life in deep space that should be catalogued and studied.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"host_has_dlc","value":"Grand Archive"}]}', '{"leaf":"has_tradition","value":"tr_domestication_adopt"}', '["tr_domestication_adopt"]', NULL, 76);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_dark_matter_breakthrough', 'Dark Matter Breakthrough', 'There are powerful applications we have not yet fully explored in the manipulation of Dark Matter.', '7000.0', 3600, 10800, '{"leaf":"is_dark_consortium_empire","value":"yes"}', '{"op":"and","args":[{"leaf":"num_researched_techs_of_tier","value":"scope"},{"op":"or","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tech_option","value":"tech_dark_matter_deflector"},{"leaf":"has_technology","value":"tech_dark_matter_deflector"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tech_option","value":"tech_dark_matter_power_core"},{"leaf":"has_technology","value":"tech_dark_matter_power_core"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tech_option","value":"tech_dark_matter_propulsion"},{"leaf":"has_technology","value":"tech_dark_matter_propulsion"}]}]}]}]}', NULL, 'Unlocks a research option for a random Dark Matter Technology.', 75);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_galactic_trawling', 'Galactic Trawling', 'There is life in deep space that should be catalogued and studied.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"host_has_dlc","value":"Grand Archive"}]}', '{"leaf":"has_tradition","value":"tr_domestication_adopt"}', '["tr_domestication_adopt"]', NULL, 76);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_galactic_trawling', 'gravity_snare_cost_mult', '-0.25', NULL, 0);
@@ -86893,9 +86894,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_galactic_trawling#finish', 'space_fauna_culling_reward_mult', '0.5', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('space_fauna_culling_reward_mult', 'Resources from Culling', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_astute_observation', 'Astute Observation', 'The history of our galaxy is buried deep. We must work to learn from its forgotten lessons.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"host_has_dlc","value":"Grand Archive"}]}', '{"leaf":"has_tradition","value":"tr_archivism_adopt"}', '["tr_archivism_adopt"]', NULL, 77);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_astute_observation', 'Astute Observation', 'The history of our galaxy is buried deep. We must work to learn from its forgotten lessons.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"host_has_dlc","value":"Grand Archive"}]}', '{"leaf":"has_tradition","value":"tr_archivism_adopt"}', '["tr_archivism_adopt"]', NULL, 77);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_astute_observation', 'specimens_produces_mult', '0.05', NULL, 0);
@@ -86916,73 +86917,73 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_astute_observation#finish', 'find_arc_site_on_survey_chance_mult', '1.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('find_arc_site_on_survey_chance_mult', 'Chance of finding an Archaeology Site on survey', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_hive_restore_growth', 'Cull Growth Node', 'Our Growth Node is no longer suited for our purpose, it shall be culled and a replacement Node shall be grown.', '7000.0', 3600, '{"leaf":"is_hive_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_culling_1"}', NULL, NULL, 78);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_hive_restore_growth', 'Cull Growth Node', 'Our Growth Node is no longer suited for our purpose, it shall be culled and a replacement Node shall be grown.', '7000.0', 3600, 10800, '{"leaf":"is_hive_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_culling_1"}', NULL, NULL, 78);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_hive_restore_growth#finish', 'councilor_gestalt_growth_exp_gain', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_hive_restore_cognitive', 'Cull Cognitive Node', 'Our Cognitive Node is no longer suited for our purpose, it shall be culled and a replacement Node shall be grown.', '7000.0', 3600, '{"leaf":"is_hive_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_culling_1"}', NULL, NULL, 79);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_hive_restore_cognitive', 'Cull Cognitive Node', 'Our Cognitive Node is no longer suited for our purpose, it shall be culled and a replacement Node shall be grown.', '7000.0', 3600, 10800, '{"leaf":"is_hive_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_culling_1"}', NULL, NULL, 79);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_hive_restore_cognitive#finish', 'councilor_gestalt_cognitive_exp_gain', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_hive_restore_legion', 'Cull Legion Node', 'Our Legion Node is no longer suited for our purpose, it shall be culled and a replacement Node shall be grown.', '7000.0', 3600, '{"leaf":"is_hive_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_culling_1"}', NULL, NULL, 80);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_hive_restore_legion', 'Cull Legion Node', 'Our Legion Node is no longer suited for our purpose, it shall be culled and a replacement Node shall be grown.', '7000.0', 3600, 10800, '{"leaf":"is_hive_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_culling_1"}', NULL, NULL, 80);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_hive_restore_legion#finish', 'councilor_gestalt_legion_exp_gain', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_hive_restore_regulatory', 'Cull Regulatory Node', 'Our Regulatory Node is no longer suited for our purpose, it shall be culled and a replacement Node shall be grown.', '7000.0', 3600, '{"leaf":"is_hive_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_culling_1"}', NULL, NULL, 81);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_hive_restore_regulatory', 'Cull Regulatory Node', 'Our Regulatory Node is no longer suited for our purpose, it shall be culled and a replacement Node shall be grown.', '7000.0', 3600, 10800, '{"leaf":"is_hive_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_culling_1"}', NULL, NULL, 81);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_hive_restore_regulatory#finish', 'councilor_gestalt_regulatory_exp_gain', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_machine_restore_growth', 'Reformat Growth Node', 'Our Growth Node is no longer suited for our purpose, it shall be reformatted and restored to the last valid backup.', '7000.0', 3600, '{"leaf":"is_machine_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_reformatting_1"}', NULL, NULL, 82);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_machine_restore_growth', 'Reformat Growth Node', 'Our Growth Node is no longer suited for our purpose, it shall be reformatted and restored to the last valid backup.', '7000.0', 3600, 10800, '{"leaf":"is_machine_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_reformatting_1"}', NULL, NULL, 82);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_machine_restore_growth#finish', 'councilor_gestalt_growth_exp_gain', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_gestalt_growth_exp_gain', 'Growth Node Experience Gain', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_machine_restore_cognitive', 'Reformat Cognitive Node', 'Our Cognitive Node is no longer suited for our purpose, it shall be reformatted and restored to the last valid backup.', '7000.0', 3600, '{"leaf":"is_machine_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_reformatting_1"}', NULL, NULL, 83);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_machine_restore_cognitive', 'Reformat Cognitive Node', 'Our Cognitive Node is no longer suited for our purpose, it shall be reformatted and restored to the last valid backup.', '7000.0', 3600, 10800, '{"leaf":"is_machine_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_reformatting_1"}', NULL, NULL, 83);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_machine_restore_cognitive#finish', 'councilor_gestalt_cognitive_exp_gain', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_gestalt_cognitive_exp_gain', 'Cognitive Node Experience Gain', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_machine_restore_legion', 'Reformat Legion Node', 'Our Legion Node is no longer suited for our purpose, it shall be reformatted and restored to the last valid backup.', '7000.0', 3600, '{"leaf":"is_machine_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_reformatting_1"}', NULL, NULL, 84);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_machine_restore_legion', 'Reformat Legion Node', 'Our Legion Node is no longer suited for our purpose, it shall be reformatted and restored to the last valid backup.', '7000.0', 3600, 10800, '{"leaf":"is_machine_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_reformatting_1"}', NULL, NULL, 84);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_machine_restore_legion#finish', 'councilor_gestalt_legion_exp_gain', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_gestalt_legion_exp_gain', 'Legion Node Experience Gain', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_machine_restore_regulatory', 'Reformat Regulatory Node', 'Our Regulatory Node is no longer suited for our purpose, it shall be reformatted and restored to the last valid backup.', '7000.0', 3600, '{"leaf":"is_machine_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_reformatting_1"}', NULL, NULL, 85);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_machine_restore_regulatory', 'Reformat Regulatory Node', 'Our Regulatory Node is no longer suited for our purpose, it shall be reformatted and restored to the last valid backup.', '7000.0', 3600, 10800, '{"leaf":"is_machine_empire","value":"yes"}', '{"leaf":"has_technology","value":"tech_node_reformatting_1"}', NULL, NULL, 85);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_machine_restore_regulatory#finish', 'councilor_gestalt_regulatory_exp_gain', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_gestalt_regulatory_exp_gain', 'Regulatory Node Experience Gain', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_arkship_engineering_civilian', 'Arkship Development', 'Our Arkship is optimized for resource extraction, but combat readiness and research capacity have gone without investment. Broadening our capabilities is a strategic priority.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_country_flag","value":"starting_civilian_arkship"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_arkship_construction"},{"leaf":"has_technology","value":"tech_arkship_tier_2"},{"leaf":"has_technology","value":"tech_science_arkship"},{"leaf":"has_technology","value":"tech_military_arkship"},{"leaf":"has_technology","value":"tech_arkship_tier_3"}]}]}]}', NULL, NULL, NULL, 86);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_arkship_engineering_civilian', 'Arkship Development', 'Our Arkship is optimized for resource extraction, but combat readiness and research capacity have gone without investment. Broadening our capabilities is a strategic priority.', '7000.0', 3600, 1800, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_country_flag","value":"starting_civilian_arkship"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_arkship_construction"},{"leaf":"has_technology","value":"tech_arkship_tier_2"},{"leaf":"has_technology","value":"tech_science_arkship"},{"leaf":"has_technology","value":"tech_military_arkship"},{"leaf":"has_technology","value":"tech_arkship_tier_3"}]}]}]}', NULL, NULL, NULL, 86);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_arkship_engineering_civilian', 'shipsize_civilian_arkship_tier_1_science_survey_speed', '0.05', NULL, 0);
@@ -87073,9 +87074,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_arkship_engineering_civilian', 'shipsize_military_arkship_tier_3_evasion_add', '5.0', NULL, 17);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_military_arkship_tier_3_evasion_add', 'Military Arkship Evasion Chance', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_arkship_engineering_science', 'Arkship Development', 'Our Arkship is a research platform of considerable capability, but the void demands more than scientific aptitude alone. Operational endurance and combat systems require equal investment.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_country_flag","value":"starting_science_arkship"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_arkship_construction"},{"leaf":"has_technology","value":"tech_arkship_tier_2"},{"leaf":"has_technology","value":"tech_civilian_arkship"},{"leaf":"has_technology","value":"tech_military_arkship"},{"leaf":"has_technology","value":"tech_arkship_tier_3"}]}]}]}', NULL, NULL, NULL, 87);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_arkship_engineering_science', 'Arkship Development', 'Our Arkship is a research platform of considerable capability, but the void demands more than scientific aptitude alone. Operational endurance and combat systems require equal investment.', '7000.0', 3600, 1800, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_country_flag","value":"starting_science_arkship"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_arkship_construction"},{"leaf":"has_technology","value":"tech_arkship_tier_2"},{"leaf":"has_technology","value":"tech_civilian_arkship"},{"leaf":"has_technology","value":"tech_military_arkship"},{"leaf":"has_technology","value":"tech_arkship_tier_3"}]}]}]}', NULL, NULL, NULL, 87);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_arkship_engineering_science', 'shipsize_civilian_arkship_tier_1_speed_mult', '0.05', NULL, 0);
@@ -87166,9 +87167,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_arkship_engineering_science', 'shipsize_military_arkship_tier_3_evasion_add', '5.0', NULL, 17);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_military_arkship_tier_3_evasion_add', 'Military Arkship Evasion Chance', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_arkship_engineering_military', 'Arkship Development', 'Our Arkship is built for combat operations, but research capability and logistical infrastructure have gone without investment. Correcting this imbalance will extend our operational reach.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_country_flag","value":"starting_military_arkship"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_arkship_construction"},{"leaf":"has_technology","value":"tech_arkship_tier_2"},{"leaf":"has_technology","value":"tech_civilian_arkship"},{"leaf":"has_technology","value":"tech_science_arkship"},{"leaf":"has_technology","value":"tech_arkship_tier_3"}]}]}]}', NULL, NULL, NULL, 88);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_arkship_engineering_military', 'Arkship Development', 'Our Arkship is built for combat operations, but research capability and logistical infrastructure have gone without investment. Correcting this imbalance will extend our operational reach.', '7000.0', 3600, 1800, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_country_flag","value":"starting_military_arkship"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_arkship_construction"},{"leaf":"has_technology","value":"tech_arkship_tier_2"},{"leaf":"has_technology","value":"tech_civilian_arkship"},{"leaf":"has_technology","value":"tech_science_arkship"},{"leaf":"has_technology","value":"tech_arkship_tier_3"}]}]}]}', NULL, NULL, NULL, 88);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_arkship_engineering_military', 'shipsize_civilian_arkship_tier_1_speed_mult', '0.05', NULL, 0);
@@ -87259,9 +87260,9 @@ INSERT INTO tradition_modifier
                    VALUES ('agenda_arkship_engineering_military', 'shipsize_military_arkship_tier_3_science_survey_speed', '0.05', NULL, 17);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_military_arkship_tier_3_science_survey_speed', 'Military Arkship Survey Speed', 1);
-INSERT INTO council_agenda (key, name, description, cost, finish_days, potential_json,
-               allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_arkship_engineering_mastery', 'Arkship Mastery', 'Arkship engineering has been mastered across every configuration. Research platforms, warships, and hauling operations alike stand to benefit from this agenda''s refinements.', '7000.0', 3600, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_technology","value":"tech_arkship_construction"},{"leaf":"has_technology","value":"tech_arkship_tier_2"},{"leaf":"has_technology","value":"tech_arkship_tier_3"},{"leaf":"has_technology","value":"tech_civilian_arkship"},{"leaf":"has_technology","value":"tech_science_arkship"},{"leaf":"has_technology","value":"tech_military_arkship"}]}', NULL, NULL, NULL, 89);
+INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
+               potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
+               VALUES ('agenda_arkship_engineering_mastery', 'Arkship Mastery', 'Arkship engineering has been mastered across every configuration. Research platforms, warships, and hauling operations alike stand to benefit from this agenda''s refinements.', '7000.0', 3600, 1800, '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_technology","value":"tech_arkship_construction"},{"leaf":"has_technology","value":"tech_arkship_tier_2"},{"leaf":"has_technology","value":"tech_arkship_tier_3"},{"leaf":"has_technology","value":"tech_civilian_arkship"},{"leaf":"has_technology","value":"tech_science_arkship"},{"leaf":"has_technology","value":"tech_military_arkship"}]}', NULL, NULL, NULL, 89);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_arkship_engineering_mastery', 'shipsize_civilian_arkship_tier_1_science_survey_speed', '0.05', NULL, 0);

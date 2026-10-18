@@ -1309,6 +1309,7 @@ CREATE TABLE council_agenda (
     description    TEXT,
     cost           REAL,                   -- agenda progress needed to launch
     finish_days    INTEGER,                -- finish_modifier duration
+    cooldown_days  INTEGER,                -- until it can be picked again (agenda_cooldown, else the define)
     potential_json TEXT,                   -- shown at all (empire-type variants split here)
     allow_json     TEXT,                   -- selectable
     unlocked_by_json TEXT,                 -- ["tr_…","ap_…"]: traditions/perks that unlock it
