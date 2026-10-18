@@ -874,8 +874,10 @@ def extract_deposits(data: dict, source_file: str, loc: dict[str, str],
                     (key, kind, res, value),
                 )
 
-        # Blocker/feature planet modifiers.
-        for mod_block_key in ('planet_modifier', 'modifier'):
+        # Blocker/feature planet modifiers, and what an orbital deposit gives a habitat.
+        for mod_block_key, table in (('planet_modifier', 'deposit_modifier'),
+                                     ('modifier', 'deposit_modifier'),
+                                     ('habitat_modifier', 'deposit_habitat_modifier')):
             pm = d.get(mod_block_key)
             if not isinstance(pm, dict):
                 continue
@@ -886,7 +888,7 @@ def extract_deposits(data: dict, source_file: str, loc: dict[str, str],
                 if value is None:
                     continue
                 w.execute(
-                    """INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                    f"""INSERT OR REPLACE INTO {table} (deposit_key, modifier_key, modifier_value)
                        VALUES (?, ?, ?)""",
                     (key, mod_key, value),
                 )

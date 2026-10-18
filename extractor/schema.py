@@ -850,6 +850,7 @@ ORDER BY p.sort_order;
 
 -- Deposit dictionary: every orbital/planetary/blocker deposit, so home-system
 -- planet deposits resolve to exact resource yields, modifiers and clear costs.
+DROP TABLE IF EXISTS deposit_habitat_modifier;
 DROP TABLE IF EXISTS deposit_modifier;
 DROP TABLE IF EXISTS deposit_resource;
 DROP TABLE IF EXISTS deposit;
@@ -871,6 +872,15 @@ CREATE TABLE deposit_resource (
     FOREIGN KEY (deposit_key) REFERENCES deposit(key)
 );
 CREATE TABLE deposit_modifier (
+    deposit_key    TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    PRIMARY KEY (deposit_key, modifier_key),
+    FOREIGN KEY (deposit_key) REFERENCES deposit(key)
+);
+-- What an orbital deposit gives a habitat in its system (`habitat_modifier`), e.g. d_minerals_3 →
+-- district_hab_mining_max_add 2. Empire dashboard: habitat sites.
+CREATE TABLE deposit_habitat_modifier (
     deposit_key    TEXT NOT NULL,
     modifier_key   TEXT NOT NULL,
     modifier_value REAL NOT NULL,
