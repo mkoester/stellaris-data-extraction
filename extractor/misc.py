@@ -121,3 +121,19 @@ def extract_planet_classes(data: dict, loc: dict[str, str], w: Writer, verbose: 
             print(f"  planet_class {key} | {name} | climate={climate} colonizable={colonizable}")
         order += 1
     w.commit()
+
+
+# ---------------------------------------------------------------------------
+# Extraction: prescripted names
+# ---------------------------------------------------------------------------
+
+def prescripted_names(loc: dict[str, str]) -> list[tuple[str, str]]:
+    """The loc of every PRESCRIPTED_* / EMPIRE_DESIGN_* key, sorted (determinism)."""
+    return sorted((k, _clean_loc(v, loc)) for k, v in loc.items()
+                  if k.startswith(('PRESCRIPTED_', 'EMPIRE_DESIGN_')) and v and _clean_loc(v, loc))
+
+
+def extract_prescripted_names(loc: dict[str, str], w: Writer) -> None:
+    for key, text in prescripted_names(loc):
+        w.execute("INSERT INTO prescripted_name (key, text) VALUES (?, ?)", (key, text))
+    w.commit()

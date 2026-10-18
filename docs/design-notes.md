@@ -482,6 +482,11 @@ ids their `on_success` fires (`event_ids`: weighted `1 = anomaly.35`, `anomaly_e
 so `_LOC_ENTRY` accepts `.` in keys (before 2026-10-18 it did not, and every dotted key was
 missing). The dashboard shows outcomes only behind a spoiler setting.
 
+## Prescripted names (`extract_prescripted_names`, misc.py)
+
+`prescripted_name`: every `PRESCRIPTED_*` / `EMPIRE_DESIGN_*` loc key with its text (528 in 4.5.2).
+Saves name a prescripted empire's ruler, species and empire by these keys.
+
 ## Empire focus and leader traits (focus.py, leaders.py)
 
 `common/country_focus` → `focus_category`, `focus_card` and `focus_reward`. A card inherits the

@@ -15,7 +15,7 @@ from .government import _custom_empire_initializers, compute_ascension_restricti
 from .jobs import extract_job_swaps, extract_jobs
 from .leaders import extract_leader_traits
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
-from .misc import extract_dlc, host_checks, extract_named_colors, extract_planet_classes
+from .misc import extract_dlc, extract_prescripted_names, host_checks, extract_named_colors, extract_planet_classes
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
 from .politics import extract_politics
 from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors, extract_static_modifiers
@@ -437,6 +437,7 @@ Examples:
     extract_edicts_agendas(install_dir, loc, scripted_vars, static_mods, w, progress)
     print(f"\n[policies + factions] {install_dir / 'common' / 'policies'}", file=progress)
     extract_politics(install_dir, loc, scripted_vars, w, progress)
+    extract_prescripted_names(loc, w)
     print(f"\n[leader traits] {install_dir / 'common' / 'traits'}", file=progress)
     extract_leader_traits(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[empire focus] {install_dir / 'common' / 'country_focus'}", file=progress)
