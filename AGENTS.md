@@ -56,6 +56,9 @@ The game's script format has quirks that produce silently wrong trees rather tha
 - **`@variable` references resolve per file**, from that file's top-level `@key = value` entries.
 - **Comparisons** (`num_ascension_perks > 2`) parse as `Cmp(op, value)`. This was a bug fix: a
   comparison used to turn its block into a token list, silently dropping the block's other keys.
+- **Typed colours lose their values** — `map = rgb { 151 14 18 }` parses as `{'map': 'rgb'}`, the
+  block dropped without an error (the keys after it survive). `flags/colors.txt` is read by regex
+  for that reason (`flag_colors()` in `empires.py`).
 - **`if` values are `IfBlock`s** whose `.chain` keeps their own `else_if`/`else` — duplicate-key
   promotion loses that pairing once a block has several `if`s.
 

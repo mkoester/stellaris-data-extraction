@@ -495,7 +495,9 @@ with the country as `from`; `unwrap_from` folds `from = { … }` in.
 ## Prescripted names (`extract_prescripted_names`, misc.py)
 
 `prescripted_name`: every `PRESCRIPTED_*` / `EMPIRE_DESIGN_*` loc key with its text (528 in 4.5.2).
-Saves name a prescripted empire's ruler, species and empire by these keys.
+Saves name a prescripted empire's ruler, species and empire by these keys. Also the quoted entries
+of `common/random_names/` that are loc keys (`random_name_keys`; 320 in 4.5.2, 848 rows in all):
+saves name some systems by them (`VOIDWORM_SYSTEM_12` = "Papqaqtet").
 
 ## Empire focus and leader traits (focus.py, leaders.py)
 
