@@ -10,12 +10,16 @@ from .buildings import extract_anomaly_levels, extract_buildings_ref, extract_di
 from .clausewitz import parse_file
 from .empires import extract_flag_assets, extract_initializers, extract_prescripted_empires, extract_rooms
 from .federations import extract_federations
+from .focus import extract_focus
 from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_council_positions, extract_ethics, extract_government_types, extract_origins, extract_policy_restrictions
 from .jobs import extract_job_swaps, extract_jobs
+from .leaders import extract_leader_traits
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
-from .misc import extract_dlc, extract_named_colors, extract_planet_classes
+from .misc import extract_dlc, host_checks, extract_named_colors, extract_planet_classes
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
+from .politics import extract_politics
 from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors, extract_static_modifiers
+from .situations import extract_situations
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
 from .tech import extract_fallen_empire_techs, extract_repeatable_techs, extract_techs
 from .traditions import extract_edicts_agendas, extract_traditions
@@ -142,7 +146,12 @@ Examples:
     if dlc_info.exists():
         try:
             data = parse_file(dlc_info)
-            extract_dlc(data, w, args.verbose)
+            descriptors = [parse_file(f) for f in sorted((install_dir / 'dlc').glob('*/*.dlc'))]
+            names = [d.get('name') for d in data.get('dlcs', {}).values() if isinstance(d, dict)]
+            scripts = sorted(f for sub in ('common', 'events') for f in (install_dir / sub).rglob('*.txt'))
+            checks = host_checks((f.read_text(encoding='utf-8-sig', errors='replace') for f in scripts),
+                                 names)
+            extract_dlc(data, descriptors, checks, w, args.verbose)
             if not args.verbose:
                 n = sum(1 for v in data.get('dlcs', {}).values() if isinstance(v, dict))
                 print(f"  Loaded {n} DLC entries", file=progress)
@@ -392,7 +401,7 @@ Examples:
     extract_district_zone_names(install_dir, _merge_dir(install_dir / 'common' / 'districts', progress),
                                 _merge_dir(install_dir / 'common' / 'zones', progress),
                                 loc, w, args.verbose)
-    extract_anomaly_levels(_merge_dir(install_dir / 'common' / 'anomalies', progress), w, args.verbose)
+    extract_anomaly_levels(_merge_dir(install_dir / 'common' / 'anomalies', progress), loc, w, args.verbose)
     print(f"\n[static-modifiers] {static_mod_dir}", file=progress)
     extract_static_modifiers(static_mods, loc, w, args.verbose)
     print(f"\n[job-swaps] {install_dir / 'common' / 'pop_jobs'}", file=progress)
@@ -426,6 +435,14 @@ Examples:
     extract_traditions(install_dir, loc, scripted_vars, w, args.verbose, progress)
     print(f"\n[edicts + agendas] {install_dir / 'common' / 'edicts'}", file=progress)
     extract_edicts_agendas(install_dir, loc, scripted_vars, static_mods, w, progress)
+    print(f"\n[policies + factions] {install_dir / 'common' / 'policies'}", file=progress)
+    extract_politics(install_dir, loc, scripted_vars, w, progress)
+    print(f"\n[leader traits] {install_dir / 'common' / 'traits'}", file=progress)
+    extract_leader_traits(install_dir, loc, scripted_vars, w, progress)
+    print(f"\n[empire focus] {install_dir / 'common' / 'country_focus'}", file=progress)
+    extract_focus(install_dir, loc, w, progress)
+    print(f"\n[situations + special projects] {install_dir / 'common' / 'situations'}", file=progress)
+    extract_situations(install_dir, loc, w, progress)
     print(f"\n[federations] {install_dir / 'common' / 'federation_types'}", file=progress)
     extract_federations(install_dir, loc, scripted_vars, w, progress)
 

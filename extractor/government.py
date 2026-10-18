@@ -1,11 +1,12 @@
 """Extraction: ethics, policy restrictions, civics, authorities, origins."""
 
 from pathlib import Path
+import json
 import re
 from .clausewitz import IfBlock, parse_file
 from .localisation import _clean_loc, join_texts
 from .modifiers import _write_modifier_label
-from .triggers import _scripted_trigger_index, _trigger_values
+from .triggers import _scripted_trigger_index, _trigger_values, dlc_trigger_map, normalize_trigger
 from .values import _resolve_modifier_float, _to_list
 from .writer import Writer
 
@@ -655,13 +656,13 @@ def compute_ascension_restrictions(install_dir: Path) -> dict[str, dict]:
 
 def extract_council_positions(install_dir: Path, loc: dict[str, str],
                               scripted_vars: dict[str, float], w: Writer, verbose: bool) -> None:
-    """common/governments/councilors → council_position (+ _modifier): the seats a civic
-    opens (`civic = …`). Seats unlocked by events, leader traits or flags have no civic
-    and are skipped. Modifier values are per leader level; `effect` is the custom
-    tooltip some seats show instead of (or beside) their modifiers."""
+    """common/governments/councilors → council_position (+ _modifier): every seat, with the
+    civic that opens it (if any) and its `possible`. Modifier values are per leader level;
+    `effect` is the custom tooltip some seats show instead of (or beside) their modifiers."""
     cdir = install_dir / 'common' / 'governments' / 'councilors'
     if not cdir.is_dir():
         return
+    dlc_triggers = dlc_trigger_map(_scripted_trigger_index(install_dir))
     order = 0
     for f in sorted(cdir.glob('*.txt')):
         try:
@@ -675,9 +676,8 @@ def extract_council_positions(install_dir: Path, loc: dict[str, str],
         for key, cdef in data.items():
             if key.startswith('@') or not isinstance(cdef, dict):
                 continue
-            civic = cdef.get('civic')
-            if not isinstance(civic, str):
-                continue
+            civic = cdef.get('civic') if isinstance(cdef.get('civic'), str) else None
+            possible = normalize_trigger(cdef.get('possible'), dlc_triggers, variables)
             name = _clean_loc(loc[key], loc) if key in loc else None
             raw_desc = loc.get(f'{key}_desc')
             desc = (_clean_loc(raw_desc.replace('$TITLE$', name or ''), loc)
@@ -690,9 +690,11 @@ def extract_council_positions(install_dir: Path, loc: dict[str, str],
                                 for t in tts)
             w.execute(
                 """INSERT OR REPLACE INTO council_position
-                       (key, civic_key, name, description, leader_classes, effect, sort_order)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (key, civic, name, desc, ','.join(classes) or None, effect, order))
+                       (key, civic_key, possible_json, name, description, leader_classes, effect,
+                        sort_order)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (key, civic, json.dumps(possible, separators=(',', ':')) if possible else None,
+                 name, desc, ','.join(classes) or None, effect, order))
             order += 1
             modifier = cdef.get('modifier')
             for m_order, (mk, mv) in enumerate((modifier or {}).items()

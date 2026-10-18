@@ -233,7 +233,7 @@ def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False,
 # Leading whitespace is optional: most files indent entries, but some DLC files
 # (e.g. the Infernals Species Pack) put them at column 0. The `l_english:` header
 # never matches (it has no "value"); `#` comments aren't word-initial.
-_LOC_ENTRY = re.compile(r'^\s*(\w[\w_]*):(\d*)\s+"([^"]*)"', re.MULTILINE)
+_LOC_ENTRY = re.compile(r'^\s*(\w[\w.]*):(\d*)\s+"([^"]*)"', re.MULTILINE)
 
 
 _LOC_REF = re.compile(r'^\$(\w+)\$$')
@@ -268,3 +268,9 @@ def load_localisation(loc_dir: Path) -> dict[str, str]:
             else:
                 del labels[key]  # unresolvable — fall back to NULL in DB
     return labels
+
+
+def inline_refs(text: str, loc: dict[str, str]) -> str:
+    """`$key$` references inside a text replaced by their loc, one level deep (focus requirements
+    "£trigger_yes£ $conquest.100.req$", leader traits "$trait_ruler_eye_for_talent$ II")."""
+    return re.sub(r'\$([\w.]+)\$', lambda m: loc.get(m.group(1), m.group(0)), text)

@@ -98,7 +98,7 @@ Cross-module imports keep the original (underscore-prefixed) helper names; the p
 | What                        | Source                                              |
 |-----------------------------|-----------------------------------------------------|
 | Game version (`meta`)       | `launcher-settings.json` (`version` / `rawVersion`) |
-| DLC metadata                | `dlc_metadata/dlc_info.txt`                         |
+| DLC metadata                | `dlc_metadata/dlc_info.txt` + `dlc/*/*.dlc` (category) + `dlc_dates.py` (release date) |
 | Species classes + loc       | `common/species_classes/`                           |
 | Species archetypes          | `common/species_archetypes/`                        |
 | Portrait sets               | `common/portrait_sets/`                             |
@@ -188,6 +188,18 @@ Modifier keys whose loc key doesn't follow `MOD_<UPPER>` / `mod_<lower>` pattern
 Keys inside `country_modifier` blocks that aren't real numeric modifiers: `show_only_custom_tooltip`, `custom_tooltip`
 
 ---
+
+## DLC (`extract_dlc`, misc.py)
+
+`dlc_info.txt` lists every DLC (36 in 4.5.2), installed or not. Its block key (`dlc029`) follows
+release order. `category` comes from the DLC's own `dlc/<dir>/<key>.dlc` descriptor, matched by
+name. Only installed DLCs have one, so the 5 uninstalled ones (early portrait packs, sign-up
+bonus, soundtrack) have none. The game files hold no release date, so `release_date` comes from a
+hand table in `dlc_dates.py`, keyed by Steam app id and fetched from the Steam store API. Ids
+the store no longer lists stay NULL. **Add a row there for each new DLC.** `host_checks` counts
+`host_has_dlc = "<name>"` in `common/` and `events/`. A gameplay DLC with 0 checks has been
+merged into the base game: Utopia, Synthetic Dawn and Humanoids in 4.5.2. Saves leave those out
+of `required_dlcs`.
 
 ## Ethics Extraction (`extract_ethics`)
 
@@ -329,7 +341,7 @@ The home systems each precursor leads you to (planets, deposits, megastructures)
 
 ## Council Positions (`extract_council_positions`, government.py)
 
-`common/governments/councilors/` → `council_position` (+ `council_position_modifier`): only seats with a `civic = …` field (151 on 4.5.2, one per civic); event/leader-trait/flag seats (Shroudwalker Teacher, Warden of the Citadel, …) are skipped. Name = loc[key], description = `<key>_desc` with `$TITLE$` → name, `leader_classes` from `leader_class`, `effect` = the `custom_tooltip` / `custom_tooltip_with_modifiers` loc (some seats have no modifiers, only that text). Modifier values are **per leader level**; `@vars` resolve through the global scripted variables.
+`common/governments/councilors/` → `council_position` (+ `council_position_modifier`): **every** seat (179 on 4.5.2): `civic_key` for the 151 a civic opens, NULL for the base seats (defense, research, state and their nomadic forms), the ruler's per authority (`possible = { always = no }`: the authority grants it) and the gestalt nodes; `possible_json` is the normalised `possible`. The planner reads the civic ones (`WHERE civic_key IS NOT NULL`), the empire dashboard all. Name = loc[key], description = `<key>_desc` with `$TITLE$` → name, `leader_classes` from `leader_class`, `effect` = the `custom_tooltip` / `custom_tooltip_with_modifiers` loc (some seats have no modifiers, only that text). Modifier values are **per leader level** (the game's own `000_councilor_documentation.txt`: "multiplied by assigned Leader's level"); `@vars` resolve through the global scripted variables.
 
 ## Job Swaps (`extract_job_swaps`, jobs.py)
 
@@ -447,6 +459,39 @@ Data notes:
 - **No tier column**: a perk's `num_ascension_perks` bound differs per empire type (Mind Over Matter: 2, but 3 for synthetic empires; Biomorphosis: 0 for Clone Army), so the planner computes it per profile (`perkTier`).
 - Ascension trees opened by a **country flag** (Machine Age / BioGenesis trees) get it from situation/event outcomes; not traced further.
 - **Edicts / council agendas** (`extract_edicts_agendas`): `edict` (name/desc from `edict_<key>`, cost/upkeep per resource with per-file `@vars`, length −1 = until cancelled) and `council_agenda` (name/desc `council_agenda_<key>_name/_desc`, cost, launch-effect tooltip, `finish_modifier` resolved via `common/static_modifiers` into `tradition_modifier` as `<key>#finish`, duration default `COUNCIL_AGENDA_FINISH_MODIFIER_DURATION`). `unlocked_by_json` = positive `has_(active_)tradition` / `has_ascension_perk` leaves of potential+allow with scripted triggers expanded (`unlock_keys`; `has_psionic_ascension` → `ap_mind_over_matter`). Game triggers name a **swapped** tradition by its swap `name` (`tr_domination_drone_network`), so the planner matches swap loc keys too. `tradition.unlocks_agenda` is now the agenda **key** (Logistics names Open Markets, which actually gates on Commerce — the planner shows it and lets the profile filter it).
+
+## Policies & Factions (`extract_politics`, politics.py)
+
+`common/policies` → `policy` + `policy_option` (an option's modifiers in `tradition_modifier`,
+owner = option key). One policy can sit in two categories (`war_philosophy`: diplomacy,
+military), stored comma-joined. Option names repeat across policies in a few cases, and the
+first one wins. `common/pop_faction_types` → `pop_faction_type` + `faction_demand`, including
+the demands added by `pop_faction_types/demand_*` inline scripts (their `$PARAM$`s filled in,
+`expand_inline`): GalCom pleased/outraged and the shared Cybernetic Creed ones. A demand's
+`potential`/`trigger` read the owner (`owner = { … }` beside `exists = owner`), so
+`owner_scope` unwraps that block before normalising. Otherwise the scope would stay opaque.
+4.5.2: 60 policies, 222 options, 21 faction types, 303 demands.
+
+## Situations, special projects, anomaly outcomes (situations.py)
+
+`common/situations` → `situation` + `situation_approach`. `common/special_projects` (anonymous
+`special_project = {…}` blocks, `key`) → `special_project`. Anomaly categories
+(`extract_anomaly_levels`) carry name, description and `outcomes_json`, as projects do: the event
+ids their `on_success` fires (`event_ids`: weighted `1 = anomaly.35`, `anomaly_event = …`,
+`ship_event = { id = … }`), with each event's title from `<id>.name`. Event loc keys contain dots,
+so `_LOC_ENTRY` accepts `.` in keys (before 2026-10-18 it did not, and every dotted key was
+missing). The dashboard shows outcomes only behind a spoiler setting.
+
+## Empire focus and leader traits (focus.py, leaders.py)
+
+`common/country_focus` → `focus_category`, `focus_card` and `focus_reward`. A card inherits the
+fields of its `base = <card>` (`with_base`). Its requirement is the loc of its condition's
+`success_text`, whose dotted `$…req$` references `inline_refs` resolves. A reward lists every
+`add_research_option` of its effect, in every if/else branch (`research_options`). The leader
+files of `common/traits`, which the species traits skip (`is_species_trait_file`), go to
+`leader_trait` + `leader_trait_modifier`: the untriggered modifier blocks by scope (country, self,
+councilor, fleet, army, planet, sector). The save's keys are these (`trait_ruler_eye_for_talent_2`).
+4.5.2: 147 cards, 30 rewards, 672 leader traits.
 
 ## Federations (`extract_federations`, federations.py)
 

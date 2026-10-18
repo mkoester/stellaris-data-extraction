@@ -23,8 +23,13 @@ CREATE TABLE meta (
 
 CREATE TABLE dlc (
     name             TEXT PRIMARY KEY,   -- matches host_has_dlc values, e.g. "Toxoids Species Pack"
+    dlc_key          TEXT,               -- dlc_info.txt block key, e.g. "dlc029" (follows release order)
     steam_id         TEXT,
-    affects_gameplay INTEGER DEFAULT 0   -- 0/1
+    affects_gameplay INTEGER DEFAULT 0,  -- 0/1
+    category         TEXT,               -- dlc/*/*.dlc: expansion | story_pack | species_pack | content_pack
+    release_date     TEXT,               -- ISO date from the Steam store (dlc_dates.py), NULL if unlisted
+    host_checks      INTEGER NOT NULL DEFAULT 0  -- `host_has_dlc = "<name>"` in common/ + events/: 0 for a
+                                         -- gameplay DLC means merged into the base game (Utopia in 4.5.2)
 );
 
 CREATE TABLE species_class (
@@ -276,11 +281,13 @@ CREATE TABLE civic (
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
 );
 
--- The extra council seat a civic opens (common/governments/councilors, `civic = …`).
--- Its modifiers scale with the assigned leader's level (value = per level).
+-- Council seats (common/governments/councilors): the base ones, the ruler's per authority, and
+-- the extra seat a civic opens (`civic = …`). Modifiers scale with the leader's level (value =
+-- per level).
 CREATE TABLE council_position (
     key            TEXT PRIMARY KEY,  -- e.g. "councilor_agrarian_idyll"
-    civic_key      TEXT NOT NULL,
+    civic_key      TEXT,              -- the civic opening it; NULL for other seats
+    possible_json  TEXT,              -- normalised `possible`; ruler seats: always = no (the authority grants them)
     name           TEXT,              -- e.g. "Elder Farmer"
     description    TEXT,
     leader_classes TEXT,              -- comma list: commander,official,scientist
@@ -981,7 +988,84 @@ CREATE TABLE static_modifier_modifier (
 DROP TABLE IF EXISTS anomaly_category;
 CREATE TABLE anomaly_category (
     key   TEXT PRIMARY KEY,                -- e.g. "GEN_PLAYGROUND_CAT"
-    level INTEGER                          -- difficulty; vs. the scientist's level picks the research days
+    level INTEGER,                         -- difficulty; vs. the scientist's level picks the research days
+    name  TEXT,
+    description   TEXT,
+    outcomes_json TEXT                     -- [{"event":"anomaly.35","name":"Crashed Scout Craft"}]: on_success events
+);
+-- Leader traits (common/traits, the leader files) and their untriggered modifiers by scope
+-- (country, self, councilor, fleet, army, planet, sector), for the empire dashboard.
+DROP TABLE IF EXISTS leader_trait_modifier;
+DROP TABLE IF EXISTS leader_trait;
+CREATE TABLE leader_trait (
+    key            TEXT PRIMARY KEY,       -- e.g. "trait_ruler_eye_for_talent_2", "leader_trait_resilient"
+    name           TEXT,
+    description    TEXT,
+    leader_classes TEXT,                   -- comma list
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE leader_trait_modifier (
+    trait_key      TEXT NOT NULL,
+    scope          TEXT NOT NULL,          -- where it applies: country, self, councilor, fleet, army, planet, sector
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (trait_key, scope, modifier_key)
+);
+-- The empire focus (common/country_focus): categories, the cards (tasks) and the rewards per
+-- category, each a research option offered at `cost` focus progress.
+DROP TABLE IF EXISTS focus_category;
+DROP TABLE IF EXISTS focus_card;
+DROP TABLE IF EXISTS focus_reward;
+CREATE TABLE focus_category (
+    key         TEXT PRIMARY KEY,          -- core_focus / exploration / conquest / development
+    name        TEXT,
+    description TEXT,
+    selectable  INTEGER NOT NULL DEFAULT 1,
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE focus_card (
+    key         TEXT PRIMARY KEY,          -- e.g. "development_focus_100"
+    category    TEXT,
+    tier        INTEGER,
+    name        TEXT,
+    hint        TEXT,                      -- how to do it
+    requirement TEXT,                      -- the condition's success texts
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE focus_reward (
+    key         TEXT PRIMARY KEY,          -- e.g. "development_rewards_2"
+    category    TEXT,
+    cost        REAL,                      -- focus progress needed
+    techs_json  TEXT,                      -- ["tech_adaptive_bureaucracy"]: research options, every branch
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+-- Situations (common/situations) and their approaches, special projects (common/special_projects).
+DROP TABLE IF EXISTS situation_approach;
+DROP TABLE IF EXISTS situation;
+DROP TABLE IF EXISTS special_project;
+CREATE TABLE situation (
+    key         TEXT PRIMARY KEY,          -- e.g. "situation_alloys_deficit"
+    name        TEXT,
+    description TEXT,
+    category    TEXT                       -- positive / negative / neutral
+);
+CREATE TABLE situation_approach (
+    situation_key TEXT NOT NULL,
+    key           TEXT NOT NULL,           -- e.g. "deficit_approach_do_nothing"
+    name          TEXT,
+    tooltip       TEXT,
+    is_default    INTEGER NOT NULL DEFAULT 0,
+    sort_order    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (situation_key, key)
+);
+CREATE TABLE special_project (
+    key           TEXT PRIMARY KEY,        -- e.g. "GAS_GIANT_BODIES_PROJECT"
+    name          TEXT,
+    description   TEXT,
+    days          INTEGER,                 -- days_to_research
+    department    TEXT,                    -- physics_technology / society_technology / engineering_technology
+    outcomes_json TEXT                     -- on_success events, as anomaly_category's
 );
 -- Display names of districts and zones (district specialisations, 4.x), for the empire dashboard.
 DROP TABLE IF EXISTS district;
@@ -1129,6 +1213,10 @@ CREATE TABLE tradition_swap (
 -- ask for (has_(active_)tradition / has_ascension_perk, scripted triggers expanded).
 DROP TABLE IF EXISTS edict;
 DROP TABLE IF EXISTS council_agenda;
+DROP TABLE IF EXISTS policy_option;
+DROP TABLE IF EXISTS policy;
+DROP TABLE IF EXISTS faction_demand;
+DROP TABLE IF EXISTS pop_faction_type;
 CREATE TABLE edict (
     key            TEXT PRIMARY KEY,       -- e.g. "map_the_stars"
     name           TEXT,
@@ -1144,6 +1232,47 @@ CREATE TABLE edict (
 );
 -- Modifiers: owner_key = key (while enacted) and "<key>#finish" (finish_modifier, a static
 -- modifier lasting finish_days after launch) in tradition_modifier.
+-- Policies (common/policies) and their options; an option's modifiers are in tradition_modifier
+-- under owner_key = the option key.
+CREATE TABLE policy (
+    key            TEXT PRIMARY KEY,       -- e.g. "diplomatic_stance"
+    name           TEXT,
+    description    TEXT,
+    category       TEXT,                   -- diplomacy / economy / military / …; comma-separated if several (war_philosophy)
+    potential_json TEXT,
+    allow_json     TEXT,                   -- when it may be changed (e.g. not at war)
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE policy_option (
+    key            TEXT PRIMARY KEY,       -- option `name`, e.g. "diplo_stance_belligerent"
+    policy_key     TEXT NOT NULL,
+    name           TEXT,
+    description    TEXT,
+    potential_json TEXT,
+    valid_json     TEXT,
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+-- Pop faction types (common/pop_faction_types) and what they demand, including the demands
+-- their pop_faction_types/demand_* inline scripts add.
+CREATE TABLE pop_faction_type (
+    key            TEXT PRIMARY KEY,       -- e.g. "imperialist"
+    name           TEXT,
+    description    TEXT,
+    guiding_ethic  TEXT,
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE faction_demand (
+    faction_key        TEXT NOT NULL,
+    sort_order         INTEGER NOT NULL,
+    title              TEXT,               -- shown while fulfilled
+    unfulfilled_title  TEXT,
+    description        TEXT,
+    fulfilled_effect   REAL,               -- approval while fulfilled (0.001 = none)
+    unfulfilled_effect REAL,
+    potential_json     TEXT,               -- when the demand applies (the owner's scope)
+    trigger_json       TEXT,               -- fulfilled when true (the owner's scope)
+    PRIMARY KEY (faction_key, sort_order)
+);
 CREATE TABLE council_agenda (
     key            TEXT PRIMARY KEY,       -- e.g. "agenda_superior_colonies(_nomad)"
     name           TEXT,

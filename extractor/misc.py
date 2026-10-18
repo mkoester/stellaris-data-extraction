@@ -1,5 +1,7 @@
 """Extraction: DLC metadata, named colors, planet classes."""
 
+import re
+from .dlc_dates import DLC_RELEASE_DATES
 from .localisation import _clean_loc
 from .values import _to_list
 from .writer import Writer
@@ -9,24 +11,51 @@ from .writer import Writer
 # Extraction: DLC metadata
 # ---------------------------------------------------------------------------
 
-def extract_dlc(data: dict, w: Writer, verbose: bool):
-    dlcs = data.get('dlcs', {})
+def host_checks(texts, names) -> dict[str, int]:
+    """How often each DLC name is checked with `host_has_dlc` in the script texts."""
+    pattern = re.compile(r'host_has_dlc\s*=\s*"([^"]+)"')
+    counts = dict.fromkeys(names, 0)
+    for text in texts:
+        for m in pattern.finditer(text):
+            if m.group(1) in counts:
+                counts[m.group(1)] += 1
+    return counts
+
+
+def _dlc_rows(info: dict, descriptors: list[dict], checks: dict[str, int] | None = None) -> list[tuple]:
+    """Rows for `dlc`: every entry of dlc_info.txt, its category from the matching
+    dlc/*/*.dlc descriptor (by name; only installed DLCs have one), its Steam release date and how
+    often the game's scripts check for it."""
+    dlcs = info.get('dlcs', {})
     if not isinstance(dlcs, dict):
-        return
-    for _key, dlc_data in dlcs.items():
-        if not isinstance(dlc_data, dict):
+        return []
+    category = {d.get('name'): d.get('category') for d in descriptors if isinstance(d, dict)}
+    rows = []
+    for key, dlc_data in dlcs.items():
+        if not isinstance(dlc_data, dict) or not dlc_data.get('name'):
             continue
-        name             = dlc_data.get('name')
-        steam_id         = dlc_data.get('steam_id') or None
-        affects_gameplay = 1 if dlc_data.get('affects_gameplay', 'no') == 'yes' else 0
-        if not name:
-            continue
+        name     = dlc_data['name']
+        steam_id = dlc_data.get('steam_id') or None
+        rows.append((
+            name, key, steam_id,
+            1 if dlc_data.get('affects_gameplay', 'no') == 'yes' else 0,
+            category.get(name),
+            DLC_RELEASE_DATES.get(steam_id),
+            (checks or {}).get(name, 0),
+        ))
+    return rows
+
+
+def extract_dlc(info: dict, descriptors: list[dict], checks: dict[str, int], w: Writer,
+                verbose: bool):
+    for row in _dlc_rows(info, descriptors, checks):
         w.execute("""
-            INSERT OR IGNORE INTO dlc (name, steam_id, affects_gameplay)
-            VALUES (?, ?, ?)
-        """, (name, steam_id, affects_gameplay))
+            INSERT OR IGNORE INTO dlc (name, dlc_key, steam_id, affects_gameplay, category, release_date,
+                                       host_checks)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, row)
         if verbose:
-            print(f"  DLC: {name} | steam_id: {steam_id} | gameplay: {affects_gameplay}")
+            print(f"  DLC: {row[0]} | {row[1]} | steam_id: {row[2]} | category: {row[4]} | released: {row[5]}")
     w.commit()
 
 

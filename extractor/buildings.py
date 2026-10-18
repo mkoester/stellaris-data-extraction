@@ -8,6 +8,7 @@ from .dds import dds_pixel, hex_color
 from .government import _gate_owners
 from .localisation import _clean_loc
 from .modifiers import _write_modifier_label
+from .situations import outcomes_json
 from .triggers import _scripted_trigger_index
 from .values import _as_blocks, _flatten_text, _resolve_modifier_float, _resolve_var
 from .writer import Writer
@@ -272,15 +273,24 @@ def extract_district_zone_names(install_dir: Path, districts: dict, zones: dict,
     w.commit()
 
 
-def extract_anomaly_levels(categories: dict, w: Writer, verbose: bool) -> None:
-    """Anomaly categories (common/anomalies) with their `level`: with the scientist's level it picks
-    the research time from SCIENCE_SHIP_ANOMALY_RESEARCH_DAYS — for the empire dashboard."""
+def extract_anomaly_levels(categories: dict, loc: dict[str, str], w: Writer, verbose: bool) -> None:
+    """Anomaly categories (common/anomalies) with their `level` (with the scientist's level it picks
+    the research time from SCIENCE_SHIP_ANOMALY_RESEARCH_DAYS), name and outcome events — for the
+    empire dashboard."""
     for key in sorted(k for k, v in categories.items() if isinstance(v, dict) and not k.startswith('@')):
+        cat = categories[key]
         try:
-            level = int(str(categories[key].get('level')).strip())
+            level = int(str(cat.get('level')).strip())
         except (ValueError, TypeError):
             level = None
-        w.execute("INSERT OR REPLACE INTO anomaly_category (key, level) VALUES (?, ?)", (key, level))
+        desc = cat.get('desc').strip('"') if isinstance(cat.get('desc'), str) else f'{key}_desc'
+        raw_name, raw_desc = loc.get(key), loc.get(desc)
+        w.execute(
+            """INSERT OR REPLACE INTO anomaly_category (key, level, name, description, outcomes_json)
+               VALUES (?, ?, ?, ?, ?)""",
+            (key, level, _clean_loc(raw_name, loc) if raw_name else None,
+             _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None,
+             outcomes_json(cat.get('on_success'), loc)))
         if verbose:
             print(f"  anomaly_category: {key} level={level}")
     w.commit()
