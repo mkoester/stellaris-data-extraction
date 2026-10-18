@@ -880,7 +880,9 @@ def extract_deposits(data: dict, source_file: str, loc: dict[str, str],
             if not isinstance(pm, dict):
                 continue
             for mod_key, mod_val in pm.items():
-                value = _resolve_modifier_float(mod_val)
+                # values may be scripted variables (`@DISTRICTS_FROM_SR_DEPOSITS` = 3: swamps,
+                # bogs and other strategic-resource features); a repeated key keeps the last
+                value = _resolve_var(mod_val[-1] if isinstance(mod_val, list) else mod_val, variables)
                 if value is None:
                     continue
                 w.execute(

@@ -426,6 +426,7 @@ CREATE TABLE planet_class (
     climate     TEXT,               -- 'wet' | 'dry' | 'cold' | NULL
     colonizable INTEGER NOT NULL DEFAULT 0,
     is_standard INTEGER NOT NULL DEFAULT 0,  -- initial = yes (default startable climate)
+    ideal       INTEGER NOT NULL DEFAULT 0,  -- ideal = yes: full habitability (Gaia); empire dashboard
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 
@@ -14526,18 +14527,46 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_dust_caverns', 'Dust Caverns', 'deposit_cat_rare_resource', 0, NULL, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_dust_caverns', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_dust_desert', 'Dust Desert', 'deposit_cat_rare_resource', 0, NULL, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_dust_desert', 'district_generator_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_bubbling_swamp', 'Bubbling Swamp', 'deposit_cat_rare_resource', 0, NULL, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_bubbling_swamp', 'district_farming_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_fuming_bog', 'Fuming Bog', 'deposit_cat_rare_resource', 0, NULL, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_fuming_bog', 'district_farming_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_crystalline_caverns', 'Crystalline Caverns', 'deposit_cat_rare_resource', 0, NULL, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crystalline_caverns', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_crystal_forest', 'Crystal Forest', 'deposit_cat_rare_resource', 0, NULL, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crystal_forest', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_crystal_reef', 'Crystal Reef', 'deposit_cat_rare_resource', 0, NULL, NULL, '01_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crystal_reef', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_betharian_deposit', 'Betharian Fields', 'deposit_cat_rare', 0, NULL, NULL, '01_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -15124,8 +15153,16 @@ INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_val
                        VALUES ('d_crystal_kraken_body', 'planet_miners_produces_mult', '0.2');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_miners_produces_mult', 'Resources Produced from Miners', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crystal_kraken_body', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_crystal_kraken_body_bombed', 'Shattered Crystalline Remains', 'deposit_cat_rare', 0, NULL, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crystal_kraken_body_bombed', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_big_nature_preserve_blocker', 'Nature Preserve', 'deposit_cat_blockers_natural', 1, NULL, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -15208,6 +15245,10 @@ INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_val
                        VALUES ('d_toxic_god_envenomed_seas_upgraded', 'planet_max_districts_add', '1.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_max_districts_add', 'Max Districts', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_toxic_god_envenomed_seas_upgraded', 'planet_farmers_exotic_gases_produces_add', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_exotic_gases_produces_add', 'Exotic Gases Produced per 100 Farmers', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_knights_calibrator', 'Order''s X-Calibrator', 'deposit_cat_rare', 0, NULL, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -15302,6 +15343,10 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_myrmeku_power_farms', 'Myrmeku Power Farms', 'deposit_cat_rare', 0, NULL, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_crystalline_glacier', 'Crystallized Ice Field', 'deposit_cat_rare', 0, NULL, NULL, '02_event_planetary_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crystalline_glacier', 'planet_miners_rare_crystals_produces_add', '0.1');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_rare_crystals_produces_add', 'Rare Crystals Produced per 100 Miners', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_mineral_seabed', 'Rich Seabed', 'deposit_cat_rare', 0, NULL, NULL, '02_event_planetary_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -16218,6 +16263,10 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_splinter_hive_link', 'Splinter Hive Symbiotic Link', 'deposit_cat_rare', 0, NULL, NULL, '08_overlord_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_splinter_hive_link', 'fake_pop_growth_mod', '2.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_spawning_complex_blocker', 'Blocker Overlord Spawning Complex', 'deposit_cat_blockers', 1, NULL, NULL, '08_overlord_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -16578,6 +16627,10 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_particle_storm_2_unity', 'The Big One', 'deposit_cat_rare', 0, NULL, NULL, '12_cosmic_storms_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_particle_storm_3_motes', 'Unstable Planes', 'deposit_cat_rare', 0, NULL, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_particle_storm_3_motes', 'planet_technician_volatile_motes_produces_add', '0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_volatile_motes_produces_add', 'Volatile Motes Produced per 100 Technicians', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_solar_storm_1_energy', 'Degraded Ozone Layer', 'deposit_cat_rare', 0, NULL, NULL, '12_cosmic_storms_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -16602,6 +16655,10 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_solar_storm_3_output', 'Glowing Desert', 'deposit_cat_rare', 0, NULL, NULL, '12_cosmic_storms_deposits.txt');
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_celestial_storm_1_mines', 'Crystalline Quills', 'deposit_cat_rare', 0, NULL, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_celestial_storm_1_mines', 'planet_miners_rare_crystals_produces_add', '0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_rare_crystals_produces_add', 'Rare Crystals Produced per 100 Miners', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_celestial_storm_2_society', 'Historic Sedimentation', 'deposit_cat_rare', 0, NULL, NULL, '12_cosmic_storms_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -16610,6 +16667,10 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_celestial_storm_3_crystal', 'Stardust Dunes', 'deposit_cat_rare', 0, NULL, NULL, '12_cosmic_storms_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_celestial_storm_3_crystal', 'planet_miners_rare_crystals_produces_add', '0.05');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_rare_crystals_produces_add', 'Rare Crystals Produced per 100 Miners', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_gravity_storm_1_districts', 'Compacted Plains', 'deposit_cat_rare', 0, NULL, NULL, '12_cosmic_storms_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
@@ -17154,8 +17215,16 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_volcanic_fumarole', 'Fumaroles', 'deposit_cat_rare', 0, NULL, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_fumarole', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_volcanic_stifling_atmosphere', 'Stifling Atmosphere', 'deposit_cat_rare_resource', 0, NULL, NULL, '15_infernals_deposits.txt');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_volcanic_stifling_atmosphere', 'district_mining_max_add', '3.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_raging_lavafalls', 'Blocker Raging Lavafalls', 'deposit_cat_blockers_natural', 1, 270, 'tech_volcano', '15_infernals_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -17273,6 +17342,10 @@ INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_miners_minerals_produces_add', 'Minerals Produced per 100 Miners', 1);
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_lava_tubes', 'planet_miners_energy_upkeep_add', '0.5');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_energy_upkeep_add', 'Energy Upkeep per 100 Miners', 0);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_lava_tubes', 'district_mining_max_add', '3.0');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
@@ -17314,6 +17387,10 @@ INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_val
                        VALUES ('d_explosive_atmosphere', 'army_collateral_damage_mult', '0.5');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_collateral_damage_mult', 'Army Collateral Damage', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_explosive_atmosphere', 'district_generator_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_blue_lava', 'Blue Lava', 'deposit_cat_rare', 0, NULL, NULL, '15_strange_worlds_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -17332,12 +17409,20 @@ INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_crystaline_growths', 'Crystalline Growth', 'deposit_cat_rare', 0, NULL, NULL, '15_strange_worlds_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
                        VALUES ('d_crystaline_growths', 'produces', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_crystaline_growths', 'district_mining_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_bogplants', 'Bogplants', 'deposit_cat_rare', 0, NULL, NULL, '15_strange_worlds_deposits.txt');
 INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
                        VALUES ('d_bogplants', 'planet_jobs_society_research_produces_mult', '0.1');
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT OR REPLACE INTO deposit_modifier (deposit_key, modifier_key, modifier_value)
+                       VALUES ('d_bogplants', 'district_farming_max_add', '1.0');
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
 INSERT OR REPLACE INTO deposit (key, name, category, is_blocker, clear_time,
                prerequisites, source_file) VALUES ('d_liquid_dark_matter', 'Liquid Dark Matter', 'deposit_cat_rare', 0, NULL, NULL, '15_strange_worlds_deposits.txt');
 INSERT OR REPLACE INTO deposit_resource (deposit_key, kind, resource, amount)
@@ -31314,98 +31399,98 @@ INSERT OR REPLACE INTO origin
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
                VALUES ('origin_nomadic_subject', 'Voidroamers', 'No effects', NULL, 0, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origin_nomadic_settled.dds', 76);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_desert', 'Desert World', 'dry', 1, 1, 0);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_desert', 'Desert World', 'dry', 1, 1, 0, 0);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_arid', 'Arid World', 'dry', 1, 1, 1);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_arid', 'Arid World', 'dry', 1, 1, 0, 1);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_savannah', 'Savanna World', 'dry', 1, 1, 2);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_savannah', 'Savanna World', 'dry', 1, 1, 0, 2);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_tropical', 'Tropical World', 'wet', 1, 1, 3);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_tropical', 'Tropical World', 'wet', 1, 1, 0, 3);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_continental', 'Continental World', 'wet', 1, 1, 4);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_continental', 'Continental World', 'wet', 1, 1, 0, 4);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_ocean', 'Ocean World', 'wet', 1, 1, 5);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_ocean', 'Ocean World', 'wet', 1, 1, 0, 5);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_tundra', 'Tundra World', 'cold', 1, 1, 6);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_tundra', 'Tundra World', 'cold', 1, 1, 0, 6);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_arctic', 'Arctic World', 'cold', 1, 1, 7);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_arctic', 'Arctic World', 'cold', 1, 1, 0, 7);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_alpine', 'Alpine World', 'cold', 1, 1, 8);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_alpine', 'Alpine World', 'cold', 1, 1, 0, 8);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_volcanic', 'Volcanic World', 'dry', 1, 1, 9);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_volcanic', 'Volcanic World', 'dry', 1, 1, 0, 9);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_gas_giant', 'Gas Giant', NULL, 0, 0, 10);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_gas_giant', 'Gas Giant', NULL, 0, 0, 0, 10);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_asteroid', 'Asteroid', NULL, 0, 0, 11);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_asteroid', 'Asteroid', NULL, 0, 0, 0, 11);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_molten', 'Molten World', NULL, 0, 0, 12);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_molten', 'Molten World', NULL, 0, 0, 0, 12);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_barren', 'Barren World', NULL, 0, 0, 13);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_barren', 'Barren World', NULL, 0, 0, 0, 13);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_barren_cold', 'Barren World', NULL, 0, 0, 14);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_barren_cold', 'Barren World', NULL, 0, 0, 0, 14);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_toxic', 'Toxic World', NULL, 0, 0, 15);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_toxic', 'Toxic World', NULL, 0, 0, 0, 15);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_frozen', 'Frozen World', NULL, 0, 0, 16);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_frozen', 'Frozen World', NULL, 0, 0, 0, 16);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_nuked', 'Tomb World', NULL, 1, 0, 17);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_nuked', 'Tomb World', NULL, 1, 0, 0, 17);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_hive', 'Hive World', NULL, 1, 0, 18);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_hive', 'Hive World', NULL, 1, 0, 1, 18);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_machine', 'Machine World', NULL, 1, 0, 19);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_machine', 'Machine World', NULL, 1, 0, 0, 19);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_gaia', 'Gaia World', NULL, 1, 0, 20);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_gaia', 'Gaia World', NULL, 1, 0, 1, 20);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_nanotech', 'Nanite World', NULL, 1, 0, 21);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_nanotech', 'Nanite World', NULL, 1, 0, 0, 21);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_ringworld_habitable', 'Ring Segment', 'artificial', 1, 0, 22);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_ringworld_habitable', 'Ring Segment', 'artificial', 1, 0, 1, 22);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_shattered_ring_habitable', 'Shattered Ring Segment', 'artificial', 1, 0, 23);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_shattered_ring_habitable', 'Shattered Ring Segment', 'artificial', 1, 0, 0, 23);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_habitat', 'Orbital Habitat', 'artificial', 1, 0, 24);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_habitat', 'Orbital Habitat', 'artificial', 1, 0, 0, 24);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_cosmogenesis_world', 'Synaptic Lathe', 'artificial', 1, 0, 25);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_cosmogenesis_world', 'Synaptic Lathe', 'artificial', 1, 0, 0, 25);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_crystal_habitat', NULL, NULL, 1, 0, 26);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_crystal_habitat', NULL, NULL, 1, 0, 1, 26);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_warden_guardian', NULL, NULL, 1, 0, 27);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_warden_guardian', NULL, NULL, 1, 0, 1, 27);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_city', 'Ecumenopolis', 'dry', 1, 0, 28);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_city', 'Ecumenopolis', 'dry', 1, 0, 1, 28);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_relic', 'Relic World', 'dry', 1, 0, 29);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_relic', 'Relic World', 'dry', 1, 0, 0, 29);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES ('pc_ark', 'Arkship', 'artificial', 1, 1, 30);
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES ('pc_ark', 'Arkship', 'artificial', 1, 1, 0, 30);
 INSERT OR REPLACE INTO prescripted_empire
                    (key, name, adjective, ship_prefix, species_class, species_portrait,
                     species_name, species_plural, species_adjective,
@@ -76825,6 +76910,8 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_BASE', '100
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_COUNCIL_AGENDA_COST_PENALTY', '0.001');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_TECH_COST_PENALTY', '0.002');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_TRADITION_COST_PENALTY', '0.002');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('HABITABILITY_OPPOSITE_PLANET', '0.4');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('HABITABILITY_WRONG_PLANET', '0.7');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_CATEGORIES_MAX', '7.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_AMOUNTS', '300.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_TRADITION', '8.0');

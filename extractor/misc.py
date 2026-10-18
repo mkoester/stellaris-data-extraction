@@ -79,13 +79,14 @@ def extract_planet_classes(data: dict, loc: dict[str, str], w: Writer, verbose: 
         climate = pdef.get('climate')
         climate = climate.strip('"') if isinstance(climate, str) else None
         is_standard = 1 if str(pdef.get('initial')).strip() == 'yes' else 0
+        ideal = 1 if str(pdef.get('ideal')).strip() == 'yes' else 0
         raw_name = loc.get(key)
         name = _clean_loc(raw_name, loc) if raw_name else None
         w.execute(
             """INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (key, name, climate, colonizable, is_standard, order),
+                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (key, name, climate, colonizable, is_standard, ideal, order),
         )
         if verbose:
             print(f"  planet_class {key} | {name} | climate={climate} colonizable={colonizable}")

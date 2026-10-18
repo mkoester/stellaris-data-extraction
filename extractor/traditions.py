@@ -16,7 +16,9 @@ DEFINE_KEYS = ('TRADITION_COST_AMOUNTS', 'TRADITION_COST_TRADITION', 'TRADITION_
                'EMPIRE_SIZE_TRADITION_COST_PENALTY', 'EMPIRE_SIZE_BASE',
                'TRADITION_CATEGORIES_MAX', 'ASCENSION_PERKS_SLOTS',
                # the empire dashboard's due dates for research and council agendas
-               'EMPIRE_SIZE_TECH_COST_PENALTY', 'EMPIRE_SIZE_COUNCIL_AGENDA_COST_PENALTY')
+               'EMPIRE_SIZE_TECH_COST_PENALTY', 'EMPIRE_SIZE_COUNCIL_AGENDA_COST_PENALTY',
+               # … and its habitability colours (green / yellow / red, as in game)
+               'HABITABILITY_WRONG_PLANET', 'HABITABILITY_OPPOSITE_PLANET')
 
 
 # ── Pure helpers ───────────────────────────────────────────────────────────────

@@ -431,6 +431,7 @@ CREATE TABLE planet_class (
     climate     TEXT,               -- 'wet' | 'dry' | 'cold' | NULL
     colonizable INTEGER NOT NULL DEFAULT 0,
     is_standard INTEGER NOT NULL DEFAULT 0,  -- initial = yes (default startable climate)
+    ideal       INTEGER NOT NULL DEFAULT 0,  -- ideal = yes: full habitability (Gaia); empire dashboard
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 
