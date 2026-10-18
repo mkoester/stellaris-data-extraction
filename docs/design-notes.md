@@ -486,8 +486,11 @@ missing). The dashboard shows outcomes only behind a spoiler setting.
 
 `common/country_focus` → `focus_category`, `focus_card` and `focus_reward`. A card inherits the
 fields of its `base = <card>` (`with_base`). Its requirement is the loc of its condition's
-`success_text`, whose dotted `$…req$` references `inline_refs` resolves. A reward lists every
-`add_research_option` of its effect, in every if/else branch (`research_options`). The leader
+`success_text`, whose dotted `$…req$` references `inline_refs` resolves. A card also stores its
+`add_focus_progress` amounts (`progress_json`: 10 / 25 / 50 by tier). A reward stores every
+`add_research_option` of its effect (`options_json`) with the condition under which it is the
+one offered: an `if`'s limit, or for `else` the earlier limits failing (`research_options`). The
+empire decides which one it gets; it is not a choice. The leader
 files of `common/traits`, which the species traits skip (`is_species_trait_file`), go to
 `leader_trait` + `leader_trait_modifier`: the untriggered modifier blocks by scope (country, self,
 councilor, fleet, army, planet, sector). The save's keys are these (`trait_ruler_eye_for_talent_2`).

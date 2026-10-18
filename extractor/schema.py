@@ -1031,13 +1031,15 @@ CREATE TABLE focus_card (
     name        TEXT,
     hint        TEXT,                      -- how to do it
     requirement TEXT,                      -- the condition's success texts
+    progress_json TEXT,                    -- [{"category":"development","amount":10}]: what finishing it gives
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE focus_reward (
     key         TEXT PRIMARY KEY,          -- e.g. "development_rewards_2"
     category    TEXT,
     cost        REAL,                      -- focus progress needed
-    techs_json  TEXT,                      -- ["tech_adaptive_bureaucracy"]: research options, every branch
+    options_json TEXT,                     -- [{"tech":"tech_x","when":<trigger>|null}]: the research option it adds
+                                           -- (permanent until researched), by if/else branch
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 -- Situations (common/situations) and their approaches, special projects (common/special_projects).

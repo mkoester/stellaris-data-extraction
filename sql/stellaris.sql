@@ -1026,13 +1026,15 @@ CREATE TABLE focus_card (
     name        TEXT,
     hint        TEXT,                      -- how to do it
     requirement TEXT,                      -- the condition's success texts
+    progress_json TEXT,                    -- [{"category":"development","amount":10}]: what finishing it gives
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE focus_reward (
     key         TEXT PRIMARY KEY,          -- e.g. "development_rewards_2"
     category    TEXT,
     cost        REAL,                      -- focus progress needed
-    techs_json  TEXT,                      -- ["tech_adaptive_bureaucracy"]: research options, every branch
+    options_json TEXT,                     -- [{"tech":"tech_x","when":<trigger>|null}]: the research option it adds
+                                           -- (permanent until researched), by if/else branch
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 -- Situations (common/situations) and their approaches, special projects (common/special_projects).
@@ -96001,399 +96003,546 @@ INSERT OR REPLACE INTO focus_category (key, name, description, selectable, sort_
                VALUES ('conquest', 'Conquest', 'Conquest', 1, 2);
 INSERT OR REPLACE INTO focus_category (key, name, description, selectable, sort_order)
                VALUES ('development', 'Development', 'Development', 1, 3);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('conquest_focus_100', 'conquest', '1.0', 'Hire a Commander', 'In the Interface Leaders View, hire a recruitable Leader of the Commander class.
-There may be other ways to solve this.', 'Has hired a Commander', 0);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_105', 'conquest', '1.0', 'Upgrade a Starbase', 'In the Command tab of the Interface Starbase View, upgrade the Starbase to the next tier.', 'Has upgraded a Starbase', 1);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_105_1', 'conquest', '1.0', 'Upgrade a Waystation', 'In the Waystation tab of the Interface Waystation View, upgrade the Waystation to the next tier.', 'Has upgraded a Waystation', 2);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_110', 'conquest', '1.0', 'Build 5 Corvettes', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Shipyard, build five Corvette ships.', 'Has built 5 Corvettes', 3);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_111', 'conquest', '1.0', 'Clone 5 Space Amoebas', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Beastport, clone five Space Amoebas.', 'Has cloned 5 Space Amoebas', 4);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_112', 'conquest', '1.0', 'Produce 5 Maulers', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Shipyard, produce five biological Mauler ships.', 'Has produced 5 Maulers', 5);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_115', 'conquest', '1.0', 'Build 3 Defense Platforms', 'In the Defenses tab of the Interface Starbase View, build three Defense Platforms.', 'Has built 3 Defensive Platforms', 6);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_120', 'conquest', '1.0', 'Declare a Rival', 'In the Contacts tab of the Interface Contacts View, declare another Empire a Rival.', 'Has declared a Rival', 7);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_125', 'conquest', '1.0', 'Win a Fleet Battle', 'In the Fleet Manager tab of the Fleet Management View, design a strong enough Fleet. Select the fleet in the Interface Outliner, Interface System Map, or Interface Galaxy Map, and send it against an opponent.', 'Has won a Fleet Battle', 8);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_200', 'conquest', '2.0', 'Research New Weapons', 'In the Interface Technology View, research a weapon technology, such as Lasers in the Physics Research or Missiles in Engineering Research.', 'Has researched a new Weapon', 9);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has hired a Commander', '[{"category": "conquest", "amount": 10.0}]', 0);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_105', 'conquest', '1.0', 'Upgrade a Starbase', 'In the Command tab of the Interface Starbase View, upgrade the Starbase to the next tier.', 'Has upgraded a Starbase', '[{"category": "conquest", "amount": 10.0}]', 1);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_105_1', 'conquest', '1.0', 'Upgrade a Waystation', 'In the Waystation tab of the Interface Waystation View, upgrade the Waystation to the next tier.', 'Has upgraded a Waystation', '[{"category": "conquest", "amount": 10.0}]', 2);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_110', 'conquest', '1.0', 'Build 5 Corvettes', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Shipyard, build five Corvette ships.', 'Has built 5 Corvettes', '[{"category": "conquest", "amount": 10.0}]', 3);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_111', 'conquest', '1.0', 'Clone 5 Space Amoebas', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Beastport, clone five Space Amoebas.', 'Has cloned 5 Space Amoebas', '[{"category": "conquest", "amount": 10.0}]', 4);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_112', 'conquest', '1.0', 'Produce 5 Maulers', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Shipyard, produce five biological Mauler ships.', 'Has produced 5 Maulers', '[{"category": "conquest", "amount": 10.0}]', 5);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_115', 'conquest', '1.0', 'Build 3 Defense Platforms', 'In the Defenses tab of the Interface Starbase View, build three Defense Platforms.', 'Has built 3 Defensive Platforms', '[{"category": "conquest", "amount": 10.0}]', 6);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_120', 'conquest', '1.0', 'Declare a Rival', 'In the Contacts tab of the Interface Contacts View, declare another Empire a Rival.', 'Has declared a Rival', '[{"category": "conquest", "amount": 10.0}]', 7);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_125', 'conquest', '1.0', 'Win a Fleet Battle', 'In the Fleet Manager tab of the Fleet Management View, design a strong enough Fleet. Select the fleet in the Interface Outliner, Interface System Map, or Interface Galaxy Map, and send it against an opponent.', 'Has won a Fleet Battle', '[{"category": "conquest", "amount": 10.0}]', 8);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_200', 'conquest', '2.0', 'Research New Weapons', 'In the Interface Technology View, research a weapon technology, such as Lasers in the Physics Research or Missiles in Engineering Research.', 'Has researched a new Weapon', '[{"category": "conquest", "amount": 25.0}]', 9);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('conquest_focus_205', 'conquest', '2.0', 'Level Up a Commander', 'Deploy a Fleet, led by a Commander, to engage in battle. Alternatively, assign them as a Governor or to the Council.
-Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has leveled up a Commander', 10);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_210', 'conquest', '2.0', 'Build 20 Destroyers', 'In the Fleet Manager tab of the Fleet Management View, design and reinforce one or more Fleets with 20 combined Destroyers, or use a Shipyard to build the ships individually.', 'Has built 20 Destroyers', 11);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_211', 'conquest', '2.0', 'Have 10 Space Amoeba Mothers', 'In the Fleet Manager tab of the Fleet Management View, design and reinforce one or more Fleets with 10 Space Amoeba Mothers. Alternatively, use a Beastport to clone them individually or let existing Space Amoebas grow.', 'Has 10 Space Amoeba Mothers', 12);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_212', 'conquest', '2.0', 'Produce 20 Weavers', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Shipyard, produce twenty biological Weaver ships.', '$conquest.212$', 13);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_215', 'conquest', '2.0', 'Declare War', 'In the Contacts tab of the Interface Contacts View, declare a War with another Empire.', 'Has declared War', 14);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_220', 'conquest', '2.0', 'Assign a Commander as Governor', 'In either the Infrastructure tab of the Interface Colony View or in the Interface Colonies and Sectors View, assign a Commander as a Governor of a Sector or Planet.', 'Has a Commander as Governor', 15);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has leveled up a Commander', '[{"category": "conquest", "amount": 25.0}]', 10);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_210', 'conquest', '2.0', 'Build 20 Destroyers', 'In the Fleet Manager tab of the Fleet Management View, design and reinforce one or more Fleets with 20 combined Destroyers, or use a Shipyard to build the ships individually.', 'Has built 20 Destroyers', '[{"category": "conquest", "amount": 25.0}]', 11);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_211', 'conquest', '2.0', 'Have 10 Space Amoeba Mothers', 'In the Fleet Manager tab of the Fleet Management View, design and reinforce one or more Fleets with 10 Space Amoeba Mothers. Alternatively, use a Beastport to clone them individually or let existing Space Amoebas grow.', 'Has 10 Space Amoeba Mothers', '[{"category": "conquest", "amount": 25.0}]', 12);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_212', 'conquest', '2.0', 'Produce 20 Weavers', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Shipyard, produce twenty biological Weaver ships.', '$conquest.212$', '[{"category": "conquest", "amount": 25.0}]', 13);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_215', 'conquest', '2.0', 'Declare War', 'In the Contacts tab of the Interface Contacts View, declare a War with another Empire.', 'Has declared War', '[{"category": "conquest", "amount": 25.0}]', 14);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_220', 'conquest', '2.0', 'Assign a Commander as Governor', 'In either the Infrastructure tab of the Interface Colony View or in the Interface Colonies and Sectors View, assign a Commander as a Governor of a Sector or Planet.', 'Has a Commander as Governor', '[{"category": "conquest", "amount": 25.0}]', 15);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('conquest_focus_300', 'conquest', '3.0', 'Have a Veteran Commander', 'Deploy a Fleet, led by a Commander, to engage in battle. Alternatively, assign them as a Governor or to the Council.
-Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has a Commander at Level 4 or higher', 16);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_305', 'conquest', '3.0', 'Win a War', 'In the Contacts tab of the Interface Contacts View, declare a War with another Empire. Build and command a strong Fleet Size Fleet, engage enemy forces, and occupy key Planet Colonies until victory is secured.', 'Has won a War', 17);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_310', 'conquest', '3.0', 'Hire Mercenaries', 'After establishing contact, use the Contacts tab of the Contacts View to hire a Fleet from the Mercenary Enclave.', 'Has hired Mercenaries', 18);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_315', 'conquest', '3.0', 'Build 10 Armies', 'In either the Army Hub tab of the Starbase View or the Armies tab of the Colony View, recruit 10 Armies.', 'Has built 10 Armies', 19);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_320', 'conquest', '3.0', 'Force a Planet to Surrender', 'Place a Fleet in orbit of a hostile Colony, which starts Orbital Bombardment. Instead of using Armies to invade the planet, let the Fleet bombard the Colony until it surrenders.', 'Has forced a Planet to Surrender', 20);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_325', 'conquest', '3.0', 'Conquer a Homeworld', 'In the Interface Claims View, put Claims on the starting Homeworld Colony Colonies of another Empire. In the Contacts tab of the Interface Contacts View, declare a War of Claim. Land Armies on the Homeworld to invade them and finish the war.', 'Has conquered a Homeworld', 21);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_325_1', 'conquest', '3.0', 'Conquer an Arkship', 'In the Contacts tab of the Interface Contacts View, declare a War of Nomadic Raid on another Nomad Nomadic Empire. Any disabled Arkships are conquered.', 'Has conquered an Arkship', 22);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_330', 'conquest', '3.0', 'Complete a Raid Planet Contract', 'Accept a Raid Planet contract on the Interface Galaxy Map, then send Fleets to perform Orbital Bombardment on the target empire''s Colonies.', 'Has completed a Raid Planet Contract', 23);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has a Commander at Level 4 or higher', '[{"category": "conquest", "amount": 50.0}]', 16);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_305', 'conquest', '3.0', 'Win a War', 'In the Contacts tab of the Interface Contacts View, declare a War with another Empire. Build and command a strong Fleet Size Fleet, engage enemy forces, and occupy key Planet Colonies until victory is secured.', 'Has won a War', '[{"category": "conquest", "amount": 50.0}]', 17);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_310', 'conquest', '3.0', 'Hire Mercenaries', 'After establishing contact, use the Contacts tab of the Contacts View to hire a Fleet from the Mercenary Enclave.', 'Has hired Mercenaries', '[{"category": "conquest", "amount": 50.0}]', 18);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_315', 'conquest', '3.0', 'Build 10 Armies', 'In either the Army Hub tab of the Starbase View or the Armies tab of the Colony View, recruit 10 Armies.', 'Has built 10 Armies', '[{"category": "conquest", "amount": 50.0}]', 19);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_320', 'conquest', '3.0', 'Force a Planet to Surrender', 'Place a Fleet in orbit of a hostile Colony, which starts Orbital Bombardment. Instead of using Armies to invade the planet, let the Fleet bombard the Colony until it surrenders.', 'Has forced a Planet to Surrender', '[{"category": "conquest", "amount": 50.0}]', 20);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_325', 'conquest', '3.0', 'Conquer a Homeworld', 'In the Interface Claims View, put Claims on the starting Homeworld Colony Colonies of another Empire. In the Contacts tab of the Interface Contacts View, declare a War of Claim. Land Armies on the Homeworld to invade them and finish the war.', 'Has conquered a Homeworld', '[{"category": "conquest", "amount": 50.0}]', 21);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_325_1', 'conquest', '3.0', 'Conquer an Arkship', 'In the Contacts tab of the Interface Contacts View, declare a War of Nomadic Raid on another Nomad Nomadic Empire. Any disabled Arkships are conquered.', 'Has conquered an Arkship', '[{"category": "conquest", "amount": 50.0}]', 22);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_330', 'conquest', '3.0', 'Complete a Raid Planet Contract', 'Accept a Raid Planet contract on the Interface Galaxy Map, then send Fleets to perform Orbital Bombardment on the target empire''s Colonies.', 'Has completed a Raid Planet Contract', '[{"category": "conquest", "amount": 50.0}]', 23);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('conquest_focus_400', 'conquest', '4.0', 'Have 3 Level 5 Commanders', 'Deploy a Fleet, led by a Commander, to engage in battle. Alternatively, assign them as a Governor or to the Council.
-Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has 3 level 5 Commanders', 24);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_405', 'conquest', '4.0', 'Survive a Total War', 'While in a Total War, don''t die.', 'Survived a Total War', 25);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_410', 'conquest', '4.0', 'Fight the Khan', 'Engage in a Fleet battle with the Khan.', 'Fought the Khan', 26);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_415', 'conquest', '4.0', 'Fight the Gray Tempest', 'Engage in a Fleet battle with the Gray Tempest.', 'Fought the Gray Tempest', 27);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_420', 'conquest', '4.0', 'Defeat a Fallen Empire', 'Fight a Fallen Empire until their last Planet is conquered.', 'Defeated a Fallen Empire', 28);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_430', 'conquest', '4.0', 'Build a Military Arkship', 'To build a new Military Arkship, select an existing Arkship and click Build Megastructure. From there, select the Arkship Class to build.', 'Has built a Military Arkship', 29);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_500', 'conquest', '5.0', 'Build a Mega Shipyard', 'After researching the Society Mega Shipyard technology, find a suitable Star and use a Construction Ship to build the Mega Shipyard Megastructure.', 'Has built a Mega Shipyard', 30);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has 3 level 5 Commanders', '[{"category": "conquest", "amount": 100.0}]', 24);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_405', 'conquest', '4.0', 'Survive a Total War', 'While in a Total War, don''t die.', 'Survived a Total War', '[{"category": "conquest", "amount": 100.0}]', 25);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_410', 'conquest', '4.0', 'Fight the Khan', 'Engage in a Fleet battle with the Khan.', 'Fought the Khan', '[{"category": "conquest", "amount": 100.0}]', 26);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_415', 'conquest', '4.0', 'Fight the Gray Tempest', 'Engage in a Fleet battle with the Gray Tempest.', 'Fought the Gray Tempest', '[{"category": "conquest", "amount": 100.0}]', 27);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_420', 'conquest', '4.0', 'Defeat a Fallen Empire', 'Fight a Fallen Empire until their last Planet is conquered.', 'Defeated a Fallen Empire', '[{"category": "conquest", "amount": 100.0}]', 28);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_430', 'conquest', '4.0', 'Build a Military Arkship', 'To build a new Military Arkship, select an existing Arkship and click Build Megastructure. From there, select the Arkship Class to build.', 'Has built a Military Arkship', '[{"category": "conquest", "amount": 100.0}]', 29);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_500', 'conquest', '5.0', 'Build a Mega Shipyard', 'After researching the Society Mega Shipyard technology, find a suitable Star and use a Construction Ship to build the Mega Shipyard Megastructure.', 'Has built a Mega Shipyard', '[{"category": "conquest", "amount": 200.0}]', 30);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('conquest_focus_505', 'conquest', '5.0', 'Have 3 Subjects', 'In the Contacts tab of the Interface Contacts View, declare a Subjugation War with other Empires and defeat them.
-There may be other ways to solve this.', 'Have 3 Subjects', 31);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_510', 'conquest', '5.0', 'Conquer 10 Worlds', 'In the Interface Claims View, put Claims on the Colony Colonies of another Empire. In the Contacts tab of the Interface Contacts View, declare a War of Claim. Land Armies on the worlds to invade them and finish the war.', 'Has conquered 10 Worlds', 32);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_515', 'conquest', '4.0', 'Reanimate a Leviathan', 'In the Situation Log tab of the Interface Situation Log View, find the Special Project for the reanimation of a Leviathan and research it.', 'Has reanimated a Leviathan', 33);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_520', 'conquest', '3.0', 'Form Mercenaries', 'In the Fleet view, fulfill the requirements in order to form Mercenaries.', 'Has formed Mercenaries', 34);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_525', 'conquest', '3.0', 'Build 10 Battleships', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Shipyard, build ten Battleships.', 'Has built 10 Battleships', 35);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_530', 'conquest', '4.0', 'Build 2 Titans', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Shipyard, build two Titans.', 'Has built 2 Titans', 36);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_535', 'conquest', '4.0', 'Build 1 Juggernaut', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Shipyard, build one Juggernaut.', 'Has built 1 Juggernaut', 37);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('conquest_focus_540', 'conquest', '5.0', 'Equip a Devastator Mount', 'To equip a Spinal Mount on an Arkship, go to the Ship Controls tab of the Interface Colony View on a fully upgraded Arkship. Click on the Spinal Mount Slot and select the Devastator Mount from the list.', 'Has equipped a Devastator Mount', 38);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_100', 'core_focus', '1.0', 'Build a Building', 'In the Infrastructure tab of the Interface Colony View, click an available Building Slot and select a Building to construct.', 'Has built a Building', 39);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_102', 'core_focus', '1.0', 'Found a Colony', 'Use a Colony Ship to colonize a habitable Planet.', 'Has founded a Colony', 40);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_104', 'core_focus', '1.0', 'Build a Mining Station', 'Use a Construction Ship to build a Mining Station above a suitable Celestial Object.', 'Has built a Mining Station', 41);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_104_1', 'core_focus', '1.0', 'Build a Waystation', 'Use a Construction Ship Logistic Ship to build a Waystation in a suitable System.', 'Has built a Waystation', 42);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_106', 'core_focus', '1.0', 'Set Colony Designation', 'In a non-Capital colony, go to the Infrastructure tab of the Interface Colony View and change the Designation.', 'Has changed the Colony Designation of a Planet', 43);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_106_1', 'core_focus', '1.0', 'Set Colony Designation', 'In a non-Capital Arkship, go to the Infrastructure tab of the Interface Colony View and change the Designation.', 'Has changed the Colony Designation of an Arkship', 44);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_108', 'core_focus', '1.0', 'Build a Starbase Module', 'In the Command tab of the Interface Starbase View, select an available Starbase Module to construct.', 'Has built a Starbase Module', 45);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_110', 'core_focus', '1.0', 'Build a Starbase Building', 'In the Command tab of the Interface Starbase View, select an available Starbase Building to construct.', 'Has built a Starbase Building', 46);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_112', 'core_focus', '1.0', 'Adopt a Tradition', 'In the Traditions tab of the Interface Society Management View, adopt a Tradition.', 'Has adopted a Tradition', 47);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_114', 'core_focus', '1.0', 'Activate an Edict', 'In the Policies & Edicts tab of the Interface Government View, activate an Edict.', 'Has activated an Edict', 48);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_116', 'core_focus', '1.0', 'Complete 3 Agendas', 'Whenever an Agenda completes, launch it in the Council tab of the Interface Government View and select a new one.', 'Has completed 3 Agendas', 49);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Have 3 Subjects', '[{"category": "conquest", "amount": 200.0}]', 31);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_510', 'conquest', '5.0', 'Conquer 10 Worlds', 'In the Interface Claims View, put Claims on the Colony Colonies of another Empire. In the Contacts tab of the Interface Contacts View, declare a War of Claim. Land Armies on the worlds to invade them and finish the war.', 'Has conquered 10 Worlds', '[{"category": "conquest", "amount": 200.0}]', 32);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_515', 'conquest', '4.0', 'Reanimate a Leviathan', 'In the Situation Log tab of the Interface Situation Log View, find the Special Project for the reanimation of a Leviathan and research it.', 'Has reanimated a Leviathan', '[{"category": "conquest", "amount": 100.0}]', 33);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_520', 'conquest', '3.0', 'Form Mercenaries', 'In the Fleet view, fulfill the requirements in order to form Mercenaries.', 'Has formed Mercenaries', '[{"category": "conquest", "amount": 50.0}]', 34);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_525', 'conquest', '3.0', 'Build 10 Battleships', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Shipyard, build ten Battleships.', 'Has built 10 Battleships', '[{"category": "conquest", "amount": 50.0}]', 35);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_530', 'conquest', '4.0', 'Build 2 Titans', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Shipyard, build two Titans.', 'Has built 2 Titans', '[{"category": "conquest", "amount": 100.0}]', 36);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_535', 'conquest', '4.0', 'Build 1 Juggernaut', 'In either the Fleet Manager tab of the Interface Fleet Management View or a Shipyard, build one Juggernaut.', 'Has built 1 Juggernaut', '[{"category": "conquest", "amount": 100.0}]', 37);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('conquest_focus_540', 'conquest', '5.0', 'Equip a Devastator Mount', 'To equip a Spinal Mount on an Arkship, go to the Ship Controls tab of the Interface Colony View on a fully upgraded Arkship. Click on the Spinal Mount Slot and select the Devastator Mount from the list.', 'Has equipped a Devastator Mount', '[{"category": "conquest", "amount": 200.0}]', 38);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_100', 'core_focus', '1.0', 'Build a Building', 'In the Infrastructure tab of the Interface Colony View, click an available Building Slot and select a Building to construct.', 'Has built a Building', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 39);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_102', 'core_focus', '1.0', 'Found a Colony', 'Use a Colony Ship to colonize a habitable Planet.', 'Has founded a Colony', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 40);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_104', 'core_focus', '1.0', 'Build a Mining Station', 'Use a Construction Ship to build a Mining Station above a suitable Celestial Object.', 'Has built a Mining Station', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 41);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_104_1', 'core_focus', '1.0', 'Build a Waystation', 'Use a Construction Ship Logistic Ship to build a Waystation in a suitable System.', 'Has built a Waystation', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 42);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_106', 'core_focus', '1.0', 'Set Colony Designation', 'In a non-Capital colony, go to the Infrastructure tab of the Interface Colony View and change the Designation.', 'Has changed the Colony Designation of a Planet', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 43);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_106_1', 'core_focus', '1.0', 'Set Colony Designation', 'In a non-Capital Arkship, go to the Infrastructure tab of the Interface Colony View and change the Designation.', 'Has changed the Colony Designation of an Arkship', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 44);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_108', 'core_focus', '1.0', 'Build a Starbase Module', 'In the Command tab of the Interface Starbase View, select an available Starbase Module to construct.', 'Has built a Starbase Module', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 45);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_110', 'core_focus', '1.0', 'Build a Starbase Building', 'In the Command tab of the Interface Starbase View, select an available Starbase Building to construct.', 'Has built a Starbase Building', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 46);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_112', 'core_focus', '1.0', 'Adopt a Tradition', 'In the Traditions tab of the Interface Society Management View, adopt a Tradition.', 'Has adopted a Tradition', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 47);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_114', 'core_focus', '1.0', 'Activate an Edict', 'In the Policies & Edicts tab of the Interface Government View, activate an Edict.', 'Has activated an Edict', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 48);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_116', 'core_focus', '1.0', 'Complete 3 Agendas', 'Whenever an Agenda completes, launch it in the Council tab of the Interface Government View and select a new one.', 'Has completed 3 Agendas', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 49);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('core_focus_118', 'core_focus', '1.0', 'Have 1000 Energy Credits', 'To gather Energy Credits, build Generator Districts in the Infrastructure tab of the Interface Colony View.
 Alternatively, build Mining Stations around energy-rich Celestial Objects, buy Energy Credits on the Market, or from other Empires.
-There may be other ways to solve this.', 'Has 1000 Energy Credits', 50);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has 1000 Energy Credits', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 50);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('core_focus_118_1', 'core_focus', '1.0', 'Run Low on Operational Reserves', 'To spend Operational Reserves, set the Situation Approach to Burn and do not use Harvest Resources with an Arkship or Construction Ship Logistic Ship.
-There may be other ways to solve this.', 'Operational Reserves are Low', 51);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Operational Reserves are Low', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 51);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('core_focus_120', 'core_focus', '1.0', 'Have 1000 Minerals', 'To gather Minerals, build Mining Districts in the Infrastructure tab of the Interface Colony View.
 Alternatively, build Mining Stations around mineral-rich Celestial Objects, buy Minerals on the Market, or from other Empires.
-There may be other ways to solve this.', 'Has 1000 Minerals', 52);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has 1000 Minerals', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 52);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('core_focus_120_1', 'core_focus', '1.0', 'Reach High Operational Reserves', 'To increase Operational Reserves, use Harvest Resources with an Arkship or Construction Ship Logistic Ship.
 Alternatively, buy Energy Credits or Minerals on the Market.
-There may be other ways to solve this.', 'Operational Reserves are High', 53);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Operational Reserves are High', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 53);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('core_focus_122', 'core_focus', '1.0', 'Have 1000 Food', 'To gather Food, build Agriculture Districts in the Infrastructure tab of the Interface Colony View.
 Alternatively buy Food on the Market or from other Empires.
-There may be other ways to solve this.', 'Has 1000 Food', 54);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has 1000 Food', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 54);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('core_focus_122_1', 'core_focus', '1.0', 'Have 3000 Food', 'To gather Food, build Agriculture Districts in the Infrastructure tab of the Interface Colony View.
 Alternatively buy Food on the Market or from other Empires.
-There may be other ways to solve this.', 'Has 3000 Food', 55);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has 3000 Food', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 55);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('core_focus_124', 'core_focus', '1.0', 'Have 1000 Consumer Goods', 'To gather Consumer Goods, build Industrial Districts in the Infrastructure tab of the Interface Colony View, buy Consumer Goods on the Market, or from other Empires.
-There may be other ways to solve this.', 'Has 1000 Consumer Goods', 56);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has 1000 Consumer Goods', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 56);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('core_focus_124_1', 'core_focus', '1.0', 'Have 2000 Consumer Goods', 'To gather Consumer Goods, build Industrial Districts in the Infrastructure tab of the Interface Colony View, buy Consumer Goods on the Market, or from other Empires.
-There may be other ways to solve this.', 'Has 2000 Consumer Goods', 57);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has 2000 Consumer Goods', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 57);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('core_focus_126', 'core_focus', '1.0', 'Have 1000 Alloys', 'To gather Alloys, build Industrial Districts in the Infrastructure tab of the Interface Colony View.
 Alteratively, buy Alloys on the Market or from other Empires.
-There may be other ways to solve this.', 'Has 1000 Alloys', 58);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_127', 'core_focus', '1.0', 'Build a Hive District', 'Build a District Hive Cluster on a Colony.', 'Has built a Hive District', 59);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_127_1', 'core_focus', '1.0', 'Build a Communal Biome', 'Build a District Communal Biome on a Colony.', 'Has built a Communal Biome District', 60);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_128', 'core_focus', '1.0', 'Build a City District', 'Build a City District in the Infrastructure tab of the Interface Colony View.', 'Has built a City District', 61);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_128_1', 'core_focus', '1.0', 'Build a Habitation Decks District', 'Build a Habitation Decks District in the Infrastructure tab of the Interface Colony View.', 'Has built a Habitation Decks District', 62);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_129', 'core_focus', '1.0', 'Build a Nexus District', 'Build a District Central Nexus on a Colony.', 'Has built a Nexus District', 63);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_132', 'core_focus', '1.0', 'Build a Generator District', 'Build a Generator District in the Infrastructure tab of the Interface Colony View.', 'Has built a Generator District', 64);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_132_1', 'core_focus', '1.0', 'Build a Photosynthesis Field', 'Build a District Photosynthesis Field in the Infrastructure tab of the Interface Colony View.', 'Has built a Photosynthesis Field District', 65);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_132_2', 'core_focus', '1.0', 'Build a Reactor Arrays District', 'Build a Reactor Arrays District in the Infrastructure tab of the Interface Colony View.', 'Has built a Reactor Arrays District', 66);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_134', 'core_focus', '1.0', 'Build a Mining District', 'Build a Mining District in the Infrastructure tab of the Interface Colony View.', 'Has built a Mining District', 67);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_134_1', 'core_focus', '1.0', 'Build a Hollow Mountain', 'Build a District Hollow Mountain in the Infrastructure tab of the Interface Colony View.', 'Has built a Hollow Mountain District', 68);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_134_2', 'core_focus', '1.0', 'Build an Ordnance Engineering District', 'Build a Ordnance Engineering District in the Infrastructure tab of the Interface Colony View.', 'Has built an Ordnance Engineering District', 69);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_134_3', 'core_focus', '1.0', 'Build an Service District', 'Build a Service District in the Infrastructure tab of the Interface Colony View.', 'Has built an Service District', 70);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_136', 'core_focus', '1.0', 'Build an Agriculture District', 'Build an Agriculture District in the Infrastructure tab of the Interface Colony View.', 'Has built an Agriculture District', 71);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_136_1', 'core_focus', '1.0', 'Build an Orchard Forest', 'Build an District Orchard Forest in the Infrastructure tab of the Interface Colony View.', 'Has built an Orchard Forest District', 72);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_136_2', 'core_focus', '1.0', 'Build an Ark Hydroponics District', 'Build a Ark Hydroponics District in the Infrastructure tab of the Interface Colony View.', 'Has built an Ark Hydroponics District', 73);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_138', 'core_focus', '1.0', 'Enact a Colony Decision', 'Open the list of colony Decisions in the Management tab of the Interface Colony View and activate one of them.', 'Has enacted a Colony Decision', 74);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_139', 'core_focus', '1.0', 'Establish a Branch Office', 'To establish a Branch Office, secure a Commercial Pact with the target empire. If you are a Criminal Syndicate, this step is unnecessary (your operations are less', 'Has Established a Branch Office', 75);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_140', 'core_focus', '1.0', 'Complete a Contract', 'Accept Contracts on the Interface Galaxy Map and complete the tasks.', 'Has completed a Contract', 76);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_200', 'core_focus', '2.0', 'Complete Arkship Readiness', 'Complete the Arkship Readiness issues listed in the Situation Log tab of the Interface Situation Log View.', 'Has completed Arkship Readiness', 77);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_300', 'core_focus', '3.0', 'Complete 3 Contracts', 'Accept Contracts on the Interface Galaxy Map and complete the tasks.', 'Has completed 3 Contracts', 78);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_400', 'core_focus', '4.0', 'Complete 7 Contracts', 'Accept Contracts on the Interface Galaxy Map and complete the tasks.', 'Has completed 7 Contracts', 79);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('core_focus_500', 'core_focus', '5.0', 'Complete 15 Contracts', 'Accept Contracts on the Interface Galaxy Map and complete the tasks.', 'Has completed 15 Contracts', 80);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_100', 'development', '1.0', 'Finish First Contact', 'Send a Science Ship to survey new Systems until the First Contact procedure is initiated. Assign an Envoy to lead the effort until its conclusion.', 'Have 7K Pops', 81);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has 1000 Alloys', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 58);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_127', 'core_focus', '1.0', 'Build a Hive District', 'Build a District Hive Cluster on a Colony.', 'Has built a Hive District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 59);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_127_1', 'core_focus', '1.0', 'Build a Communal Biome', 'Build a District Communal Biome on a Colony.', 'Has built a Communal Biome District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 60);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_128', 'core_focus', '1.0', 'Build a City District', 'Build a City District in the Infrastructure tab of the Interface Colony View.', 'Has built a City District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 61);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_128_1', 'core_focus', '1.0', 'Build a Habitation Decks District', 'Build a Habitation Decks District in the Infrastructure tab of the Interface Colony View.', 'Has built a Habitation Decks District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 62);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_129', 'core_focus', '1.0', 'Build a Nexus District', 'Build a District Central Nexus on a Colony.', 'Has built a Nexus District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 63);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_132', 'core_focus', '1.0', 'Build a Generator District', 'Build a Generator District in the Infrastructure tab of the Interface Colony View.', 'Has built a Generator District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 64);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_132_1', 'core_focus', '1.0', 'Build a Photosynthesis Field', 'Build a District Photosynthesis Field in the Infrastructure tab of the Interface Colony View.', 'Has built a Photosynthesis Field District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 65);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_132_2', 'core_focus', '1.0', 'Build a Reactor Arrays District', 'Build a Reactor Arrays District in the Infrastructure tab of the Interface Colony View.', 'Has built a Reactor Arrays District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 66);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_134', 'core_focus', '1.0', 'Build a Mining District', 'Build a Mining District in the Infrastructure tab of the Interface Colony View.', 'Has built a Mining District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 67);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_134_1', 'core_focus', '1.0', 'Build a Hollow Mountain', 'Build a District Hollow Mountain in the Infrastructure tab of the Interface Colony View.', 'Has built a Hollow Mountain District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 68);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_134_2', 'core_focus', '1.0', 'Build an Ordnance Engineering District', 'Build a Ordnance Engineering District in the Infrastructure tab of the Interface Colony View.', 'Has built an Ordnance Engineering District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 69);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_134_3', 'core_focus', '1.0', 'Build an Service District', 'Build a Service District in the Infrastructure tab of the Interface Colony View.', 'Has built an Service District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 70);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_136', 'core_focus', '1.0', 'Build an Agriculture District', 'Build an Agriculture District in the Infrastructure tab of the Interface Colony View.', 'Has built an Agriculture District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 71);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_136_1', 'core_focus', '1.0', 'Build an Orchard Forest', 'Build an District Orchard Forest in the Infrastructure tab of the Interface Colony View.', 'Has built an Orchard Forest District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 72);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_136_2', 'core_focus', '1.0', 'Build an Ark Hydroponics District', 'Build a Ark Hydroponics District in the Infrastructure tab of the Interface Colony View.', 'Has built an Ark Hydroponics District', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 73);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_138', 'core_focus', '1.0', 'Enact a Colony Decision', 'Open the list of colony Decisions in the Management tab of the Interface Colony View and activate one of them.', 'Has enacted a Colony Decision', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 74);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_139', 'core_focus', '1.0', 'Establish a Branch Office', 'To establish a Branch Office, secure a Commercial Pact with the target empire. If you are a Criminal Syndicate, this step is unnecessary (your operations are less', 'Has Established a Branch Office', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 75);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_140', 'core_focus', '1.0', 'Complete a Contract', 'Accept Contracts on the Interface Galaxy Map and complete the tasks.', 'Has completed a Contract', '[{"category": "development", "amount": 10.0}, {"category": "conquest", "amount": 10.0}, {"category": "exploration", "amount": 10.0}]', 76);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_200', 'core_focus', '2.0', 'Complete Arkship Readiness', 'Complete the Arkship Readiness issues listed in the Situation Log tab of the Interface Situation Log View.', 'Has completed Arkship Readiness', '[{"category": "development", "amount": 25.0}, {"category": "conquest", "amount": 25.0}, {"category": "exploration", "amount": 25.0}]', 77);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_300', 'core_focus', '3.0', 'Complete 3 Contracts', 'Accept Contracts on the Interface Galaxy Map and complete the tasks.', 'Has completed 3 Contracts', '[{"category": "development", "amount": 50.0}, {"category": "conquest", "amount": 50.0}, {"category": "exploration", "amount": 50.0}]', 78);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_400', 'core_focus', '4.0', 'Complete 7 Contracts', 'Accept Contracts on the Interface Galaxy Map and complete the tasks.', 'Has completed 7 Contracts', '[{"category": "development", "amount": 100.0}, {"category": "conquest", "amount": 100.0}, {"category": "exploration", "amount": 100.0}]', 79);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('core_focus_500', 'core_focus', '5.0', 'Complete 15 Contracts', 'Accept Contracts on the Interface Galaxy Map and complete the tasks.', 'Has completed 15 Contracts', '[{"category": "development", "amount": 200.0}, {"category": "conquest", "amount": 200.0}, {"category": "exploration", "amount": 200.0}]', 80);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_100', 'development', '1.0', 'Finish First Contact', 'Send a Science Ship to survey new Systems until the First Contact procedure is initiated. Assign an Envoy to lead the effort until its conclusion.', 'Have 7K Pops', '[{"category": "development", "amount": 10.0}]', 81);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('development_focus_105', 'development', '1.0', 'Have 7K Pops', 'To encourage Pop growth, ensure that there is sufficient Housing on Colony Colonies.
-There may be other ways to solve this.', 'Have 7K Pops', 82);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Have 7K Pops', '[{"category": "development", "amount": 10.0}]', 82);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('development_focus_105_1', 'development', '1.0', 'Have 10K Pops', 'To encourage Pop growth, ensure that there is sufficient Housing on Colony Colonies.
-There may be other ways to solve this.', 'Have 10K Pops', 83);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_110', 'development', '1.0', 'Promote a Faction', 'In the Factions tab of the Interface Government View, click Manage Faction and promote a Faction.', 'Has promoted a Faction', 84);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_125', 'development', '1.0', 'Have a Mineral Income of +50', 'To increase the income of Minerals, build Mining Districts in the Interface Colony View, Mining Stations around mineral-rich Celestial Objects, or add a monthly trade in the Market.', 'Has increased Mineral Income to 50', 85);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_130', 'development', '1.0', 'Establish a Positive Relationship', 'In the Contacts tab of the Interface Contacts View, select Improve Relations and assign an available Envoy.', 'Has a Positive Relationship with another empire', 86);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Have 10K Pops', '[{"category": "development", "amount": 10.0}]', 83);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_110', 'development', '1.0', 'Promote a Faction', 'In the Factions tab of the Interface Government View, click Manage Faction and promote a Faction.', 'Has promoted a Faction', '[{"category": "development", "amount": 10.0}]', 84);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_125', 'development', '1.0', 'Have a Mineral Income of +50', 'To increase the income of Minerals, build Mining Districts in the Interface Colony View, Mining Stations around mineral-rich Celestial Objects, or add a monthly trade in the Market.', 'Has increased Mineral Income to 50', '[{"category": "development", "amount": 10.0}]', 85);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_130', 'development', '1.0', 'Establish a Positive Relationship', 'In the Contacts tab of the Interface Contacts View, select Improve Relations and assign an available Envoy.', 'Has a Positive Relationship with another empire', '[{"category": "development", "amount": 10.0}]', 86);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('development_focus_135', 'development', '1.0', 'Hire an Official', 'In the Interface Leaders View, hire a recruitable Leader of the Official class.
-There may be other ways to solve this.', 'Has hired an Official', 87);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_140', 'development', '1.0', 'Harvest Resources', 'In the Interface Fleet View of an Arkship, click the Harvest Resources fleet order and select a suitable Planet.', 'Has Harvested Resources', 88);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_200', 'development', '2.0', 'Form a Non-Aggression Pact', 'In the Contacts tab of the Interface Contacts View, propose this Diplomatic Pact with another Empire.', 'Has formed a Non-Aggression Pact', 89);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_205', 'development', '2.0', 'Form a Defensive Pact', 'In the Contacts tab of the Interface Contacts View, propose this Diplomatic Pact with another Empire.', 'Has formed a Defensive Pact', 90);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_215', 'development', '2.0', 'Assign an Official as Governor', 'In either the Infrastructure tab of the Interface Colony View or in the Interface Colonies and Sectors View, assign an Official as a Governor of a Sector or Planet.', 'Has an Official as Governor', 91);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_220', 'development', '2.0', 'Join the Galactic Community', 'Answer the invitation to join the Galactic Community, or open the Galactic Community above the Interface Outliner after it has formed and request to join.', 'Has joined the Galactic Community', 92);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has hired an Official', '[{"category": "development", "amount": 10.0}]', 87);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_140', 'development', '1.0', 'Harvest Resources', 'In the Interface Fleet View of an Arkship, click the Harvest Resources fleet order and select a suitable Planet.', 'Has Harvested Resources', '[{"category": "development", "amount": 10.0}]', 88);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_200', 'development', '2.0', 'Form a Non-Aggression Pact', 'In the Contacts tab of the Interface Contacts View, propose this Diplomatic Pact with another Empire.', 'Has formed a Non-Aggression Pact', '[{"category": "development", "amount": 25.0}]', 89);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_205', 'development', '2.0', 'Form a Defensive Pact', 'In the Contacts tab of the Interface Contacts View, propose this Diplomatic Pact with another Empire.', 'Has formed a Defensive Pact', '[{"category": "development", "amount": 25.0}]', 90);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_215', 'development', '2.0', 'Assign an Official as Governor', 'In either the Infrastructure tab of the Interface Colony View or in the Interface Colonies and Sectors View, assign an Official as a Governor of a Sector or Planet.', 'Has an Official as Governor', '[{"category": "development", "amount": 25.0}]', 91);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_220', 'development', '2.0', 'Join the Galactic Community', 'Answer the invitation to join the Galactic Community, or open the Galactic Community above the Interface Outliner after it has formed and request to join.', 'Has joined the Galactic Community', '[{"category": "development", "amount": 25.0}]', 92);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('development_focus_225', 'development', '2.0', 'Gain a Favor', 'In the Contacts tab of the Interface Contacts View, contact another Empire and select Improve Relations until they grant a Favor.
-There may be other ways to solve this.', 'Has gained a Favor', 93);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has gained a Favor', '[{"category": "development", "amount": 25.0}]', 93);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('development_focus_230', 'development', '2.0', 'Level Up an Official', 'Assign the Official to the Council, as Governor, to the Galactic Community, or a Federation.
-Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has leveled up an Official', 94);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_235', 'development', '2.0', 'Complete a Harvest Resources Contract', 'Accept a Harvest Resources contract on the Interface Galaxy Map, then send Logistic Ships to perform the Harvest Resources fleet order.', 'Has completed a Harvest Resources Contract', 95);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_300', 'development', '3.0', 'Build a Dyson Swarm (80 Energy)', 'After researching the Physics Dyson Swarm technology, find a suitable Star and use a Construction Ship to build the Dyson Swarm Megastructure.', 'Has build a Dyson Swarm', 96);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_305', 'development', '3.0', 'Build an Arc Furnace', 'After researching the Engineering Arc Furnace technology, find a Molten World in a System with at least 15 Planets and use a Construction Ship to build the Arc Furnace Megastructure.', 'Has build an Arc Furnace', 97);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has leveled up an Official', '[{"category": "development", "amount": 25.0}]', 94);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_235', 'development', '2.0', 'Complete a Harvest Resources Contract', 'Accept a Harvest Resources contract on the Interface Galaxy Map, then send Logistic Ships to perform the Harvest Resources fleet order.', 'Has completed a Harvest Resources Contract', '[{"category": "development", "amount": 25.0}]', 95);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_300', 'development', '3.0', 'Build a Dyson Swarm (80 Energy)', 'After researching the Physics Dyson Swarm technology, find a suitable Star and use a Construction Ship to build the Dyson Swarm Megastructure.', 'Has build a Dyson Swarm', '[{"category": "development", "amount": 50.0}]', 96);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_305', 'development', '3.0', 'Build an Arc Furnace', 'After researching the Engineering Arc Furnace technology, find a Molten World in a System with at least 15 Planets and use a Construction Ship to build the Arc Furnace Megastructure.', 'Has build an Arc Furnace', '[{"category": "development", "amount": 50.0}]', 97);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('development_focus_310', 'development', '3.0', 'Have 3 Species', 'In the Contacts tab of the Interface Contacts View, propose a Migration Treaty Diplomatic Pact with another Empire.
-There may be other ways to solve this.', 'Has 3 Species', 98);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has 3 Species', '[{"category": "development", "amount": 50.0}]', 98);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('development_focus_315', 'development', '3.0', 'Form a Federation', 'In the Contacts tab of the Interface Contacts View, contact another Empire and ask them to form a Federation.
-There may be other ways to solve this.', 'Has formed a Federation', 99);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_320', 'development', '3.0', 'Join Council', 'Increase Diplomatic Weight sufficiently before the next Galactic Council election to be voted in.', 'Has joined the Galactic Council', 100);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has formed a Federation', '[{"category": "development", "amount": 50.0}]', 99);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_320', 'development', '3.0', 'Join Council', 'Increase Diplomatic Weight sufficiently before the next Galactic Council election to be voted in.', 'Has joined the Galactic Council', '[{"category": "development", "amount": 50.0}]', 100);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('development_focus_325', 'development', '3.0', 'Have a Veteran Official', 'Assign the Official to the Council, as Governor, to the Galactic Community, or a Federation.
-Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has a Level 4 Official', 101);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_330', 'development', '3.0', 'Establish 10 Branch Offices', 'To establish a Branch Office, secure a Commercial Pact with the target empire. If you are a Criminal Syndicate, this step is unnecessary (your operations are less', 'Has Established 10 Branch Offices', 102);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_335', 'development', '3.0', 'Strip Mine Planet', 'In the Interface Fleet View of an Arkship, click the Planetary Strip Mining fleet order and select a suitable Planet.', 'Has Strip Mined a Planet', 103);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_400', 'development', '4.0', 'Federation Level 5', 'Assign an Official to the Federation to increase the Federation Experience.', 'Part of a Level 5 Federation', 104);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has a Level 4 Official', '[{"category": "development", "amount": 50.0}]', 101);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_330', 'development', '3.0', 'Establish 10 Branch Offices', 'To establish a Branch Office, secure a Commercial Pact with the target empire. If you are a Criminal Syndicate, this step is unnecessary (your operations are less', 'Has Established 10 Branch Offices', '[{"category": "development", "amount": 50.0}]', 102);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_335', 'development', '3.0', 'Strip Mine Planet', 'In the Interface Fleet View of an Arkship, click the Planetary Strip Mining fleet order and select a suitable Planet.', 'Has Strip Mined a Planet', '[{"category": "development", "amount": 50.0}]', 103);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_400', 'development', '4.0', 'Federation Level 5', 'Assign an Official to the Federation to increase the Federation Experience.', 'Part of a Level 5 Federation', '[{"category": "development", "amount": 100.0}]', 104);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('development_focus_405', 'development', '4.0', 'Build a Dyson Sphere', 'After researching the Physics Dyson Sphere technology, upgrade the Dyson Swarm Megastructure to a Dyson Sphere.
-There may be other ways to solve this.', 'Has build a Dyson Sphere', 105);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has build a Dyson Sphere', '[{"category": "development", "amount": 100.0}]', 105);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('development_focus_406', 'development', '4.0', 'Build a Dyson Sphere', 'After researching the Physics Dyson Sphere technology, find a suitable Star and use a Construction Ship to build the Dyson Sphere Megastructure.
-There may be other ways to solve this.', 'Has build a Dyson Sphere', 106);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has build a Dyson Sphere', '[{"category": "development", "amount": 100.0}]', 106);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('development_focus_410', 'development', '4.0', 'Build a Ring World', 'After researching the Physics Ring Segment technology, find a suitable Star and use a Construction Ship to build the Ring Segment Megastructure.
-There may be other ways to solve this.', 'Has build a Ring World', 107);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has build a Ring World', '[{"category": "development", "amount": 100.0}]', 107);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('development_focus_415', 'development', '4.0', 'Have 3 Level 5 Officials', 'Assign the Official to the Council, as Governor, to the Galactic Community, or a Federation.
-Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has 3 Level 5 Officials', 108);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_420', 'development', '4.0', 'Have a Wayline', 'Build Waystations in neighboring systems to create a Wayline.', 'Has a Length 5 Wayline', 109);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_425', 'development', '4.0', 'Have 3 Arkships', 'To build a new Arkship, select an existing Arkship and click Build Megastructure. From there, select the Arkship Class to build.', 'Has 3 Arkships', 110);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_435', 'development', '4.0', 'Build a Civilian Arkship', 'To build a new Civilian Arkship, select an existing Arkship and click Build Megastructure. From there, select the Arkship Class to build.', 'Has built a Civilian Arkship', 111);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has 3 Level 5 Officials', '[{"category": "development", "amount": 100.0}]', 108);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_420', 'development', '4.0', 'Have a Wayline', 'Build Waystations in neighboring systems to create a Wayline.', 'Has a Length 5 Wayline', '[{"category": "development", "amount": 100.0}]', 109);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_425', 'development', '4.0', 'Have 3 Arkships', 'To build a new Arkship, select an existing Arkship and click Build Megastructure. From there, select the Arkship Class to build.', 'Has 3 Arkships', '[{"category": "development", "amount": 100.0}]', 110);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_435', 'development', '4.0', 'Build a Civilian Arkship', 'To build a new Civilian Arkship, select an existing Arkship and click Build Megastructure. From there, select the Arkship Class to build.', 'Has built a Civilian Arkship', '[{"category": "development", "amount": 100.0}]', 111);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('development_focus_500', 'development', '5.0', 'Build an Interstellar Assembly', 'After researching the Society Interstellar Assembly technology, find a suitable Star and use a Construction Ship to build the Interstellar Assembly Megastructure.
-There may be other ways to solve this.', 'Has build an Interstellar Assembly', 112);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_505', 'development', '5.0', 'Have +3000 Consumer Goods per Month', 'To gather Consumer Goods, build Industrial Districts and Civilian Industries in the Infrastructure tab of the Interface Colony View, buy Consumer Goods on the Market, or from other Empires.', 'Has +3000 Consumer Goods per Month', 113);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_510', 'development', '5.0', 'Have +200 Relations with 10 Empires', 'Send a Science Ship to survey new Systems until the First Contact procedure is initiated. Assign an Envoy to lead the effort until its conclusion.', 'Has +200 Relations with 10 Empires', 114);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_515', 'development', '5.0', 'Deploy a Behemoth Egg', 'Deploy a Behemoth Egg by selecting your Construction Ship and clicking Build Megastructure. From there, select Behemoth Egg, and choose an appropriate Gas Giant to build the orbital structure.', 'Has deployed a Behemoth Egg', 115);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_520', 'development', '2.0', 'Build a Genomic Research Facility', 'Build a Genomic Research Facility Building on one of your colonies in any available Building slot.', 'Has built a Genomic Research Facility', 116);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('development_focus_525', 'development', '5.0', 'Equip a Capital Shipyard', 'To equip a Spinal Mount on an Arkship, go to the Ship Controls tab of the Interface Colony View on a fully upgraded Arkship. Click on the Spinal Mount Slot and select the Capital Shipyard from the list.', 'Has equipped a Capital Shipyard', 117);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_100', 'exploration', '1.0', 'Investigate an Anomaly', 'After discovering an Anomaly, assign a Scientist to fully investigate it.', 'Has investigated an Anomaly', 118);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_105', 'exploration', '1.0', 'Survey a System', 'Use a Science Ship to fully survey a new System.', 'Has surveyed a System', 119);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_110', 'exploration', '1.0', 'Finish a Special Project', 'In the Situation Log tab of the Interface Situation Log View, find a Special Project and research it.', 'Has finished a Special Project', 120);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_115', 'exploration', '1.0', 'Find Alien Life', 'Use a Science Ship to survey new Systems until alien life is found.', 'Has found Alien Life', 121);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_120', 'exploration', '1.0', 'Get a Permanent Research Option', 'Investigate Anomaly Anomalies, Archaeology Site, and Debris from space battles. Some may grant a Permanent Research Option that remains available until researched.', 'Has permanent Research Option', 122);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has build an Interstellar Assembly', '[{"category": "development", "amount": 200.0}]', 112);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_505', 'development', '5.0', 'Have +3000 Consumer Goods per Month', 'To gather Consumer Goods, build Industrial Districts and Civilian Industries in the Infrastructure tab of the Interface Colony View, buy Consumer Goods on the Market, or from other Empires.', 'Has +3000 Consumer Goods per Month', '[{"category": "development", "amount": 200.0}]', 113);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_510', 'development', '5.0', 'Have +200 Relations with 10 Empires', 'Send a Science Ship to survey new Systems until the First Contact procedure is initiated. Assign an Envoy to lead the effort until its conclusion.', 'Has +200 Relations with 10 Empires', '[{"category": "development", "amount": 200.0}]', 114);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_515', 'development', '5.0', 'Deploy a Behemoth Egg', 'Deploy a Behemoth Egg by selecting your Construction Ship and clicking Build Megastructure. From there, select Behemoth Egg, and choose an appropriate Gas Giant to build the orbital structure.', 'Has deployed a Behemoth Egg', '[{"category": "development", "amount": 200.0}]', 115);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_520', 'development', '2.0', 'Build a Genomic Research Facility', 'Build a Genomic Research Facility Building on one of your colonies in any available Building slot.', 'Has built a Genomic Research Facility', '[{"category": "development", "amount": 25.0}]', 116);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('development_focus_525', 'development', '5.0', 'Equip a Capital Shipyard', 'To equip a Spinal Mount on an Arkship, go to the Ship Controls tab of the Interface Colony View on a fully upgraded Arkship. Click on the Spinal Mount Slot and select the Capital Shipyard from the list.', 'Has equipped a Capital Shipyard', '[{"category": "development", "amount": 200.0}]', 117);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_100', 'exploration', '1.0', 'Investigate an Anomaly', 'After discovering an Anomaly, assign a Scientist to fully investigate it.', 'Has investigated an Anomaly', '[{"category": "exploration", "amount": 10.0}]', 118);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_105', 'exploration', '1.0', 'Survey a System', 'Use a Science Ship to fully survey a new System.', 'Has surveyed a System', '[{"category": "exploration", "amount": 10.0}]', 119);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_110', 'exploration', '1.0', 'Finish a Special Project', 'In the Situation Log tab of the Interface Situation Log View, find a Special Project and research it.', 'Has finished a Special Project', '[{"category": "exploration", "amount": 10.0}]', 120);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_115', 'exploration', '1.0', 'Find Alien Life', 'Use a Science Ship to survey new Systems until alien life is found.', 'Has found Alien Life', '[{"category": "exploration", "amount": 10.0}]', 121);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_120', 'exploration', '1.0', 'Get a Permanent Research Option', 'Investigate Anomaly Anomalies, Archaeology Site, and Debris from space battles. Some may grant a Permanent Research Option that remains available until researched.', 'Has permanent Research Option', '[{"category": "exploration", "amount": 10.0}]', 122);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('exploration_focus_125', 'exploration', '1.0', 'Hire a Scientist', 'In the Interface Leaders View, hire a Leader of the Scientist class.
-There may be other ways to solve this.', 'Has hired a Scientist', 123);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_200', 'exploration', '2.0', 'Finish an Archaeology Site', 'Assign a Scientist to an Archaeology Site and guide them through the events.', 'Has finished an Archaeology Site', 124);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has hired a Scientist', '[{"category": "exploration", "amount": 10.0}]', 123);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_200', 'exploration', '2.0', 'Finish an Archaeology Site', 'Assign a Scientist to an Archaeology Site and guide them through the events.', 'Has finished an Archaeology Site', '[{"category": "exploration", "amount": 25.0}]', 124);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('exploration_focus_205', 'exploration', '2.0', 'Level Up a Scientist', 'Assign a Science Ship led by a Scientist to survey Systems and investigate Anomaly Anomalies. Alternatively, assign them as a Governor or to the Council.
-Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has leveled up a Scientist', 125);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_210', 'exploration', '2.0', 'Observe a Pre-FTL Civilization', 'Use a Construction Ship to build a Observation Post above a planet with a Pre-FTL Civilization.', 'Has observed Pre-FTL Civilization', 126);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_215', 'exploration', '2.0', 'Assign a Scientist as Governor', 'In either the Infrastructure tab of the Interface Colony View or in the Interface Colonies and Sectors View, assign a Scientist as a Governor of a Sector or Planet.', 'Has assigned a Scientist as governor', 127);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_220', 'exploration', '2.0', 'Traverse a Wormhole', 'After researching the Physics Wormhole Stabilization technology, assign a Science Ship to explore, and then travel through a Wormhole.', 'Has traversed a Wormhole', 128);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_225', 'exploration', '2.0', 'Sign a Research Agreement', 'In the Contacts tab of the Interface Contacts View, propose this Diplomatic Pact with another Empire.', '$exploration.225req$', 129);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_230', 'exploration', '2.0', 'Complete a Deep Scan Contract', 'Accept a Deep Scan contract on the Interface Galaxy Map, then send an Arkship to perform the Deep Scan fleet order in the indicated System.', 'Has completed a Deep Scan Contract', 130);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_300', 'exploration', '3.0', 'Build a Dyson Swarm', 'After researching the Physics Dyson Swarm technology, find a suitable Star and use a Construction Ship to build the Dyson Swarm Megastructure.', 'Has built a Dyson Swarm producing at least 30 Physics , Society , or Engineering', 131);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_305', 'exploration', '3.0', 'Get Enclave Research Support', 'After establishing contact, use the Contacts tab of the Contacts View to request Research Assistance the Curator Order.', 'Has Enclave research support', 132);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_310', 'exploration', '3.0', 'Build 5 Research Labs', 'In the Infrastructure tab of the Interface Colony View, build five Research Labs on one or more Colony Colonies.', 'Has 5 Research Labs', 133);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_315', 'exploration', '3.0', 'Finish an Astral Rift', 'After researching the Physics Rift Sphere technology, assign a Scientist to an Astral Rift and guide them through it.', 'Has finished an Astral Rift', 134);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has leveled up a Scientist', '[{"category": "exploration", "amount": 25.0}]', 125);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_210', 'exploration', '2.0', 'Observe a Pre-FTL Civilization', 'Use a Construction Ship to build a Observation Post above a planet with a Pre-FTL Civilization.', 'Has observed Pre-FTL Civilization', '[{"category": "exploration", "amount": 25.0}]', 126);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_215', 'exploration', '2.0', 'Assign a Scientist as Governor', 'In either the Infrastructure tab of the Interface Colony View or in the Interface Colonies and Sectors View, assign a Scientist as a Governor of a Sector or Planet.', 'Has assigned a Scientist as governor', '[{"category": "exploration", "amount": 25.0}]', 127);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_220', 'exploration', '2.0', 'Traverse a Wormhole', 'After researching the Physics Wormhole Stabilization technology, assign a Science Ship to explore, and then travel through a Wormhole.', 'Has traversed a Wormhole', '[{"category": "exploration", "amount": 25.0}]', 128);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_225', 'exploration', '2.0', 'Sign a Research Agreement', 'In the Contacts tab of the Interface Contacts View, propose this Diplomatic Pact with another Empire.', '$exploration.225req$', '[{"category": "exploration", "amount": 25.0}]', 129);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_230', 'exploration', '2.0', 'Complete a Deep Scan Contract', 'Accept a Deep Scan contract on the Interface Galaxy Map, then send an Arkship to perform the Deep Scan fleet order in the indicated System.', 'Has completed a Deep Scan Contract', '[{"category": "exploration", "amount": 25.0}]', 130);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_300', 'exploration', '3.0', 'Build a Dyson Swarm', 'After researching the Physics Dyson Swarm technology, find a suitable Star and use a Construction Ship to build the Dyson Swarm Megastructure.', 'Has built a Dyson Swarm producing at least 30 Physics , Society , or Engineering', '[{"category": "exploration", "amount": 50.0}]', 131);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_305', 'exploration', '3.0', 'Get Enclave Research Support', 'After establishing contact, use the Contacts tab of the Contacts View to request Research Assistance the Curator Order.', 'Has Enclave research support', '[{"category": "exploration", "amount": 50.0}]', 132);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_310', 'exploration', '3.0', 'Build 5 Research Labs', 'In the Infrastructure tab of the Interface Colony View, build five Research Labs on one or more Colony Colonies.', 'Has 5 Research Labs', '[{"category": "exploration", "amount": 50.0}]', 133);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_315', 'exploration', '3.0', 'Finish an Astral Rift', 'After researching the Physics Rift Sphere technology, assign a Scientist to an Astral Rift and guide them through it.', 'Has finished an Astral Rift', '[{"category": "exploration", "amount": 50.0}]', 134);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('exploration_focus_320', 'exploration', '3.0', 'Have a Veteran Scientist', 'Assign a Science Ship led by a Scientist to survey Systems and investigate Anomaly Anomalies. Alternatively, assign them as a Governor or to the Council.
-Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has a Veteran Scientist', 135);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_325', 'exploration', '3.0', 'Terraform 3 Worlds', 'After researching the Society Terrestrial Sculpting technology, find a Planet suitable for Terraforming and start the process.', 'Has Terraformed 3 worlds', 136);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_400', 'exploration', '4.0', 'Research a Repeatable Tech', 'In the Interface Technology View, find and research a Repeatable Technology, indicated by the special icon border.', 'Has researched a Repeatable Tech', 137);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has a Veteran Scientist', '[{"category": "exploration", "amount": 50.0}]', 135);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_325', 'exploration', '3.0', 'Terraform 3 Worlds', 'After researching the Society Terrestrial Sculpting technology, find a Planet suitable for Terraforming and start the process.', 'Has Terraformed 3 worlds', '[{"category": "exploration", "amount": 50.0}]', 136);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_400', 'exploration', '4.0', 'Research a Repeatable Tech', 'In the Interface Technology View, find and research a Repeatable Technology, indicated by the special icon border.', 'Has researched a Repeatable Tech', '[{"category": "exploration", "amount": 100.0}]', 137);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('exploration_focus_405', 'exploration', '4.0', 'Obtain Fallen Empire Building', 'Defeat a Fallen Empire.
-There may be other ways to solve this.', 'Has obtained Fallen Empire building', 138);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_410', 'exploration', '4.0', 'Research Fallen Empire Debris', 'Following a space battle with a Fallen Empire, send a Science Ship to investigate the Special Project.', 'Has researched Fallen Empire debris', 139);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_415', 'exploration', '4.0', 'Research Crisis Debris', 'Following a space battle with a Crisis, send a Science Ship to investigate the Special Project.', 'Has researched Crisis debris', 140);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+There may be other ways to solve this.', 'Has obtained Fallen Empire building', '[{"category": "exploration", "amount": 100.0}]', 138);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_410', 'exploration', '4.0', 'Research Fallen Empire Debris', 'Following a space battle with a Fallen Empire, send a Science Ship to investigate the Special Project.', 'Has researched Fallen Empire debris', '[{"category": "exploration", "amount": 100.0}]', 139);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_415', 'exploration', '4.0', 'Research Crisis Debris', 'Following a space battle with a Crisis, send a Science Ship to investigate the Special Project.', 'Has researched Crisis debris', '[{"category": "exploration", "amount": 100.0}]', 140);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('exploration_focus_420', 'exploration', '4.0', 'Have 3 Level 5 Scientists', 'Assign a Science Ship led by a Scientist to survey Systems and investigate Anomaly Anomalies. Alternatively, assign them as a Governor or to the Council.
-Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has 3 Level 5 Scientists', 141);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_425', 'exploration', '4.0', 'Build a Scientific Arkship', 'To build a new Scientific Arkship, select an existing Arkship and click Build Megastructure. From there, select the Arkship Class to build.', 'Has built a Scientific Arkship', 142);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_500', 'exploration', '5.0', 'Build a Science Nexus', 'After researching the Physics Mega Shipyard technology, find a suitable Planet or Star and use a Construction Ship to build the Mega Shipyard Megastructure.', 'Has built a Science Nexus', 143);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
+Such duties provide valuable experience, allowing them to level up and develop new Leader Traits.', 'Has 3 Level 5 Scientists', '[{"category": "exploration", "amount": 100.0}]', 141);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_425', 'exploration', '4.0', 'Build a Scientific Arkship', 'To build a new Scientific Arkship, select an existing Arkship and click Build Megastructure. From there, select the Arkship Class to build.', 'Has built a Scientific Arkship', '[{"category": "exploration", "amount": 100.0}]', 142);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_500', 'exploration', '5.0', 'Build a Science Nexus', 'After researching the Physics Mega Shipyard technology, find a suitable Planet or Star and use a Construction Ship to build the Mega Shipyard Megastructure.', 'Has built a Science Nexus', '[{"category": "exploration", "amount": 200.0}]', 143);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
                VALUES ('exploration_focus_505', 'exploration', '5.0', 'Have 1000 Research per Month', 'Build more Research Labs. In the Infrastructure tab of the Interface Colony View, change the Designation to Tech-World.
-There may be other ways to solve this.', 'Has 1000 Research per month', 144);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_510', 'exploration', '5.0', 'Activate Relics 10 Times', 'In the Relics tab of the Interface Discoveries View, activate one or more Relics 10 times.', 'Has activated Relics 10 times', 145);
-INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement, sort_order)
-               VALUES ('exploration_focus_600', 'exploration', '2.0', 'Find a Leviathan', 'Use a Science Ship to explore new Systems until a Leviathan is found.', 'Has found a Leviathan', 146);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('conquest_rewards_1', 'conquest', '40.0', '["tech_doctrine_navy_size_1"]', 0);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('conquest_rewards_2', 'conquest', '60.0', '["tech_combat_computers_1"]', 1);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('conquest_rewards_3', 'conquest', '80.0', '["tech_doctrine_fleet_size_1"]', 2);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('conquest_rewards_4', 'conquest', '100.0', '["tech_destroyers", "tech_weaver_growth_1"]', 3);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('conquest_rewards_5', 'conquest', '120.0', '["tech_doctrine_navy_size_2"]', 4);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('conquest_rewards_6', 'conquest', '140.0', '["tech_doctrine_fleet_size_2"]', 5);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('conquest_rewards_7', 'conquest', '160.0', '["tech_cruisers", "tech_harbingers"]', 6);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('conquest_rewards_8', 'conquest', '180.0', '["tech_combat_computers_2"]', 7);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('conquest_rewards_9', 'conquest', '200.0', '["tech_battleships", "tech_stingers"]', 8);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('conquest_rewards_10', 'conquest', '220.0', '["tech_existential_campaigns"]', 9);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('development_rewards_1', 'development', '40.0', '["tech_planetary_unification"]', 10);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('development_rewards_2', 'development', '60.0', '["tech_adaptive_bureaucracy"]', 11);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('development_rewards_3', 'development', '80.0', '["tech_colonial_centralization", "tech_federation_code"]', 12);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('development_rewards_4', 'development', '100.0', '["tech_arkship_construction", "tech_starbase_3"]', 13);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('development_rewards_5', 'development', '120.0', '["tech_autonomous_agents", "tech_artificial_moral_codes", "tech_xeno_diplomacy"]', 14);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('development_rewards_6', 'development', '140.0', '["tech_effective_bureaucracy"]', 15);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('development_rewards_7', 'development', '160.0', '["tech_arkship_tier_2", "tech_starbase_4"]', 16);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('development_rewards_8', 'development', '180.0', '["tech_galactic_administration", "tech_xeno_relations"]', 17);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('development_rewards_9', 'development', '200.0', '["tech_arkship_tier_3", "tech_starbase_5"]', 18);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('development_rewards_10', 'development', '220.0', '["tech_arkship_planetary_refinery", "tech_mega_engineering"]', 19);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('exploration_rewards_1', 'exploration', '40.0', '["tech_automated_exploration"]', 20);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('exploration_rewards_2', 'exploration', '60.0', '["tech_basic_science_lab_2"]', 21);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('exploration_rewards_3', 'exploration', '80.0', '["tech_administrative_ai"]', 22);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('exploration_rewards_4', 'exploration', '100.0', '["tech_hyper_drive_2"]', 23);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('exploration_rewards_5', 'exploration', '120.0', '["tech_planetary_engineering", "tech_terrestrial_sculpting"]', 24);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('exploration_rewards_6', 'exploration', '140.0', '["tech_self_aware_logic"]', 25);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('exploration_rewards_7', 'exploration', '160.0', '["tech_hyper_drive_3"]', 26);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('exploration_rewards_8', 'exploration', '180.0', '["tech_basic_science_lab_3"]', 27);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('exploration_rewards_9', 'exploration', '200.0', '["tech_sapient_ai"]', 28);
-INSERT OR REPLACE INTO focus_reward (key, category, cost, techs_json, sort_order)
-               VALUES ('exploration_rewards_10', 'exploration', '220.0', '["tech_jump_drive_1"]', 29);
+There may be other ways to solve this.', 'Has 1000 Research per month', '[{"category": "exploration", "amount": 200.0}]', 144);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_510', 'exploration', '5.0', 'Activate Relics 10 Times', 'In the Relics tab of the Interface Discoveries View, activate one or more Relics 10 times.', 'Has activated Relics 10 times', '[{"category": "exploration", "amount": 200.0}]', 145);
+INSERT OR REPLACE INTO focus_card (key, category, tier, name, hint, requirement,
+                   progress_json, sort_order)
+               VALUES ('exploration_focus_600', 'exploration', '2.0', 'Find a Leviathan', 'Use a Science Ship to explore new Systems until a Leviathan is found.', 'Has found a Leviathan', '[{"category": "exploration", "amount": 25.0}]', 146);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('conquest_rewards_1', 'conquest', '40.0', '[{"tech":"tech_doctrine_navy_size_1","when":null}]', 0);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('conquest_rewards_2', 'conquest', '60.0', '[{"tech":"tech_combat_computers_1","when":null}]', 1);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('conquest_rewards_3', 'conquest', '80.0', '[{"tech":"tech_doctrine_fleet_size_1","when":null}]', 2);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('conquest_rewards_4', 'conquest', '100.0', '[{"tech":"tech_destroyers","when":{"leaf":"country_uses_bio_ships","value":"no"}},{"tech":"tech_weaver_growth_1","when":{"op":"not","args":[{"leaf":"country_uses_bio_ships","value":"no"}]}}]', 3);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('conquest_rewards_5', 'conquest', '120.0', '[{"tech":"tech_doctrine_navy_size_2","when":null}]', 4);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('conquest_rewards_6', 'conquest', '140.0', '[{"tech":"tech_doctrine_fleet_size_2","when":null}]', 5);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('conquest_rewards_7', 'conquest', '160.0', '[{"tech":"tech_cruisers","when":{"leaf":"country_uses_bio_ships","value":"no"}},{"tech":"tech_harbingers","when":{"op":"not","args":[{"leaf":"country_uses_bio_ships","value":"no"}]}}]', 6);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('conquest_rewards_8', 'conquest', '180.0', '[{"tech":"tech_combat_computers_2","when":null}]', 7);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('conquest_rewards_9', 'conquest', '200.0', '[{"tech":"tech_battleships","when":{"leaf":"country_uses_bio_ships","value":"no"}},{"tech":"tech_stingers","when":{"op":"not","args":[{"leaf":"country_uses_bio_ships","value":"no"}]}}]', 8);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('conquest_rewards_10', 'conquest', '220.0', '[{"tech":"tech_existential_campaigns","when":null}]', 9);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('development_rewards_1', 'development', '40.0', '[{"tech":"tech_planetary_unification","when":null}]', 10);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('development_rewards_2', 'development', '60.0', '[{"tech":"tech_adaptive_bureaucracy","when":null}]', 11);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('development_rewards_3', 'development', '80.0', '[{"tech":"tech_colonial_centralization","when":{"op":"or","args":[{"leaf":"is_diplomatic","value":"no"},{"leaf":"has_origin","value":"origin_endbringers"}]}},{"tech":"tech_federation_code","when":{"op":"not","args":[{"op":"or","args":[{"leaf":"is_diplomatic","value":"no"},{"leaf":"has_origin","value":"origin_endbringers"}]}]}}]', 12);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('development_rewards_4', 'development', '100.0', '[{"tech":"tech_arkship_construction","when":{"leaf":"is_nomadic","value":"yes"}},{"tech":"tech_starbase_3","when":{"op":"not","args":[{"leaf":"is_nomadic","value":"yes"}]}}]', 13);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('development_rewards_5', 'development', '120.0', '[{"tech":"tech_autonomous_agents","when":{"op":"and","args":[{"leaf":"is_diplomatic","value":"no"},{"leaf":"is_gestalt","value":"yes"}]}},{"tech":"tech_artificial_moral_codes","when":{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_diplomatic","value":"no"},{"leaf":"is_gestalt","value":"yes"}]}]},{"op":"and","args":[{"leaf":"is_diplomatic","value":"no"},{"leaf":"is_gestalt","value":"no"}]}]}},{"tech":"tech_xeno_diplomacy","when":{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_diplomatic","value":"no"},{"leaf":"is_gestalt","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_diplomatic","value":"no"},{"leaf":"is_gestalt","value":"no"}]}]}]}}]', 14);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('development_rewards_6', 'development', '140.0', '[{"tech":"tech_effective_bureaucracy","when":null}]', 15);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('development_rewards_7', 'development', '160.0', '[{"tech":"tech_arkship_tier_2","when":{"leaf":"is_nomadic","value":"yes"}},{"tech":"tech_starbase_4","when":{"op":"not","args":[{"leaf":"is_nomadic","value":"yes"}]}}]', 16);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('development_rewards_8', 'development', '180.0', '[{"tech":"tech_galactic_administration","when":{"leaf":"is_diplomatic","value":"no"}},{"tech":"tech_xeno_relations","when":{"op":"not","args":[{"leaf":"is_diplomatic","value":"no"}]}}]', 17);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('development_rewards_9', 'development', '200.0', '[{"tech":"tech_arkship_tier_3","when":{"leaf":"is_nomadic","value":"yes"}},{"tech":"tech_starbase_5","when":{"op":"not","args":[{"leaf":"is_nomadic","value":"yes"}]}}]', 18);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('development_rewards_10', 'development', '220.0', '[{"tech":"tech_arkship_planetary_refinery","when":{"leaf":"is_nomadic","value":"yes"}},{"tech":"tech_mega_engineering","when":{"op":"not","args":[{"leaf":"is_nomadic","value":"yes"}]}}]', 19);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('exploration_rewards_1', 'exploration', '40.0', '[{"tech":"tech_automated_exploration","when":null}]', 20);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('exploration_rewards_2', 'exploration', '60.0', '[{"tech":"tech_basic_science_lab_2","when":null}]', 21);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('exploration_rewards_3', 'exploration', '80.0', '[{"tech":"tech_administrative_ai","when":null}]', 22);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('exploration_rewards_4', 'exploration', '100.0', '[{"tech":"tech_hyper_drive_2","when":null}]', 23);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('exploration_rewards_5', 'exploration', '120.0', '[{"tech":"tech_planetary_engineering","when":{"leaf":"is_nomadic","value":"yes"}},{"tech":"tech_terrestrial_sculpting","when":{"op":"not","args":[{"leaf":"is_nomadic","value":"yes"}]}}]', 24);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('exploration_rewards_6', 'exploration', '140.0', '[{"tech":"tech_self_aware_logic","when":null}]', 25);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('exploration_rewards_7', 'exploration', '160.0', '[{"tech":"tech_hyper_drive_3","when":null}]', 26);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('exploration_rewards_8', 'exploration', '180.0', '[{"tech":"tech_basic_science_lab_3","when":null}]', 27);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('exploration_rewards_9', 'exploration', '200.0', '[{"tech":"tech_sapient_ai","when":null}]', 28);
+INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
+               VALUES ('exploration_rewards_10', 'exploration', '220.0', '[{"tech":"tech_jump_drive_1","when":null}]', 29);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_living_snow', 'Unusual Snow', 'Snow has begun congregating outside of one of the main colonial settlements on , a desert planet where snow is a decidedly unusual occurrence.', NULL);
 INSERT OR REPLACE INTO situation_approach

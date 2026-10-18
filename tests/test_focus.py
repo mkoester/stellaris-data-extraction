@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.focus import requirement_keys, research_options, with_base
+from extractor.focus import progress_rewards, requirement_keys, research_options, with_base
 from extractor.localisation import inline_refs
 
 # Shaped like development_rewards_3 (common/country_focus/focus_rewards/00_development_focus_rewards.txt).
@@ -24,8 +24,15 @@ on_success = {
 class TestFocus(unittest.TestCase):
     def test_research_options_from_every_branch(self):
         block = Parser(tokenize(REWARD)).parse()['on_success']
-        self.assertEqual(research_options(block),
-                         ['tech_colonial_centralization', 'tech_federation_code'])
+        when = {'leaf': 'is_diplomatic', 'value': 'no'}
+        self.assertEqual(research_options(block, lambda b: when if b else None),
+                         [('tech_colonial_centralization', when),
+                          ('tech_federation_code', {'op': 'not', 'args': [when]})])
+
+    def test_progress_rewards(self):
+        block = Parser(tokenize('on_success = { add_focus_progress = { category = development amount = 10 } '
+                                'add_focus_progress = { category = conquest amount = 10 } }')).parse()
+        self.assertEqual(progress_rewards(block['on_success']), [('development', 10.0), ('conquest', 10.0)])
 
     def test_requirement_keys(self):
         block = Parser(tokenize(
