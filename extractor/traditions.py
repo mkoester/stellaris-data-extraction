@@ -340,14 +340,16 @@ def extract_edicts_agendas(install_dir: Path, loc: dict[str, str], scripted_vars
             length = None
         w.execute(
             """INSERT INTO edict (key, name, description, category, length, cost_json,
-               potential_json, allow_json, unlocked_by_json, tooltip, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               potential_json, allow_json, unlocked_by_json, prerequisites_json, tooltip, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (key, ctx.text(f'edict_{key}') or ctx.text(key),
              ctx.text(f'edict_{key}_desc', True, evars) or ctx.text(key + '_desc', True, evars),
              res.get('category'), length,
              json.dumps(costs, sort_keys=True) if costs else None,
              dumps(ctx.trig(data.get('potential'), evars)), dumps(ctx.trig(data.get('allow'), evars)),
-             unlocked_by(data), ctx.tooltip(data, evars), order))
+             unlocked_by(data),
+             json.dumps(sorted(set(_to_list(data.get('prerequisites'))))) if data.get('prerequisites') else None,
+             ctx.tooltip(data, evars), order))
         ctx.modifiers(key, data, evars)
 
     finish_default = None

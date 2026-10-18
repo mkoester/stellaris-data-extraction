@@ -96,5 +96,13 @@ class TestDlcTriggerMap(unittest.TestCase):
         self.assertEqual(dlc_trigger_map(idx), {'has_x_dlc': 'X'})
 
 
+
+class TestParameters(unittest.TestCase):
+    def test_has_parameters(self):
+        from extractor.triggers import has_parameters
+        self.assertTrue(has_parameters({'has_country_flag': '$FLAG$'}))
+        self.assertFalse(has_parameters({'OR': {'has_valid_civic': 'civic_dark_consortium'}}))
+
+
 if __name__ == '__main__':
     unittest.main()

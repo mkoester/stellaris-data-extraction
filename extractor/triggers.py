@@ -274,3 +274,26 @@ def _to_list_blocks(v) -> list[dict]:
         return [x for x in v if isinstance(x, dict)]
     return []
 
+
+
+def has_parameters(block) -> bool:
+    """Whether a parsed block uses `$PARAM$` placeholders anywhere (a parameterised trigger)."""
+    if isinstance(block, dict):
+        return any('$' in str(k) or has_parameters(v) for k, v in block.items())
+    if isinstance(block, list):
+        return any(has_parameters(x) for x in block)
+    return '$' in str(block)
+
+
+def extract_scripted_triggers(install_dir, w) -> None:
+    """Every parameter-free scripted trigger, normalised, into `scripted_trigger`."""
+    import json
+    idx = _scripted_trigger_index(install_dir)
+    dlc = dlc_trigger_map(idx)
+    for key in sorted(idx):
+        if has_parameters(idx[key]):
+            continue
+        tree = normalize_trigger(idx[key], dlc)
+        w.execute("INSERT INTO scripted_trigger (key, trigger_json) VALUES (?, ?)",
+                  (key, json.dumps(tree, separators=(',', ':')) if tree else None))
+    w.commit()

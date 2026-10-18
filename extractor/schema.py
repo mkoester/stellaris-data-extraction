@@ -1001,6 +1001,18 @@ CREATE TABLE prescripted_name (
     key  TEXT PRIMARY KEY,                 -- e.g. "PRESCRIPTED_ruler_name_humans1"
     text TEXT NOT NULL                     -- e.g. "Dolores Muwanga"
 );
+-- Species rights (common/species_rights/<kind>/): every option per kind, `kind` being the save's
+-- field in country.modules.standard_species_rights_module.primary.
+DROP TABLE IF EXISTS species_right;
+CREATE TABLE species_right (
+    key            TEXT PRIMARY KEY,       -- e.g. "living_standard_normal"
+    kind           TEXT NOT NULL,          -- citizenship / living_standard / military_service / …
+    kind_order     INTEGER NOT NULL,       -- the game's order of the kinds
+    name           TEXT,                   -- e.g. "Decent Conditions"
+    potential_json TEXT,
+    allow_json     TEXT,
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
 -- Leader traits (common/traits, the leader files) and their untriggered modifiers by scope
 -- (country, self, councilor, fleet, army, planet, sector), for the empire dashboard.
 DROP TABLE IF EXISTS leader_trait_modifier;
@@ -1237,8 +1249,16 @@ CREATE TABLE edict (
     potential_json TEXT,
     allow_json     TEXT,
     unlocked_by_json TEXT,                 -- ["tr_…","ap_…"]: traditions/perks that unlock it
+    prerequisites_json TEXT,               -- ["tech_gene_crops"]: techs it needs
     tooltip        TEXT,
     sort_order     INTEGER NOT NULL DEFAULT 0
+);
+-- Scripted triggers (common/scripted_triggers) without $parameters$, normalised like every
+-- *_json trigger, so a reader can look inside `is_dark_consortium_empire = yes`.
+DROP TABLE IF EXISTS scripted_trigger;
+CREATE TABLE scripted_trigger (
+    key          TEXT PRIMARY KEY,
+    trigger_json TEXT
 );
 -- Modifiers: owner_key = key (while enacted) and "<key>#finish" (finish_modifier, a static
 -- modifier lasting finish_days after launch) in tradition_modifier.

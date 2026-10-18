@@ -19,12 +19,13 @@ from .misc import extract_dlc, extract_prescripted_names, host_checks, extract_n
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
 from .politics import extract_politics
 from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors, extract_static_modifiers
+from .rights import extract_species_rights
 from .situations import extract_situations
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
 from .tech import extract_fallen_empire_techs, extract_repeatable_techs, extract_techs
 from .traditions import extract_edicts_agendas, extract_traditions
 from .traits import TRAIT_CATEGORIES, extract_trait_categories, extract_trait_modifiers, extract_traits, is_species_trait_file
-from .triggers import _scripted_trigger_index, _signals
+from .triggers import _scripted_trigger_index, _signals, extract_scripted_triggers
 from .values import _as_blocks, _resolve_modifier_float
 from .writer import Writer
 
@@ -438,6 +439,9 @@ Examples:
     print(f"\n[policies + factions] {install_dir / 'common' / 'policies'}", file=progress)
     extract_politics(install_dir, loc, scripted_vars, w, progress)
     extract_prescripted_names(loc, w)
+    extract_scripted_triggers(install_dir, w)
+    print(f"\n[species rights] {install_dir / 'common' / 'species_rights'}", file=progress)
+    extract_species_rights(install_dir, loc, w, progress)
     print(f"\n[leader traits] {install_dir / 'common' / 'traits'}", file=progress)
     extract_leader_traits(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[empire focus] {install_dir / 'common' / 'country_focus'}", file=progress)

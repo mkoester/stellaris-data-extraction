@@ -482,6 +482,15 @@ ids their `on_success` fires (`event_ids`: weighted `1 = anomaly.35`, `anomaly_e
 so `_LOC_ENTRY` accepts `.` in keys (before 2026-10-18 it did not, and every dotted key was
 missing). The dashboard shows outcomes only behind a spoiler setting.
 
+## Scripted triggers, edict prerequisites, species rights
+
+`scripted_trigger`: every parameter-free `common/scripted_triggers` definition, normalised, so a
+reader can evaluate a `some_trigger = yes` leaf by its body (1,575 of 1,587 in 4.5.2; those with
+`$PARAM$` are skipped, `has_parameters`). `edict.prerequisites_json`: the techs an edict needs.
+`species_right` (rights.py): every option of `common/species_rights/<kind>/`, with `kind` as the
+save names the field and `kind_order` the game's order. Their triggers are in the species' scope
+with the country as `from`; `unwrap_from` folds `from = { … }` in.
+
 ## Prescripted names (`extract_prescripted_names`, misc.py)
 
 `prescripted_name`: every `PRESCRIPTED_*` / `EMPIRE_DESIGN_*` loc key with its text (528 in 4.5.2).
