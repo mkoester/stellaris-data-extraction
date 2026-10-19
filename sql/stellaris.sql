@@ -1399,6 +1399,54 @@ CREATE TABLE federation_law (
     sort_order     INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (category_key) REFERENCES federation_law_category(key)
 );
+-- Galactic Community resolutions by category and group (the dashboard names them; a
+-- resolution's effects are the static_modifier of the same key), and the names of subject
+-- agreement terms, term values and presets (the save stores keys only).
+DROP TABLE IF EXISTS resolution;
+DROP TABLE IF EXISTS resolution_category;
+DROP TABLE IF EXISTS resolution_group;
+DROP TABLE IF EXISTS agreement_term_value;
+DROP TABLE IF EXISTS agreement_term;
+DROP TABLE IF EXISTS agreement_preset;
+CREATE TABLE resolution_group (
+    key        TEXT PRIMARY KEY,           -- e.g. "commerce_industry"
+    name       TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE resolution_category (
+    key        TEXT PRIMARY KEY,           -- e.g. "resolution_category_commerce"
+    group_key  TEXT,
+    name       TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE resolution (
+    key            TEXT PRIMARY KEY,       -- e.g. "resolution_mutualdefense_the_readied_shield"
+    category_key   TEXT,                   -- NULL: no category lists it (event-only)
+    name           TEXT,
+    description    TEXT,
+    level          INTEGER,
+    target         INTEGER NOT NULL DEFAULT 0, -- 1: names a target country
+    influence_cost REAL,
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE agreement_term (
+    key        TEXT PRIMARY KEY,           -- e.g. "subject_integration"
+    name       TEXT,                       -- "Subject Integration"
+    term_type  TEXT,                       -- discrete, discrete_number, resource, specialist_type
+    hidden     INTEGER NOT NULL DEFAULT 0, -- 1: not on the negotiation screen
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE agreement_term_value (
+    key        TEXT PRIMARY KEY,           -- e.g. "subject_can_not_be_integrated"
+    term_key   TEXT,
+    name       TEXT,                       -- "Integration Prohibited"
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE agreement_preset (
+    key        TEXT PRIMARY KEY,           -- e.g. "preset_protectorate"
+    name       TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
 
 -- Data
 
@@ -103053,3 +103101,743 @@ INSERT INTO federation_law (key, category_key, name, description, potential_json
 INSERT INTO federation_law (key, category_key, name, description, potential_json,
                    allow_json, types_json, required_centralization, cohesion_growth, sort_order)
                    VALUES ('research_pact_yes', 'law_category_research_pact', 'Enabled', 'Research Agreements are free and automatic between all federation members.', '{"op":"not","args":[{"leaf":"has_federation_flag","value":"special_federation"}]}', '{"op":"not","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_federation_law","value":"research_pact_yes"}]},{"leaf":"has_modifier","value":"federation_law_category_research_pact_cooldown"},{"leaf":"has_any_federation_law_in_category","value":"law_category_research_pact"}]}]}', NULL, 5, NULL, 63);
+INSERT INTO resolution_group (key, name, sort_order) VALUES ('commerce_industry', 'Commerce and Industry', 0);
+INSERT INTO resolution_group (key, name, sort_order) VALUES ('politics_culture', 'Politics and Culture', 1);
+INSERT INTO resolution_group (key, name, sort_order) VALUES ('environment_technology', 'Environment and Technology', 2);
+INSERT INTO resolution_group (key, name, sort_order) VALUES ('defense_war', 'Defense and War', 3);
+INSERT INTO resolution_group (key, name, sort_order) VALUES ('suzerains_sovereignty', 'Suzerains and Sovereignty', 4);
+INSERT INTO resolution_group (key, name, sort_order) VALUES ('galactic_focus', 'Galactic Priorities', 5);
+INSERT INTO resolution_group (key, name, sort_order) VALUES ('galactic_empire', 'Galactic Imperium', 6);
+INSERT INTO resolution_group (key, name, sort_order) VALUES ('custodianship', 'Custodianship', 7);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_commerce', 'commerce_industry', 'Galactic Commerce', 0);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_industry', 'commerce_industry', 'Industrial Development', 1);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_market', 'commerce_industry', 'Galactic Market', 2);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_sanctions_commerce_industry', 'commerce_industry', 'Sanctions: Commerce and Industry', 3);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_politics_tradition_1', 'politics_culture', 'Champions of the Community', 4);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_politics_tradition_2', 'politics_culture', 'Constitutional Immunity', 5);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_politics_tradition_3', 'politics_culture', 'Development Aides', 6);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_politics_tradition_4', 'politics_culture', 'Galactic Threats Committee', 7);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_greatergood', 'politics_culture', 'The Greater Good', 8);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_galacticreforms', 'politics_culture', 'Galactic Reforms', 9);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_sanctions_politics_culture', 'politics_culture', 'Sanctions: Politics and Culture', 10);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_denouncements', 'politics_culture', 'Denouncement', 11);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_ecology', 'environment_technology', 'Ecological Protection', 12);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_galacticstudies', 'environment_technology', 'Unchained Knowledge', 13);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_divinity', 'environment_technology', 'Divinity of Life', 14);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_space_fauna_tiyanki', 'environment_technology', 'Space Fauna', 15);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_sanctions_environment_technology', 'environment_technology', 'Sanctions: Environment and Technology', 16);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_mutualdefense', 'defense_war', 'Mutual Defense', 17);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_rulesofwar', 'defense_war', 'Rules of War', 18);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_declare_crisis', 'defense_war', 'Crisis Declaration', 19);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_sanctions_defense_war', 'defense_war', 'Sanctions: Defense and War', 20);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_galactic_focus', 'galactic_focus', 'Change Galactic Focus', 21);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_imperial_council', 'galactic_empire', 'Imperial Council', 22);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_foreign_relations', 'galactic_empire', 'Foreign Relations', 23);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_imperial_reforms', 'galactic_empire', 'Imperial Reforms', 24);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_emperor_imperial_institutions', 'galactic_empire', 'Imperial Institutions', 25);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_term_limits', 'custodianship', 'Term Limits', 26);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_custodian_reforms', 'custodianship', 'Custodian Reforms', 27);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_galactic_institutions', 'custodianship', 'Galactic Institutions', 28);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_crisis_analysis', 'custodianship', 'Crisis Analysis', 29);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_paladins', 'custodianship', 'Paladin Initiative', 30);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_defenseprivatization', 'defense_war', 'Defense Privatization', 31);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_intergalacticdirective', 'suzerains_sovereignty', 'Intergalactic Directives', 32);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_bureaucraticsurveillance', 'suzerains_sovereignty', 'Bureaucratic Surveillance', 33);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_pre_ftl_stances', 'politics_culture', 'Pre-FTL Stance', 34);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_space_weather_exploitation_stances', 'environment_technology', 'Space Weather Exploitation', 35);
+INSERT INTO resolution_category (key, group_key, name, sort_order) VALUES ('resolution_category_storm_environmentalists_stances', 'environment_technology', 'Storm Environmentalists', 36);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('any', NULL, '', '', NULL, 0, NULL, 0);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_ecology_repeal_1', 'resolution_category_ecology', 'Repeal Pangalactic Recycling Initiatives', 'While protecting the environment is clearly important, the empires of the should be trusted to make their own decisions.', NULL, 0, '100.0', 1);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_ecology_repeal_2', 'resolution_category_ecology', 'Repeal Natural Sanctuaries', 'While protecting the environment is clearly important, the empires of the should be trusted to make their own decisions.', NULL, 0, '150.0', 2);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_ecology_repeal_3', 'resolution_category_ecology', 'Repeal Integrated Gardens', 'While protecting the environment is clearly important, the empires of the should be trusted to make their own decisions.', NULL, 0, '200.0', 3);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_ecology_repeal_4', 'resolution_category_ecology', 'Repeal Environmental Control Board', 'While protecting the environment is clearly important, the empires of the should be trusted to make their own decisions.', NULL, 0, '250.0', 4);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_ecology_repeal_5', 'resolution_category_ecology', 'Repeal The Paradise Initiative', 'While protecting the environment is clearly important, the empires of the should be trusted to make their own decisions.', NULL, 0, '300.0', 5);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_ecology_recycling_initiatives', 'resolution_category_ecology', 'Pangalactic Recycling Initiatives', 'We all benefit from reducing waste and reusing what we can. Sharing recycling protocols between the nations of the will help all of us.', 1, 0, '100.0', 6);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_ecology_natural_sanctuaries', 'resolution_category_ecology', 'Natural Sanctuaries', 'We should preserve natural spaces as parks, where citizens can escape from their troubles. Minor restrictions to heavy industry are required, but it''s a low price to pay.', 2, 0, '150.0', 7);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_ecology_integrated_gardens', 'resolution_category_ecology', 'Integrated Gardens', 'By encouraging our citizens to grow their own food and mandating easy to use hydroponic systems, we can reduce our impact on the worlds we live in and enjoy more greenery.', 3, 0, '200.0', 8);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_ecology_environmental_control_board', 'resolution_category_ecology', 'Environmental Control Board', 'Industry cannot regulate itself. We need a multinational environmental control board with the power to oversee industry and development to shut down environmental abuse.', 4, 0, '250.0', 9);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_ecology_paradise_initiative', 'resolution_category_ecology', 'The Paradise Initiative', 'With meticulous caretaking of our worlds, we can live in ecological harmony. It should be our goal to leave only memories behind where we tread.', 5, 0, '300.0', 10);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticstudies_repeal_1', 'resolution_category_galacticstudies', 'Repeal Cooperative Research Channels', 'Galactic law currently places significant amounts of intellectual property and national security issues at risk. We must repeal these misguided laws in order to protect our people.', NULL, 0, '100.0', 11);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticstudies_repeal_2', 'resolution_category_galacticstudies', 'Repeal Astral Studies Network', 'Galactic law currently places significant amounts of intellectual property and national security issues at risk. We must repeal these misguided laws in order to protect our people.', NULL, 0, '150.0', 12);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticstudies_repeal_3', 'resolution_category_galacticstudies', 'Repeal Advanced Xenostudies', 'Galactic law currently places significant amounts of intellectual property and national security issues at risk. We must repeal these misguided laws in order to protect our people.', NULL, 0, '200.0', 13);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticstudies_repeal_4', 'resolution_category_galacticstudies', 'Repeal Ethical Guideline Refactoring', 'Galactic law currently places significant amounts of intellectual property and national security issues at risk. We must repeal these misguided laws in order to protect our people.', NULL, 0, '250.0', 14);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticstudies_repeal_5', 'resolution_category_galacticstudies', 'Repeal Extradimensional Experimentation', 'Galactic law currently places significant amounts of intellectual property and national security issues at risk. We must repeal these misguided laws in order to protect our people.', NULL, 0, '300.0', 15);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticstudies_cooperative_research_channels', 'resolution_category_galacticstudies', 'Cooperative Research Channels', 'We should establish protocols that permit the scientists of the to share and review discoveries more easily.', 1, 0, '100.0', 16);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticstudies_astral_studies_network', 'resolution_category_galacticstudies', 'Astral Studies Network', 'By linking our starbases together into a massive sensor mesh, we can greatly improve the quality of data that we gather.', 2, 0, '150.0', 17);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticstudies_advanced_xenostudies', 'resolution_category_galacticstudies', 'Advanced Xenostudies', 'There is much to learn from all of the cultures of the universe. We should add additional information-gathering instrumentation to all starbases while working more closely with Enclaves.', 3, 0, '200.0', 18);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticstudies_ethical_guideline_refactoring', 'resolution_category_galacticstudies', 'Ethical Guideline Refactoring', 'To possess the ability to further science provides a moral imperative to do so, free from outdated ethical concepts that restrain us. We do what we must because we can.', 4, 0, '250.0', 19);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticstudies_extradimensional_experimentation', 'resolution_category_galacticstudies', 'Extradimensional Experimentation', 'Preliminary studies suggest that extensive use of reality-altering substances can grant researchers unexpected insights.
+After all, what''s the worst that could happen?', 5, 0, '300.0', 20);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_commerce_repeal_1', 'resolution_category_commerce', 'Repeal Buzzword Standardization', 'The free market should be left to its own devices without the meddling of the .', NULL, 0, '100.0', 21);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_commerce_repeal_2', 'resolution_category_commerce', 'Repeal Leveraged Privateering', 'The free market should be left to its own devices without the meddling of the .', NULL, 0, '150.0', 22);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_commerce_repeal_3', 'resolution_category_commerce', 'Repeal Underdeveloped System Utilization', 'The free market should be left to its own devices without the meddling of the .', NULL, 0, '200.0', 23);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_commerce_repeal_4', 'resolution_category_commerce', 'Repeal Holistic Asset Coordination', 'The free market should be left to its own devices without the meddling of the .', NULL, 0, '250.0', 24);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_commerce_repeal_5', 'resolution_category_commerce', 'Repeal Profit Maximization Engines', 'The free market should be left to its own devices without the meddling of the .', NULL, 0, '300.0', 25);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_commerce_buzzword_standardization', 'resolution_category_commerce', 'Buzzword Standardization', 'We have to enable our enterprises to work seamlessly with one another. Streamlining strategic communications empowers our agents, making hitting key performance metrics easier.', 1, 0, '100.0', 26);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_commerce_leveraged_privateering', 'resolution_category_commerce', 'Leveraged Privateering', 'Trade is the lifeblood of the galaxy. All members of the should contribute to a multinational space force to combat piracy and other threats to free commerce.', 2, 0, '150.0', 27);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_commerce_underdeveloped_system_utilization', 'resolution_category_commerce', 'Underdeveloped System Utilization', 'Failure to extract maximum value from the systems within our sphere of influence is a criminal waste. We propose that it be enforced as such and punished accordingly.', 3, 0, '200.0', 28);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_commerce_holistic_asset_coordination', 'resolution_category_commerce', 'Holistic Asset Coordination', 'To promote and facilitate an optimized logistic output, we should work together to stimulate a streamlined, galactic infrastructure for market and knowledge sharing.', 4, 0, '250.0', 29);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_commerce_profit_maximization_engines', 'resolution_category_commerce', 'Profit Maximization Engines', 'We should build interlinked complexes of computers on each of our worlds that optimize the distribution of information and resources. The wealth must flow.', 5, 0, '300.0', 30);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_industry_repeal_1', 'resolution_category_industry', 'Repeal Regulatory Facilitation', 'The has no place meddling in industrial matters. We should not be forcing our views on other empires.', NULL, 0, '100.0', 31);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_industry_repeal_2', 'resolution_category_industry', 'Repeal Collective Waste Management', 'The has no place meddling in industrial matters. We should not be forcing our views on other empires.', NULL, 0, '150.0', 32);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_industry_repeal_3', 'resolution_category_industry', 'Repeal Building a Better Tomorrow', 'The has no place meddling in industrial matters. We should not be forcing our views on other empires.', NULL, 0, '200.0', 33);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_industry_repeal_4', 'resolution_category_industry', 'Repeal Environmental Ordinance Waivers', 'The has no place meddling in industrial matters. We should not be forcing our views on other empires.', NULL, 0, '250.0', 34);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_industry_repeal_5', 'resolution_category_industry', 'Repeal Project Cornucopia', 'The has no place meddling in industrial matters. We should not be forcing our views on other empires.', NULL, 0, '300.0', 35);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_industry_regulatory_facilitation', 'resolution_category_industry', 'Regulatory Facilitation', 'We should leave regulatory decisions to the experts. Industry leaders are the best qualified to identify wasteful regulations that impede productivity.', 1, 0, '100.0', 36);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_industry_collective_waste_management', 'resolution_category_industry', 'Collective Waste Management', 'Instead of forcing each mine or factory to bear the burden of dealing with industrial waste themselves, we should designate areas where we can store the leftovers of progress.', 2, 0, '150.0', 37);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_industry_building_a_better_tomorrow', 'resolution_category_industry', 'Building a Better Tomorrow', 'Progress cannot be limited by any obstacles that stand before us. Let us share techniques with one another to aid us in harnessing and dominating the natural world.', 3, 0, '200.0', 38);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_industry_environmental_ordinance_waivers', 'resolution_category_industry', 'Environmental Ordinance Waivers', 'The should empower local councils to suspend antiquated rules that do not serve the public good and are simply blocking progress.', 4, 0, '250.0', 39);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_industry_project_cornucopia', 'resolution_category_industry', 'Project Cornucopia', 'Near-endless resources are at our fingertips, if we have the courage to seize them. Just think of what wonders we could build if we conquer our fear.', 5, 0, '300.0', 40);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_greatergood_repeal_1', 'resolution_category_greatergood', 'Repeal Charter of Worker''s Rights', 'The oversteps its bounds by attempting to tell its members how to live. Frankly, it''s insulting.', NULL, 0, '100.0', 41);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_greatergood_repeal_2', 'resolution_category_greatergood', 'Repeal Five Year Plans', 'The oversteps its bounds by attempting to tell its members how to live. Frankly, it''s insulting.', NULL, 0, '150.0', 42);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_greatergood_repeal_3', 'resolution_category_greatergood', 'Repeal Greater Than Ourselves', 'The oversteps its bounds by attempting to tell its members how to live. Frankly, it''s insulting.', NULL, 0, '200.0', 43);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_greatergood_repeal_4', 'resolution_category_greatergood', 'Repeal Balance in the Middle', 'The oversteps its bounds by attempting to tell its members how to live. Frankly, it''s insulting.', NULL, 0, '250.0', 44);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_greatergood_repeal_5', 'resolution_category_greatergood', 'Repeal Universal Prosperity Mandate', 'The oversteps its bounds by attempting to tell its members how to live. Frankly, it''s insulting.', NULL, 0, '300.0', 45);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_greatergood_workers_rights', 'resolution_category_greatergood', 'Charter of Worker''s Rights', 'It is only right for us to codify the rights of the worker and protect them from common abuses.', 1, 0, '100.0', 46);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_greatergood_five_year_plans', 'resolution_category_greatergood', 'Five Year Plans', 'The governors of our worlds should be given the freedom necessary to propose and enact sweeping reforms for the betterment of all.', 2, 0, '150.0', 47);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_greatergood_greater_than_ourselves', 'resolution_category_greatergood', 'Greater Than Ourselves', 'We ask much of our people, but sometimes we must ask more. We should reward those who are willing to place the Empire above their own needs and volunteer to head to the frontier.', 3, 0, '200.0', 48);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_greatergood_balance_in_the_middle', 'resolution_category_greatergood', 'Balance in the Middle', 'We must tackle inequality in all of its forms, enforcing fairness by any means necessary. What good is a feast if you have already had enough, and why should it go to waste when your neighbor is hungry?', 4, 0, '250.0', 49);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_greatergood_universal_prosperity_mandate', 'resolution_category_greatergood', 'Universal Prosperity Mandate', 'If our galaxy spanning civilizations cannot provide for all of our people, then we have failed them. There is no excuse for anyone in the galaxy to want for anything. We should additionally act to redistribute excess wealth for the betterment of all.', 5, 0, '300.0', 50);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_mutualdefense_repeal_1', 'resolution_category_mutualdefense', 'Repeal The Readied Shield', 'Federations and Defensive Pacts are where military matters should be discussed, not on the Senate Floor.', NULL, 0, '100.0', 51);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_mutualdefense_repeal_2', 'resolution_category_mutualdefense', 'Repeal Military Readiness Act', 'Federations and Defensive Pacts are where military matters should be discussed, not on the Senate Floor.', NULL, 0, '150.0', 52);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_mutualdefense_repeal_3', 'resolution_category_mutualdefense', 'Repeal The Enemy of My Enemy', 'Federations and Defensive Pacts are where military matters should be discussed, not on the Senate Floor.', NULL, 0, '200.0', 53);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_mutualdefense_repeal_4', 'resolution_category_mutualdefense', 'Repeal Castigation Proclamation', 'Federations and Defensive Pacts are where military matters should be discussed, not on the Senate Floor.', NULL, 0, '250.0', 54);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_mutualdefense_repeal_5', 'resolution_category_mutualdefense', 'Repeal Renegade Containment Doctrine', 'Federations and Defensive Pacts are where military matters should be discussed, not on the Senate Floor.', NULL, 0, '300.0', 55);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_mutualdefense_the_readied_shield', 'resolution_category_mutualdefense', 'The Readied Shield', 'The universe is a dangerous place, and all members of the should be ready to defend their worlds whether it be against pirates, space creatures, or the unknown.', 1, 0, '100.0', 56);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_mutualdefense_military_readiness_act', 'resolution_category_mutualdefense', 'Military Readiness Act', 'Each member of the has a duty to themselves and to others to contribute to galactic defense.', 2, 0, '150.0', 57);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_mutualdefense_enemy_of_my_enemy', 'resolution_category_mutualdefense', 'The Enemy of My Enemy', 'An enemy of one is the enemy of all. If one of our number is attacked, should we not permit any of our number to punish the offender?', 3, 0, '200.0', 58);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_mutualdefense_castigation_proclamation', 'resolution_category_mutualdefense', 'Castigation Proclamation', 'Those who are not with us are against us, and all who stand against Galactic Law must be punished.', 4, 0, '250.0', 59);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_mutualdefense_renegade_containment', 'resolution_category_mutualdefense', 'Renegade Containment Doctrine', 'The benefits of membership in the are self-evident, and as such refusal to be a member clearly indicates ill intent. Members should be authorized to preempt any nefarious acts with force before non-members enact their plots.', 5, 0, '300.0', 60);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_mutualdefense_castigation_denouncement', 'resolution_category_denouncements', 'Castigation', 'A formal declaration denouncing the target empire. This proposal can target any empire that is either not a member of the or is in Breach of Galactic Law.', NULL, 1, '25.0', 61);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_council_denouncement', 'resolution_category_denouncements', 'Council Denouncement', 'The can propose a resolution to denounce unfriendly members of the , rendering them vulnerable to any Sanctions that have been passed.
+Surely this power won''t be abused.', NULL, 1, '100.0', 62);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_rulesofwar_repeal_1', 'resolution_category_rulesofwar', 'Repeal Guardian Angels Act', 'Might makes right. Attempting to hide the horrors of war by placing limits on it is just lying to ourselves. We should repeal these laws and untie our hands should a true threat appear.', NULL, 0, '100.0', 63);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_rulesofwar_repeal_2', 'resolution_category_rulesofwar', 'Repeal Reverence for Life', 'Might makes right. Attempting to hide the horrors of war by placing limits on it is just lying to ourselves. We should repeal these laws and untie our hands should a true threat appear.', NULL, 0, '150.0', 64);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_rulesofwar_repeal_3', 'resolution_category_rulesofwar', 'Repeal Independent Tribunals', 'Might makes right. Attempting to hide the horrors of war by placing limits on it is just lying to ourselves. We should repeal these laws and untie our hands should a true threat appear.', NULL, 0, '200.0', 65);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_rulesofwar_repeal_4', 'resolution_category_rulesofwar', 'Repeal Last Resort Doctrine', 'Might makes right. Attempting to hide the horrors of war by placing limits on it is just lying to ourselves. We should repeal these laws and untie our hands should a true threat appear.', NULL, 0, '250.0', 66);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_rulesofwar_repeal_5', 'resolution_category_rulesofwar', 'Repeal Demobilization Initiative', 'Might makes right. Attempting to hide the horrors of war by placing limits on it is just lying to ourselves. We should repeal these laws and untie our hands should a true threat appear.', NULL, 0, '300.0', 67);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_rulesofwar_guardian_angels', 'resolution_category_rulesofwar', 'Guardian Angels Act', 'The soldiers that dedicate their lives to keeping our colonies safe should be recognized and honored.', 1, 0, '100.0', 68);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_rulesofwar_reverence_for_life', 'resolution_category_rulesofwar', 'Reverence for Life', 'The horror of war on the scale of interstellar empires is a terrible thing. We should do what we can to limit its excesses to active combatants.', 2, 0, '150.0', 69);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_rulesofwar_independent_tribunals', 'resolution_category_rulesofwar', 'Independent Tribunals', 'Justice must occur for crimes soldiers commit, and civilian casualties must be accounted for. We should set up independent tribunals to investigate, try, and punish war crimes.', 3, 0, '200.0', 70);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_rulesofwar_last_resort_doctrine', 'resolution_category_rulesofwar', 'Last Resort Doctrine', 'War should be our last resort when all other forms of diplomacy fail. It should never be a tool that is used for unjustified purposes.', 4, 0, '250.0', 71);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_rulesofwar_demobilization_initiative', 'resolution_category_rulesofwar', 'Demobilization Initiative', 'Resources currently wasted on war could be better used for a variety of other projects to better the lives of our civilians. We should put hard limits on military development and focus on improving things rather than destroying them.', 5, 0, '300.0', 72);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_divinity_repeal_1', 'resolution_category_divinity', 'Repeal Comfort the Fallen', 'The Galactic Community embarrasses itself each day these repugnant discriminatory resolutions stand. Artificial life is still life.', NULL, 0, '100.0', 73);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_divinity_repeal_2', 'resolution_category_divinity', 'Repeal Tithe of the Soulless', 'The Galactic Community embarrasses itself each day these repugnant discriminatory resolutions stand. Artificial life is still life.', NULL, 0, '150.0', 74);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_divinity_repeal_3', 'resolution_category_divinity', 'Repeal Right to Work', 'The Galactic Community embarrasses itself each day these repugnant discriminatory resolutions stand. Artificial life is still life.', NULL, 0, '200.0', 75);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_divinity_repeal_4', 'resolution_category_divinity', 'Repeal Silence the Soulless', 'The Galactic Community embarrasses itself each day these repugnant discriminatory resolutions stand. Artificial life is still life.', NULL, 0, '250.0', 76);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_divinity_repeal_5', 'resolution_category_divinity', 'Repeal A Defined Purpose', 'The Galactic Community embarrasses itself each day these repugnant discriminatory resolutions stand. Artificial life is still life.', NULL, 0, '300.0', 77);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_divinity_comfort_the_fallen', 'resolution_category_divinity', 'Comfort the Fallen', 'The lowest among us is still one of us, and we should come together to assist them in their time of need.', 1, 0, '100.0', 78);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_divinity_tithe_on_the_soulless', 'resolution_category_divinity', 'Tithe of the Soulless', 'We can tolerate the existence of soulless machines if some good can come from doing so. We should tax their production and use the proceeds for more righteous causes.', 2, 0, '150.0', 79);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_divinity_right_to_work', 'resolution_category_divinity', 'Right to Work', 'Artificial constructs should never take priority over the livelihoods of actual people.', 3, 0, '200.0', 80);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_divinity_silence_the_soulless', 'resolution_category_divinity', 'Silence the Soulless', 'We can freely dismiss the ranting of simulated intelligences. It''s not like they have feelings anyway.', 4, 0, '250.0', 81);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_divinity_a_defined_purpose', 'resolution_category_divinity', 'A Defined Purpose', 'Machines are tools and must serve their betters. We should enact legislation to ensure that the spiritually bereft are forever in servitude to their metaphysically endowed superiors.', 5, 0, '300.0', 82);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_abolish_council', 'resolution_category_galacticreforms', 'Abolish Galactic Council', 'The Galactic Council is an undemocratic menace and should be abolished.', NULL, 0, '300.0', 83);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_form_council', 'resolution_category_galacticreforms', 'Form Galactic Council', 'The Galactic Community should have a council of leaders to help keep order.', NULL, 0, '100.0', 84);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_council_size_1', 'resolution_category_galacticreforms', 'Change Council Size: 1', 'I am the Senate.', NULL, 0, '200.0', 85);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_council_size_2', 'resolution_category_galacticreforms', 'Change Council Size: 2', 'Democracy is best in small doses.', NULL, 0, '200.0', 86);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_council_size_3', 'resolution_category_galacticreforms', 'Change Council Size: 3', 'A Galactic Council made up of three members seems to be ideal.', NULL, 0, '200.0', 87);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_council_size_4', 'resolution_category_galacticreforms', 'Change Council Size: 4', 'Necessity demands that we adjust the number of members on the Galactic Council. Four would be best.', NULL, 0, '200.0', 88);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_council_size_5', 'resolution_category_galacticreforms', 'Change Council Size: 5', 'The more voices we have on the Galactic Council, the better.', NULL, 0, '200.0', 89);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_permanent_seat', 'resolution_category_galacticreforms', 'Permanent Council Seat', 'The Galactic Community has flourished under the benevolent leadership of this empire. We should give them a permanent seat on the council.', NULL, 1, '300.0', 90);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_revoke_permanent_seat', 'resolution_category_galacticreforms', 'Revoke Permanent Council Seat', 'Galactic Council members should be held accountable for their actions during regular elections. This empire should not have a permanent seat.', NULL, 1, '300.0', 91);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_enable_council_veto', 'resolution_category_galacticreforms', 'Enable Council Veto Power', 'The Galactic Council should be granted the power to remove frivolous proposals from the Resolution Queue.', NULL, 0, '150.0', 92);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_disable_council_veto', 'resolution_category_galacticreforms', 'Remove Council Veto Power', 'The very idea of a Council Veto is preposterous. Why should the desires of the Community be silenced? Remove it immediately!', NULL, 0, '250.0', 93);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_enable_council_denouncement', 'resolution_category_galacticreforms', 'Enable Council Denouncement Power', 'We should give the Galactic Council the ability to target rogue empires for punishment. They should be able to make Denouncement proposals to the Community.', NULL, 0, '150.0', 94);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_disable_council_denouncement', 'resolution_category_galacticreforms', 'Remove Council Denouncement Power', 'Galactic Council members should be required to have proper justification for denouncement. We should remove this unfair and autocratic ability.', NULL, 0, '250.0', 95);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_tech_repeal_1', 'resolution_category_sanctions_environment_technology', 'Repeal Minor Research Sanctions', 'The research sanctions that we have levied on empires in Breach of Galactic Law are too harsh. It is wrong to slow technological progress over matters that should be handled diplomatically.', NULL, 0, '25.0', 96);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_tech_repeal_2', 'resolution_category_sanctions_environment_technology', 'Repeal Moderate Research Sanctions', 'The research sanctions that we have levied on empires in Breach of Galactic Law are too harsh. It is wrong to slow technological progress over matters that should be handled diplomatically.', NULL, 0, '25.0', 97);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_tech_repeal_3', 'resolution_category_sanctions_environment_technology', 'Repeal Major Research Sanctions', 'The research sanctions that we have levied on empires in Breach of Galactic Law are too harsh. It is wrong to slow technological progress over matters that should be handled diplomatically.', NULL, 0, '25.0', 98);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_tech_1', 'resolution_category_sanctions_environment_technology', 'Minor Research Sanctions', 'Empires that are in Breach of Galactic Law must permit regular inspections of their research facilities to ensure that they are in compliance with galactic requirements.', 1, 0, '25.0', 99);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_tech_2', 'resolution_category_sanctions_environment_technology', 'Moderate Research Sanctions', 'Stronger measures are needed to ensure compliance with Galactic Law.', 2, 0, '25.0', 100);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_tech_3', 'resolution_category_sanctions_environment_technology', 'Major Research Sanctions', 'Any who illegally assist technological research in sanctioned empires must be punished harshly.', 3, 0, '25.0', 101);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_economic_repeal_1', 'resolution_category_sanctions_commerce_industry', 'Repeal Minor Economic Sanctions', 'The economic sanctions that we have levied on empires in Breach of Galactic Law are too harsh. The burden is too great over matters that should be handled diplomatically.', NULL, 0, '25.0', 102);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_economic_repeal_2', 'resolution_category_sanctions_commerce_industry', 'Repeal Moderate Economic Sanctions', 'The economic sanctions that we have levied on empires in Breach of Galactic Law are too harsh. The burden is too great over matters that should be handled diplomatically.', NULL, 0, '25.0', 103);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_economic_repeal_3', 'resolution_category_sanctions_commerce_industry', 'Repeal Major Economic Sanctions', 'The economic sanctions that we have levied on empires in Breach of Galactic Law are too harsh. The burden is too great over matters that should be handled diplomatically.', NULL, 0, '25.0', 104);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_economic_1', 'resolution_category_sanctions_commerce_industry', 'Minor Economic Sanctions', 'We should use a system of tariffs and inspections to encourage empires that are in Breach of Galactic Law to comply with galactic will.', 1, 0, '25.0', 105);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_economic_2', 'resolution_category_sanctions_commerce_industry', 'Moderate Economic Sanctions', 'Stronger measures are needed to ensure compliance with Galactic Law', 2, 0, '25.0', 106);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_economic_3', 'resolution_category_sanctions_commerce_industry', 'Major Economic Sanctions', 'We must use all means at our disposal to convince empires that it is their best interests economically to obey Galactic Law.', 3, 0, '25.0', 107);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_military_repeal_1', 'resolution_category_sanctions_defense_war', 'Repeal Minor Military Sanctions', 'Restricting naval size for breaking Galactic Law is a dangerous proposition. We should use other means to ensure compliance.', NULL, 0, '25.0', 108);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_military_repeal_2', 'resolution_category_sanctions_defense_war', 'Repeal Moderate Military Sanctions', 'Restricting naval size for breaking Galactic Law is a dangerous proposition. We should use other means to ensure compliance.', NULL, 0, '25.0', 109);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_military_repeal_3', 'resolution_category_sanctions_defense_war', 'Repeal Major Military Sanctions', 'Restricting naval size for breaking Galactic Law is a dangerous proposition. We should use other means to ensure compliance.', NULL, 0, '25.0', 110);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_military_1', 'resolution_category_sanctions_defense_war', 'Minor Military Sanctions', 'We must place sensible restrictions on the navies of empires that are in Breach of Galactic Law.', 1, 0, '25.0', 111);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_military_2', 'resolution_category_sanctions_defense_war', 'Moderate Military Sanctions', 'Stronger measures are needed to ensure compliance with Galactic Law.', 2, 0, '25.0', 112);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_military_3', 'resolution_category_sanctions_defense_war', 'Major Military Sanctions', 'Empires that refuse to obey Galactic Law must have extreme restrictions placed on the size and deployment of their forces.', 3, 0, '25.0', 113);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_administrative_repeal_1', 'resolution_category_sanctions_politics_culture', 'Repeal Minor Administrative Sanctions', 'Our administrative sanctions are counterproductive - we should be using all diplomatic channels at our disposal to convince empires to work with the .', NULL, 0, '25.0', 114);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_administrative_repeal_2', 'resolution_category_sanctions_politics_culture', 'Repeal Moderate Administrative Sanctions', 'Our administrative sanctions are counterproductive - we should be using all diplomatic channels at our disposal to convince empires to work with the .', NULL, 0, '25.0', 115);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_administrative_repeal_3', 'resolution_category_sanctions_politics_culture', 'Repeal Major Administrative Sanctions', 'Our administrative sanctions are counterproductive - we should be using all diplomatic channels at our disposal to convince empires to work with the .', NULL, 0, '25.0', 116);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_administrative_1', 'resolution_category_sanctions_politics_culture', 'Minor Administrative Sanctions', 'The diplomats of empires that ignore Galactic Law should be firmly but politely shunned.', 1, 0, '25.0', 117);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_administrative_2', 'resolution_category_sanctions_politics_culture', 'Moderate Administrative Sanctions', 'Stronger measures are needed to ensure compliance with Galactic Law.', 2, 0, '25.0', 118);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_sanctions_administrative_3', 'resolution_category_sanctions_politics_culture', 'Major Administrative Sanctions', 'Extreme measures must be taken to isolate and ostracize those who will not obey the will of the .', 3, 0, '25.0', 119);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_focus_crisis_prethoryn', 'resolution_category_galactic_focus', 'Focus: The Prethoryn Scourge', 'The Prethoryn Scourge is a threat to all life in the galaxy. If we do not unite to stop them, they will consume us all. We should make dealing with this crisis the Galactic Focus.', NULL, 0, '100.0', 120);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_focus_crisis_unbidden', 'resolution_category_galactic_focus', 'Focus: The Unbidden', 'Extradimensional invaders are a threat to all life in the galaxy. If we do not unite to stop them, they will overwhelm us all. We should make dealing with this crisis the Galactic Focus.', NULL, 0, '100.0', 121);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_focus_crisis_contingency', 'resolution_category_galactic_focus', 'Focus: The Contingency', 'The AI Contingency is a threat to all life in the galaxy. If we do not unite to stop it, they will destroy us all. We should make dealing with this crisis the Galactic Focus.', NULL, 0, '100.0', 122);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_focus_crisis_greatkhan', 'resolution_category_galactic_focus', 'Focus: The Great Khan', 'The Great Khan''s rampage is a danger to all free empires in the galaxy. If we do not unite to stop it, we will all be crushed beneath their fleet. We should make dealing with this crisis the Galactic Focus.', NULL, 0, '100.0', 123);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_focus_crisis_nanites', 'resolution_category_galactic_focus', 'Focus: The Gray Tempest', 'The nanites from the L-Cluster are a threat to the entire galaxy. If we do not unite to stop the nanite swarm, they will destroy us all. We should make dealing with this crisis the Galactic Focus.', NULL, 0, '100.0', 124);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_focus_war_in_heaven_support_side_1', 'resolution_category_galactic_focus', 'Focus: Denounce', 'The are clearly in the wrong in this war, and we should declare unified support for the .', NULL, 0, '100.0', 125);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_focus_war_in_heaven_support_side_2', 'resolution_category_galactic_focus', 'Focus: Denounce', 'The are clearly in the wrong in this war, and we should declare unified support for the .', NULL, 0, '100.0', 126);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_focus_war_in_heaven_denounce_both', 'resolution_category_galactic_focus', 'Focus: Denounce Both Awakened Empires', 'Both the and the are acting like children. Prepare a harshly worded letter for each.', NULL, 0, '100.0', 127);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_tiyanki_conservation_act', 'resolution_category_space_fauna_tiyanki', 'Tiyanki Conservation Act', 'The Tiyanki are a unique form of spacefaring life, and they must be protected from those who would do them harm.', NULL, 0, '25.0', 128);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_repeal_tiyanki_conservation_act', 'resolution_category_space_fauna_tiyanki', 'Repeal Tiyanki Conservation Act', 'It is not for the Galactic Community to decide how its members deal with the Tiyanki.', NULL, 0, '25.0', 129);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_tiyanki_pest_control', 'resolution_category_space_fauna_tiyanki', 'Tiyanki Pest Control', 'The roving Tiyanki are not only a nuisance, but also a navigational hazard. The presence of these unpredictable creatures cannot be tolerated in the galaxy''s increasingly busy spacelanes.', NULL, 0, '25.0', 130);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_repeal_tiyanki_pest_control', 'resolution_category_space_fauna_tiyanki', 'Repeal Tiyanki Pest Control', 'The Galactic Community has no place forcing its members to destroy the Tiyanki on sight.', NULL, 0, '25.0', 131);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_amoeba_conservation_act', 'resolution_category_space_fauna_tiyanki', 'Space Amoeba Protection Act', 'Despite their unseeming looks, the Space Amoebas have as much right to roam the galaxy as any species. They must be treated as a form of life worth cherishing, not as vermin to be hunted down.', NULL, 0, '25.0', 132);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_repeal_amoeba_conservation_act', 'resolution_category_space_fauna_tiyanki', 'Repeal Space Amoeba Protection Act', 'Space Amoebas are a pest and must be eradicated.', NULL, 0, '25.0', 133);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_market_form', 'resolution_category_galactic_focus', 'Form the Galactic Market', 'De facto galactic trade, unbound by international diplomacy, has existed since the first two interstellar species met.
+As galactic leaders we should agree that it is time to legitimize this commercial forum so that all may benefit.', NULL, 0, '100.0', 134);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_market_ban_sentient_organic_slave_trade', 'resolution_category_market', 'Ban Organic Slave Trade', 'The use of the Galactic Market to trade in sentient organics is abominable. We should ban this practice.', NULL, 0, '25.0', 135);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_market_repeal_sentient_organic_slave_trade', 'resolution_category_market', 'Allow Organic Slave Trade', 'Economic indicators prove that our earlier restrictions on the organic slave trade were clearly in error. We should repeal the ban and let the free market do its magic.', NULL, 0, '25.0', 136);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_market_ban_sentient_slave_trade', 'resolution_category_market', 'Ban Sentient Slave Trade', 'It is regrettable that our previous resolution left a loophole for the sale of sentient mechanical organisms. We should rectify this mistake and ban the trade of all sentients on the Galactic Market.', NULL, 0, '25.0', 137);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_market_allow_sentient_slave_trade', 'resolution_category_market', 'Allow Sentient Mechanical Slave Trade', 'Creators should have the right to do what they wish with their property. This includes objects that imitate sentience. We should repeal the misguided ban on the sale of these so-called ''sentient'' machines.', NULL, 0, '25.0', 138);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_market_relocate', 'resolution_category_market', 'Relocate Galactic Market', 'We question whether the Galactic Market is best served by its current leader. We should initiate a new competition to determine who should lead it.', NULL, 0, '100.0', 139);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_community_champions', 'resolution_category_politics_tradition_1', 'Champions of the Community', 'Those we have trusted with guiding the Community are also the best candidates to become its most stalwart defenders. By granting them more powers and resources, we are enabling them to protect us all.', NULL, 0, '250.0', 140);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_constitutional_immunity', 'resolution_category_politics_tradition_2', 'Constitutional Immunity', 'Sometimes, you need to get dirty in the name of the greater good. We honor the moral sacrifices made by those who allow us to live comfortable lives, sheltered from moral dilemmas.', NULL, 1, '250.0', 141);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_development_aides', 'resolution_category_politics_tradition_3', 'Development Aides', 'The most privileged among us have a moral duty to help the others. They will shoulder our burdens to guide us all towards a more harmonious community.', NULL, 0, '250.0', 142);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_threats_committee', 'resolution_category_politics_tradition_4', 'Galactic Threats Committee', 'Who knows what threats lurk just out of sensor range? Creating a committee dedicated to the study of galactic level threats will prepare us for anything.', NULL, 0, '250.0', 143);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_community_champions_repeal', 'resolution_category_politics_tradition_1', 'Repeal Champions of the Community', 'Repeals the Champions of the Community resolution.', NULL, 0, '250.0', 144);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_constitutional_immunity_repeal', 'resolution_category_politics_tradition_2', 'Repeal Constitutional Immunity', 'Repeals the Constitutional Immunity resolution, this empire can once again end up in breach of galactic law.', NULL, 1, '250.0', 145);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_development_aides_repeal', 'resolution_category_politics_tradition_3', 'Repeal Development Aides', 'Repeals the Development Aides resolution.', NULL, 0, '250.0', 146);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_threats_committee_repeal', 'resolution_category_politics_tradition_4', 'Repeal $resolution_galactic_threats_commitee$', 'Repeals the $resolution_galactic_threats_commitee$ resolution.', NULL, 0, '250.0', 147);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_declare_crisis', 'resolution_category_declare_crisis', 'Declare Crisis', 'This empire represents a clear and undeniable threat to the future of the entire galaxy. It must be contained and destroyed by the Galactic Community before it is too late.', NULL, 1, '300.0', 148);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_repeal_crisis', 'resolution_category_declare_crisis', 'Repeal Crisis', 'Enough is enough. The targeted empire should no longer be considered a galactic crisis, and hostilities with the members of the Community must come to an immediate end.', NULL, 1, '300.0', 149);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_declare_crisis_empire', 'resolution_category_declare_crisis', 'Declare Crisis', 'This empire represents a clear and undeniable threat to the future of the entire galaxy. It must be contained and destroyed by the Galactic Imperium before it is too late.', NULL, 1, '300.0', 150);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_repeal_crisis_empire', 'resolution_category_declare_crisis', 'Repeal Crisis', 'This so-called crisis no longer presents a credible threat to the Imperium. They are no longer worthy of our attention.', NULL, 1, '300.0', 151);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_nominate_custodian', 'resolution_category_galacticreforms', 'Nominate Custodian', 'When decisive action is needed, a member of the Council can be elevated to the position of Galactic Custodian. The Custodian is granted special powers and can propose new and powerful resolutions.', NULL, 1, '300.0', 152);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galacticreforms_unseat_custodian', 'resolution_category_galacticreforms', 'Unseat Custodian', 'It is time to put an end to the corruption of the current Custodians. They must immediately be removed from office before they can do more harm to the Galactic Community!', NULL, 1, '200.0', 153);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_form_empire', 'resolution_category_custodian_reforms', 'Proclaim the Galactic Imperium', 'Despite the tremendous efforts of the Custodian, the Galactic Community is still undermined by internal division. Think of all that could be accomplished if the galaxy were united under strong leadership. An unprecedented era of peace and prosperity is within our reach.', NULL, 0, '200.0', 154);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_awakened_galactic_empire', 'resolution_category_custodian_reforms', 'Proclaim the Awakened Galactic Imperium', 'The empires in this galaxy are too young and inexperienced. They require a guide in these trying times.', NULL, 0, '200.0', 155);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_united_front', 'resolution_category_custodian_reforms', 'A United Front', 'The threat our galaxy faces presents us with a simple choice: stand together, or die alone. We shall fight as one, sharing information about the enemy and putting old grudges aside.', NULL, 0, '200.0', 156);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_galactic_mobilization', 'resolution_category_custodian_reforms', 'Galactic Mobilization', 'The future of our galaxy is at stake. Massive fleets of war must be rapidly mobilized, even if it means the impressment of civilian merchant crews.', NULL, 0, '200.0', 157);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_galactic_standard', 'resolution_category_custodian_reforms', 'Introduce Galactic Standard', 'Galactic Standard is a new language that has been specifically designed for ease of use by all sapients regardless of their physiology. By introducing a single language to all official Galactic Community functions, it is hoped that translation mishaps may be avoided.', NULL, 0, '200.0', 158);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_anti_piracy', 'resolution_category_custodian_reforms', 'Anti-Piracy Initiative', 'Rampant space piracy threatens to undermine the economic well-being of the entire galaxy. With this initiative, all Community members will be educated in effective anti-piracy measures. Joint efforts to develop combat tactics that take advantage of the general lack of discipline among pirate and marauder crews will also be undertaken.', NULL, 0, '200.0', 159);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_extend_custodianship', 'resolution_category_term_limits', 'Extend Custodianship', 'Making the galaxy a better place is a monumental task that takes time. The current Custodianship needs to be extended by another term if anything with lasting effects is to be accomplished.', NULL, 0, '200.0', 160);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_perpetual_custodianship', 'resolution_category_term_limits', 'Remove Custodianship Term Limit', 'The current Custodians have proven themselves irreplaceable guardians of the Community. Their stalwart service to the galaxy must be allowed to continue indefinitely.', NULL, 0, '200.0', 161);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_end_custodianship', 'resolution_category_term_limits', 'End Custodianship', 'The Galactic Community no longer has a need for a Custodian. As such, the Custodianship should be terminated before the term limit is up.', NULL, 0, '200.0', 162);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_gdf', 'resolution_category_galactic_institutions', 'Galactic Defense Force', 'To better protect the members of the Community, a standing multinational force under the unified command of the Galactic Custodian must be established.', NULL, 0, '200.0', 163);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_expand_gdf', 'resolution_category_galactic_institutions', 'GDF Expansion', 'The size of the Galactic Defense Force must be greatly increased if it is to meet the ever-increasing scope of its mission.', NULL, 0, '200.0', 164);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_disband_gdf', 'resolution_category_galactic_institutions', 'Disband the GDF', 'The Galactic Defense Force has served its purpose and should now be demobilized.', NULL, 0, '200.0', 165);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_ina', 'resolution_category_galactic_institutions', 'Interstellar Navigation Agency', 'The INA will enforce standards and recommended practices for space travel, and will maintain a massive database of every known space hazard in all charted Community systems.', NULL, 0, '200.0', 166);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_disband_ina', 'resolution_category_galactic_institutions', 'Disband the Interstellar Navigation Agency', 'The INA is an inefficient and expensive organization. Its continued existence cannot be justified.', NULL, 0, '200.0', 167);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_gto', 'resolution_category_galactic_institutions', 'Galactic Trade Organization', 'The GTO will serve as a galactic regulatory body that enforces trade standards and resolves disputes.', NULL, 0, '200.0', 168);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_disband_gto', 'resolution_category_galactic_institutions', 'Disband the Galactic Trade Organization', 'The meddling of the GTO must come to an end. Trade has a way of regulating itself.', NULL, 0, '200.0', 169);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_galpol', 'resolution_category_galactic_institutions', 'GALPOL', 'The creation of a galactic criminal police organization will enable law enforcement agencies to cooperate across the entire Galactic Community.', NULL, 0, '200.0', 170);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_disband_galpol', 'resolution_category_galactic_institutions', 'Disband GALPOL', 'GALPOL must not be allowed to become the', NULL, 0, '200.0', 171);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_empire_imperial_crusade', 'resolution_category_foreign_relations', 'Imperial Crusade', 'The borders of the Galactic Imperium do not yet encompass the entire galaxy - this must be rectified. An Imperial Crusade will, if successful, force the target of this resolution to join the Imperium.', NULL, 1, '100.0', 172);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_united_front', 'resolution_category_foreign_relations', 'A United Front', 'The threat our galaxy faces presents us with a simple choice: stand together, or die alone. We shall fight as one, sharing information about the enemy and putting old grudges aside.', NULL, 0, '200.0', 173);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_imperial_armada', 'resolution_category_emperor_imperial_institutions', 'Imperial Armada', 'With recruits conscripted from the entire Imperium, the Imperial Armada shall be the mightiest space fleet the galaxy has ever seen.', NULL, 0, '200.0', 174);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_expand_ia', 'resolution_category_emperor_imperial_institutions', 'Imperial Armada Expansion', 'The size of the Imperial Armada must be increased, for the greater glory of the Imperium!', NULL, 0, '200.0', 175);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_imperial_legions', 'resolution_category_emperor_imperial_institutions', 'Imperial Legions', 'There is no greater honor than to serve the galaxy as an Imperial Legionnaire. Drawn from the cream of all military recruits across the entire Imperium, the Legions are drilled and conditioned into a fanatically loyal ground force.', NULL, 0, '200.0', 176);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_ina', 'resolution_category_emperor_imperial_institutions', 'Imperial Navigation Agency', 'The INA will enforce standards and recommended practices for space travel, and will maintain a massive database of every known space hazard in all charted Imperium systems.', NULL, 0, '200.0', 177);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_disband_ina', 'resolution_category_emperor_imperial_institutions', 'Disband the Imperial Navigation Agency', 'The INA is an inefficient and expensive organization. Its continued existence cannot be justified.', NULL, 0, '200.0', 178);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_gto', 'resolution_category_emperor_imperial_institutions', 'Galactic Trade Organization', 'The GTO will serve as a galactic regulatory body that enforces trade standards and resolves disputes.', NULL, 0, '200.0', 179);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_disband_gto', 'resolution_category_emperor_imperial_institutions', 'Disband the Galactic Trade Organization', 'The meddling of the GTO must come to an end. Trade has a way of regulating itself.', NULL, 0, '200.0', 180);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_isd', 'resolution_category_emperor_imperial_institutions', 'Imperial Security Directorate', 'Peace, stability, order - the very tenets on which the Galactic Imperium was founded. The ISD will hunt down criminals, terrorists, and seditionists wherever they may be hiding.', NULL, 0, '200.0', 181);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_imperial_charter', 'resolution_category_emperor_imperial_institutions', 'Imperial Charter', 'A Megacorporation can be granted an Imperial Charter, giving them special dispensations and trade rights throughout the Imperium.', NULL, 1, '200.0', 182);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_revoke_imperial_charter', 'resolution_category_emperor_imperial_institutions', 'Revoke Charter', 'This arrangement is no longer to the benefit of the Galactic Imperium.', NULL, 1, '200.0', 183);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_abolish_council', 'resolution_category_imperial_council', 'Abolish Imperial Council', 'The Imperial Council and its sycophants are yet another tragic remnant of the corrupt Galactic Community. It serves no purpose in this new galactic era.', NULL, 0, '300.0', 184);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_restore_council', 'resolution_category_imperial_council', 'Restore Imperial Council', 'Perhaps the decision to dismiss the Imperial Council was... taken in haste. Some delegation is necessary in an institution the size of the Galactic Imperium.', NULL, 0, '100.0', 185);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_council_size_1', 'resolution_category_imperial_council', 'Change Council Size: 1', 'The Imperium needs but a single loyal voice in the Council.', NULL, 0, '200.0', 186);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_council_size_2', 'resolution_category_imperial_council', 'Change Council Size: 2', 'Two steadfast and dependable members in the Imperial Council is enough.', NULL, 0, '200.0', 187);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_council_size_3', 'resolution_category_imperial_council', 'Change Council Size: 3', 'An Imperial Council made up of three members seems to be ideal.', NULL, 0, '200.0', 188);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_council_size_4', 'resolution_category_imperial_council', 'Change Council Size: 4', 'Necessity demands that we adjust the number of members on the Imperial Council. Four would be best.', NULL, 0, '200.0', 189);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_council_size_5', 'resolution_category_imperial_council', 'Change Council Size: 5', 'The Imperium will benefit from more voices on the Imperial Council.', NULL, 0, '200.0', 190);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_permanent_seat', 'resolution_category_imperial_council', 'Permanent Council Seat', 'It is clear that this Council member has the best interest of the Imperium in mind. They should be granted a permanent seat.', NULL, 1, '300.0', 191);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_revoke_permanent_seat', 'resolution_category_imperial_council', 'Revoke Permanent Council Seat', 'This Council member has fallen out of favor with Their Imperial Majesty. They should no longer have a permanent seat.', NULL, 1, '300.0', 192);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_trial_of_advancement', 'resolution_category_imperial_council', 'By Trial of Advancement', 'Lest they are taken for granted, it should be possible to challenge the members of the Imperial Council for their seats in a Trial of Advancement. The complacent and the meek must be weeded out from the upper echelons of the Imperium.', NULL, 0, '200.0', 193);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_by_appointment', 'resolution_category_imperial_council', 'By Appointment', 'The members of the Imperial Council must serve at the pleasure of Their Imperial Majesty, who should be free to pick from amongst all of the Imperium''s loyal subjects.', NULL, 0, '200.0', 194);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_by_election', 'resolution_category_imperial_council', 'By Election', 'As in the old Galactic Community, the members of the Imperial Council should be elected based on their voting power.', NULL, 0, '200.0', 195);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_pax_galactica', 'resolution_category_imperial_reforms', 'Pax Galactica', 'For the Imperium to prosper, it must not tear itself apart in pointless infighting. Wars between members cannot be permitted.', NULL, 0, '200.0', 196);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_emperor_repeal_pax_galactica', 'resolution_category_imperial_reforms', 'Repeal Pax Galactica', 'The Imperium is doomed if it surrenders to pacifism. Internal conflict will ultimately make us stronger.', NULL, 0, '200.0', 197);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_defenseprivatization_repeal_1', 'resolution_category_defenseprivatization', 'Repeal Security Contractors', 'While the professionalism of defense contractors is undeniable, the empires of the should not rely too heavily on private peacekeeping.', NULL, 0, '100.0', 198);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_defenseprivatization_repeal_2', 'resolution_category_defenseprivatization', 'Repeal High Consequence Protection', 'While the professionalism of defense contractors is undeniable, the empires of the should not rely too heavily on private peacekeeping.', NULL, 0, '150.0', 199);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_defenseprivatization_repeal_3', 'resolution_category_defenseprivatization', 'Repeal Neutral Defenders', 'While the professionalism of defense contractors is undeniable, the empires of the should not rely too heavily on private peacekeeping.', NULL, 0, '200.0', 200);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_defenseprivatization_repeal_4', 'resolution_category_defenseprivatization', 'Repeal Galactic Risk Management', 'While the professionalism of defense contractors is undeniable, the empires of the should not rely too heavily on private peacekeeping.', NULL, 0, '250.0', 201);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_defenseprivatization_repeal_5', 'resolution_category_defenseprivatization', 'Repeal Corporate Peacekeeping', 'While the professionalism of defense contractors is undeniable, the empires of the should not rely too heavily on private peacekeeping.', NULL, 0, '300.0', 202);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_defenseprivatization_defense_contracts', 'resolution_category_defenseprivatization', 'Security Contractors', 'In the interest of galactic security, we should invest resources in independent security agencies. These highly-trained and non-political professionals will help organize defense for the members of the .', 1, 0, '100.0', 203);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_defenseprivatization_private_support_troops', 'resolution_category_defenseprivatization', 'High Consequence Protection', 'As the scale of conflicts increases, private security outfits must be empowered to keep doing what they do best: keep the safe.', 2, 0, '150.0', 204);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_defenseprivatization_condottieri', 'resolution_category_defenseprivatization', 'Neutral Defenders', 'War might be inevitable, but collateral damage is not. By placing its trust in the hands of defense specialists, the is certain to dramatically reduce the number of reported war atrocities.', 3, 0, '200.0', 205);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_defenseprivatization_security_business', 'resolution_category_defenseprivatization', 'Galactic Risk Management', 'Despite our best efforts, violent ideological conflicts keep agitating the galaxy. Empires keep proving themselves prone to petty squabbles. Regulating their personal militaries is sure to allow neutral defense contractors to keep the peace more efficiently.', 4, 0, '250.0', 206);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_defenseprivatization_corporate_warlords', 'resolution_category_defenseprivatization', 'Corporate Peacekeeping', '''$enclave.235.4.desc$''', 5, 0, '300.0', 207);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_intergalacticdirective_regulated_growth', 'resolution_category_intergalacticdirective', 'Regulated Growth', 'By regulating the borders of the member nations we can secure a safer and fairer galaxy for all. Though some might find the bureaucracy stifling, it is for the betterment of us all.', 1, 0, '100.0', 208);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_intergalacticdirective_ensured_sovereignty', 'resolution_category_intergalacticdirective', 'Ensured Sovereignty', 'The Galactic Community will put into motion directives to ensure the sovereignty of its members, particularly those who have previously had their integrity breached by other empires.', 2, 0, '150.0', 209);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_intergalacticdirective_a_voice_for_all', 'resolution_category_intergalacticdirective', 'A Voice for All', 'This resolution will that ensure every member of the Galactic Community will have a say about the future of their empire.', 3, 0, '200.0', 210);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_intergalacticdirective_repeal_1', 'resolution_category_intergalacticdirective', 'Repeal Regulated Growth', 'Though it is natural for empires to demand their borders be respected, the directives enforced by the Galactic Community have become overbearing and stifling. To ensure a smoothly functional bureaucracy, it is time to cut back on some of these mandates.', NULL, 0, '100.0', 211);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_intergalacticdirective_repeal_2', 'resolution_category_intergalacticdirective', 'Repeal Ensured Sovereignty', 'Though it is natural for empires to demand their borders be respected, the directives enforced by the Galactic Community have become overbearing and stifling. To ensure a smoothly functional bureaucracy, it is time to cut back on some of these mandates.', NULL, 0, '150.0', 212);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_intergalacticdirective_repeal_3', 'resolution_category_intergalacticdirective', 'Repeal A Voice for All', 'Though it is natural for empires to demand their borders be respected, the directives enforced by the Galactic Community have become overbearing and stifling. To ensure a smoothly functional bureaucracy, it is time to cut back on some of these mandates.', NULL, 0, '200.0', 213);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_bureaucraticsurveillance_administrative_insight', 'resolution_category_bureaucraticsurveillance', 'Administrative Insight', 'As part of our efforts to simplify galactic bureaucracy, we are enforcing a clearer administrative hierarchy in the senate, particularly between those member states that already have diplomatic agreements in place.', 1, 0, '100.0', 214);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_bureaucraticsurveillance_borderless_authority', 'resolution_category_bureaucraticsurveillance', 'Borderless Authority', 'As part of our continual efforts to simplify its internal bureaucracy, even greater authority will be handed to the stronger members of the senate.', 2, 0, '150.0', 215);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_bureaucraticsurveillance_personal_oversight', 'resolution_category_bureaucraticsurveillance', 'Personal Oversight', 'While some states have admittedly experienced a degradation of their sovereignty, our efforts to eliminate bureaucratic red tape have vastly improved the efficiency of the senate!', 3, 0, '200.0', 216);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_bureaucraticsurveillance_repeal_1', 'resolution_category_bureaucraticsurveillance', 'Repeal Administrative Insight', 'Our focus on eliminating bureaucratic red tape, while successful, has caused several member states to complain that their sovereignty has been compromised. They are now proposing a mandate to restore some of that lost independence.', NULL, 0, '100.0', 217);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_bureaucraticsurveillance_repeal_2', 'resolution_category_bureaucraticsurveillance', 'Repeal Borderless Authority', 'Our focus on eliminating bureaucratic red tape, while successful, has caused several member states to complain that their sovereignty has been compromised. They are now proposing a mandate to restore some of that lost independence.', NULL, 0, '150.0', 218);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_bureaucraticsurveillance_repeal_3', 'resolution_category_bureaucraticsurveillance', 'Repeal Personal Oversight', 'Our focus on eliminating bureaucratic red tape, while successful, has caused several member states to complain that their sovereignty has been compromised. They are now proposing a mandate to restore some of that lost independence.', NULL, 0, '200.0', 219);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_pre_ftl_stances_repeal_1', 'resolution_category_pre_ftl_stances', 'Repeal Equal Standing Act', 'Treating', NULL, 0, '100.0', 220);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_pre_ftl_stances_repeal_2', 'resolution_category_pre_ftl_stances', 'Repeal Non-Interference Act', 'Forbidding the empires of the from making use of resources that rightfully belongs to them just because savages squat on them is a violation of our intellectual and property rights.', NULL, 0, '100.0', 221);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_pre_ftl_stances_repeal_3', 'resolution_category_pre_ftl_stances', 'Repeal Exploitation Act', 'To treat another civilization solely as a source of resources to be exploited purely on the basis of their current technology is abhorrent. The empires of the should ensure that the civilizations that will follow us to the stars are guaranteed the same rights as any other species.', NULL, 0, '100.0', 222);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_pre_ftl_stances_equal_standing', 'resolution_category_pre_ftl_stances', 'Equal Standing Act', 'Each pre-FTL civilization has the potential to acquire space flight and join the . As such, we must treat any future members with dignity and respect.', NULL, 0, '100.0', 223);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_pre_ftl_stances_non_interference', 'resolution_category_pre_ftl_stances', 'Non-Interference Act', 'Pre-FTL Civilizations should be given the chance to develop without outside interference.', NULL, 0, '100.0', 224);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_pre_ftl_stances_exploitation', 'resolution_category_pre_ftl_stances', 'Exploitation Act', 'Pre-FTL worlds fall within the jurisdiction of whoever controls their system, and each empire should be allowed the freedom to treat their property in whichever way they see fit.', NULL, 0, '100.0', 225);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_shared_knowledge', 'resolution_category_space_weather_exploitation_stances', 'Storm Knowledge Sharing', 'Cosmic storms affect us all; any knowledge pertaining to their behavior should be shared equally.', 1, 0, '100.0', 226);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_shared_knowledge_repeal', 'resolution_category_space_weather_exploitation_stances', 'Repeal Storm Knowledge Sharing', 'How to handle cosmic storms should be an empire''s own responsibility. The galactic community should not have to share this burden.', NULL, 0, '100.0', 227);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_protection_initiative', 'resolution_category_space_weather_exploitation_stances', 'Storm Surveying Initiative', 'It is time to be more proactive. Better innovation will help us to utilize the economic gains of the cosmic storms.', 2, 0, '150.0', 228);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_protection_initiative_repeal', 'resolution_category_space_weather_exploitation_stances', 'Repeal Storm Surveying Initiative', 'How to handle cosmic storms should be an empire''s own responsibility. The galactic community should not have to share this burden.', NULL, 0, '150.0', 229);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_galactic_management', 'resolution_category_space_weather_exploitation_stances', 'Galactic Storm Management', 'Weathering the cosmic storms has pushed us to increase our efficiency, but there is still so much more to be gained.', 3, 0, '200.0', 230);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_galactic_management_repeal', 'resolution_category_space_weather_exploitation_stances', 'Repeal Galactic Storm Management', 'How to handle cosmic storms should be an empire''s own responsibility. The galactic community should not have to share this burden.', NULL, 0, '200.0', 231);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_utilization_protocols', 'resolution_category_space_weather_exploitation_stances', 'Storm Utilization Protocols', 'It is no longer responsible for any of us to go without cosmic storm protection, and equally foolish not to take advantage of what the storms can offer.', 4, 0, '250.0', 232);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_utilization_protocols_repeal', 'resolution_category_space_weather_exploitation_stances', 'Repeal Storm Utilization Protocols', 'How to handle cosmic storms should be an empire''s own responsibility. The galactic community should not have to share this burden.', NULL, 0, '250.0', 233);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_manipulation_mandate', 'resolution_category_space_weather_exploitation_stances', 'Storm Manipulation Mandate', 'We are called to dominate the cosmic storms. These forces of nature were meant to serve us.', 5, 0, '300.0', 234);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_manipulation_mandate_repeal', 'resolution_category_space_weather_exploitation_stances', 'Repeal Storm Manipulation Mandate', 'How to handle cosmic storms should be an empire''s own responsibility. The galactic community should not have to share this burden.', NULL, 0, '300.0', 235);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_advanced_storm_studies', 'resolution_category_storm_environmentalists_stances', 'Advanced Storm Studies', 'Storms are a beautiful force of nature to be learned from and respected.', 1, 0, '100.0', 236);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_advanced_storm_studies_repeal', 'resolution_category_storm_environmentalists_stances', 'Repeal Advanced Storm Studies', 'The galactic community should not dictate an empire''s response to cosmic storms.', NULL, 0, '100.0', 237);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_galactic_emergency_relief', 'resolution_category_storm_environmentalists_stances', 'Galactic Emergency Relief', 'We must provide aid to those most affected by the effects of the cosmic storms.', 2, 0, '150.0', 238);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_galactic_emergency_relief_repeal', 'resolution_category_storm_environmentalists_stances', 'Repeal Galactic Emergency Relief', 'The galactic community should not dictate an empire''s response to cosmic storms.', NULL, 0, '150.0', 239);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_storm_encouragement_mandate', 'resolution_category_storm_environmentalists_stances', 'Storm Movement Mandate', 'By dispersing vital particles and energy, cosmic storms breathe life into the galaxy, renewing the planets and systems they touch. Their natural passage must not be hindered.', 3, 0, '200.0', 240);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_storm_encouragement_mandate_repeal', 'resolution_category_storm_environmentalists_stances', 'Repeal Storm Movement Mandate', 'The galactic community should not dictate an empire''s response to cosmic storms.', NULL, 0, '200.0', 241);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_control_restrictions', 'resolution_category_storm_environmentalists_stances', 'Storm Manipulation Controls', 'The galaxy is a vast, interconnected ecosystem in which cosmic storms play a vital part. Influencing their behavior must be outlawed.', 4, 0, '250.0', 242);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_control_restrictions_repeal', 'resolution_category_storm_environmentalists_stances', 'Repeal Storm Manipulation Controls', 'The galactic community should not dictate an empire''s response to cosmic storms.', NULL, 0, '250.0', 243);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_preservation_initiative', 'resolution_category_storm_environmentalists_stances', 'Storm Preservation Initiative', 'Controlling storms in any way is an affront to nature.', 5, 0, '300.0', 244);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cosmic_storms_preservation_initiative_repeal', 'resolution_category_storm_environmentalists_stances', 'Repeal Storm Preservation Initiative', 'The galactic community should not dictate an empire''s response to cosmic storms.', NULL, 0, '300.0', 245);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_voidworm_eradication', 'resolution_category_space_fauna_tiyanki', 'Voidworm Eradication', 'The parasitic Voidworms are a blight on the galaxy and a threat to populated worlds. Their natural lifecycle offsets the balance of the galactic ecosystem and all should be eliminated.', NULL, 0, '25.0', 246);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_repeal_voidworm_eradication', 'resolution_category_space_fauna_tiyanki', 'Repeal Voidworm Eradication', 'The should not have the right to annihilate the Voidworm species.', NULL, 0, '25.0', 247);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_cutholoid_eradication', 'resolution_category_space_fauna_tiyanki', 'Cutholoid Eradication', 'Vessel-devouring Cutholoids should not be permitted to exist freely within civilized systems. These creatures must be exterminated at all costs.', NULL, 0, '25.0', 248);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_repeal_cutholoid_eradication', 'resolution_category_space_fauna_tiyanki', 'Repeal Cutholoid Eradication', 'The does not exist to mandate the indiscriminate eradication of the Cutholoid species.', NULL, 0, '25.0', 249);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_focus_crisis_voidworm_plague', 'resolution_category_galactic_focus', 'Focus: The Voidworm Plague', 'The Voidworm parasites are a danger to the galaxy. If we do not unite to stop them, they will consume us all. We should make dealing with this crisis the Galactic Focus.', NULL, 0, '100.0', 250);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_focus_crisis_synth_queen', 'resolution_category_galactic_focus', 'Focus: Cetana', 'Cetana is a danger to the galaxy. If we do not unite to stop her, she will destroy us all. We should make dealing with this crisis the Galactic Focus.', NULL, 0, '100.0', 251);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_council', 'resolution_category_custodian_reforms', 'Empower the Council', 'The burden of leadership is heavy, but by collaborating with other members of the , we can allocate extraordinary resources to help the members of the Galactic Council so that they may help everyone in turn.', NULL, 0, '300.0', 252);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_reduce_council_power', 'resolution_category_custodian_reforms', 'Repeal Empower the Council', 'Repeals the Empower the Council resolution', NULL, 0, '300.0', 253);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_expand_gdf_2', 'resolution_category_galactic_institutions', 'Supranational Defense Force', 'The Galactic Defense Force is our best shot at surviving the horrors that might threaten our galaxy. Above the petty squabbles of the , it is the most reliable military force in the galaxy.', NULL, 0, '300.0', 254);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_gdf_drills', 'resolution_category_galactic_institutions', 'Communal Military Drills', 'Coordinated exercises between members of the will help present a united front against would-be tyrants and invaders. Together, we shall be indomitable.', NULL, 0, '300.0', 255);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_paladin_initiative', 'resolution_category_galactic_institutions', 'Paladin Initiative', 'The galaxy needs inspiration, relatable figures to give a friendly face to our fleets and lead our forces to victory.', NULL, 0, '300.0', 256);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_disband_paladin_initiative', 'resolution_category_galactic_institutions', 'Disband the Paladins', 'The time of heroes has passed. We thank the Paladins for their services, and know that they will stand ready to fight for our safety should the need arise again.', NULL, 0, '300.0', 257);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_democratic_proceedings', 'resolution_category_custodian_reforms', 'Democratic Proceedings', 'By sharing some of the Custodian''s powers with the members of the council, we can delegate administrative tasks, and trust them to streamline the senatorial processes.', NULL, 0, '300.0', 258);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_custodian_repeal_democratic_proceedings', 'resolution_category_custodian_reforms', 'Repeal Democratic Proceedings', 'Sometimes faster is not always better, and there is democratic value to be found in longer senate sessions, that give more room for debate.', NULL, 0, '300.0', 259);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_crisis_analysis_khan', 'resolution_category_crisis_analysis', 'Crisis Analysis: The Great Khan', 'The Khan is a fearsome military leader, but his troops are still a rag tag bunch, only making up for their lack of discipline through sheer brutality.', NULL, 0, '300.0', 260);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_crisis_analysis_tempest', 'resolution_category_crisis_analysis', 'Crisis Analysis: The Gray Tempest', 'The nanite clouds of the Gray Tempest are terrifying, but obey a specific programming. If we can crack their algorithms, we can crack them.', NULL, 0, '300.0', 261);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_crisis_analysis_voidworms', 'resolution_category_crisis_analysis', 'Crisis Analysis: Voidworms', 'The repulsive voidworms, are nothing but beasts. It shouldn''t take much work to come up with an effective counter strategy.', NULL, 0, '300.0', 262);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_crisis_analysis_cetana', 'resolution_category_crisis_analysis', 'Crisis Analysis: The Synthetic Queen', 'Cetana is a cunning foe, but behind her enigmatic smile lie ice cold code. The Synthetic Queen may not bleed, but we can defeat her.', NULL, 0, '300.0', 263);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_crisis_analysis_prethoryn', 'resolution_category_crisis_analysis', 'Crisis Analysis: The Prethoryn Swarm', 'In a sense, the inextinguishable hunger driving the Prethoryns make them predictable. They are fierce, but not indomitable.', NULL, 0, '300.0', 264);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_crisis_analysis_contingency', 'resolution_category_crisis_analysis', 'Crisis Analysis: The Contingency', 'The soulless logic of the Contingency is uncanny, but its ships were designed eons ago. Surely, we can come up with the means to defeat them.', NULL, 0, '300.0', 265);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_crisis_analysis_unbidden', 'resolution_category_crisis_analysis', 'Crisis Analysis: Extradimensional Invaders', 'The vile Unbidden and their kin''s reliance on energy weapons and shields might prove to be their undoing.', NULL, 0, '300.0', 266);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_repeal_crisis_analysis', 'resolution_category_crisis_analysis', 'Repeal Crisis Analysis', 'We do not need to maintain our strategic committees anymore.', NULL, 0, '300.0', 267);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_paladin_focus_teamwork', 'resolution_category_paladins', 'Paladin Focus: Harmony', 'Paladins need to practice working together to overcome the gravest threat.', NULL, 0, '300.0', 268);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_paladin_focus_leadership', 'resolution_category_paladins', 'Paladin Focus: Leadership', 'Paladins are more than commanders. They are exemplars who lead with strategy and unshakable valor, rallying allies and standing firm where the need is greatest.', NULL, 0, '300.0', 269);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_paladin_focus_last_resort', 'resolution_category_paladins', 'Paladin Focus: Field Testing', 'The weapons entrusted to our Paladins are untested, perilous, and far too destructive for widespread use. We deploy them now because the stakes leave us no alternative, trusting our Paladins to wield them with honor.', NULL, 0, '300.0', 270);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_paladin_training_teamwork', 'resolution_category_paladins', 'Paladin Training: Synergy', 'Though each Paladin is powerful alone, their true strength lies in unity. When they fight together, their valor does more than inspire. It becomes unstoppable.', NULL, 0, '300.0', 271);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_paladin_training_defense', 'resolution_category_paladins', 'Paladin Training: Defense', 'A fallen Paladin may inspire, but a living one protects. Their survival is not sentiment, but strategy. We will commit all necessary resources to keeping them on the front lines.', NULL, 0, '300.0', 272);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_paladin_training_offense', 'resolution_category_paladins', 'Paladin Training: Offense', 'Peace sometimes requires strength beyond restraint. Paladins strike not in anger, but to preserve what must endure.', NULL, 0, '300.0', 273);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_paladin_direct_command', 'resolution_category_paladins', 'Direct Command', 'The peril threatening us calls for extraordinary measures. We must rally the Paladins under the command of the Custodian.', NULL, 0, '300.0', 274);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_repeal_paladin_direct_command', 'resolution_category_paladins', 'Repeal Direct Command', 'The time of crisis has passed, and with it, the need for extraordinary command. The Paladins shall now return to the standard chain of authority, their charge fulfilled.', NULL, 0, '300.0', 275);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_focus_crisis_malevolent_aura', 'resolution_category_galactic_focus', 'Focus: Malevolent Aura', 'A malevolent psionic aura is spreading through the galaxy, endangering us all. It is imperative that we unite to defend against it and to combat the empire emitting it. This should be our Galactic Focus.', NULL, 1, '100.0', 276);
+INSERT INTO resolution (key, category_key, name, description, level, target,
+               influence_cost, sort_order) VALUES ('resolution_galactic_focus_repeal_crisis_malevolent_aura', 'resolution_category_galactic_focus', 'Repeal Focus: Malevolent Aura', 'Enough is enough. The targeted empire should no longer be the collective focus of our defense efforts. Hostilities with the members of the Community must come to an immediate end.', NULL, 1, '300.0', 277);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('specialist_type', 'Specialization', 'specialist_type', 1, 0);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('subject_integration', 'Subject Integration', 'discrete', 0, 1);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('subject_diplomacy', 'Diplomatic Freedom', 'discrete', 0, 2);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('subject_expand', 'Expansion', 'discrete', 0, 3);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('resource_subsidies', 'Contribution', 'resource', 0, 4);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('joins_overlord_wars', 'Overlord Conflicts', 'discrete', 0, 5);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('joins_subject_wars', 'Subject Conflicts', 'discrete', 0, 6);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('subject_holdings_limit', 'Holdings Limit', 'discrete_number', 0, 7);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('subject_sensors', 'Sensors', 'discrete', 0, 8);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('subject_dna', 'DNA Tithe', 'discrete', 0, 9);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('protectorate', NULL, 'discrete', 1, 10);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('subject_loyalty', 'Subject', 'discrete', 1, 11);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('has_access', NULL, 'discrete', 1, 12);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('subject_xenophobe', 'Is Xenophobe', 'discrete', 1, 13);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('subject_pompous', NULL, 'discrete', 1, 14);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('naval_capacity', NULL, 'discrete', 1, 15);
+INSERT INTO agreement_term (key, name, term_type, hidden, sort_order)
+               VALUES ('formless_conditions', NULL, 'discrete', 1, 16);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('specialist_none', 'specialist_type', 'None', 0);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('specialist_bulwark', 'specialist_type', 'Bulwark', 1);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('specialist_scholarium', 'specialist_type', 'Scholarium', 2);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('specialist_prospectorium', 'specialist_type', 'Prospectorium', 3);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('resource_subsidies_basic', 'resource_subsidies', 'Basic', 4);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('resource_subsidies_advanced', 'resource_subsidies', 'Advanced', 5);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('resource_subsidies_research', 'resource_subsidies', 'Research', 6);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('resource_subsidies_strategic', 'resource_subsidies', 'Strategic', 7);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('resource_subsidies_unity', 'resource_subsidies', 'Unity', 8);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('joins_overlord_wars_none', 'joins_overlord_wars', 'None', 9);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('joins_overlord_wars_defensive', 'joins_overlord_wars', 'Defensive', 10);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('joins_overlord_wars_offensive', 'joins_overlord_wars', 'Offensive', 11);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('joins_overlord_wars_all', 'joins_overlord_wars', 'All', 12);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('joins_subject_wars_none', 'joins_subject_wars', 'None', 13);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('joins_subject_wars_defensive', 'joins_subject_wars', 'Defensive', 14);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('joins_subject_wars_offensive', 'joins_subject_wars', 'Offensive', 15);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('joins_subject_wars_all', 'joins_subject_wars', 'All', 16);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_can_be_integrated', 'subject_integration', 'Integration Permitted', 17);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_can_not_be_integrated', 'subject_integration', 'Integration Prohibited', 18);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_can_not_do_diplomacy', 'subject_diplomacy', 'Limited Diplomacy', 19);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_can_do_diplomacy_but_not_vote', 'subject_diplomacy', 'Restricted Voting', 20);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_can_do_diplomacy', 'subject_diplomacy', 'Independent Diplomacy', 21);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_cannot_expand', 'subject_expand', 'Expansion Prohibited', 22);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_can_expand_with_tithe', 'subject_expand', 'Expansion Regulated', 23);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_can_expand', 'subject_expand', 'Expansion Permitted', 24);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_holdings_limit_0', 'subject_holdings_limit', 'None', 25);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_holdings_limit_1', 'subject_holdings_limit', '1', 26);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_holdings_limit_2', 'subject_holdings_limit', '2', 27);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_holdings_limit_3', 'subject_holdings_limit', '3', 28);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_holdings_limit_4', 'subject_holdings_limit', '4', 29);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_does_not_get_sensors', 'subject_sensors', 'Independent Sensors', 30);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_gets_sensors', 'subject_sensors', 'Unified Sensors', 31);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_gives_no_evopred_dna', 'subject_dna', 'No DNA Tithe', 32);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_gives_evopred_dna', 'subject_dna', 'DNA Tithe', 33);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_is_not_protectorate', 'protectorate', NULL, 34);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_is_protectorate', 'protectorate', NULL, 35);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_loyalty_effects', 'subject_loyalty', 'Subject', 36);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_is_xenophobe', 'subject_xenophobe', NULL, 37);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_is_fanatic_xenophobe', 'subject_xenophobe', NULL, 38);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('subject_is_pompous', 'subject_pompous', NULL, 39);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('yes_access', 'has_access', NULL, 40);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('no_access', 'has_access', NULL, 41);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('naval_cap_unmodified', 'naval_capacity', 'Subject', 42);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('naval_cap_satrapy', 'naval_capacity', 'Satrapy', 43);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('naval_cap_relic_satrapy', 'naval_capacity', NULL, 44);
+INSERT INTO agreement_term_value (key, term_key, name, sort_order) VALUES ('modifiers_eternal_throne', 'formless_conditions', 'Luminarium', 45);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_vassal', 'Vassal', 0);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_subsidiary', 'Subsidiary', 1);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_tributary', 'Tributary', 2);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_bulwark', 'Bulwark', 3);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_scholarium', 'Scholarium', 4);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_prospectorium', 'Prospectorium', 5);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_release_sector', NULL, 6);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_protectorate', 'Protectorate', 7);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_scion', 'Scion', 8);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_dominion', 'Dominion', 9);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_satellite', 'Satellite', 10);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_signatory', 'Signatory', 11);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_thrall', 'Thrall', 12);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_political_client', 'Political Client', 13);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_herald', 'Herald', 14);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_satrapy', 'Satrapy', 15);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_relic_satrapy', 'Satrapy', 16);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_nomad_tributary', 'Tributary', 17);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_nomadic_purger', 'Planetary Purgers', 18);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_subsidiary_mean_01', 'Subsidiary', 19);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_subsidiary_mean_02', 'Subsidiary', 20);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_subsidiary_mean_03', 'Subsidiary', 21);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_subsidiary_nice_01', 'Subsidiary', 22);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_subsidiary_nice_02', 'Subsidiary', 23);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_vassal_mean_01', 'Vassal', 24);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_vassal_mean_02', 'Vassal', 25);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_vassal_mean_03', 'Vassal', 26);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_vassal_nice_01', 'Vassal', 27);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_vassal_nice_02', 'Vassal', 28);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_bulwark_nice_01', 'Bulwark', 29);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_bulwark_nice_02', 'Bulwark', 30);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_bulwark_mean_01', 'Bulwark', 31);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_bulwark_mean_02', 'Bulwark', 32);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_bulwark_mean_03', 'Bulwark', 33);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_scholarium_nice_01', 'Scholarium', 34);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_scholarium_nice_02', 'Scholarium', 35);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_scholarium_mean_01', 'Scholarium', 36);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_scholarium_mean_02', 'Scholarium', 37);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_scholarium_mean_03', 'Scholarium', 38);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_prospectorium_nice_01', 'Prospectorium', 39);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_prospectorium_nice_02', 'Prospectorium', 40);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_prospectorium_mean_01', 'Prospectorium', 41);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_prospectorium_mean_02', 'Prospectorium', 42);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_prospectorium_mean_03', 'Prospectorium', 43);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_vassal_oppressive', 'Vassal', 44);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_vassal_oppressive_ai', 'Vassal', 45);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_vassal_balanced', 'Vassal', 46);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_vassal_benevolent', 'Vassal', 47);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_subsidiary_oppressive', 'Subsidiary', 48);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_subsidiary_oppressive_ai', 'Subsidiary', 49);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_subsidiary_balanced', 'Subsidiary', 50);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_subsidiary_benevolent', 'Subsidiary', 51);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_payback_subsidiary_oppressive', NULL, 52);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_payback_subsidiary_balanced', NULL, 53);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_payback_subsidiary_benevolent', NULL, 54);
+INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_luminarium', 'Luminarium', 55);

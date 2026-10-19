@@ -9,6 +9,7 @@ from . import __version__
 from .buildings import extract_anomaly_levels, extract_buildings_ref, extract_district_zone_names
 from .clausewitz import parse_file
 from .empires import extract_flag_assets, extract_flag_colors, extract_initializers, extract_prescripted_empires, extract_rooms
+from .diplomacy import extract_diplomacy
 from .federations import extract_federations
 from .focus import extract_focus
 from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_council_positions, extract_ethics, extract_government_types, extract_origins, extract_policy_restrictions
@@ -454,6 +455,8 @@ Examples:
     extract_situations(install_dir, loc, w, progress)
     print(f"\n[federations] {install_dir / 'common' / 'federation_types'}", file=progress)
     extract_federations(install_dir, loc, scripted_vars, w, progress)
+    print(f"\n[resolutions + agreement terms] {install_dir / 'common' / 'resolutions'}", file=progress)
+    extract_diplomacy(install_dir, loc, scripted_vars, w, progress)
 
     w.close()
 
@@ -502,6 +505,8 @@ Examples:
         n_agendas       = tmp.execute("SELECT COUNT(*) FROM council_agenda").fetchone()[0]
         n_fed_types     = tmp.execute("SELECT COUNT(*) FROM federation_type").fetchone()[0]
         n_fed_laws      = tmp.execute("SELECT COUNT(*) FROM federation_law").fetchone()[0]
+        n_resolutions   = tmp.execute("SELECT COUNT(*) FROM resolution").fetchone()[0]
+        n_term_values   = tmp.execute("SELECT COUNT(*) FROM agreement_term_value").fetchone()[0]
         tmp.close()
         print(f"""
 +------------------------------------------+
@@ -549,6 +554,8 @@ Examples:
 |  Council agendas    : {n_agendas:<20}|
 |  Federation types   : {n_fed_types:<20}|
 |  Federation laws    : {n_fed_laws:<20}|
+|  Resolutions        : {n_resolutions:<20}|
+|  Agreement term values: {n_term_values:<18}|
 +------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size

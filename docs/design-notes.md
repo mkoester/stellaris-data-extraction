@@ -76,6 +76,7 @@ extractor/
   tech.py                repeatable + fallen-empire technologies
   traditions.py          tradition trees, ascension perks, edicts, council agendas
   federations.py         federation types, level perks, federation laws
+  diplomacy.py           Galactic Community resolutions, subject agreement term names
 tests/                   unit tests (stdlib unittest) for the pure helpers
 scripts/test             test-runner wrapper (`python3 -m unittest discover`)
 build-sqlite.sh          rebuild sqlite/ from the committed dump (no game files needed)
@@ -148,7 +149,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `granted_trait`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `technology`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`, `game_define`, `tradition_category`, `tradition_category_desc`, `tradition`, `tradition_prereq`, `tradition_swap`, `tradition_modifier`, `ascension_perk`, `edict`, `council_agenda`, `federation_type`, `federation_type_perk`, `federation_perk`, `federation_perk_modifier`, `federation_law_category`, `federation_law`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `granted_trait`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `technology`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`, `game_define`, `tradition_category`, `tradition_category_desc`, `tradition`, `tradition_prereq`, `tradition_swap`, `tradition_modifier`, `ascension_perk`, `edict`, `council_agenda`, `federation_type`, `federation_type_perk`, `federation_perk`, `federation_perk_modifier`, `federation_law_category`, `federation_law`, `resolution_group`, `resolution_category`, `resolution`, `agreement_term`, `agreement_term_value`, `agreement_preset`
 
 Drop order matters for FK integrity:
 ```sql
@@ -424,6 +425,11 @@ Unresolved `$KEY$` inline references in labels are discarded (label not stored i
 | Federation perks          | 60   |
 | Federation law categories | 16   |
 | Federation laws           | 64   |
+| Resolutions               | 278  |
+| Resolution categories     | 37   |
+| Agreement terms           | 17   |
+| Agreement term values     | 46   |
+| Agreement presets         | 56   |
 
 ---
 
@@ -531,3 +537,16 @@ Loc like `$researcher_type_plural_with_icon$` → `[GetResearcherPluralWithIcon]
 A sibling repo collects hard-won, poorly-documented Stellaris findings — engine quirks, parser/format gotchas, things only obvious in hindsight: `../stellaris-modding-insights` (sibling checkout, https://github.com/mkoester/stellaris-modding-insights). It's community-facing notes organised as `docs/NN-topic.md` with a TL;DR index in `README.md`. Especially relevant here: how the game scripts (`common/`, `events/`, `localisation/`) are structured and parsed.
 
 **When you discover something noteworthy** while working in this repo — a surprising Clausewitz-script/localisation parsing quirk, an undocumented file-format detail, a non-obvious gotcha, or anything that cost real time to figure out — proactively suggest recording it in the insights repo. Don't write there silently: propose what to add (which `docs/` file, a one-line TL;DR) and let the user confirm, since it's a separate, published repo. Keep project-specific extraction mechanics in this file; route generally-useful Stellaris modding knowledge to the insights repo.
+
+## Resolutions and agreement terms (`extract_diplomacy`, diplomacy.py)
+
+For the dashboard, which reads both from saves by key (`resolution.<id>.type`, a subject agreement's
+`term_data`). **Resolutions**: `resolution` per `common/resolutions/` entry with its category — the
+first `resolution_categories` entry listing it in `resolution_types` (one resolution is in none) —,
+`level`, `target` and the influence cost; `resolution_category.group_key` → `resolution_group`.
+**A resolution's effects are not here**: its `modifier = { <its own key> = 1 }` names the static
+modifier of the same key (`static_modifier` / `static_modifier_modifier`, 102 resolutions in
+4.5.2). **Agreements**: names only — `agreement_term` (with `term_type` and `hidden`),
+`agreement_term_value` (`term_key`), `agreement_preset`; values of hidden terms often have no
+localisation (`yes_access`), their name is NULL.
+

@@ -1404,4 +1404,52 @@ CREATE TABLE federation_law (
     sort_order     INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (category_key) REFERENCES federation_law_category(key)
 );
+-- Galactic Community resolutions by category and group (the dashboard names them; a
+-- resolution's effects are the static_modifier of the same key), and the names of subject
+-- agreement terms, term values and presets (the save stores keys only).
+DROP TABLE IF EXISTS resolution;
+DROP TABLE IF EXISTS resolution_category;
+DROP TABLE IF EXISTS resolution_group;
+DROP TABLE IF EXISTS agreement_term_value;
+DROP TABLE IF EXISTS agreement_term;
+DROP TABLE IF EXISTS agreement_preset;
+CREATE TABLE resolution_group (
+    key        TEXT PRIMARY KEY,           -- e.g. "commerce_industry"
+    name       TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE resolution_category (
+    key        TEXT PRIMARY KEY,           -- e.g. "resolution_category_commerce"
+    group_key  TEXT,
+    name       TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE resolution (
+    key            TEXT PRIMARY KEY,       -- e.g. "resolution_mutualdefense_the_readied_shield"
+    category_key   TEXT,                   -- NULL: no category lists it (event-only)
+    name           TEXT,
+    description    TEXT,
+    level          INTEGER,
+    target         INTEGER NOT NULL DEFAULT 0, -- 1: names a target country
+    influence_cost REAL,
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE agreement_term (
+    key        TEXT PRIMARY KEY,           -- e.g. "subject_integration"
+    name       TEXT,                       -- "Subject Integration"
+    term_type  TEXT,                       -- discrete, discrete_number, resource, specialist_type
+    hidden     INTEGER NOT NULL DEFAULT 0, -- 1: not on the negotiation screen
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE agreement_term_value (
+    key        TEXT PRIMARY KEY,           -- e.g. "subject_can_not_be_integrated"
+    term_key   TEXT,
+    name       TEXT,                       -- "Integration Prohibited"
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE agreement_preset (
+    key        TEXT PRIMARY KEY,           -- e.g. "preset_protectorate"
+    name       TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
 """
