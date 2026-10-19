@@ -1452,4 +1452,68 @@ CREATE TABLE agreement_preset (
     name       TEXT,
     sort_order INTEGER NOT NULL DEFAULT 0
 );
+-- The Shroud: patrons (cardinal and diagonal positions on the circle of radius 1), the accords and
+-- covenant each offers, which callings and deeds each draws from, and the callings' tiers and the
+-- deeds with their attunement towards the patron. Saves name all of them by key.
+DROP TABLE IF EXISTS patron_accord_modifier;
+DROP TABLE IF EXISTS patron_accord;
+DROP TABLE IF EXISTS patron_calling_of;
+DROP TABLE IF EXISTS patron_deed_of;
+DROP TABLE IF EXISTS patron;
+DROP TABLE IF EXISTS calling_tier;
+DROP TABLE IF EXISTS calling;
+DROP TABLE IF EXISTS deed;
+CREATE TABLE patron (
+    key           TEXT PRIMARY KEY,        -- e.g. "the_composer_of_strands"
+    name          TEXT,                    -- "Composer of Strands"
+    category      TEXT,                    -- major_patron, minor_patron, great_patron
+    x             REAL,                    -- position on the Shroud plane
+    y             REAL,
+    color         TEXT,                    -- '#rrggbb'
+    covenant      TEXT,
+    covenant_desc TEXT,
+    sort_order    INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE patron_accord (
+    patron_key TEXT NOT NULL,
+    kind       TEXT NOT NULL,              -- passive, active
+    key        TEXT NOT NULL,              -- e.g. "ACCORD_LIFE"
+    name       TEXT,                       -- "Growth"
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE patron_accord_modifier (
+    accord_key     TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE patron_calling_of (
+    patron_key  TEXT NOT NULL,
+    calling_key TEXT NOT NULL,
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE patron_deed_of (
+    patron_key TEXT NOT NULL,
+    deed_key   TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE calling (
+    key         TEXT PRIMARY KEY,          -- e.g. "calling_establish_colony"
+    name        TEXT,                      -- "Calling of Flight"
+    description TEXT,
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE calling_tier (
+    calling_key  TEXT NOT NULL,
+    tier         INTEGER NOT NULL,
+    attunement   REAL,                     -- the reward towards the patron
+    trigger_desc TEXT                      -- what completes it
+);
+CREATE TABLE deed (
+    key         TEXT PRIMARY KEY,          -- e.g. "deed_host_new_species"
+    name        TEXT,                      -- "Hosting"
+    description TEXT,
+    attunement  REAL,                      -- towards its patron (+), away for the opposite (−)
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
 """

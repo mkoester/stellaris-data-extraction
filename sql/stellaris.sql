@@ -1447,6 +1447,70 @@ CREATE TABLE agreement_preset (
     name       TEXT,
     sort_order INTEGER NOT NULL DEFAULT 0
 );
+-- The Shroud: patrons (cardinal and diagonal positions on the circle of radius 1), the accords and
+-- covenant each offers, which callings and deeds each draws from, and the callings' tiers and the
+-- deeds with their attunement towards the patron. Saves name all of them by key.
+DROP TABLE IF EXISTS patron_accord_modifier;
+DROP TABLE IF EXISTS patron_accord;
+DROP TABLE IF EXISTS patron_calling_of;
+DROP TABLE IF EXISTS patron_deed_of;
+DROP TABLE IF EXISTS patron;
+DROP TABLE IF EXISTS calling_tier;
+DROP TABLE IF EXISTS calling;
+DROP TABLE IF EXISTS deed;
+CREATE TABLE patron (
+    key           TEXT PRIMARY KEY,        -- e.g. "the_composer_of_strands"
+    name          TEXT,                    -- "Composer of Strands"
+    category      TEXT,                    -- major_patron, minor_patron, great_patron
+    x             REAL,                    -- position on the Shroud plane
+    y             REAL,
+    color         TEXT,                    -- '#rrggbb'
+    covenant      TEXT,
+    covenant_desc TEXT,
+    sort_order    INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE patron_accord (
+    patron_key TEXT NOT NULL,
+    kind       TEXT NOT NULL,              -- passive, active
+    key        TEXT NOT NULL,              -- e.g. "ACCORD_LIFE"
+    name       TEXT,                       -- "Growth"
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE patron_accord_modifier (
+    accord_key     TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE patron_calling_of (
+    patron_key  TEXT NOT NULL,
+    calling_key TEXT NOT NULL,
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE patron_deed_of (
+    patron_key TEXT NOT NULL,
+    deed_key   TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE calling (
+    key         TEXT PRIMARY KEY,          -- e.g. "calling_establish_colony"
+    name        TEXT,                      -- "Calling of Flight"
+    description TEXT,
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE calling_tier (
+    calling_key  TEXT NOT NULL,
+    tier         INTEGER NOT NULL,
+    attunement   REAL,                     -- the reward towards the patron
+    trigger_desc TEXT                      -- what completes it
+);
+CREATE TABLE deed (
+    key         TEXT PRIMARY KEY,          -- e.g. "deed_host_new_species"
+    name        TEXT,                      -- "Hosting"
+    description TEXT,
+    attunement  REAL,                      -- towards its patron (+), away for the opposite (−)
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
 
 -- Data
 
@@ -103841,3 +103905,589 @@ INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_payback_sub
 INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_payback_subsidiary_balanced', NULL, 53);
 INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_payback_subsidiary_benevolent', NULL, 54);
 INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_luminarium', 'Luminarium', 55);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('the_eater_of_worlds', 'Eater of Worlds', 'major_patron', '-1.0', '0.0', '#f35a7c', 'Covenant of the Eater', 'Our Covenant with the Eater of Worlds fills us with an insatiable appetite for conquest and destruction.', 0);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_eater_of_worlds', 'passive', 'ACCORD_FRENZY', 'Frenzy', 0);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('ACCORD_FRENZY', 'army_damage_mult', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('ACCORD_FRENZY', 'ship_fire_rate_mult', '0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_eater_of_worlds', 'passive', 'ACCORD_HUNGER', 'Hunger', 1);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_eater_of_worlds', 'active', 'ACCORD_DOOM', 'Doom', 2);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_eater_of_worlds', 'active', 'ACCORD_DIGEST', 'Digest', 3);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_eater_of_worlds', 'calling_conquer_planet', 0);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_eater_of_worlds', 'calling_claim_systems', 1);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_eater_of_worlds', 'calling_warmonger', 2);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_eater_of_worlds', 'calling_build_armies', 3);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_eater_of_worlds', 'calling_build_ships', 4);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_eater_of_worlds', 'calling_harvest_systems', 5);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_eater_of_worlds', 'deed_claim_system', 0);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_eater_of_worlds', 'deed_pick_supremacy_or_enmity_tradition', 1);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_eater_of_worlds', 'deed_destroy_army', 2);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_eater_of_worlds', 'deed_conquer_planet', 3);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_eater_of_worlds', 'deed_ruin_enemy_building', 4);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_eater_of_worlds', 'deed_hunt_space_fauna', 5);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_eater_of_worlds', 'deed_destroy_ship', 6);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_eater_of_worlds', 'deed_kill_pop', 7);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_eater_of_worlds', 'deed_conquer_system', 8);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_eater_of_worlds', 'deed_declare_war', 9);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('the_cradle_of_souls', 'Cradle of Souls', 'major_patron', '1.0', '0.0', '#39bcd8', 'Covenant of the Cradle', 'Our Covenant with the Cradle of Souls radiates through the galaxy, influencing others to treat us warmly.', 1);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_cradle_of_souls', 'passive', 'ACCORD_CHARITY', 'Trust', 4);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('ACCORD_CHARITY', 'country_trust_growth', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_growth', 'Trust Growth', 1);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('ACCORD_CHARITY', 'diplo_weight_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_cradle_of_souls', 'passive', 'ACCORD_TRUST', 'Vision', 5);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('ACCORD_TRUST', 'envoys_add', '2.0', 0);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_cradle_of_souls', 'active', 'ACCORD_THOUGHTBOND', 'Thoughtbond', 6);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_cradle_of_souls', 'active', 'ACCORD_FAVOR', 'Favor', 7);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_cradle_of_souls', 'calling_pass_resolution_galcom', 0);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_cradle_of_souls', 'calling_establish_commercial_pact', 1);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_cradle_of_souls', 'calling_establish_research_agreement', 2);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_cradle_of_souls', 'calling_establish_migration_treaty', 3);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_cradle_of_souls', 'calling_establish_defensive_pact', 4);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_cradle_of_souls', 'deed_galcom_vote', 0);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_cradle_of_souls', 'deed_pick_diplomacy_or_politics_tradition', 1);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_cradle_of_souls', 'deed_pass_resolution_galcom', 2);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_cradle_of_souls', 'deed_form_or_upgrade_federation', 3);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_cradle_of_souls', 'deed_pass_law_federation', 4);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_cradle_of_souls', 'deed_reach_excellent_relations', 5);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_cradle_of_souls', 'deed_build_defense_platform', 6);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_cradle_of_souls', 'deed_earn_favor', 7);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_cradle_of_souls', 'deed_complete_operation', 8);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_cradle_of_souls', 'deed_establish_diplomatic_pact', 9);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('the_instrument_of_desire', 'Instrument of Desire', 'major_patron', '0.0', '1.0', '#eed558', 'Covenant of the Instrument', 'Our Covenant with the Instrument of Desire saturates our minds with visions of indulgence, luring us deeper into a mental paradise.', 2);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_instrument_of_desire', 'passive', 'ACCORD_PROGRESS', 'Progress', 8);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('ACCORD_PROGRESS', 'planet_jobs_produces_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_instrument_of_desire', 'passive', 'ACCORD_BLISS', 'Bliss', 9);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('ACCORD_BLISS', 'planet_jobs_simple_drone_produces_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_simple_drone_produces_mult', 'Menial Drone Output', 1);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('ACCORD_BLISS', 'planet_jobs_trade_produces_mult', '0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_instrument_of_desire', 'active', 'ACCORD_ASCENSION', 'Ascension', 10);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_instrument_of_desire', 'active', 'ACCORD_EXPLOITATION', 'Exploitation', 11);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_instrument_of_desire', 'calling_upgrade_buildings', 0);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_instrument_of_desire', 'calling_planetary_ascension', 1);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_instrument_of_desire', 'calling_construct_district', 2);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_instrument_of_desire', 'calling_construct_buildings', 3);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_instrument_of_desire', 'calling_clear_blocker', 4);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_instrument_of_desire', 'deed_ascend_planet', 0);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_instrument_of_desire', 'deed_pick_mercantile_or_domination_tradition', 1);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_instrument_of_desire', 'deed_pick_logistics_or_domination_tradition', 2);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_instrument_of_desire', 'deed_clear_blocker', 3);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_instrument_of_desire', 'deed_upgrade_building_non_capital', 4);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_instrument_of_desire', 'deed_uplift_species', 5);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_instrument_of_desire', 'deed_upgrade_building_capital', 6);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_instrument_of_desire', 'deed_destroy_pirates', 7);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_instrument_of_desire', 'deed_establish_trade_agreement', 8);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_instrument_of_desire', 'deed_pass_commerce_resolution', 9);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_instrument_of_desire', 'deed_pass_industry_resolution', 10);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('the_composer_of_strands', 'Composer of Strands', 'major_patron', '0.0', '-1.0', '#209b35', 'Covenant of the Composer', 'Our Covenant with the Composer of Strands grows within us, spreading forth our roots to transform the galaxy.', 3);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_composer_of_strands', 'passive', 'ACCORD_LIFE', 'Growth', 12);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('ACCORD_LIFE', 'founder_species_growth_mult', '0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('ACCORD_LIFE', 'country_base_influence_produces_add', '0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_base_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_composer_of_strands', 'passive', 'ACCORD_FERTILITY', 'Vigor', 13);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_composer_of_strands', 'active', 'ACCORD_TRANSFORMATION', 'Transformation', 14);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_composer_of_strands', 'active', 'ACCORD_GENERATION', 'Expansion', 15);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_composer_of_strands', 'calling_establish_colony', 0);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_composer_of_strands', 'calling_terraform_planet', 1);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_composer_of_strands', 'calling_grow_pops', 2);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_composer_of_strands', 'calling_construct_outposts', 3);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_composer_of_strands', 'calling_apply_pops_template', 4);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_composer_of_strands', 'calling_clone_space_fauna_naval_capacity', 5);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('the_composer_of_strands', 'calling_construct_waystations', 6);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_composer_of_strands', 'deed_clone_space_fauna', 0);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_composer_of_strands', 'deed_consecrate_planet', 1);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_composer_of_strands', 'deed_pick_adaptability_or_expansion_tradition', 2);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_composer_of_strands', 'deed_pick_versatility_or_expansion_tradition', 3);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_composer_of_strands', 'deed_apply_species_template', 4);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_composer_of_strands', 'deed_host_new_species', 5);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_composer_of_strands', 'deed_pass_ecology_resolution', 6);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_composer_of_strands', 'deed_pass_divinity_resolution', 7);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_composer_of_strands', 'deed_terraform_planet', 8);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_composer_of_strands', 'deed_colonize_gaia_world', 9);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_composer_of_strands', 'deed_psionically_assimilate_pop', 10);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_composer_of_strands', 'deed_sector_as_vassal', 11);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('the_composer_of_strands', 'deed_colonize_tomb_world', 12);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('whisperers_in_the_void', 'Whisperers in the Void', 'great_patron', '0.0', '0.0', '#a50ddb', 'Covenant of the Whisperers', 'Our Covenant with the Whisperers in the Void instills us with the accumulated wisdom of their acquired secrets from the centermost domains in the Shroud.', 4);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('whisperers_in_the_void', 'passive', 'ACCORD_KNOWLEDGE', 'Knowledge', 16);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('ACCORD_KNOWLEDGE', 'all_technology_research_speed', '0.15', 0);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('whisperers_in_the_void', 'passive', 'ACCORD_WISDOM', 'Wisdom', 17);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('ACCORD_WISDOM', 'rare_tech_draw_chance_mult', '0.5', 0);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('whisperers_in_the_void', 'active', 'ACCORD_FORESIGHT', 'Foresight', 18);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('whisperers_in_the_void', 'active', 'ACCORD_HINDSIGHT', 'Hindsight', 19);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('whisperers_in_the_void', 'calling_build_research_lab', 0);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('whisperers_in_the_void', 'calling_finish_megastructure', 1);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('whisperers_in_the_void', 'calling_launch_agenda', 2);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('whisperers_in_the_void', 'calling_complete_arc_site', 3);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('whisperers_in_the_void', 'calling_complete_arc_rift', 4);
+INSERT INTO patron_calling_of (patron_key, calling_key, sort_order) VALUES ('whisperers_in_the_void', 'calling_research_special_project', 5);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('whisperers_in_the_void', 'deed_upgrade_megastructure', 0);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('whisperers_in_the_void', 'deed_scientist_level_up', 1);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('whisperers_in_the_void', 'deed_explore_wormhole', 2);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('whisperers_in_the_void', 'deed_wormhole_locks_mastery', 3);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('whisperers_in_the_void', 'deed_activate_relic', 4);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('whisperers_in_the_void', 'deed_arc_site_stage', 5);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('whisperers_in_the_void', 'deed_arc_rift_stage', 6);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('whisperers_in_the_void', 'deed_research_rare_tech', 7);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('whisperers_in_the_void', 'deed_pick_tradition', 8);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('whisperers_in_the_void', 'deed_change_policy', 9);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('whisperers_in_the_void', 'deed_reform_council', 10);
+INSERT INTO patron_deed_of (patron_key, deed_key, sort_order) VALUES ('whisperers_in_the_void', 'deed_research_repeatable_tech', 11);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('end_of_the_cycle', 'The End of the Cycle', 'great_patron', '0.0', '0.0', '#c94538', 'Covenant of The End', 'We have formed a Covenant with the End of the Cycle.
+There will be a reckoning.', 5);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('end_of_the_cycle', 'active', 'ACCORD_CREATION', 'Creation', 20);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('end_of_the_cycle', 'active', 'ACCORD_ANNIHILATION', 'Annihilation', 21);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('end_of_the_cycle', 'active', 'ACCORD_FRACTALIZATION', 'Fractalization', 22);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('end_of_the_cycle', 'active', 'ACCORD_EXTERMINATION', 'Extermination', 23);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('end_of_the_cycle', 'active', 'ACCORD_DISTORTION', 'Distortion', 24);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('end_of_the_cycle', 'active', 'ACCORD_DESTRUCTION', 'Destruction', 25);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('end_of_the_cycle', 'active', 'ACCORD_INTENSIFICATION', 'Intensification', 26);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('end_of_the_cycle', 'active', 'ACCORD_ERADICATION', 'Eradication', 27);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('the_animator_of_clay', 'Animator of Clay', 'minor_patron', '0.7', '-0.7', '#000000', NULL, NULL, 6);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_animator_of_clay', 'passive', 'the_animator_of_clay', 'Animator of Clay', 28);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('the_animator_of_clay', 'planet_telepaths_sr_zro_produces_add', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_telepaths_sr_zro_produces_add', 'Zro Produced per 100 Telepaths', 1);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('the_animator_of_clay', 'planet_telepaths_sr_zro_produces_add', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_telepaths_sr_zro_produces_add', 'Zro Produced per 100 Telepaths', 1);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('the_outsider', 'Outsider', 'minor_patron', '0.7', '-0.7', '#000000', NULL, NULL, 7);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_outsider', 'passive', 'the_outsider', 'Outsider', 29);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('the_outsider', 'planet_telepaths_sr_zro_produces_add', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_telepaths_sr_zro_produces_add', 'Zro Produced per 100 Telepaths', 1);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('the_endless_tide', 'Endless Tide', 'minor_patron', '-0.7', '-0.7', '#000000', NULL, NULL, 8);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_endless_tide', 'passive', 'the_endless_tide', 'Endless Tide', 30);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('the_endless_tide', 'planet_telepaths_sr_zro_produces_add', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_telepaths_sr_zro_produces_add', 'Zro Produced per 100 Telepaths', 1);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('the_pale_mountain', 'Pale Mountain', 'minor_patron', '-0.7', '-0.7', '#000000', NULL, NULL, 9);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_pale_mountain', 'passive', 'the_pale_mountain', 'Pale Mountain', 31);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('the_pale_mountain', 'planet_telepaths_sr_zro_produces_add', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_telepaths_sr_zro_produces_add', 'Zro Produced per 100 Telepaths', 1);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('the_golden_dream', 'Golden Dream', 'minor_patron', '0.7', '0.7', '#000000', NULL, NULL, 10);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_golden_dream', 'passive', 'the_golden_dream', 'Golden Dream', 32);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('the_golden_dream', 'planet_telepaths_sr_zro_produces_add', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_telepaths_sr_zro_produces_add', 'Zro Produced per 100 Telepaths', 1);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('the_golden_dream', 'planet_telepaths_sr_zro_produces_add', '0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_telepaths_sr_zro_produces_add', 'Zro Produced per 100 Telepaths', 1);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('the_hollow_point', 'Hollow Point', 'minor_patron', '0.7', '0.7', '#000000', NULL, NULL, 11);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_hollow_point', 'passive', 'the_hollow_point', 'Hollow Point', 33);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('the_hollow_point', 'planet_telepaths_sr_zro_produces_add', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_telepaths_sr_zro_produces_add', 'Zro Produced per 100 Telepaths', 1);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('the_vacant_throne', 'Vacant Throne', 'minor_patron', '-0.7', '0.7', '#000000', NULL, NULL, 12);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_vacant_throne', 'passive', 'the_vacant_throne', 'Vacant Throne', 34);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('the_vacant_throne', 'planet_telepaths_sr_zro_produces_add', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_telepaths_sr_zro_produces_add', 'Zro Produced per 100 Telepaths', 1);
+INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
+               sort_order) VALUES ('the_black_river', 'Black River', 'minor_patron', '-0.7', '0.7', '#000000', NULL, NULL, 13);
+INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
+                       VALUES ('the_black_river', 'passive', 'the_black_river', 'Black River', 35);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('the_black_river', 'planet_telepaths_sr_zro_produces_add', '0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_telepaths_sr_zro_produces_add', 'Zro Produced per 100 Telepaths', 1);
+INSERT INTO patron_accord_modifier
+                               (accord_key, modifier_key, modifier_value, sort_order)
+                               VALUES ('the_black_river', 'planet_telepaths_sr_dark_matter_produces_add', '0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_telepaths_sr_dark_matter_produces_add', 'Dark Matter Produced per 100 Telepaths', 1);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_warmonger', 'Calling of Fire', 'A spark with which to flame.', 0);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_warmonger', 1, '100.0', 'Be an attacker in a War.');
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_warmonger', 2, '200.0', 'Be an attacker in a War.');
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_warmonger', 3, '300.0', 'Be an attacker in a War.');
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_build_armies', 'Calling of Might', 'Appendages with which to grasp.', 1);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_build_armies', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_build_armies', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_build_armies', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_pass_resolution_galcom', 'Calling of Unity', 'Vows with which to trust.', 2);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_pass_resolution_galcom', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_pass_resolution_galcom', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_pass_resolution_galcom', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_establish_commercial_pact', 'Calling of Trade', 'Value with which to barter.', 3);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_commercial_pact', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_commercial_pact', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_commercial_pact', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_establish_research_agreement', 'Calling of Secrets', 'Knowledge in which to share.', 4);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_research_agreement', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_research_agreement', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_research_agreement', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_establish_migration_treaty', 'Calling of Displacement', 'Homes in which to shelter.', 5);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_migration_treaty', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_migration_treaty', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_migration_treaty', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_establish_defensive_pact', 'Calling of Alliance', 'Numbers with which to strengthen.', 6);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_defensive_pact', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_defensive_pact', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_defensive_pact', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_upgrade_buildings', 'Calling of Heights', 'Bricks with which to stack.', 7);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_upgrade_buildings', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_upgrade_buildings', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_upgrade_buildings', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_planetary_ascension', 'Calling of Ascension', 'Ladders with which to climb.', 8);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_planetary_ascension', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_planetary_ascension', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_planetary_ascension', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_construct_district', 'Calling of Opportunity', 'A seed with which to grow.', 9);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_construct_district', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_construct_district', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_construct_district', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_construct_buildings', 'Calling of Sculpture', 'Earth with which to shape.', 10);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_construct_buildings', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_construct_buildings', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_construct_buildings', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_clear_blocker', 'Calling of Potential', 'Space in which to breathe.', 11);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_clear_blocker', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_clear_blocker', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_clear_blocker', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_establish_colony', 'Calling of Flight', 'Wings with which to fly.', 12);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_colony', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_colony', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_establish_colony', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_terraform_planet', 'Calling of Creation', 'Flowers with which to bloom.', 13);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_terraform_planet', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_terraform_planet', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_terraform_planet', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_finish_megastructure', 'Calling of Spires', 'Stars with which to shine.', 14);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_finish_megastructure', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_launch_agenda', 'Calling of Ambition', 'Light by which to guide.', 15);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_launch_agenda', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_complete_arc_site', 'Calling of Antiquity', 'Time with which to remember.', 16);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_complete_arc_site', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_complete_arc_rift', 'Calling of Antiquity', 'Time with which to remember.', 17);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_complete_arc_rift', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_research_special_project', 'Calling of Knowledge', 'Focus with which to achieve.', 18);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_research_special_project', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_build_research_lab', 'Calling of Intuition', 'Libraries in which to read.', 19);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_build_research_lab', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_claim_systems', 'Calling of Possession', 'Fields in which to sow.', 20);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_claim_systems', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_claim_systems', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_claim_systems', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_harvest_systems', 'Calling of Consumption', 'Meals which will be enjoyed.', 21);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_harvest_systems', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_harvest_systems', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_harvest_systems', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_conquer_planet', 'Calling of Invasion', 'Flames with which to burn.', 22);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_conquer_planet', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_conquer_planet', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_conquer_planet', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_build_ships', 'Calling of Arms', 'Sails with which to soar.', 23);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_build_ships', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_build_ships', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_build_ships', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_grow_pops', 'Calling of Growth', 'Vessels with which to birth.', 24);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_grow_pops', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_grow_pops', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_grow_pops', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_construct_outposts', 'Calling of Watching', 'Eyes with which to watch.', 25);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_construct_outposts', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_construct_outposts', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_construct_outposts', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_construct_waystations', 'Calling of Linking', 'Roads with which to travel.', 26);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_construct_waystations', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_construct_waystations', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_construct_waystations', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_apply_pops_template', 'Calling of Change', 'Change with which to learn.', 27);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_apply_pops_template', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_apply_pops_template', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_apply_pops_template', 3, '300.0', NULL);
+INSERT INTO calling (key, name, description, sort_order) VALUES ('calling_clone_space_fauna_naval_capacity', 'Calling of Life', 'Beasts with which to roar.', 28);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_clone_space_fauna_naval_capacity', 1, '100.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_clone_space_fauna_naval_capacity', 2, '200.0', NULL);
+INSERT INTO calling_tier (calling_key, tier, attunement, trigger_desc)
+                   VALUES ('calling_clone_space_fauna_naval_capacity', 3, '300.0', NULL);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_claim_system', 'Claiming', NULL, '10.0', 0);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_pick_supremacy_or_enmity_tradition', 'Willing', NULL, '20.0', 1);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_destroy_army', 'Slaying', NULL, '3.0', 2);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_conquer_planet', 'Conquering', NULL, '20.0', 3);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_ruin_enemy_building', 'Ruining', NULL, '10.0', 4);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_hunt_space_fauna', 'Hunting', 'Multiplied by the fauna size.', '1.0', 5);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_destroy_ship', 'Battling', 'Multiplied by the ship size.', '0.5', 6);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_kill_pop', 'Reaping', NULL, '0.05', 7);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_conquer_system', 'Seizing', 'Multiplied by the station size.', '5.0', 8);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_declare_war', 'Warring', NULL, '20.0', 9);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_galcom_vote', 'Voting', NULL, '10.0', 10);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_pick_diplomacy_or_politics_tradition', 'Embracing', NULL, '20.0', 11);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_pass_resolution_galcom', 'Resolving', NULL, '20.0', 12);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_form_or_upgrade_federation', 'Gathering', NULL, '40.0', 13);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_pass_law_federation', 'Ordering', NULL, '5.0', 14);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_reach_excellent_relations', 'Pleasing', NULL, '10.0', 15);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_build_defense_platform', 'Defending', NULL, '3.0', 16);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_earn_favor', 'Helping', NULL, '20.0', 17);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_complete_operation', 'Infiltrating', NULL, '10.0', 18);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_establish_diplomatic_pact', 'Compromising', NULL, '10.0', 19);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_ascend_planet', 'Ascending', NULL, '20.0', 20);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_pick_mercantile_or_domination_tradition', 'Incorporating', NULL, '20.0', 21);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_pick_logistics_or_domination_tradition', 'Incorporating', NULL, '20.0', 22);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_clear_blocker', 'Clearing', NULL, '10.0', 23);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_upgrade_building_non_capital', 'Building', NULL, '5.0', 24);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_upgrade_building_capital', 'Capitalizing', NULL, '15.0', 25);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_uplift_species', 'Uplifting', 'Multiplied by the number of uplifted Pops.', '0.1', 26);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_destroy_pirates', 'Safeguarding', 'Multiplied by ship size.', '1.0', 27);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_establish_trade_agreement', 'Trading', NULL, '10.0', 28);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_pass_commerce_resolution', 'Regulating', NULL, '20.0', 29);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_pass_industry_resolution', 'Exploiting', NULL, '20.0', 30);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_clone_space_fauna', 'Breeding', NULL, '0.5', 31);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_consecrate_planet', 'Consecrating', NULL, '25.0', 32);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_pick_adaptability_or_expansion_tradition', 'Expanding', NULL, '20.0', 33);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_pick_versatility_or_expansion_tradition', 'Expanding', NULL, '20.0', 34);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_apply_species_template', 'Grafting', 'Multiplied by the number of modified Pops.', '0.5', 35);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_host_new_species', 'Hosting', NULL, '15.0', 36);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_pass_ecology_resolution', 'Fertilizing', NULL, '20.0', 37);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_pass_divinity_resolution', 'Divining', NULL, '20.0', 38);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_terraform_planet', 'Terraforming', NULL, '15.0', 39);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_colonize_gaia_world', 'Marvelling', NULL, '25.0', 40);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_psionically_assimilate_pop', 'Assimilating', NULL, '3.0', 41);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_upgrade_megastructure', 'Towering', NULL, '15.0', 42);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_scientist_level_up', 'Learning', NULL, '10.0', 43);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_explore_wormhole', 'Folding', NULL, '50.0', 44);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_wormhole_locks_mastery', 'Closing', NULL, '50.0', 45);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_activate_relic', 'Activating', NULL, '50.0', 46);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_arc_site_stage', 'Excavating', NULL, '20.0', 47);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_arc_rift_stage', 'Exploring', NULL, '20.0', 48);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_research_rare_tech', 'Researching', NULL, '15.0', 49);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_pick_tradition', 'Adopting', NULL, '15.0', 50);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_change_policy', 'Considering', NULL, '25.0', 51);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_reform_council', 'Reforming', NULL, '50.0', 52);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_research_repeatable_tech', 'Advancing', NULL, '20.0', 53);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_sector_as_vassal', 'Delegating', NULL, '50.0', 54);
+INSERT INTO deed (key, name, description, attunement, sort_order)
+               VALUES ('deed_colonize_tomb_world', 'Reclaiming', NULL, '25.0', 55);

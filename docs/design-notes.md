@@ -77,6 +77,7 @@ extractor/
   traditions.py          tradition trees, ascension perks, edicts, council agendas
   federations.py         federation types, level perks, federation laws
   diplomacy.py           Galactic Community resolutions, subject agreement term names
+  shroud.py              Shroud patrons, accords, callings and deeds
 tests/                   unit tests (stdlib unittest) for the pure helpers
 scripts/test             test-runner wrapper (`python3 -m unittest discover`)
 build-sqlite.sh          rebuild sqlite/ from the committed dump (no game files needed)
@@ -149,7 +150,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `granted_trait`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `technology`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`, `game_define`, `tradition_category`, `tradition_category_desc`, `tradition`, `tradition_prereq`, `tradition_swap`, `tradition_modifier`, `ascension_perk`, `edict`, `council_agenda`, `federation_type`, `federation_type_perk`, `federation_perk`, `federation_perk_modifier`, `federation_law_category`, `federation_law`, `resolution_group`, `resolution_category`, `resolution`, `agreement_term`, `agreement_term_value`, `agreement_preset`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `granted_trait`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `technology`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`, `game_define`, `tradition_category`, `tradition_category_desc`, `tradition`, `tradition_prereq`, `tradition_swap`, `tradition_modifier`, `ascension_perk`, `edict`, `council_agenda`, `federation_type`, `federation_type_perk`, `federation_perk`, `federation_perk_modifier`, `federation_law_category`, `federation_law`, `resolution_group`, `resolution_category`, `resolution`, `agreement_term`, `agreement_term_value`, `agreement_preset`, `patron`, `patron_accord`, `patron_accord_modifier`, `patron_calling_of`, `patron_deed_of`, `calling`, `calling_tier`, `deed`
 
 Drop order matters for FK integrity:
 ```sql
@@ -430,6 +431,10 @@ Unresolved `$KEY$` inline references in labels are discarded (label not stored i
 | Agreement terms           | 17   |
 | Agreement term values     | 46   |
 | Agreement presets         | 56   |
+| Shroud patrons            | 14   |
+| Patron accords            | 36   |
+| Callings                  | 29   |
+| Deeds                     | 56   |
 
 ---
 
@@ -549,4 +554,17 @@ modifier of the same key (`static_modifier` / `static_modifier_modifier`, 102 re
 4.5.2). **Agreements**: names only — `agreement_term` (with `term_type` and `hidden`),
 `agreement_term_value` (`term_key`), `agreement_preset`; values of hidden terms often have no
 localisation (`yes_access`), their name is NULL.
+
+## The Shroud (`extract_shroud`, shroud.py)
+
+For the dashboard (a country's `patron_relations` in saves name patrons, callings and deeds by
+key). `patron` per `common/patrons/patron_types.txt` entry: `category` (major = the four cardinal
+ones at (±1, 0)/(0, ±1), minor = the eight on the diagonals at (±0.7, ±0.7), great = the two at
+the centre), `color` from `{ r g b a }` (minor patrons are black), the covenant's name and
+description; `patron_accord` (+ `patron_accord_modifier` from each passive accord's
+`triggered_modifier`); which callings and deeds each draws from (`patron_calling_of`,
+`patron_deed_of`). `calling_tier`: one row per `tier` block, numbered from `first_tier`, with the
+attunement reward (`@calling_attunement_tierN` = 100/200/300) and `<calling>_tier<N>_trigger_desc`
+where the calling has a trigger. `deed.attunement` is towards its patron; the game shows the
+opposite patron's deeds as negative ("Exploiting −20" for the Composer of Strands).
 
