@@ -12,6 +12,11 @@ All notable changes to this project are documented here. The format follows
   each district adds, and build times.
 - What each technology needs: its prerequisites, who can get it at all, and whether it is rare or
   dangerous.
+- Starbase modules and buildings: names, cost, upkeep, output and build time.
+- Strategic resources' market lots and AI weights, AI personalities' trade willingness, which AI
+  attitudes trade, and opinion modifiers.
+- More game defines: outpost and claim costs, the market fee, pop growth, and the AI's trade
+  constants.
 
 ### Fixed
 

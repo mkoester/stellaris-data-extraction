@@ -134,8 +134,9 @@ def extract_resources(directory: Path, table: str, scripted_vars: dict[str, floa
 
 
 def _write_build_time(w: Writer, key: str, ddef: dict, variables: dict[str, float]) -> None:
-    """A definition's `base_buildtime` (days, before modifiers) → build_time, when it has one."""
-    days = _resolve_var(ddef.get('base_buildtime'), variables)
+    """A definition's `base_buildtime` (starbase modules and buildings: `construction_days`; days,
+    before modifiers) → build_time, when it has one."""
+    days = _resolve_var(ddef.get('base_buildtime', ddef.get('construction_days')), variables)
     if days is not None:
         w.execute("INSERT OR REPLACE INTO build_time (key, days) VALUES (?, ?)", (key, days))
 

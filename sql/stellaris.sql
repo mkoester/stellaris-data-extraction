@@ -1139,6 +1139,78 @@ CREATE TABLE ship_size_resource (
     amount   REAL NOT NULL,
     PRIMARY KEY (key, kind, resource)
 );
+-- Starbase modules and buildings (empire dashboard: what a system cost). Names from `sm_<key>`.
+DROP TABLE IF EXISTS starbase_part;
+CREATE TABLE starbase_part (
+    key   TEXT PRIMARY KEY,                -- e.g. "solar_panel_network", "hydroponics_bay"
+    kind  TEXT NOT NULL,                   -- 'module' | 'building'
+    name  TEXT
+);
+-- Starbase levels: how many modules and buildings each holds; cost and upkeep are its ship size's.
+DROP TABLE IF EXISTS starbase_level;
+CREATE TABLE starbase_level (
+    key            TEXT PRIMARY KEY,       -- e.g. "starbase_level_starport"
+    ship_size      TEXT,                   -- e.g. "starbase_starport" (ship_size_resource)
+    next_level     TEXT,
+    module_slots   INTEGER NOT NULL DEFAULT 0,
+    building_slots INTEGER NOT NULL DEFAULT 0
+);
+DROP TABLE IF EXISTS starbase_module_resource;
+CREATE TABLE starbase_module_resource (
+    key      TEXT NOT NULL,
+    kind     TEXT NOT NULL,                -- 'cost' | 'upkeep' | 'produces' (unconditional block)
+    resource TEXT NOT NULL,
+    amount   REAL NOT NULL,
+    PRIMARY KEY (key, kind, resource)
+);
+DROP TABLE IF EXISTS starbase_building_resource;
+CREATE TABLE starbase_building_resource (
+    key      TEXT NOT NULL,
+    kind     TEXT NOT NULL,
+    resource TEXT NOT NULL,
+    amount   REAL NOT NULL,
+    PRIMARY KEY (key, kind, resource)
+);
+-- common/strategic_resources: market lots (price per unit = market_price / market_amount, in
+-- trade) and the AI's weights (empire dashboard: values in trade, the AI's view of a deal).
+DROP TABLE IF EXISTS strategic_resource;
+CREATE TABLE strategic_resource (
+    key           TEXT PRIMARY KEY,        -- e.g. "energy"
+    name          TEXT,
+    category      TEXT,                    -- basic / advanced / research / …
+    tradable      INTEGER NOT NULL DEFAULT 0,
+    market_amount REAL,                    -- NULL: not on the market
+    market_price  REAL,
+    max           REAL,                    -- base storage
+    ai_weight     REAL,                    -- `ai_weight.weight`, conditions left out
+    ai_wants      REAL,                    -- `ai_wants.base`, conditions left out
+    sort_order    INTEGER NOT NULL DEFAULT 0
+);
+-- AI personalities: how good a deal must be for them (1.0 = equal for both sides).
+DROP TABLE IF EXISTS personality;
+CREATE TABLE personality (
+    key               TEXT PRIMARY KEY,    -- e.g. "peaceful_traders"
+    name              TEXT,
+    trade_willingness REAL
+);
+-- AI attitudes; trade = 0 refuses every trade deal (OFFER_TRADE_ACCEPTANCE_ATTITUDE).
+DROP TABLE IF EXISTS attitude;
+CREATE TABLE attitude (
+    key   TEXT PRIMARY KEY,                -- e.g. "cordial"
+    name  TEXT,
+    trade INTEGER NOT NULL DEFAULT 0
+);
+-- Opinion modifiers, base values (conditional factors left out); e.g. opinion_trade_gift.
+DROP TABLE IF EXISTS opinion_modifier;
+CREATE TABLE opinion_modifier (
+    key          TEXT PRIMARY KEY,
+    name         TEXT,
+    opinion      REAL,
+    accumulative INTEGER NOT NULL DEFAULT 0,
+    min          REAL,
+    max          REAL,
+    decay        REAL                      -- per month
+);
 DROP TABLE IF EXISTS zone;
 CREATE TABLE zone (
     key   TEXT PRIMARY KEY,                -- e.g. "zone_research_unity"
@@ -47997,6 +48069,856 @@ INSERT OR REPLACE INTO ship_size_resource (key, kind, resource, amount) VALUES (
 INSERT OR REPLACE INTO ship_size_resource (key, kind, resource, amount) VALUES ('science_arkship_tier_3', 'upkeep', 'alloys', '4.5');
 INSERT OR REPLACE INTO ship_size_resource (key, kind, resource, amount) VALUES ('science_arkship_tier_3', 'upkeep', 'energy', '4.5');
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('science_arkship_tier_3', '1080.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_capital_shipyard', 'cost', 'alloys', '5000.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_capital_shipyard', 'cost', 'volatile_motes', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_capital_shipyard', 'cost', 'unity', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_capital_shipyard', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_capital_shipyard', 'upkeep', 'volatile_motes', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_capital_shipyard', '1800.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_exodus_jump', 'cost', 'alloys', '5000.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_exodus_jump', 'cost', 'rare_crystals', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_exodus_jump', 'cost', 'influence', '250.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_exodus_jump', 'upkeep', 'energy', '10.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_exodus_jump', 'upkeep', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_exodus_jump', '1800.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_planetary_refinery', 'cost', 'alloys', '5000.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_planetary_refinery', 'cost', 'volatile_motes', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_planetary_refinery', 'cost', 'unity', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_planetary_refinery', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_planetary_refinery', 'upkeep', 'volatile_motes', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_planetary_refinery', '1800.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_spinal_devastator_mount', 'cost', 'alloys', '5000.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_spinal_devastator_mount', 'cost', 'rare_crystals', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_spinal_devastator_mount', 'cost', 'unity', '500.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_spinal_devastator_mount', '1800.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_stellar_igniter', 'cost', 'alloys', '5000.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_stellar_igniter', 'cost', 'exotic_gases', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_stellar_igniter', 'cost', 'unity', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_stellar_igniter', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_stellar_igniter', 'upkeep', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_stellar_igniter', '1800.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_system_scanner', 'cost', 'alloys', '5000.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_system_scanner', 'cost', 'exotic_gases', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_system_scanner', 'cost', 'unity', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_system_scanner', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_system_scanner', 'upkeep', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_system_scanner', '1800.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_beastport', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_beastport', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_beastport', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_docking_bay', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_docking_bay', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_docking_bay', 'upkeep', 'trade', '4.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_docking_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_engineering_bay', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_engineering_bay', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_engineering_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_grand_archive', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_grand_archive', 'cost', 'volatile_motes', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_grand_archive', 'upkeep', 'energy', '10.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_grand_archive', '1800.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_habitation_module', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_habitation_module', 'cost', 'influence', '25.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_habitation_module', 'cost', 'exotic_gases', '25.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_habitation_module', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_habitation_module', 'upkeep', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_habitation_module', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_mining_array', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_mining_array', 'cost', 'volatile_motes', '25.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_mining_array', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_mining_array', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_sensor_array', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_sensor_array', 'cost', 'rare_crystals', '25.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_sensor_array', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_sensor_array', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_voidlure', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_voidlure', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_voidlure', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_amoeba_hangar_bay', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_amoeba_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_arc_emitter_battery', 'cost', 'alloys', '300.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_arc_emitter_battery', 'cost', 'rare_crystals', '150.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_arc_emitter_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_hangar_bay', 'cost', 'alloys', '250.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_hangar_bay', 'cost', 'minor_artifacts', '75.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_archaeo_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_laser_battery', 'cost', 'alloys', '250.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_laser_battery', 'cost', 'minor_artifacts', '75.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_archaeo_laser_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_mass_accelerator', 'cost', 'alloys', '825.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_mass_accelerator', 'cost', 'minor_artifacts', '125.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_archaeo_mass_accelerator', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_mass_driver_battery', 'cost', 'alloys', '250.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_mass_driver_battery', 'cost', 'minor_artifacts', '75.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_archaeo_mass_driver_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_missile_battery', 'cost', 'alloys', '250.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_missile_battery', 'cost', 'minor_artifacts', '150.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_archaeo_missile_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_pd_battery', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_pd_battery', 'cost', 'minor_artifacts', '400.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_archaeo_pd_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_flak_battery', 'cost', 'alloys', '85.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_flak_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_hangar_bay', 'cost', 'alloys', '250.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_hangar_bay', 'cost', 'exotic_gases', '45.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_kinetic_artillery_battery', 'cost', 'alloys', '175.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_kinetic_artillery_battery', 'cost', 'volatile_motes', '150.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_kinetic_artillery_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_lance_battery', 'cost', 'alloys', '300.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_lance_battery', 'cost', 'rare_crystals', '150.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_lance_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_laser_battery', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_laser_battery', 'cost', 'rare_crystals', '45.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_laser_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_lm_accelerator', 'cost', 'sr_living_metal', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_lm_accelerator', 'cost', 'volatile_motes', '350.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_lm_accelerator', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_mass_accelerator', 'cost', 'alloys', '300.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_mass_accelerator', 'cost', 'volatile_motes', '150.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_mass_accelerator', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_mass_driver_battery', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_mass_driver_battery', 'cost', 'volatile_motes', '45.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_mass_driver_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_missile_battery', 'cost', 'alloys', '65.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_missile_battery', 'cost', 'volatile_motes', '45.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_missile_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_particle_launcher', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_particle_launcher', 'cost', 'exotic_gases', '250.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_particle_launcher', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_pd_battery', 'cost', 'alloys', '85.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_pd_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_psionic_hangar_bay', 'cost', 'alloys', '550.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_psionic_hangar_bay', 'cost', 'sr_zro', '25.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_psionic_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_psionic_lightning_battery', 'cost', 'alloys', '175.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_psionic_lightning_battery', 'cost', 'sr_zro', '25.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_psionic_lightning_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_psionic_torpedo', 'cost', 'alloys', '825.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_psionic_torpedo', 'cost', 'sr_zro', '250.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_psionic_torpedo', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_scourge_missile_battery', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_scourge_missile_battery', 'cost', 'exotic_gases', '45.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_scourge_missile_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_swamer_missile_battery', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_swamer_missile_battery', 'cost', 'volatile_motes', '65.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_swamer_missile_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_swarm_hangar_bay', 'cost', 'alloys', '85.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('arkship_swarm_hangar_bay', 'cost', 'exotic_gases', '45.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_swarm_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_anchorage', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_anchorage', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_anchorage', 'upkeep', 'trade', '4.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_anchorage', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_beastport', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_beastport', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_beastport', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_habitation', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_habitation', 'cost', 'influence', '25.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_habitation', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_habitation', '360.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_shipyard', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_shipyard', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_shipyard', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_vivarium_tank', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_vivarium_tank', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_vivarium_tank', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('anchorage', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('anchorage', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('anchorage', 'upkeep', 'trade', '4.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('anchorage', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('archaeo_rampart', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('archaeo_rampart', 'cost', 'minor_artifacts', '125.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('archaeo_rampart', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('archaeo_rampart', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('astromining_bay', 'cost', 'alloys', '25.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('astromining_bay', 'produces', 'energy', '5.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('astromining_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('beastport', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('beastport', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('beastport', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('detection_array', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('detection_array', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('detection_array', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('shipyard', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('shipyard', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('shipyard', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('solar_panel_network', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('solar_panel_network', 'produces', 'energy', '6.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('solar_panel_network', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('trading_hub', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('trading_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('trading_hub', 'produces', 'trade', '8.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('trading_hub', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('vivarium_tank', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('vivarium_tank', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('vivarium_tank', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_aetherophasic_anchor', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_aetherophasic_anchor', 'cost', 'sr_dark_matter', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_aetherophasic_anchor', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_aetherophasic_anchor', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_art_college', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_art_college', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_art_college', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_aura_emitter', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_aura_emitter', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_aura_emitter', 'upkeep', 'sr_zro', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_aura_emitter', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_cloaking', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_cloaking', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_cloaking', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_concealment_field', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_concealment_field', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_concealment_field', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_cordyceptic_reanimation_facility', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_cordyceptic_reanimation_facility', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_cordyceptic_reanimation_facility', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_curator_think_tank', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_curator_think_tank', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_curator_think_tank', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_cybrex_mining_hub', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_cybrex_mining_hub', 'cost', 'minor_artifacts', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_cybrex_mining_hub', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_cybrex_mining_hub', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_dimensional_shrine', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_dimensional_shrine', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_dimensional_shrine', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_energy_module', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_energy_module', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_energy_module', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_gravitational_centrifuge', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_gravitational_centrifuge', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_gravitational_centrifuge', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_growth_chamber', 'cost', 'food', '200.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_growth_chamber', 'cost', 'exotic_gases', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_growth_chamber', 'upkeep', 'food', '10.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_growth_chamber', 'upkeep', 'exotic_gases', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_growth_chamber', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_hydroponics_module', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_hydroponics_module', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_hydroponics_module', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_hyperlane_detailer', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_hyperlane_detailer', 'cost', 'minor_artifacts', '45.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_hyperlane_detailer', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_hyperlane_detailer', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_logistics_hub', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_logistics_hub', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_logistics_hub', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_mining_module', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_mining_module', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_mining_module', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_nanotech_module', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_nanotech_module', 'upkeep', 'trade', '4.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_nanotech_module', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_nebula_refinery', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_nebula_refinery', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_nebula_refinery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_observatory', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_observatory', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_observatory', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_pirate_hideout', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_pirate_hideout', 'upkeep', 'trade', '8.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_pirate_hideout', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_pyroclastic_resonator', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_pyroclastic_resonator', 'upkeep', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_pyroclastic_resonator', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_reaver_stronghold', 'cost', 'alloys', '1500.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_reaver_stronghold', 'upkeep', 'trade', '50.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_reaver_stronghold', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_recruitment_office', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_recruitment_office', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_recruitment_office', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_refinery_module', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_refinery_module', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_refinery_module', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_repair_bay', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_repair_bay', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_repair_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_research_module', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_research_module', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_research_module', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_resource_silo', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_resource_silo', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_salvager_workshop', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_salvager_workshop', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_salvager_workshop', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_trade_module', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_trade_module', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_trader_proxy_office', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_trader_proxy_office', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_trader_proxy_office', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_treasure_vault', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_treasure_vault', 'upkeep', 'trade', '4.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_treasure_vault', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_yuht_detection_array', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_yuht_detection_array', 'cost', 'minor_artifacts', '125.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_yuht_detection_array', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_yuht_detection_array', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_zroni_storm_caster', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_zroni_storm_caster', 'cost', 'minor_artifacts', '125.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_zroni_storm_caster', 'cost', 'sr_zro', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_zroni_storm_caster', 'upkeep', 'energy', '20.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_zroni_storm_caster', 'upkeep', 'sr_zro', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_zroni_storm_caster', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_amoeba_hangar_bay', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_amoeba_hangar_bay', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_amoeba_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_archaeo_hangar_bay', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_archaeo_hangar_bay', 'cost', 'minor_artifacts', '45.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_archaeo_hangar_bay', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_archaeo_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_archaeo_laser_battery', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_archaeo_laser_battery', 'cost', 'minor_artifacts', '45.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_archaeo_laser_battery', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_archaeo_laser_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_archaeo_mass_driver_battery', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_archaeo_mass_driver_battery', 'cost', 'minor_artifacts', '45.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_archaeo_mass_driver_battery', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_archaeo_mass_driver_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_hangar_bay', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_hangar_bay', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_laser_battery', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_laser_battery', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_laser_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_mass_driver_battery', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_mass_driver_battery', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_mass_driver_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_particle_launcher', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_particle_launcher', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_particle_launcher', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_psionic_hangar_bay', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_psionic_hangar_bay', 'cost', 'sr_zro', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_psionic_hangar_bay', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_psionic_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_psionic_torpedo', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_psionic_torpedo', 'cost', 'sr_zro', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_psionic_torpedo', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_psionic_torpedo', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_scourge_missile_battery', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_scourge_missile_battery', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_scourge_missile_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_swarm_hangar_bay', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_swarm_hangar_bay', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_swarm_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_swarmer_missile_battery', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('orbital_ring_swarmer_missile_battery', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('orbital_ring_swarmer_missile_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_amoeba_hangar_bay', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_amoeba_hangar_bay', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('starbase_amoeba_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_archaeo_hangar_bay', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_archaeo_hangar_bay', 'cost', 'minor_artifacts', '45.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_archaeo_hangar_bay', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('starbase_archaeo_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_archaeo_laser_battery', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_archaeo_laser_battery', 'cost', 'minor_artifacts', '45.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_archaeo_laser_battery', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('starbase_archaeo_laser_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_archaeo_mass_driver_battery', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_archaeo_mass_driver_battery', 'cost', 'minor_artifacts', '45.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_archaeo_mass_driver_battery', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('starbase_archaeo_mass_driver_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_hangar_bay', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_hangar_bay', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_hangar_bay', 'produces', 'trade', '0.25');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('starbase_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_laser_battery', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_laser_battery', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('starbase_laser_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_mass_driver_battery', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_mass_driver_battery', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('starbase_mass_driver_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_particle_launcher', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_particle_launcher', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('starbase_particle_launcher', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_psionic_hangar_bay', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_psionic_hangar_bay', 'cost', 'sr_zro', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_psionic_hangar_bay', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('starbase_psionic_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_psionic_torpedo', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_psionic_torpedo', 'cost', 'sr_zro', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_psionic_torpedo', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('starbase_psionic_torpedo', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_scourge_missile_battery', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_scourge_missile_battery', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('starbase_scourge_missile_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_swarm_hangar_bay', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_swarm_hangar_bay', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('starbase_swarm_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_swarmer_missile_battery', 'cost', 'alloys', '120.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('starbase_swarmer_missile_battery', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('starbase_swarmer_missile_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_amoeba_hangar_bay', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_amoeba_hangar_bay', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_amoeba_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_archaeo_hangar_bay', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_archaeo_hangar_bay', 'cost', 'minor_artifacts', '45.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_archaeo_hangar_bay', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_archaeo_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_archaeo_laser_battery', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_archaeo_laser_battery', 'cost', 'minor_artifacts', '45.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_archaeo_laser_battery', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_archaeo_laser_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_archaeo_mass_driver_battery', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_archaeo_mass_driver_battery', 'cost', 'minor_artifacts', '45.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_archaeo_mass_driver_battery', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_archaeo_mass_driver_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_hangar_bay', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_hangar_bay', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_hangar_bay', 'produces', 'trade', '0.25');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_laser_battery', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_laser_battery', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_laser_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_mass_driver_battery', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_mass_driver_battery', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_mass_driver_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_particle_launcher', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_particle_launcher', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_particle_launcher', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_psionic_hangar_bay', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_psionic_hangar_bay', 'cost', 'sr_zro', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_psionic_hangar_bay', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_psionic_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_psionic_torpedo', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_psionic_torpedo', 'cost', 'sr_zro', '100.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_psionic_torpedo', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_psionic_torpedo', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_scourge_missile_battery', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_scourge_missile_battery', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_scourge_missile_battery', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_swarm_hangar_bay', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_swarm_hangar_bay', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_swarm_hangar_bay', '180.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_swarmer_missile_battery', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_module_resource (key, kind, resource, amount) VALUES ('waystation_swarmer_missile_battery', 'upkeep', 'trade', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('waystation_swarmer_missile_battery', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_alloys_hub', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_alloys_hub', 'cost', 'volatile_motes', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_alloys_hub', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_alloys_hub', 'upkeep', 'volatile_motes', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_alloys_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_overcharger', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_overcharger', 'cost', 'minor_artifacts', '125.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_overcharger', 'upkeep', 'energy', '15.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_overcharger', 'upkeep', 'exotic_gases', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_archaeo_overcharger', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_bureaucracy_hub', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_bureaucracy_hub', 'cost', 'rare_crystals', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_bureaucracy_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_bureaucracy_hub', 'upkeep', 'rare_crystals', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_bureaucracy_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_consumer_goods_hub', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_consumer_goods_hub', 'cost', 'rare_crystals', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_consumer_goods_hub', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_consumer_goods_hub', 'upkeep', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_consumer_goods_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_dark_matter_detector', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_dark_matter_detector', 'cost', 'sr_dark_matter', '25.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_dark_matter_detector', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_dark_matter_detector', 'upkeep', 'sr_dark_matter', '0.25');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_dark_matter_detector', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_deep_space_black_site', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_deep_space_black_site', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_deep_space_black_site', 'produces', 'unity', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_deep_space_black_site', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_detection_array', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_detection_array', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_detection_array', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_embassy_complex', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_embassy_complex', 'cost', 'rare_crystals', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_embassy_complex', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_embassy_complex', 'upkeep', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_embassy_complex', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_energy_hub', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_energy_hub', 'cost', 'exotic_gases', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_energy_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_energy_hub', 'upkeep', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_energy_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_fleet_academy', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_fleet_academy', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_fleet_academy', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_food_hub', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_food_hub', 'cost', 'volatile_motes', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_food_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_food_hub', 'upkeep', 'volatile_motes', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_food_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_galactic_stock_exchange', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_galactic_stock_exchange', 'cost', 'rare_crystals', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_galactic_stock_exchange', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_galactic_stock_exchange', 'upkeep', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_galactic_stock_exchange', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_harvest_processing_arrays', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_harvest_processing_arrays', 'cost', 'volatile_motes', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_harvest_processing_arrays', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_harvest_processing_arrays', 'upkeep', 'volatile_motes', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_harvest_processing_arrays', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_hydroponics_bay', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_hydroponics_bay', 'cost', 'exotic_gases', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_hydroponics_bay', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_hydroponics_bay', 'upkeep', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_hydroponics_bay', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_irassian_naval_yards', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_irassian_naval_yards', 'cost', 'minor_artifacts', '125.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_irassian_naval_yards', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_irassian_naval_yards', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_listening_post', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_listening_post', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_listening_post', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_maintenance_hub', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_maintenance_hub', 'cost', 'exotic_gases', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_maintenance_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_maintenance_hub', 'upkeep', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_maintenance_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_noble_estates', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_noble_estates', 'cost', 'exotic_gases', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_noble_estates', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_noble_estates', 'upkeep', 'exotic_gases', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_noble_estates', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_psi_corps', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_psi_corps', 'cost', 'rare_crystals', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_psi_corps', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_psi_corps', 'upkeep', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_psi_corps', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_resource_silo', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_resource_silo', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_shield_generator', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_shield_generator', 'cost', 'rare_crystals', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_shield_generator', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_shield_generator', 'upkeep', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_shield_generator', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_slave_processing_facility', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_slave_processing_facility', 'cost', 'volatile_motes', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_slave_processing_facility', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_slave_processing_facility', 'upkeep', 'volatile_motes', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_slave_processing_facility', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_synapse_hub', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_synapse_hub', 'cost', 'exotic_gases', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_synapse_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_synapse_hub', 'upkeep', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_synapse_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_trade_hub', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_trade_hub', 'cost', 'rare_crystals', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_trade_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_trade_hub', 'upkeep', 'rare_crystals', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_trade_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_warp_fluctuator', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_warp_fluctuator', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_warp_fluctuator', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_yuht_detection_array', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_yuht_detection_array', 'cost', 'minor_artifacts', '125.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_yuht_detection_array', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_yuht_detection_array', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_afterburner', 'cost', 'alloys', '10.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_afterburner', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_armor', 'cost', 'alloys', '340.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_armor', 'cost', 'minor_artifacts', '100.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_archaeo_armor', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_shield', 'cost', 'alloys', '225.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_archaeo_shield', 'cost', 'minor_artifacts', '100.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_archaeo_shield', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_armor', 'cost', 'alloys', '250.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_armor', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_armor_hardener', 'cost', 'rare_crystals', '20.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_armor_hardener', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_aura_bombardment', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_aura_bombardment', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_aura_hyperlane', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_aura_hyperlane', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_aura_pd_penetration', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_aura_pd_penetration', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_aura_range', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_aura_range', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_aura_strike_craft', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_aura_strike_craft', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_crystal_plating', 'cost', 'rare_crystals', '2.5');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_crystal_plating', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_growth_chamber', 'cost', 'food', '250.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_growth_chamber', 'cost', 'exotic_gases', '45.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_growth_chamber', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_lm_armor', 'cost', 'sr_living_metal', '265.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_lm_armor', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_offspring_outlook', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_offspring_outlook', 'cost', 'rare_crystals', '45.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_offspring_outlook', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_offspring_outlook', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_psi_shield', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_psi_shield', 'cost', 'sr_zro', '75.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_psi_shield', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_quantum_destabilizer', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_quantum_destabilizer', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_shield', 'cost', 'alloys', '65.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_shield', 'cost', 'exotic_gases', '45.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_shield', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_shield_dampener', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_shield_dampener', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_shield_hardener', 'cost', 'exotic_gases', '20.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_shield_hardener', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('arkship_subspace_snare', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('arkship_subspace_snare', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_alloys_hub', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_alloys_hub', 'cost', 'volatile_motes', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_alloys_hub', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_alloys_hub', 'upkeep', 'volatile_motes', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_alloys_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_aura_emitter', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_aura_emitter', 'upkeep', 'energy', '3.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_aura_emitter', 'upkeep', 'sr_zro', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_aura_emitter', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_bureaucracy_hub', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_bureaucracy_hub', 'cost', 'rare_crystals', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_bureaucracy_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_bureaucracy_hub', 'upkeep', 'rare_crystals', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_bureaucracy_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_consumer_goods_hub', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_consumer_goods_hub', 'cost', 'rare_crystals', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_consumer_goods_hub', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_consumer_goods_hub', 'upkeep', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_consumer_goods_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_embassy_complex', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_embassy_complex', 'cost', 'rare_crystals', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_embassy_complex', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_embassy_complex', 'upkeep', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_embassy_complex', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_energy_hub', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_energy_hub', 'cost', 'exotic_gases', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_energy_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_energy_hub', 'upkeep', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_energy_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_feeder', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_feeder', 'cost', 'volatile_motes', '50.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_feeder', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_feeder', 'upkeep', 'volatile_motes', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_feeder', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_food_hub', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_food_hub', 'cost', 'volatile_motes', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_food_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_food_hub', 'upkeep', 'volatile_motes', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_food_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_galactic_stock_exchange', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_galactic_stock_exchange', 'cost', 'rare_crystals', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_galactic_stock_exchange', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_galactic_stock_exchange', 'upkeep', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_galactic_stock_exchange', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_growth_chamber', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_growth_chamber', 'cost', 'exotic_gases', '50.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_growth_chamber', 'upkeep', 'food', '10.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_growth_chamber', 'upkeep', 'exotic_gases', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_growth_chamber', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_maintenance_hub', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_maintenance_hub', 'cost', 'exotic_gases', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_maintenance_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_maintenance_hub', 'upkeep', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_maintenance_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_minerals_hub', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_minerals_hub', 'cost', 'volatile_motes', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_minerals_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_minerals_hub', 'upkeep', 'volatile_motes', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_minerals_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_noble_estates', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_noble_estates', 'cost', 'exotic_gases', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_noble_estates', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_noble_estates', 'upkeep', 'exotic_gases', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_noble_estates', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_orbital_shield_generator', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_orbital_shield_generator', 'cost', 'rare_crystals', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_orbital_shield_generator', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_orbital_shield_generator', 'upkeep', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_orbital_shield_generator', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_psi_corps', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_psi_corps', 'cost', 'rare_crystals', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_psi_corps', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_psi_corps', 'upkeep', 'rare_crystals', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_psi_corps', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_slave_processing_facility', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_slave_processing_facility', 'cost', 'volatile_motes', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_slave_processing_facility', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_slave_processing_facility', 'upkeep', 'volatile_motes', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_slave_processing_facility', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_synapse_hub', 'cost', 'alloys', '200.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_synapse_hub', 'cost', 'exotic_gases', '300.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_synapse_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_synapse_hub', 'upkeep', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_synapse_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_trade_hub', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_trade_hub', 'cost', 'rare_crystals', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_trade_hub', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ring_trade_hub', 'upkeep', 'rare_crystals', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ring_trade_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('archaeo_overcharger', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('archaeo_overcharger', 'cost', 'minor_artifacts', '125.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('archaeo_overcharger', 'upkeep', 'energy', '15.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('archaeo_overcharger', 'upkeep', 'exotic_gases', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('archaeo_overcharger', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('art_college', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('art_college', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('art_college', 'produces', 'unity', '10.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('art_college', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('astromining_hub', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('astromining_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('aura_emitter', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('aura_emitter', 'upkeep', 'energy', '3.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('aura_emitter', 'upkeep', 'sr_zro', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('aura_emitter', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('black_hole_observatory', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('black_hole_observatory', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('black_hole_observatory', 'produces', 'physics_research', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('black_hole_observatory', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('capital_yards', 'cost', 'alloys', '1250.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('capital_yards', 'upkeep', 'energy', '25.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('capital_yards', '720.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('command_center', 'cost', 'alloys', '250.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('command_center', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('command_center', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('communications_jammer', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('communications_jammer', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('communications_jammer', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('cordyceptic_reanimation_facility', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('cordyceptic_reanimation_facility', 'upkeep', 'food', '10.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('cordyceptic_reanimation_facility', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('crew_quarters', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('crew_quarters', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('crew_quarters', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('curator_think_tank', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('curator_think_tank', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('curator_think_tank', 'produces', 'physics_research', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('curator_think_tank', 'produces', 'society_research', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('curator_think_tank', 'produces', 'engineering_research', '5.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('curator_think_tank', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('cybrex_mining_hub', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('cybrex_mining_hub', 'cost', 'minor_artifacts', '50.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('cybrex_mining_hub', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('cybrex_mining_hub', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('dark_matter_detector', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('dark_matter_detector', 'cost', 'sr_dark_matter', '25.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('dark_matter_detector', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('dark_matter_detector', 'upkeep', 'sr_dark_matter', '0.25');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('dark_matter_detector', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('dark_matter_listening_post', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('dark_matter_listening_post', 'cost', 'sr_dark_matter', '50.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('dark_matter_listening_post', 'upkeep', 'energy', '10.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('dark_matter_listening_post', 'upkeep', 'sr_dark_matter', '0.5');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('dark_matter_listening_post', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('deep_space_black_site', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('deep_space_black_site', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('deep_space_black_site', 'produces', 'unity', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('deep_space_black_site', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('defense_grid', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('defense_grid', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('defense_grid', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('dimensional_shrine', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('dimensional_shrine', 'upkeep', 'energy', '3.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('dimensional_shrine', 'produces', 'unity', '10.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('dimensional_shrine', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('disruption_field', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('disruption_field', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('disruption_field', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('dragon_hatchery', 'cost', 'alloys', '750.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('dragon_hatchery', 'upkeep', 'energy', '10.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('dragon_hatchery', '720.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('feeder', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('feeder', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('feeder', 'produces', 'food', '5.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('feeder', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('fleet_academy', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('fleet_academy', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('fleet_academy', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('gravitational_centrifuge', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('gravitational_centrifuge', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('gravitational_centrifuge', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('growth_chamber', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('growth_chamber', 'cost', 'exotic_gases', '50.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('growth_chamber', 'upkeep', 'food', '10.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('growth_chamber', 'upkeep', 'exotic_gases', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('growth_chamber', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('hydroponics_bay', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('hydroponics_bay', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('hydroponics_bay', 'produces', 'food', '10.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('hydroponics_bay', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('hyperlane_detailer', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('hyperlane_detailer', 'cost', 'minor_artifacts', '45.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('hyperlane_detailer', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('hyperlane_detailer', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('ice_mining_station', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('ice_mining_station', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('irassian_naval_yards', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('irassian_naval_yards', 'cost', 'minor_artifacts', '125.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('irassian_naval_yards', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('irassian_naval_yards', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('listening_post', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('listening_post', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('listening_post', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('mercenary_garrison', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('mercenary_garrison', 'upkeep', 'energy', '10.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('mercenary_garrison', 'upkeep', 'trade', '5.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('mercenary_garrison', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('nanite_harvester', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('nanite_harvester', 'upkeep', 'energy', '4.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('nanite_harvester', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('naval_logistics_office', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('naval_logistics_office', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('naval_logistics_office', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('nebula_refinery', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('nebula_refinery', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('nebula_refinery', 'produces', 'minerals', '10.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('nebula_refinery', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('offspring_outlook', 'cost', 'alloys', '150.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('offspring_outlook', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('offspring_outlook', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('offworld_trading_company', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('offworld_trading_company', 'upkeep', 'energy', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('offworld_trading_company', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('pyroclastic_resonator', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('pyroclastic_resonator', 'upkeep', 'exotic_gases', '1.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('pyroclastic_resonator', 'produces', 'energy', '10.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('pyroclastic_resonator', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('recruitment_office', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('recruitment_office', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('recruitment_office', '720.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('reloading_bay', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('reloading_bay', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('reloading_bay', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('resource_silo', 'cost', 'alloys', '50.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('resource_silo', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('salvager_workshop', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('salvager_workshop', 'upkeep', 'energy', '3.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('salvager_workshop', 'produces', 'alloys', '5.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('salvager_workshop', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('shroud_beacon', 'cost', 'alloys', '500.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('shroud_beacon', 'cost', 'rare_crystals', '25.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('shroud_beacon', 'upkeep', 'energy', '3.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('shroud_beacon', '720.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('storm_attraction_computer', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('storm_attraction_computer', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('storm_attraction_computer', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('storm_repelling_computer', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('storm_repelling_computer', 'cost', 'rare_crystals', '25.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('storm_repelling_computer', 'upkeep', 'energy', '5.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('storm_repelling_computer', 'upkeep', 'rare_crystals', '0.75');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('storm_repelling_computer', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('target_uplink_computer', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('target_uplink_computer', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('target_uplink_computer', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('trader_proxy_office', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('trader_proxy_office', 'produces', 'trade', '5.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('trader_proxy_office', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('transit_hub', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('transit_hub', 'upkeep', 'energy', '3.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('transit_hub', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('warp_fluctuator', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('warp_fluctuator', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('warp_fluctuator', '180.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('yuht_detection_array', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('yuht_detection_array', 'cost', 'minor_artifacts', '125.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('yuht_detection_array', 'upkeep', 'energy', '2.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('yuht_detection_array', '360.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('zroni_storm_caster', 'cost', 'alloys', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('zroni_storm_caster', 'cost', 'minor_artifacts', '125.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('zroni_storm_caster', 'cost', 'sr_zro', '100.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('zroni_storm_caster', 'upkeep', 'energy', '20.0');
+INSERT OR REPLACE INTO starbase_building_resource (key, kind, resource, amount) VALUES ('zroni_storm_caster', 'upkeep', 'sr_zro', '1.0');
+INSERT OR REPLACE INTO build_time (key, days) VALUES ('zroni_storm_caster', '360.0');
 INSERT OR REPLACE INTO anomaly_category (key, level, name, description, outcomes_json)
                VALUES ('AIANOM_CLUE_CAT', 5, 'L-Gate Insight', 'We have learned of a mysterious star cluster somewhere just beyond the periphery of our galaxy. It can only be accessed through L-Gates, artificial subspace portals found in certain systems.
 These Gateways have been deliberately disabled by someone, and for now we lack the necessary insight into the subspace mechanics that govern their use to lift the lockdown.', '[{"event": "aianom.11", "name": null}]');
@@ -82323,12 +83245,52 @@ INSERT OR REPLACE INTO tech_fallen_empire
                (key, label, description, area, area_label, category, category_label, building_key, sort_order)
                VALUES ('tech_dark_matter_propulsion', 'Dark Matter Propulsion', 'These ship thrusters utilize Dark Matter technology to generate propulsion in a manner that appears to defy numerous laws of physics.', 'engineering', 'Engineering', 'propulsion', 'Propulsion', NULL, 34);
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('ASCENSION_PERKS_SLOTS', '8.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('BASE_POP_DECLINE', '5.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('BASE_POP_GROWTH', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('BROKEN_TRADE_DEAL_FACTOR', '0.5');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('CLAIM_COST_BASE', '50.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('CLAIM_COST_DISTANCE', '25.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('CLAIM_COST_MAX', '1000.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COLONY_MONTHLY_GROWTH', '3.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COLONY_POPS_REQUIRED', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_BASE', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_COUNCIL_AGENDA_COST_PENALTY', '0.001');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_TECH_COST_PENALTY', '0.002');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_TRADITION_COST_PENALTY', '0.002');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('EXPANSION_COST_BASE', '75.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('EXPANSION_COST_DISTANCE', '75.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('EXPANSION_COST_MAX', '1000.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('GROWTH_SCALE_DEFAULT', '0.25');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('GROWTH_SCALE_MAGNITUDE_OFFSET', '10000.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('HABITABILITY_OPPOSITE_PLANET', '0.4');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('HABITABILITY_WRONG_PLANET', '0.7');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_CEILING_DEFAULT', '5.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_POP_GROWTH_FLOOR', '0.1');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_POP_GROWTH_LOWER_THRESHOLD', '0.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_POP_GROWTH_MIN_POPS', '10.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_POP_GROWTH_R', '0.0025');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MARKET_TRADE_FEE_BASE', '0.3');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MARKET_TRADE_FEE_MIN', '0.05');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_GIFT_SIZE', '50.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_TRADE_DEAL_LENGTH_YEARS', '30.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_GIFT_SIZE', '25.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_TRADE_DEAL_LENGTH_YEARS', '10.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_WILLINGNESS_TO_OFFER_TRADE', '0.75');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('OFFER_TRADE_ACCEPTANCE_ATTITUDE', '-1000.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('OFFER_TRADE_MIN_RESOURCE_THRESHOLD', '0.8');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_DECLINE_THRESHOLD', '1.25');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_NO_GROWTH_THRESHOLD', '1.15');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('STARBASE_CAPACITY_BASE', '3.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_MAX_RESOURCE_PERCENT', '0.3');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_MIN_RESOURCE_DELTA', '10.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_MIN_RESOURCE_STOCKPILE', '500.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_RESOURCE_FRACTION_MAX', '0.2');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_RESOURCE_FRACTION_MIN', '0.1');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_RESOURCE_STOCKPILE_OVER', '0.75');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_RESOURCE_STOCKPILE_UNDER', '0.33');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_VALUE_RESOURCE', '2.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_VALUE_RESOURCE_INCOME_BASE', '50.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_VALUE_RESOURCE_MONTHLY_MULT', '0.5');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_CATEGORIES_MAX', '7.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_AMOUNTS', '300.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_TRADITION', '8.0');
@@ -108180,3 +109142,1455 @@ INSERT INTO deed (key, name, description, attunement, sort_order)
                VALUES ('deed_sector_as_vassal', 'Delegating', NULL, '50.0', 54);
 INSERT INTO deed (key, name, description, attunement, sort_order)
                VALUES ('deed_colonize_tomb_world', 'Reclaiming', NULL, '25.0', 55);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('energy', 'Energy Credits', 'basic', 1, '100.0', '100.0', '25000.0', '1.5', '500.0', 0);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('minerals', 'Minerals', 'basic', 1, '100.0', '100.0', '15000.0', '1.0', '1000.0', 1);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('food', 'Food', 'basic', 1, '100.0', '100.0', '15000.0', '1.0', '500.0', 2);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('physics_research', 'Physics Research', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 3);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('society_research', 'Society Research', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 4);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('engineering_research', 'Engineering Research', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 5);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('influence', 'Influence', 'other', 0, NULL, NULL, '1000.0', '1.0', NULL, 6);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('unity', 'Unity', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 7);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('trade', 'Trade', 'advanced', 1, NULL, NULL, '50000.0', NULL, NULL, 8);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('consumer_goods', 'Consumer Goods', 'advanced', 1, '50.0', '100.0', '15000.0', '5.0', '500.0', 9);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('alloys', 'Alloys', 'advanced', 1, '25.0', '100.0', '15000.0', '5.0', '500.0', 10);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('volatile_motes', 'Volatile Motes', 'strategic', 1, '10.0', '100.0', '15000.0', '10.0', '10.0', 11);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('exotic_gases', 'Exotic Gases', 'strategic', 1, '10.0', '100.0', '15000.0', '10.0', '10.0', 12);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('rare_crystals', 'Rare Crystals', 'strategic', 1, '10.0', '100.0', '15000.0', '10.0', '10.0', 13);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('sr_living_metal', 'Living Metal', 'rare', 1, '5.0', '100.0', '15000.0', '100.0', '5.0', 14);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('sr_zro', 'Zro', 'rare', 1, '5.0', '100.0', '15000.0', '100.0', '5.0', 15);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('sr_dark_matter', 'Dark Matter', 'rare', 1, '5.0', '100.0', '15000.0', '100.0', '5.0', 16);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('nanites', 'Nanites', 'rare', 0, NULL, NULL, NULL, '100.0', NULL, 17);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('minor_artifacts', 'Minor Artifacts', 'rare', 0, NULL, NULL, '2000.0', '100.0', '5.0', 18);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('astral_threads', 'Astral Threads', 'rare', 0, NULL, NULL, '500.0', '100.0', '5.0', 19);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('biomass', 'Biomass', 'advanced', 0, NULL, NULL, NULL, NULL, NULL, 20);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('menace', 'Menace', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 21);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('integrity', 'Valor', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 22);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('advanced_logic', 'Advanced Logic', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 23);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('feral_insight', 'Feral Insight', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 24);
+INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
+               market_price, max, ai_weight, ai_wants, sort_order)
+               VALUES ('entropy_crystals', 'Crystallized Entropy', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 25);
+INSERT INTO personality (key, name, trade_willingness) VALUES ('honorbound_warriors', 'Honorbound Warriors', '0.7');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('evangelising_zealots', 'Evangelizing Zealots', '0.75');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('erudite_explorers', 'Erudite Explorers', '0.9');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('spiritual_seekers', 'Spiritual Seekers', '0.9');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('ruthless_capitalists', 'Ruthless Capitalists', '1.0');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('peaceful_traders', 'Peaceful Traders', '1.0');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('hegemonic_imperialists', 'Hegemonic Imperialists', '0.8');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('slaving_despots', 'Slaving Despots', '0.8');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('decadent_hierarchy', 'Decadent Hierarchy', '0.9');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('democratic_crusaders', 'Democratic Crusaders', '0.9');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('harmonious_hierarchy', 'Harmonious Collective', '0.9');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('federation_builders', 'Federation Builders', '0.95');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('xenophobic_isolationists', 'Xenophobic Isolationists', '0.5');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('fanatic_purifiers', 'Fanatical Purifiers', '0.5');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('hive_mind', 'Hive Mind', '0.7');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('devouring_swarm', 'Devouring Swarm', '0.0');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('migrating_flock', 'Migratory Flock', '1.1');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('metalhead', 'Metalheads', '0.0');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('machine_intelligence', 'Machine Intelligence', '0.8');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('assimilators', 'Driven Assimilators', '0.5');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('exterminators', 'Determined Exterminators', '1.0');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('servitors', 'Rogue Servitors', '0.9');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('fanatic_befrienders', 'Fanatical Befrienders', '1.0');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('became_the_crisis', 'Crisis Aspirant', '0.5');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('galactic_defense_force', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness) VALUES ('imperial_origin_overlord_ai', 'Indolent Overlord', '0.25');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('hive_mind_friend', 'Cooperative Multitude', '0.95');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('decadent_capitalists', 'Benevolent Corporation', '0.75');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('scorching_infernals', 'Blazing Devastators', '0.25');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('hyperthermia_empire', 'Thermarchy', '0.5');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('fallen_empire_spiritualist', 'Holy Guardians', '0.33');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('fallen_empire_materialist', 'Keepers of Knowledge', '0.5');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('fallen_empire_xenophobe', 'Militant Isolationists', '0.0');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('fallen_empire_xenophile', 'Enigmatic Observers', '0.5');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_spiritualist', 'Doctrinal Enforcers', '0.33');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_materialist', 'Watchful Regulators', '0.5');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_xenophobe', 'Jingoistic Reclaimers', '0.0');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_xenophile', 'Benevolent Interventionists', '0.5');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('fallen_empire_machine', 'Ancient Caretakers', '0.5');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_machine', 'Galactic Custodians', '0.5');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('berserk_fallen_empire_machine', 'Rampaging Machines', '0.0');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('fallen_empire_hive_mind', 'Shattered Fragment', '0.5');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_hive_mind_war', 'Reforged Sword', '0.0');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_hive_mind_growth', 'Reforged Plow', '0.0');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_hive_mind_control', 'Reforged Whip', '0.33');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('pre_ftl_splintered', 'Splintered Species', NULL);
+INSERT INTO personality (key, name, trade_willingness) VALUES ('mirrored_empire_spiritualist', 'Mirror Empire', '0.33');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('mirrored_empire_xenophobe', 'Mirror Empire', '0.0');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('mirrored_empire_default', 'Mirror Empire', '0.5');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('benevolent_wilderness', 'Harmonic Wilderness', '0.95');
+INSERT INTO personality (key, name, trade_willingness) VALUES ('rampant_wilderness', 'Rampant Wilderness', '0.0');
+INSERT INTO attitude (key, name, trade) VALUES ('neutral', 'Neutral', 1);
+INSERT INTO attitude (key, name, trade) VALUES ('wary', 'Wary', 1);
+INSERT INTO attitude (key, name, trade) VALUES ('receptive', 'Receptive', 1);
+INSERT INTO attitude (key, name, trade) VALUES ('unfriendly', 'Suspicious', 0);
+INSERT INTO attitude (key, name, trade) VALUES ('rival', 'Rival', 0);
+INSERT INTO attitude (key, name, trade) VALUES ('hostile', 'Hostile', 0);
+INSERT INTO attitude (key, name, trade) VALUES ('domineering', 'Domineering', 0);
+INSERT INTO attitude (key, name, trade) VALUES ('cordial', 'Cordial', 1);
+INSERT INTO attitude (key, name, trade) VALUES ('friendly', 'Friendly', 1);
+INSERT INTO attitude (key, name, trade) VALUES ('protective', 'Protective', 1);
+INSERT INTO attitude (key, name, trade) VALUES ('loyal', 'Loyal', 1);
+INSERT INTO attitude (key, name, trade) VALUES ('disloyal', 'Disloyal', 0);
+INSERT INTO attitude (key, name, trade) VALUES ('overlord', 'Overlord', 1);
+INSERT INTO attitude (key, name, trade) VALUES ('threatened', 'Threatened', 0);
+INSERT INTO attitude (key, name, trade) VALUES ('dismissive', 'Dismissive', 0);
+INSERT INTO attitude (key, name, trade) VALUES ('patronizing', 'Patronizing', 1);
+INSERT INTO attitude (key, name, trade) VALUES ('angry', 'Angry', 0);
+INSERT INTO attitude (key, name, trade) VALUES ('arrogant', 'Arrogant', 0);
+INSERT INTO attitude (key, name, trade) VALUES ('imperious', 'Imperious', 0);
+INSERT INTO attitude (key, name, trade) VALUES ('belligerent', 'Belligerent', 0);
+INSERT INTO attitude (key, name, trade) VALUES ('custodial', 'Custodial', 1);
+INSERT INTO attitude (key, name, trade) VALUES ('enigmatic', 'Enigmatic', 1);
+INSERT INTO attitude (key, name, trade) VALUES ('berserker', 'Berserk', 0);
+INSERT INTO attitude (key, name, trade) VALUES ('null', 'None', 0);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_cheat', 'Cheat', '1.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_in_war', 'At War', '-50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_alliance', 'Alliance', '25.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_defensive_pact', 'Defensive Pact', '20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_federation_associate', 'Federation Associate', '10.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_federation', 'Federation', '50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_guarantees_independence', 'Guarantees Independence', '10.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_closed_borders', 'Closed Borders', '-20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_subject', 'Same Overlord', '50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_is_subject', 'Subject', '25.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_policy_interference', 'Interference Policy', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_policy_slavery', 'Slavery Policy', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_policy_orbital_bombardment', 'Bombardment Policy', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_hostility', 'First Contact Hostilities', '-25.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_war', 'First Contact War', '-75.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_declared_war', 'Was at War', '-25.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_genocidal', 'Genocidal', '0.0', 1, '-1000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_genocidal_our_species', 'Purged our Species', '-0.25', 1, '-1000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_necrophage', 'Mysterious Disappearances', '-0.01', 1, '-100.0', NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_necrophage_our_species', 'Necrophaged our Species', '-0.1', 1, '-500.0', NULL, '3.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_nuker', 'Terror Bombing', '0.0', 1, '-250.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_changed_federation', 'Changed Federation', '-200.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_broke_federation', 'Broke Federation', '-200.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_broke_association_status', 'Ended Federation Association', '-25.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_kicked_from_alliance', 'Kicked us from Alliance', '-200.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_tried_to_kick', 'Tried to kick us from Alliance', '-100.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_voted_down_proposal', 'Voted down our proposal', '-50.0', 1, '-150.0', NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_changed_alliance', 'Changed Alliance', '-200.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_broke_alliance', 'Broke Alliance', '-200.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_broke_defensive_pact', 'Broke Defensive Pact', '-100.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_broke_research_agreement', 'Broke Research Agreement', '-25.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_broke_commercial_pact', 'Broke Commercial Pact', '-25.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_broke_non_aggression_pact', 'Broke Non-Aggression Pact', '-50.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_broke_migration_pact', 'Broke Migration Treaty', '-15.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_broke_guarantee', 'Broke Guarantee', '-25.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_subject_protection', 'Accepted Plea for Protection', '150.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_cede_planet', 'Ceded planet At war', '-30.0', 1, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_forced_subjectized', 'Forced subject', '-100.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_subject_released', 'Released from Overlord', '100.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_status_quo_not_accepted', 'Rejected Status Quo Peace Offer', '-20.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_trade_gift', 'Favorable Trade Deal', '1.0', 1, NULL, '100.0', '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_was_in_trade', 'Broke Trade Deal', '-1.0', 0, '-200.0', NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_subject_broke_free', 'Broke free from Overlord', '-50.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_new_contact', 'New Contact', '-20.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_threat', 'Threat', '-1.0', 0, '-1000.0', NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_trust', 'Trust', '1.0', 0, NULL, '100.0', NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_relative_power', 'Relative Power of Subjects', '-1.0', 0, '-1000.0', NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_friction', 'Border Friction', '-1.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_claims_on_us', 'This Empire''s Claims', '-5.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_their_claims', 'Opposing Empire''s Claims', '-5.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_rivalry', 'Our Rival', '-100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_declared_rival', 'Rivaling Us', '-100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_ally_of_ally', 'Ally of Ally', '25.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_mutual_rival', 'Mutual Rivals', '50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_mutual_threat', 'Mutual Threats', '1.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_allied_to_rival', 'Allied to Rivals', '-100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_rivals_with_ally', 'Rivals with Allies', '-100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_insult', 'Insulted', '-200.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_demanded_subjectization', 'Refused Subjugation', '-20.0', 1, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_decline_war', 'Declined War', '-50.0', 1, '-100.0', NULL, '3.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_inactive_in_war', 'Inactive at War', '-50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_broke_away', 'Breakaway State', '-100.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_broke_away_from', 'Former Oppressors', '-100.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_we_liberated', 'Liberated', '200.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_liberated_us', 'Liberator', '200.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_took_station', 'Seized Resource Station', '-5.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_abandoned_apology', 'Abandoned Refugees', '-35.0', 0, NULL, NULL, '3.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_abandoned', 'Abandoned Refugees', '-50.0', 0, NULL, NULL, '3.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_abandoned_insult', 'Abandoned Refugees', '-75.0', 0, NULL, NULL, '3.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_crew_saved', 'Saved Crew', '25.0', 0, NULL, NULL, '3.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_graverobber_1', 'Desecrated Tomb', '-20.0', 0, NULL, NULL, '3.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_graverobber_2', 'Desecrated Tomb', '-35.0', 0, NULL, NULL, '3.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_graverobber_3', 'Desecrated Tomb', '-50.0', 0, NULL, NULL, '4.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_literary_savior', 'Literary Savior', '20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_book_burner', 'Book Burner', '-20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_dead_captives', 'Killed Captives', '-10.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_live_captives', 'Live Captives', '10.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_faction_insult', 'Faction Insult', '-30.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_enlightened_us', 'Enlightened Us', '100.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_destroyed_portal', 'Destroyed Dimensional Portal', '40.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_swarm', 'Extragalactic Invaders', '-1000.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_prey', 'Prey', '-1000.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('assassination_forgiven', 'Hostility Forgiven', '35.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_primitive_violation', 'Annexed pre-FTLs', '-25.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_fallen_empire_gift', 'Given Gift', '50.0', 0, NULL, '50.0', '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_accepted_fallen_empire_demand', 'Accepted Demands', '25.0', 0, NULL, '100.0', '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_refused_fallen_empire_demand', 'Refused Demands', '-200.0', 0, '-200.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_spurned_fallen_empire_gift', 'Spurned Gift', '-50.0', 0, '-100.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_failed_fallen_empire_task', 'Failed Task', '-50.0', 0, '-50.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_majorly_failed_fallen_empire_task', 'Failed us Greatly', '-200.0', 0, '-200.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_angered_fallen_machine_empire', 'Angered Fallen Machine Empire', '-100.0', 0, '-100.0', NULL, '10.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_refused_fallen_empire_task', 'Refused Task', '-25.0', 0, '-25.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_completed_fallen_empire_task', 'Completed Task', '100.0', 0, NULL, '200.0', '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_refused_fallen_empire_request', 'Refused Request', '-50.0', 0, '-100.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_accepted_fallen_empire_request', 'Accepted Request', '100.0', 0, NULL, '200.0', '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_heretical_research', 'Heretical Research', '-50.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('encroaching_colony', 'Encroaching Colony', '-75.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('encroaching_scientists', 'Encroaching Scientists', '-50.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_shade_giver', 'Shade-Giver', '100.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_war_in_heaven_winner', 'Victor in War of Heaven', '200.0', 1, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_war_in_heaven_ally', 'Ally in War of Heaven', '100.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_war_in_heaven_enemy', 'Enemy in War of Heaven', '-100.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_non_aligned_league', 'Ally in Non-Aligned League', '200.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_non_aligned_league_declined', 'Refused to allow us into the Non-Aligned League.', '-100.0', 1, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_non_aligned_league_fe', 'Non-Aligned League', '-200.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_crisis_fighter', 'Crisis Fighter', '100.0', 1, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_crisis_fighter_small', 'Crisis Fighter', '50.0', 1, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_destroyed_curator', 'Destroyed Curator Enclave', '-15.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_destroyed_curator_insight', 'Destroyed Curators we had deals with', '-30.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_destroyed_trader', 'Destroyed Trader Enclave', '-15.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_destroyed_trader_sr', 'Destroyed Traders we had deals with', '-30.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_ringworld_terms_accepted', 'Request Accepted', '40.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_ringworld_terms_denied', 'Request Refused', '-40.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_maneuvers_hardline', 'Fleet Maneuvers', '-100.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_maneuvers_conciliatory', 'Fleet Maneuvers', '-40.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_maneuvers_canceled', 'Canceled Fleet Maneuvers', '40.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_dysonsphere_terms_denied', 'The Blind Wanderer', '-40.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_dysonsphere_apology_rejected', 'Apology Rejected', '-20.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_dysonsphere_insult', 'Shots Fired', '-40.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_invaded_mind', 'Mind Invasion Attempt', '-35.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_took_in_rebels', 'Took in Rebels', '-30.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_doomed_us_all', 'Brought on the End', '-1000.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_threatened_artifact', 'Threatened Us', '-50.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_machine_uprising_originator', 'Vengeful Master', '-1000.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_machine_uprising', 'Steely Rebels', '-1000.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_machine_uprising_defeated', 'Mechanical Hubris Redeemed', '80.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_machine_uprising_machine_comrades_defeated', 'Machine Oppressor', '-80.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_machine_uprising_victorious', 'Rebellious Robots', '-80.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_machine_uprising_machine_comrades_victorious', 'Self-Emancipator', '80.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_stole_our_glands', 'Gland Thieves', '-200.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_returned_marauder_planet', 'Liberated Planet', '40.0', 0, NULL, '100.0', '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_kept_marauder_planet', 'Kept Liberated Planet', '-20.0', 0, '-100.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_ceded_starbase', 'Borders Respected', '100.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_not_ceded_starbase', 'Borders Disrespected', '-100.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_respect_independence', 'Independence Respected', '100.0', 0, NULL, NULL, '-1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_disrespect_independence', 'Independence Disrespected', '-100.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_war_diadochi', 'War of the Diadochi', NULL, 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_cracked_a_world', 'Cracked a World', '-100.0', 1, '-500.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_cracked_an_uninhabited_world', 'Cracked an Uninhabited Planet', '-30.0', 1, '-150.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_cracked_my_world', 'Cracked our World', '-1000.0', 1, '-5000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_cracked_my_uninhabited_world', 'Cracked our Uninhabited Planet', '-300.0', 1, '-1500.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_cracked_a_primitive_world', 'Cracked a Pre-FTL World', '-40.0', 1, '-200.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_cracked_a_primitive_world_phile', 'Obliterated a Budding Civilization', '-60.0', 1, '-300.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_toxified_a_world', 'Toxified a World', '-100.0', 1, '-500.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_toxified_an_uninhabited_world', 'Toxified an Uninhabited Planet', '-30.0', 1, '-150.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_toxified_my_world', 'Toxified our World', '-1000.0', 1, '-5000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_toxified_my_uninhabited_world', 'Toxified our Uninhabited Planet', '-300.0', 1, '-1500.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_toxified_a_primitive_world', 'Toxified a pre-FTL World', '-40.0', 1, '-200.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_toxified_a_primitive_world_phile', 'Obliterated a Budding Civilization', '-60.0', 1, '-300.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_swept_a_world', 'Swept a World', '-80.0', 1, '-400.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_swept_my_world', 'Swept our World', '-800.0', 1, '-4000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_swept_a_primitive_world', 'Swept a Pre-FTL World', '-40.0', 1, '-200.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_swept_a_primitive_world_phile', 'Obliterated a Budding Civilization', '-60.0', 1, '-300.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_devolved_a_world', 'Devolved a World', '-80.0', 1, '-400.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_devolved_my_world', 'Devolved one of our Worlds', '-800.0', 1, '-4000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_devolved_a_primitive_world', 'Devolved a Primitive World', '-40.0', 1, '-200.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_devolved_a_primitive_world_phile', 'Devolved a Primitive World', '-60.0', 1, '-300.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_assimilated_a_world', 'Assimilated a World', '-60.0', 1, '-300.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_assimilated_my_world', 'Assimilated our World', '-600.0', 1, '-3000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_assimilated_a_primitive_world', 'Assimilated a Pre-FTL World', '-40.0', 1, '-200.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_assimilated_a_primitive_world_phile', 'Obliterated a Budding Civilization', '-60.0', 1, '-300.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_drenched_a_world', 'Drenched a World', '-60.0', 1, '-300.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_drenched_my_world', 'Drenched our World', '-600.0', 1, '-3000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_drenched_a_primitive_world', 'Drenched a Pre-FTL World', '-40.0', 1, '-200.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_drenched_a_primitive_world_phile', 'Obliterated a Budding Civilization', '-60.0', 1, '-300.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_converted_a_world', 'Converted a World', '-40.0', 1, '-200.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_converted_my_world', 'Converted our World', '-400.0', 1, '-2000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_shielded_a_world', 'Shielded a World', '-20.0', 1, '-100.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_shielded_my_world', 'Shielded our World', '-200.0', 1, '-1000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_worships_our_holy_world', 'Reveres Holy World', '30.0', 1, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_zarqlans_chosen', 'Zarqlan''s Chosen', '150.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_imperial_overlord_ai_opinion', 'Benevolent Overlord', '150.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_imperial_vassal_ai_opinion', 'Recent Peer', '120.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_imperial_vassal_new_overlord', 'New Protector', '150.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_imperial_vassal_refused_overlordship', 'Refused Overlordship', '-80.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_imperial_vassal_harsh_response_overlord_opinion', 'Disappointed', '-20.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_imperial_vassal_grateful_response_overlord_opinion', 'Grateful', '20.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('unique_event_savior_opinion_modifier', 'Savior', '1000.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_abducted_aliens', 'Abducted Aliens', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_tr_versatility_universal_compatibility', 'Universal Compatibility', '20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_ap_defender_of_the_galaxy', 'Defender of the Galaxy', '200.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_ap_defender_of_the_galaxy_1', 'Noble Hearts', '40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_ap_defender_of_the_galaxy_2', 'Champions of the Galaxy', '60.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_ap_defender_of_the_galaxy_3', 'Beacon of Unity', '100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_democratic_authority', 'Same Authority', '10.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_oligarchic_authority', 'Same Authority', '10.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_dictatorial_authority', 'Same Authority', '10.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_imperial_authority', 'Same Authority', '10.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_both_hive_mind', 'Fellow Hive Mind', '30.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_both_wilderness', 'Fellow Wilderness', '50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_hive_mind', 'Hive Mind', '-30.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_hive_mind_empath', 'Empath', '20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_cyborgs_fanatic', 'Wicked Cyborgs', '-40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_cyborgs_normal', 'Wicked Cyborgs', '-20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_cybernetic_creed_of_cyborgs', 'Hallowed Cyborgs', '20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_synthetics_normal', 'Soulless Machines', '-40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_synthetics_fanatic', 'Soulless Machines', '-60.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_synthetics_small', 'Artificial Beings', '-20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_both_machine_intelligence', 'Fellow Machine Intelligence', '30.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_organic_opinion_of_machine_empires', 'Machine Intelligence', '-30.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_dc_opinion_of_servitors', 'Oppressors', '-100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_dc_opinion_of_assimilators', 'Oppressors', '-1000.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_xenophobes', 'Xenophobic Bigots', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_xenophiles', 'Xenophile Diplomacy', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_xenophobia', 'Xenophobia', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_xenophilia', 'Xenophilia', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_of_materialist', 'Materialist Fools', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_of_materialist_pos', 'Bright Materialists', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_of_spiritualist', 'Spiritualist Fools', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_of_spiritualist_pos', 'Wise Spiritualists', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_of_egalitarian', 'Egalitarian Rabble', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_of_egalitarian_pos', 'Free Egalitarianists', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_of_pacifist_pos', 'Enlightened Pacifists', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_of_authoritarian', 'Authoritarian Tyrants', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_xenophage', 'Xenophages', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_materialist_opinion_of_machine_empires', 'Sophisticated Machines', '10.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_fanatic_materialist_opinion_of_machine_empires', 'Sophisticated Machines', '20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_spiritualist_opinion_of_machine_empires', 'Soulless Machines', '-40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_fanatic_spiritualist_opinion_of_machine_empires', 'Soulless Machines', '-60.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_spiritualist_opinion_of_spiritualists_machine_empires', 'Soulless Machines', '-20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_fanatic_spiritualist_opinion_of_spiritualists_machine_empires', 'Soulless Machines', '-40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_spiritualist_fe_opinion_of_machine_empires', 'Soulless Machines', '-40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_spiritualist_fe_opinion_of_spiritualist_machine_empires', 'Soulless Machines', '-60.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_individual_machine_opinion_of_individual_machine_empires', 'Individual Machines', '20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_war_fragment_fe_opinion_of_pacifists', 'Lazy Pacifists', '-40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_war_fragment_fe_opinion_of_militarist', 'Healthy Militarists', '30.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_control_fragment_fe_opinion_of_egalitarians', 'Foolish Egalitarians', '-40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_control_fragment_fe_opinion_of_authoritarian', 'Wise Authoritarians', '30.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_growth_fragment_fe_opinion_of_homicidals', 'Blind Murderers', '-50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_hive_fe_opinion_of_hives', 'Young Hives', '25.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_hive_fe_opinion_of_non_hives', 'Unfortunate Non-Hives', '-20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_terminators_opinion_of_servitors', 'Biophiles', '-200.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_both_servitors', 'Fellow Servitors', '40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_decadent_opinion_of_servitors', 'Willing Servants', '20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_spiritualist_negative_opinion_of_assimilators', 'Soul Thieves', '-200.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_negative_opinion_of_assimilators', 'Dreaded Assimilators', '-100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_both_assimilators', 'Fellow Assimilators', '40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_negative_opinion_of_swarm_fe', 'Devouring Swarm', '-80.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_negative_opinion_of_exterminators_fe', 'Determined Exterminator', '-40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_negative_opinion_of_exterminators', 'Murder Machines', '-1000.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_servitors_negative_opinion_of_exterminators', 'Murder Machines', '-1000.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_both_terminators', 'Fellow Exterminators', '200.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_exterminators_opinion_of_organics', 'Organic Filth', '-1000.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_exterminators_opinion_of_machines', 'Fellow Machines', '100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_barbaric_despoilers', 'Barbaric Despoilers', '-50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_crusader_spirit', 'Crusader Spirit', '-80.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_crusader_spirit_pos', 'Crusader Spirit', '20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_authoritarian_opinion_barbaric_despoilers', 'Barbaric Despoilers', '-40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_militarist_opinion_barbaric_despoilers', 'Barbaric Despoilers', '-20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_pacifist_opinion_barbaric_despoilers', 'Barbaric Despoilers', '-80.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_fe_opinion_barbaric_despoilers', 'Barbaric Despoilers', '-40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_galatron_holder', 'Keepers of the Galatron', '25.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_galatron_denier', 'Wicked Thieves of the Galatron''s Light', '-50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_crime_corp', 'Criminal Syndicate', '-25.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_crime_corp_branch_offices', 'Criminal Branch Offices', '-10.0', 0, '-200.0', NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_voted_to_kill_tiyanki', 'Voted To Harm Space Fauna', '-20.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_voted_to_help_tiyanki', 'Voted To Protect Space Fauna', '20.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_killed_tiyanki_fleet_1', 'Butchered Tiyanki', '-10.0', 1, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_killed_tiyanki_fleet_2', 'Butchered Tiyanki', '-20.0', 1, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_killed_all_tiyanki_1', 'Rendered Tiyanki Extinct', '-25.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_killed_all_tiyanki_2', 'Rendered Tiyanki Extinct', '-50.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_killed_all_tiyanki_3', 'Rendered Tiyanki Extinct', '-100.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_traitor_to_empire', 'Traitors to the Imperium', '-200.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('interfering_revolt_support', 'Interference in Internal Affairs', '-200.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_relic_omnicodex', 'The Omnicodex', '25.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_blorg_insight', 'Blorg Insight', '-25.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('contact_with_MSI_01', 'Troubled Past', '-200.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('contact_with_MSI_02', 'Troubled Past', '-100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_caught_spying', 'Dinner Party Deception', '-200.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_life_of_the_party', 'Dinner Party Diplomacy', '150.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_double_rejection_party', 'Dinner Party Dismissal', '-250.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_wet_towel_party', 'Dinner Party Downers', '-100.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_could_not_eat_the_food_party', 'Dinner Party Miscalculation', '25.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_has_sensitive_information_about_us', 'Has Sensitive Information About Us', '-25.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_cosmogenesis_thesis', 'Messing with reality', '-75.0', 1, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_fallen_wannabe', 'Meddlesome Younger Race', '-10.0', 1, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_fallen_wannabe_materialist', 'Meddlesome Younger Race', '-20.0', 1, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_nice_forests', 'Helpful Gardeners', '50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_cut_our_forests', 'Cut Our Garden', '-50.0', 1, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_selective_kinship', 'Shared Kin', '100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_selective_kinship_hates', 'Horrid Alien', '-50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_unplugged_injured_diplomacy', 'Civil Warmongers', '-400.0', 0, NULL, NULL, '10.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_unplugged_injured_distrustful', 'Distrustful', '-500.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_implicated_by_unplugged_assimilator', 'Implicated by the Machine', '-100.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_militant_values', 'Militant Values', '50.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_plague_spreaders', 'Plague Spreaders', '-50.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_population_purging', 'Population Purging', '-50.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_bodily_autonomy', 'Bodily Autonomy', '50.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_smuggled_pops', 'Stole our Pops!', '-100.0', 1, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_proxy_war_busted', 'Proxy Warmongering Revealed', '-200.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_burned_a_world', 'Incinerated a World', '-60.0', 1, '-300.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_burned_my_world', 'Incinerated our World', '-600.0', 1, '-3000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_burned_a_primitive_world', 'Incinerated a Pre-FTL World', '-40.0', 1, '-200.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_burned_a_primitive_world_phile', 'Obliterated a Budding Civilization', '-60.0', 1, '-300.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_mirrored_empire', 'Close cousins', '150.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_formula_pink', 'Formula Pink', '20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_fractured_ambassadors', 'Fractured Ambassadors', '20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('nexus_opinion_first_hit', 'Nexus Anxiety', '-50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('nexus_opinion_second_hit', 'Nexus Dismay', '-75.0', 0, NULL, NULL, '0.75');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('nexus_opinion_third_hit', 'Nexus Fear', '-125.0', 0, NULL, NULL, '1.25');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('nexus_opinion_summon_hit', 'Nexus Rage', '-250.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('nexus_opinion_the_code', 'Nexus Reconciliation', '50.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_natural_dislike_ascension', 'Misguided Ascension', '-50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_hive_integrated', 'Integrated Hive', '-50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_stole_supplies', 'Stole Wreckage Cargo', '-50.0', 0, NULL, NULL, '2.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_returned_supplies', 'Returned Wreckage Cargo', '50.0', 0, NULL, NULL, '2.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_gave_space_rum', 'Received Exotic Inebriants', '50.0', 0, NULL, NULL, '2.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_space_rum_failed', 'Gift-Giving Gone Awry', '-50.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_ratling_system_stolen', 'Ketling Planet Subdued', '-50.0', 0, NULL, NULL, '2.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_nurtured', 'Nurtured Forebears', '200.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_discarded', 'Discarded Forebears', '-200.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_dendrus', 'Dendritian Savior', '1000.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_to_dendrus', 'Dendritian Savior', '500.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_scion', 'Scion', '200.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_common_ground', 'Common Ground', '200.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_wanted_to_leave_hegemony', 'Asked to Leave Hegemony', '-50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_denied_to_leave_hegemony', 'Denied Request to Leave', '-75.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_tried_to_secede', 'Tried to Secede', '-75.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_forced_to_remain', 'Failed Secession Attempt', '-75.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_diplo_stance_supremacy', 'Both Supremacist', '-200.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_fellow_galcom_member', 'Member', '50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_galactic_community_supported_resolution', 'Supported Resolution', '25.0', 1, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_galactic_community_opposed_resolution', 'Opposed Resolution', '-25.0', 1, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_galactic_community_veto_resolution', 'Vetoed Resolution', '-75.0', 1, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_galactic_community_emergency_measure_resolution', 'Declared Emergency Measure', '100.0', 1, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_galactic_community_in_breach', 'In Breach of Galactic Law', '-100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_galactic_community_left', 'Left Galactic Community', '-75.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_federation_midas', 'Midas'' Stigma', '-200.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_envoy_insult_taken', 'Insulting Envoy', '-75.0', 1, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_envoy_insult_laughed_at', 'Rib-Tickling Envoy', '50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_envoy_murder_scandal', 'Sheltering Murderers', '-150.0', 1, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_kills_envoys', 'Envoy Assassination', '-100.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_extradited_envoy', 'Extradited Rogue Envoy', '50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_refused_extradited_envoy', 'Refused to Extradite Rogue Envoy', '-50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_special_ops_vs_us', 'Special Ops Mission', '-50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_feline_affection', 'Feline Affection', '50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_hegemony_joint_action_agreed', 'Agreed to Celebration of Unity', '100.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_hegemony_joint_action_refused', 'Rejected Celebration of Unity', '-150.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_hegemony_joint_action_completed', 'Contribution to Federation Monument', '100.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_military_joint_action_agreed', 'Agreed to Joint Military Exercises', '100.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_military_joint_action_refused', 'Rejected Joint Military Exercises', '-100.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_ideological_dispute', 'Ideological Dispute', '-75.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_executed_galcom_envoys', 'Executed Envoys', '-100.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_former_slaves', 'Former Slaves', '-1000.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_slavers', 'Former Masters', '-1000.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_fellow_slaves', 'Fellow Victims', '50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('fotd_apoligized', 'Apologized for Aggression', '-100.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('fotd_destroyed_starbase', 'Destroyed Their Starbase', '-200.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('fotd_antagonized', 'Antagonized Federation Member', '-300.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('fotd_insulted_migration', 'Insulted Their Young', '-50.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('fotd_insulted_migration_no_apology', 'Didn''t Apologize For Insult', '-200.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_plague_situation_01', 'Grateful Populace', '150.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_plague_situation_02', 'Enduring Gratitude', '300.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_plague_situation_03', 'Ungrateful Beings', '-150.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_fotd_allowed_exploration', 'Allowed Exploration', '3000.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_bold_explorers', 'Bold Explorers', '750.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_pre_ftl_diplomacy_01', 'Uneasy Relations', '-100.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_pre_ftl_diplomacy_02', 'Finance wizards.', '300.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_pre_ftl_diplomacy_03', 'No fans of ours.', '-100.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_tech_abusers', 'They disagree with our choices.', '-300.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_tech_abusers_pro', 'They respect us for trusting them.', '300.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_lone_drone', 'Reassimilation pleases them.', '50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_flavors_up', 'They appreciate our diplomatic approach.', '500.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_flavors_down', 'They trust us less.', '-500.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_broke_the_illusion', 'Broke the Illusion', '-1500.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_kinship', 'Kinship', '100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('attempted_infiltration', 'Attempted Infiltration', '-150.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinon_pre_ftl_bombard', 'Orbital Bombardment', '-200.0', 1, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_relic_crystallinus_diffuser', 'Crystallinus Diffuser', '25.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_vaporous_mega_orchid', 'Vaporous Mega-Orchid', '150.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_primal_calling_origin', 'Void Conservationists', '0.2', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_black_needle_base_repatriate_stolen_items', 'Repatriated Stolen Items', '50.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_return_traceable_items_tier_1', 'Galactic Philanthropist', '100.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_return_traceable_items_tier_2', 'Galactic Philanthropist', '200.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_infernals_opinion_of_others', 'Not Thermophiles', '-1000.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_infernals_opinion_of_infernals', 'Fellow Thermophiles', '100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_hyperthermia_empire', 'Thermarchy Empire', '-50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_virtuality_data_scraped', 'Scraped Virtualization Data', '-200.0', 0, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_behemoth_raging', 'Enraged Behemoths', '-50.0', 1, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_behemoth_destruction', 'Behemoth Rampage', '-500.0', 1, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_destroyed_caravaneer_home', 'Destroyed the Caravaneers'' Home', '80.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_upset_destroyed_caravaneer_home', 'Destroyed the Caravaneers'' Home', '-80.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_of_interstellar_assembly_1', 'Interstellar Assembly: Locus', '15.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_of_interstellar_assembly_2', 'Interstellar Assembly: Consul Ring', '30.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_of_interstellar_assembly_3', 'Interstellar Assembly: Forum Modules', '75.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_of_interstellar_assembly_4', 'Interstellar Assembly', '150.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_disavowed_agent_caught', 'Disavowed Operative Caught', '-80.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_smear_campaign_insulted', 'Scandalous Insult', '-60.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_smear_campaign_deceived', 'Abuses of Trust', '-80.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_smear_campaign_espionage', 'Conducting Espionage', '-100.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_exposed_espionage', 'Exposed Our Covert Activities', '-60.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_blackmailed_espionage', 'Extorted Favors', '-50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_smear_campaign_caught', 'Caught Propagating a Smear Campaign', '-50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_caught_hacking', 'Caught Hacking', '-250.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_hostile_first_contact', 'Hostile First Contact', '-250.0', 1, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_hostile_first_contact_vivisection', 'Vivisections', '-500.0', 1, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_hostile_first_contact_hungry', 'Plunging the Depths of Depravity', '-500.0', 1, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_delightful_aliens', 'Delightful Aliens', '75.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_repulsive_aliens', 'Repulsive Aliens', '-75.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_not_very_intelligent', 'Not the Brightest', '-50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_speak_like_us', 'Speak Like Us', '150.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_admirer_of_poetry', 'Admirer of Poetry', '100.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_poetic_flatterer', 'Poetic Flatterer', '200.0', 0, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_quite_insulting', 'A Poor Choice of Words', '-50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_very_insulting', 'A Poor Choice of Words', '-150.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_respect_earned', 'Respect Earned', '150.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_poetic_warrior', 'Poetic Warrior', '100.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_rivalry_earned', 'Sparring Partners', '-75.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_cowardly', 'Cowardly', '-50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_trial_fanatic_good', 'First Contact Trial', '250.0', 0, NULL, NULL, '10.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_trial_very_good', 'First Contact Trial', '100.0', 0, NULL, NULL, '10.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_trial_good', 'First Contact Trial', '50.0', 0, NULL, NULL, '10.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_trial_fanatic_bad', 'First Contact Trial', '-250.0', 0, NULL, NULL, '10.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_trial_very_bad', 'First Contact Trial', '-100.0', 0, NULL, NULL, '10.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_first_contact_trial_bad', 'First Contact Trial', '-50.0', 0, NULL, NULL, '10.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_friendly_first_comms_greeting', 'Friendly First Greetings', '50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_pre_hadean_relations', 'Pre-Hadean Relations', '150.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_hostile_first_comms_greeting', 'Hostile First Greetings', '-50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_destroying_systems', 'Destroying Star Systems', '-100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_destroying_galaxy', 'Trying to Destroy Galaxy', '-1000.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_crisis_empire', 'Crisis Empire', '-60.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_crisis_empire_neighbor', 'Nearby Crisis Empire', '50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_cosmogenesis_crisis_empire', 'Crisis Empire', '-30.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_emperor_support_us', 'Defended us from External Threat', '250.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_emperor_abandoned_us', 'Abandoned us to External Threat', '-250.0', 0, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_emperor_supported_member', 'Supported Imperial Member', '100.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_emperor_abandoned_member', 'Abandoned Imperial Member', '-100.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_emperor_gave_council_seat', 'Awarded Council Seat', '250.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_emperor_removed_council_seat', 'Removed Council Seat', '-250.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_small_boon_crystal_empire', 'Helpful Empire', '10.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_dyson_gun_target', 'Ravaged by a Stellar Cannon', '-1000.0', 1, '-5000.0', NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_dyson_gun_observer', 'Used a Weapon of Mass Destruction', '-50.0', 1, '-5000.0', NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_unlicensed_waystations', 'Unlicensed Waystations', '-10.0', 0, '-200.0', NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_waystation_looted_detected', 'Attacked Our Waystation', '-75.0', 1, NULL, NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_waystation_destroyed_detected', 'Seized Our Waystation', '-200.0', 1, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_waystation_piracy', 'Suspected Piracy', '-25.0', 1, '-250.0', NULL, '2.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_cancelled_waystation_pact', 'Revoked Wayline Pact', '0.0', 1, NULL, NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_harvested_resources', 'Harvest Resources', '-75.0', 1, '-1000.0', NULL, '1.25');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_strip_mine', 'Planetary Strip Mining', '-150.0', 1, '-1000.0', NULL, '2.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_reprocess_planet', 'Planetary Reprocessing', '-300.0', 1, '-1000.0', NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_nanotech_consume_world', 'Ruined Habitable World', '-100.0', 1, '-1000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_exodus_jump', 'Exodus Jump', '-300.0', 1, '-1000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_returned_contract_chance_find', 'Handed over Cargo', '50.0', 0, NULL, NULL, '2.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_abused_contract', 'Abused Contract', '-50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_abused_contract_2', 'Abused Contract', '-75.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_breaching_borders', 'Breached our Borders', '-50.0', 1, '-1000.0', NULL, '2.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_archeological_theft', 'Stole our Archaeological Vestiges', '-100.0', 1, '-500.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_completed_contract_small', 'Completed Minor Contract', '50.0', 1, NULL, NULL, '0.75');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_completed_contract_regular', 'Completed Contract', '100.0', 1, NULL, NULL, '0.75');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_completed_contract_large', 'Completed Major Contract', '150.0', 1, NULL, NULL, '0.75');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_failed_contract_small', 'Failed Minor Contract', '-75.0', 1, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_failed_contract_regular', 'Failed Contract', '-125.0', 1, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_failed_contract_large', 'Failed Major Contract', '-175.0', 1, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_diplomacy_contract_small', 'Successful Diplomatic Visit', '75.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_diplomacy_contract', 'Successful Diplomatic Visit', '125.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_diplomacy_contract_large', 'Successful Diplomatic Visit', '200.0', 0, NULL, NULL, '5.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_dropped_off_prisoners', 'Brought over Criminals', '-75.0', 1, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_dropped_off_our_prisoners', 'Brought back our Criminals', '-150.0', 1, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_cfl_destroyer_trophy', 'Destroyed the Champion''s Forge Live!', '-50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_head_of_zarqlan_nomad', 'Heirs of Zarqlan', '150.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_unexpected_cargo_negative', 'The Empire now holds a more negative view of Arkship', '-35.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_unexpected_cargo_positive', 'The Empire now holds a more favorable view of Arkship', '50.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_raid_purge_pops_known', 'Policy: Purges Arkship Crews', '-100.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_raid_relocate_pops_known', 'Policy: Enslaves Arkship Crews', '-40.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_raid_strip_districts_known', 'Policy: Plunders Arkships', '-15.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_raid_do_no_harm_known', 'Policy: Allows Arkships Safe Passage', '20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_raid_purge_pops_xenophile', 'Purges Arkship Crews', '-50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_raid_purge_pops_xenophobe', 'Purges Arkship Crews', '20.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_raid_purged', 'Slaughtered Our Arkship Crews', '-200.0', 1, '-1000.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_raid_conscripted', 'Kidnapped our Arkship Crews', '-75.0', 1, '-500.0', NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_arkship_raid_stripped', 'Plundered our Arkship', '-40.0', 1, '-300.0', NULL, '1.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_careless_talk', 'Careless Talk', '-150.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_empathetic_initiative', 'Empathetic Initiative', '50.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_eotc_situation_stage1', 'Summoning the End', '-15.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_eotc_situation_stage2', 'Harbingers of the End', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('triggered_opinion_eotc_situation_stage3', 'Harbingers of the End', '0.0', 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_fed_our_planet', 'Fed Our Planet to Their God', '-100.0', 1, NULL, NULL, '1.0');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_gift_given', 'Gift Given', '500.0', 0, NULL, NULL, '0.5');
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_from_personality', 'Personality', NULL, 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_devouring_swarm', 'Devouring Swarm', NULL, 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_fanatic_purifiers_vs_xeno', 'Xeno Filth', NULL, 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_both_fanatic_purifiers', 'Fellow Fanatic Purifiers', NULL, 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_fanatic_purifiers', 'Fanatic Purifiers', NULL, 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_zealots_vs_materialists', 'Infidel Unbelievers', NULL, 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_hw_vs_pacifist', 'Pacifist Cowards', NULL, 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_dc_vs_democratic', 'Is a Democracy', NULL, 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_dc_vs_oligarchic', 'Is an Oligarchy', NULL, 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_dc_vs_autocracy', 'Is an Autocracy', NULL, 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_desecrated_holy_world', 'Desecrated Holy Planet', NULL, 0, NULL, NULL, NULL);
+INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
+               VALUES ('opinion_encroaching_borders', 'Encroaching Borders', NULL, 0, NULL, NULL, NULL);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_outpost', 'starbase_outpost', 'starbase_level_starport', 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_starport', 'starbase_starport', 'starbase_level_starhold', 2, 1);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_starhold', 'starbase_starhold', 'starbase_level_starfortress', 4, 2);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_starfortress', 'starbase_starfortress', 'starbase_level_citadel', 6, 3);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_citadel', 'starbase_citadel', NULL, 6, 4);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_swarm', 'starbase_swarm', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_ai', 'starbase_ai', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_exd_0', 'starbase_exd_0', 'starbase_level_exd', 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_exd', 'starbase_exd', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_marauder', 'starbase_marauder', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_gatebuilders', 'starbase_gatebuilders', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_synth_queen', 'starbase_synth_queen', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_synth_queen_big', 'big_starbase_synth_queen', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_caravaneer', 'starbase_caravaneer', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_fe_outpost', 'starbase_fe_outpost', 'starbase_level_starport', 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_voidworm_nest', 'voidworm_nest', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_hatchery', 'starbase_hatchery', NULL, 6, 4);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_juggernaut', 'juggernaut', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_orbital_ring_tier_1', 'orbital_ring_tier_1', 'starbase_level_orbital_ring_tier_2', 2, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_orbital_ring_tier_2', 'orbital_ring_tier_2', 'starbase_level_orbital_ring_tier_3', 3, 1);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_orbital_ring_tier_3', 'orbital_ring_tier_3', NULL, 4, 2);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_enclave_mercenary_station', 'enclave_mercenary_station', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_enclave_salvager_station', 'enclave_salvager_station', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_enclave_shroudwalker_station', 'enclave_shroudwalker_station', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_enclave_mindwarden_station', 'enclave_mindwarden_station', NULL, 0, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_deep_space_citadel_1', 'starbase_deep_space_citadel_1', 'starbase_level_deep_space_citadel_2', 0, 1);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_deep_space_citadel_2', 'starbase_deep_space_citadel_2', 'starbase_level_deep_space_citadel_3', 0, 2);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_deep_space_citadel_3', 'starbase_deep_space_citadel_3', NULL, 0, 4);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_waystation_1', 'starbase_waystation_1', 'starbase_level_waystation_2', 2, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_waystation_2', 'starbase_waystation_2', 'starbase_level_waystation_3', 4, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_waystation_3', 'starbase_waystation_3', NULL, 6, 0);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_civilian_arkship_1', 'civilian_arkship_tier_1', 'starbase_level_civilian_arkship_2', 2, 4);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_civilian_arkship_2', 'civilian_arkship_tier_2', 'starbase_level_civilian_arkship_3', 4, 8);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_civilian_arkship_3', 'civilian_arkship_tier_3', NULL, 7, 12);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_science_arkship_1', 'science_arkship_tier_1', 'starbase_level_science_arkship_2', 2, 4);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_science_arkship_2', 'science_arkship_tier_2', 'starbase_level_science_arkship_3', 4, 8);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_science_arkship_3', 'science_arkship_tier_3', NULL, 7, 12);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_military_arkship_1', 'military_arkship_tier_1', 'starbase_level_military_arkship_2', 2, 4);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_military_arkship_2', 'military_arkship_tier_2', 'starbase_level_military_arkship_3', 4, 8);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_military_arkship_3', 'military_arkship_tier_3', NULL, 7, 12);
+INSERT INTO starbase_level (key, ship_size, next_level, module_slots, building_slots)
+               VALUES ('starbase_level_military_arkship_champions_forge', 'military_arkship_champions_forge', NULL, 7, 12);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_spinal_devastator_mount', 'module', 'Devastator Mount');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_capital_shipyard', 'module', 'Capital Shipyard');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_planetary_refinery', 'module', 'Planetary Reprocessor');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_stellar_igniter', 'module', 'Stellar Engine');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_system_scanner', 'module', 'Subspace Imaging Array');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_exodus_jump', 'module', 'Exodus Jump Coordinator');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_engineering_bay', 'module', 'Engineering Bay');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_beastport', 'module', 'Beastport');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_docking_bay', 'module', 'Docking Bay');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_habitation_module', 'module', 'Habitation Module');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_sensor_array', 'module', 'Advanced Sensor Array');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_mining_array', 'module', 'Planetary Engineering Lab');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_grand_archive', 'module', 'Grand Archive');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_voidlure', 'module', 'Voidlure Array');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_hangar_bay', 'module', 'Hangar Bays');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_archaeo_hangar_bay', 'module', 'Ancient Driller Drones Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_psionic_hangar_bay', 'module', 'Psionic Bomber Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_amoeba_hangar_bay', 'module', 'Amoeba Flagella Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_swarm_hangar_bay', 'module', 'Swarm Strikers Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_laser_battery', 'module', 'Laser Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_archaeo_laser_battery', 'module', 'Ancient Cavitation Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_lance_battery', 'module', 'Energy Lance Mount');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_particle_launcher', 'module', 'Particle Launcher Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_psionic_torpedo', 'module', 'Zro Launcher Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_arc_emitter_battery', 'module', 'Arc Emitters Mount');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_psionic_lightning_battery', 'module', 'Psionic Lightning Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_mass_driver_battery', 'module', 'Mass Driver Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_archaeo_mass_driver_battery', 'module', 'Ancient Macro Batteries');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_kinetic_artillery_battery', 'module', 'Kinetic Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_lm_accelerator', 'module', 'Reshaping Projectile Accelerator');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_mass_accelerator', 'module', 'Mass Accelerators');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_archaeo_mass_accelerator', 'module', 'Ancient Saturator Artillery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_missile_battery', 'module', 'Missile Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_archaeo_missile_battery', 'module', 'Ancient Nano-Missile Cloud Launcher');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_swamer_missile_battery', 'module', 'Swarmer Missiles');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_scourge_missile_battery', 'module', 'Scourge Missile');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_flak_battery', 'module', 'Flak Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_pd_battery', 'module', 'Point Defense Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_archaeo_pd_battery', 'module', 'Ancient Defensive Web Slinger');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_habitation', 'module', 'Habitation Module');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_shipyard', 'module', 'Orbital Shipyard');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_anchorage', 'module', 'Orbital Anchorage');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_beastport', 'module', 'Orbital Beastport');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_vivarium_tank', 'module', 'Orbital Vivarium Tank');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('shipyard', 'module', 'Shipyard');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('anchorage', 'module', 'Anchorage');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('solar_panel_network', 'module', 'Solar Panel Network');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('trading_hub', 'module', 'Trade Hub');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('detection_array', 'module', 'Detection Array');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('archaeo_rampart', 'module', 'Ancient Rampart');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('astromining_bay', 'module', 'Astro-Mining Bay');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('beastport', 'module', 'Beastport');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('vivarium_tank', 'module', 'Vivarium Tank');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_energy_module', 'module', 'Solar Array');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_mining_module', 'module', 'Mining Array');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_hydroponics_module', 'module', 'Hydroponics Bay');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_refinery_module', 'module', 'Processing Bay');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_research_module', 'module', 'Research Observatory');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_trade_module', 'module', 'Trade Hub');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_treasure_vault', 'module', 'Tribute Vault');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_logistics_hub', 'module', 'Logistics Hub');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_repair_bay', 'module', 'Repair Bay');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_resource_silo', 'module', 'Resource Silos');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_nebula_refinery', 'module', 'Nebula Refinery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_observatory', 'module', 'Stellar Observatory');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_dimensional_shrine', 'module', 'Dimensional Shrine');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_recruitment_office', 'module', 'Interstellar Recruitment Office');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_aura_emitter', 'module', 'Psionic Projector');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_art_college', 'module', 'Art College');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_curator_think_tank', 'module', 'Curator Think Tank');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_trader_proxy_office', 'module', 'Trader Proxy Office');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_salvager_workshop', 'module', 'Salvage Works');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_cybrex_mining_hub', 'module', 'Cybrex Mining Hub');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_yuht_detection_array', 'module', 'Yuht Astronomical Interferometer');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_hyperlane_detailer', 'module', 'Hyperlane Detailer');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_pirate_hideout', 'module', 'Pirate Hideout');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_concealment_field', 'module', 'Concealment Field');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_reaver_stronghold', 'module', 'Reaver Stronghold');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_cloaking', 'module', 'Cloaking Field Generator');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_nanotech_module', 'module', 'Nanite Hub');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_pyroclastic_resonator', 'module', 'Pyroclastic Resonator');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_zroni_storm_caster', 'module', 'Zroni Storm Caster');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_cordyceptic_reanimation_facility', 'module', 'Cordyceptic Reanimation Facility');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_growth_chamber', 'module', 'Growth Chamber');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_aetherophasic_anchor', 'module', 'Aetherophasic Anchor');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_gravitational_centrifuge', 'module', 'Gravitational Centrifuge');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_laser_battery', 'module', 'Laser Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_archaeo_laser_battery', 'module', 'Ancient Cavitation Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_particle_launcher', 'module', 'Particle Launcher Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_psionic_torpedo', 'module', 'Zro Launcher Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_mass_driver_battery', 'module', 'Mass Driver Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_archaeo_mass_driver_battery', 'module', NULL);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_swarmer_missile_battery', 'module', NULL);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_scourge_missile_battery', 'module', NULL);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_hangar_bay', 'module', 'Planetary Defense Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_archaeo_hangar_bay', 'module', 'Ancient Driller Drones Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_psionic_hangar_bay', 'module', 'Psionic Bomber Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_amoeba_hangar_bay', 'module', 'Amoeba Flagella Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_swarm_hangar_bay', 'module', 'Swarm Strikers Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_laser_battery', 'module', 'Laser Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_archaeo_laser_battery', 'module', 'Ancient Cavitation Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_particle_launcher', 'module', 'Particle Launcher Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_psionic_torpedo', 'module', 'Zro Launcher Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_mass_driver_battery', 'module', 'Mass Driver Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_archaeo_mass_driver_battery', 'module', NULL);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_swarmer_missile_battery', 'module', NULL);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_scourge_missile_battery', 'module', NULL);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_hangar_bay', 'module', 'Hangar Bays');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_archaeo_hangar_bay', 'module', 'Ancient Driller Drones Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_psionic_hangar_bay', 'module', 'Psionic Bomber Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_amoeba_hangar_bay', 'module', 'Amoeba Flagella Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_swarm_hangar_bay', 'module', 'Swarm Strikers Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_laser_battery', 'module', 'Laser Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_archaeo_laser_battery', 'module', 'Ancient Cavitation Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_mass_driver_battery', 'module', 'Mass Driver Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_archaeo_mass_driver_battery', 'module', NULL);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_swarmer_missile_battery', 'module', NULL);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_particle_launcher', 'module', 'Particle Launcher Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_psionic_torpedo', 'module', 'Zro Launcher Battery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_scourge_missile_battery', 'module', NULL);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_hangar_bay', 'module', 'Hangar Bays');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_archaeo_hangar_bay', 'module', 'Ancient Driller Drones Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_psionic_hangar_bay', 'module', 'Psionic Bomber Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_amoeba_hangar_bay', 'module', 'Amoeba Flagella Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_swarm_hangar_bay', 'module', 'Swarm Strikers Hangars');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_energy_hub', 'building', 'Superconductive Conduits');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_food_hub', 'building', 'Climate Optimization Controls');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_trade_hub', 'building', 'External Logistics Systems');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_bureaucracy_hub', 'building', 'Administrative Coordination Center');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_synapse_hub', 'building', 'Synaptic Relays');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_maintenance_hub', 'building', 'Maintenance Hub');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_consumer_goods_hub', 'building', 'Industrial Assemblies');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_alloys_hub', 'building', 'High-Energy Forges');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_psi_corps', 'building', 'Psi Corps');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_shield_generator', 'building', 'Shield Amplifier');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_galactic_stock_exchange', 'building', 'Stock Exchange');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_embassy_complex', 'building', 'Embassy Complex');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_noble_estates', 'building', 'Noble Estates');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_slave_processing_facility', 'building', 'Slave Processing Hub');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_resource_silo', 'building', 'Resource Silos');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_listening_post', 'building', 'Listening Post');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_fleet_academy', 'building', 'Fleet Academy');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_deep_space_black_site', 'building', 'Deep Space Black Site');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_irassian_naval_yards', 'building', 'Irassian Naval Yards');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_yuht_detection_array', 'building', 'Yuht Astronomical Interferometer');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_archaeo_overcharger', 'building', 'Ancient Shield Overcharger');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_warp_fluctuator', 'building', 'Hyperlane Registrar');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_detection_array', 'building', 'Detection Array');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_hydroponics_bay', 'building', 'Expanded Cultivation Decks');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_harvest_processing_arrays', 'building', 'Harvest Processing Arrays');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_dark_matter_detector', 'building', 'Dark Matter Resonance Chamber');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_armor', 'building', 'Armor Plating');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_lm_armor', 'building', 'Regenerative Armor Plating');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_archaeo_armor', 'building', 'Ancient Pulse Armor');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_shield', 'building', 'Shield Arrays');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_psi_shield', 'building', 'Psionic Shields');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_archaeo_shield', 'building', 'Ancient Suspension Field');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_crystal_plating', 'building', 'Crystal-Infused Plating');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_afterburner', 'building', 'Afterburners');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_armor_hardener', 'building', 'Armor Hardening');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_shield_hardener', 'building', 'Shield Hardening');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_growth_chamber', 'building', 'Growth Chamber');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_quantum_destabilizer', 'building', 'Quantum Destabilizer');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_subspace_snare', 'building', 'Subspace Snare');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_shield_dampener', 'building', 'Shield Dampener');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_aura_strike_craft', 'building', 'Strike Command');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_aura_hyperlane', 'building', 'Subspace Amplifier');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_aura_pd_penetration', 'building', 'ECM Emitters');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_aura_bombardment', 'building', 'Munitions Plant');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_aura_range', 'building', 'Target Acquisition Array');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('arkship_offspring_outlook', 'building', 'Offspring Outlook');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_minerals_hub', 'building', 'Low Gravity Mega-Refiners');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_energy_hub', 'building', 'Stratospheric Ionization Elements');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_food_hub', 'building', 'Climate Optimization Stations');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_trade_hub', 'building', 'The Giga-Mall');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_bureaucracy_hub', 'building', 'Orbital Filing System');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_synapse_hub', 'building', 'Synaptic Relays');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_maintenance_hub', 'building', 'Orbital Maintenance Drops');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_consumer_goods_hub', 'building', 'Orbital Logistics Systems');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_alloys_hub', 'building', 'Alloy Processing Facilities');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_psi_corps', 'building', 'Orbital Psi Corps');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_orbital_shield_generator', 'building', 'Orbital Shield Generator');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_galactic_stock_exchange', 'building', 'Orbital Stock Exchange');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_embassy_complex', 'building', 'Orbital Embassy Complex');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_noble_estates', 'building', 'Noble Estates');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_slave_processing_facility', 'building', 'Orbital Slave Processing Hub');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_feeder', 'building', 'Orbital Garden');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_growth_chamber', 'building', 'Orbital Growth Chamber');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ring_aura_emitter', 'building', 'Psionic Projector');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('recruitment_office', 'building', 'Interstellar Recruitment Office');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('crew_quarters', 'building', 'Crew Quarters');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('hydroponics_bay', 'building', 'Hydroponics Bay');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('resource_silo', 'building', 'Resource Silos');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('nebula_refinery', 'building', 'Nebula Refinery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('listening_post', 'building', 'Listening Post');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('offworld_trading_company', 'building', 'Offworld Trading Company');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('fleet_academy', 'building', 'Fleet Academy');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('naval_logistics_office', 'building', 'Naval Logistics Office');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('capital_yards', 'building', 'Capital Assembly Yards');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('black_hole_observatory', 'building', 'Stellar Observatory');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('target_uplink_computer', 'building', 'Target Uplink Computer');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('defense_grid', 'building', 'Defense-Grid Supercomputer');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('deep_space_black_site', 'building', 'Deep Space Black Site');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('curator_think_tank', 'building', 'Curator Think Tank');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('art_college', 'building', 'Art College');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('salvager_workshop', 'building', 'Salvage Works');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('shroud_beacon', 'building', 'Shroud Beacon');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('cybrex_mining_hub', 'building', 'Cybrex Mining Hub');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('irassian_naval_yards', 'building', 'Irassian Naval Yards');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('yuht_detection_array', 'building', 'Yuht Astronomical Interferometer');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('zroni_storm_caster', 'building', 'Zroni Storm Caster');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('archaeo_overcharger', 'building', 'Ancient Shield Overcharger');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('feeder', 'building', 'Starseed Garden');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('astromining_hub', 'building', 'Astro-Mining Hub');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('nanite_harvester', 'building', 'Nanite Harvester');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('communications_jammer', 'building', 'Communications Jammer');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('disruption_field', 'building', 'Disruption Field Generator');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('warp_fluctuator', 'building', 'Hyperlane Registrar');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('transit_hub', 'building', 'Transit Hub');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('command_center', 'building', 'Command Center');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('trader_proxy_office', 'building', 'Trader Proxy Office');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('dragon_hatchery', 'building', 'Dragon Hatchery');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('ice_mining_station', 'building', 'Ice Mining Station');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('offspring_outlook', 'building', 'Offspring Outlook');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('mercenary_garrison', 'building', 'Mercenary Garrison');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('cordyceptic_reanimation_facility', 'building', 'Cordyceptic Reanimation Facility');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('dark_matter_detector', 'building', 'Dark Matter Resonance Chamber');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('dark_matter_listening_post', 'building', 'Dark Matter Listening Post');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('dimensional_shrine', 'building', 'Dimensional Shrine');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('reloading_bay', 'building', 'Reloading Bay');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('growth_chamber', 'building', 'Growth Chamber');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('storm_attraction_computer', 'building', 'Storm Attraction Array');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('storm_repelling_computer', 'building', 'Storm Repulsion Array');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('hyperlane_detailer', 'building', 'Hyperlane Detailer');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('pyroclastic_resonator', 'building', 'Pyroclastic Resonator');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('aura_emitter', 'building', 'Psionic Projector');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('gravitational_centrifuge', 'building', 'Gravitational Centrifuge');

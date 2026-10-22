@@ -18,7 +18,26 @@ DEFINE_KEYS = ('TRADITION_COST_AMOUNTS', 'TRADITION_COST_TRADITION', 'TRADITION_
                # the empire dashboard's due dates for research and council agendas
                'EMPIRE_SIZE_TECH_COST_PENALTY', 'EMPIRE_SIZE_COUNCIL_AGENDA_COST_PENALTY',
                # … and its habitability colours (green / yellow / red, as in game)
-               'HABITABILITY_WRONG_PLANET', 'HABITABILITY_OPPOSITE_PLANET')
+               'HABITABILITY_WRONG_PLANET', 'HABITABILITY_OPPOSITE_PLANET',
+               # … its systems tab (outpost influence, claims, starbase capacity)
+               'EXPANSION_COST_BASE', 'EXPANSION_COST_DISTANCE', 'EXPANSION_COST_MAX',
+               'CLAIM_COST_BASE', 'CLAIM_COST_DISTANCE', 'CLAIM_COST_MAX', 'STARBASE_CAPACITY_BASE',
+               # … the market fee
+               'MARKET_TRADE_FEE_BASE', 'MARKET_TRADE_FEE_MIN',
+               # … pop growth
+               'BASE_POP_GROWTH', 'BASE_POP_DECLINE', 'COLONY_MONTHLY_GROWTH', 'COLONY_POPS_REQUIRED',
+               'LOGISTIC_POP_GROWTH_R', 'LOGISTIC_POP_GROWTH_FLOOR', 'LOGISTIC_POP_GROWTH_MIN_POPS',
+               'LOGISTIC_POP_GROWTH_LOWER_THRESHOLD', 'LOGISTIC_CEILING_DEFAULT', 'GROWTH_SCALE_DEFAULT',
+               'GROWTH_SCALE_MAGNITUDE_OFFSET', 'OVERCROWDING_NO_GROWTH_THRESHOLD',
+               'OVERCROWDING_DECLINE_THRESHOLD',
+               # … and the AI's view of a trade deal
+               'TRADE_VALUE_RESOURCE', 'TRADE_VALUE_RESOURCE_INCOME_BASE',
+               'TRADE_VALUE_RESOURCE_MONTHLY_MULT', 'OFFER_TRADE_MIN_RESOURCE_THRESHOLD',
+               'TRADE_RESOURCE_STOCKPILE_UNDER', 'TRADE_RESOURCE_STOCKPILE_OVER',
+               'TRADE_RESOURCE_FRACTION_MIN', 'TRADE_RESOURCE_FRACTION_MAX', 'TRADE_MAX_RESOURCE_PERCENT',
+               'TRADE_MIN_RESOURCE_DELTA', 'TRADE_MIN_RESOURCE_STOCKPILE', 'MIN_WILLINGNESS_TO_OFFER_TRADE',
+               'OFFER_TRADE_ACCEPTANCE_ATTITUDE', 'BROKEN_TRADE_DEAL_FACTOR', 'MIN_GIFT_SIZE',
+               'MAX_GIFT_SIZE', 'MIN_TRADE_DEAL_LENGTH_YEARS', 'MAX_TRADE_DEAL_LENGTH_YEARS')
 
 
 # ── Pure helpers ───────────────────────────────────────────────────────────────

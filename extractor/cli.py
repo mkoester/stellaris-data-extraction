@@ -13,6 +13,7 @@ from .empires import extract_flag_assets, extract_flag_colors, extract_initializ
 from .diplomacy import extract_diplomacy
 from .federations import extract_federations
 from .shroud import extract_shroud
+from .economy import extract_economy
 from .focus import extract_focus
 from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_council_positions, extract_ethics, extract_government_types, extract_origins, extract_policy_restrictions
 from .jobs import extract_job_swaps, extract_jobs
@@ -411,6 +412,11 @@ Examples:
     print(f"\n[ship-sizes] {install_dir / 'common' / 'ship_sizes'}", file=progress)
     extract_resources(install_dir / 'common' / 'ship_sizes', 'ship_size_resource', scripted_vars,
                       inline_scripts_dir, w, args.verbose)
+    for folder, table in (('starbase_modules', 'starbase_module_resource'),
+                          ('starbase_buildings', 'starbase_building_resource')):
+        print(f"\n[{folder}] {install_dir / 'common' / folder}", file=progress)
+        extract_resources(install_dir / 'common' / folder, table, scripted_vars,
+                          inline_scripts_dir, w, args.verbose)
     extract_anomaly_levels(_merge_dir(install_dir / 'common' / 'anomalies', progress), loc, w, args.verbose)
     print(f"\n[static-modifiers] {static_mod_dir}", file=progress)
     extract_static_modifiers(static_mods, loc, w, args.verbose)
@@ -467,6 +473,8 @@ Examples:
     extract_diplomacy(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[shroud] {install_dir / 'common' / 'patrons'}", file=progress)
     extract_shroud(install_dir, loc, scripted_vars, w, progress)
+    print(f"\n[economy] {install_dir / 'common' / 'strategic_resources'}, personalities, …", file=progress)
+    extract_economy(install_dir, loc, scripted_vars, w, progress)
 
     w.close()
 

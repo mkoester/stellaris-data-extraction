@@ -1144,6 +1144,78 @@ CREATE TABLE ship_size_resource (
     amount   REAL NOT NULL,
     PRIMARY KEY (key, kind, resource)
 );
+-- Starbase modules and buildings (empire dashboard: what a system cost). Names from `sm_<key>`.
+DROP TABLE IF EXISTS starbase_part;
+CREATE TABLE starbase_part (
+    key   TEXT PRIMARY KEY,                -- e.g. "solar_panel_network", "hydroponics_bay"
+    kind  TEXT NOT NULL,                   -- 'module' | 'building'
+    name  TEXT
+);
+-- Starbase levels: how many modules and buildings each holds; cost and upkeep are its ship size's.
+DROP TABLE IF EXISTS starbase_level;
+CREATE TABLE starbase_level (
+    key            TEXT PRIMARY KEY,       -- e.g. "starbase_level_starport"
+    ship_size      TEXT,                   -- e.g. "starbase_starport" (ship_size_resource)
+    next_level     TEXT,
+    module_slots   INTEGER NOT NULL DEFAULT 0,
+    building_slots INTEGER NOT NULL DEFAULT 0
+);
+DROP TABLE IF EXISTS starbase_module_resource;
+CREATE TABLE starbase_module_resource (
+    key      TEXT NOT NULL,
+    kind     TEXT NOT NULL,                -- 'cost' | 'upkeep' | 'produces' (unconditional block)
+    resource TEXT NOT NULL,
+    amount   REAL NOT NULL,
+    PRIMARY KEY (key, kind, resource)
+);
+DROP TABLE IF EXISTS starbase_building_resource;
+CREATE TABLE starbase_building_resource (
+    key      TEXT NOT NULL,
+    kind     TEXT NOT NULL,
+    resource TEXT NOT NULL,
+    amount   REAL NOT NULL,
+    PRIMARY KEY (key, kind, resource)
+);
+-- common/strategic_resources: market lots (price per unit = market_price / market_amount, in
+-- trade) and the AI's weights (empire dashboard: values in trade, the AI's view of a deal).
+DROP TABLE IF EXISTS strategic_resource;
+CREATE TABLE strategic_resource (
+    key           TEXT PRIMARY KEY,        -- e.g. "energy"
+    name          TEXT,
+    category      TEXT,                    -- basic / advanced / research / …
+    tradable      INTEGER NOT NULL DEFAULT 0,
+    market_amount REAL,                    -- NULL: not on the market
+    market_price  REAL,
+    max           REAL,                    -- base storage
+    ai_weight     REAL,                    -- `ai_weight.weight`, conditions left out
+    ai_wants      REAL,                    -- `ai_wants.base`, conditions left out
+    sort_order    INTEGER NOT NULL DEFAULT 0
+);
+-- AI personalities: how good a deal must be for them (1.0 = equal for both sides).
+DROP TABLE IF EXISTS personality;
+CREATE TABLE personality (
+    key               TEXT PRIMARY KEY,    -- e.g. "peaceful_traders"
+    name              TEXT,
+    trade_willingness REAL
+);
+-- AI attitudes; trade = 0 refuses every trade deal (OFFER_TRADE_ACCEPTANCE_ATTITUDE).
+DROP TABLE IF EXISTS attitude;
+CREATE TABLE attitude (
+    key   TEXT PRIMARY KEY,                -- e.g. "cordial"
+    name  TEXT,
+    trade INTEGER NOT NULL DEFAULT 0
+);
+-- Opinion modifiers, base values (conditional factors left out); e.g. opinion_trade_gift.
+DROP TABLE IF EXISTS opinion_modifier;
+CREATE TABLE opinion_modifier (
+    key          TEXT PRIMARY KEY,
+    name         TEXT,
+    opinion      REAL,
+    accumulative INTEGER NOT NULL DEFAULT 0,
+    min          REAL,
+    max          REAL,
+    decay        REAL                      -- per month
+);
 DROP TABLE IF EXISTS zone;
 CREATE TABLE zone (
     key   TEXT PRIMARY KEY,                -- e.g. "zone_research_unity"
