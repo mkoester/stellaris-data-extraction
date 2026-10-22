@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Build cost and upkeep of districts and ship sizes (stations, outposts, ships' hulls), the jobs
+  each district adds, and build times.
+- What each technology needs: its prerequisites, who can get it at all, and whether it is rare or
+  dangerous.
+
+### Fixed
+
+- Building build costs were missing for every building that declares them through the game's
+  cost script (most of them since 4.x).
+
 ## [0.1.0] - 2026-10-20
 
 First public release.

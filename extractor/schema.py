@@ -1113,10 +1113,50 @@ CREATE TABLE government_type (
     key   TEXT PRIMARY KEY,
     name  TEXT
 );
+-- Cost and upkeep of districts and ship sizes (stations, outposts, …), the regular empire's
+-- (unconditional, else first block), before modifiers. Empire dashboard: one-off spending, trade-offs.
+DROP TABLE IF EXISTS district_resource;
+CREATE TABLE district_resource (
+    key      TEXT NOT NULL,                -- e.g. "district_mining"
+    kind     TEXT NOT NULL,                -- 'cost' | 'upkeep' | 'produces'
+    resource TEXT NOT NULL,
+    amount   REAL NOT NULL,
+    PRIMARY KEY (key, kind, resource)
+);
+DROP TABLE IF EXISTS district_job;
+CREATE TABLE district_job (
+    key    TEXT NOT NULL,                  -- e.g. "district_mining"
+    job    TEXT NOT NULL,                  -- from job_<x>_add, e.g. "miner"
+    amount REAL NOT NULL,                  -- positions, in pops (the save's job positions' unit)
+    PRIMARY KEY (key, job)
+);
+-- base_buildtime of districts, ship sizes and buildings, days before modifiers (stations have none).
+DROP TABLE IF EXISTS build_time;
+CREATE TABLE build_time (
+    key  TEXT PRIMARY KEY,
+    days REAL NOT NULL
+);
+DROP TABLE IF EXISTS ship_size_resource;
+CREATE TABLE ship_size_resource (
+    key      TEXT NOT NULL,                -- e.g. "mining_station", "starbase_outpost"
+    kind     TEXT NOT NULL,
+    resource TEXT NOT NULL,
+    amount   REAL NOT NULL,
+    PRIMARY KEY (key, kind, resource)
+);
 DROP TABLE IF EXISTS zone;
 CREATE TABLE zone (
     key   TEXT PRIMARY KEY,                -- e.g. "zone_research_unity"
     name  TEXT                             -- e.g. "Archives"
+);
+-- What researching a tech needs (empire dashboard: techs within reach).
+DROP TABLE IF EXISTS technology_requirement;
+CREATE TABLE technology_requirement (
+    tech_key           TEXT PRIMARY KEY,
+    prerequisites_json TEXT NOT NULL,      -- ["tech_sensors_4"]: all researched first
+    potential_json     TEXT,               -- normalised trigger: who can get it at all (NULL: anyone)
+    is_rare            INTEGER NOT NULL DEFAULT 0,
+    is_dangerous       INTEGER NOT NULL DEFAULT 0
 );
 DROP TABLE IF EXISTS technology_modifier;
 DROP TABLE IF EXISTS technology;

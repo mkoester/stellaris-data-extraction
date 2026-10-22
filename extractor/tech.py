@@ -1,7 +1,9 @@
 """Extraction: repeatable and fallen-empire technologies."""
 
+import json
 from .localisation import _clean_loc
 from .modifiers import _write_modifier_label
+from .triggers import normalize_trigger
 from .writer import Writer
 
 
@@ -103,15 +105,30 @@ def tech_base_cost(raw, variables: dict[str, float]) -> float | None:
         return None
 
 
+def tech_requirement(data: dict, dlc_triggers: dict[str, str] | None,
+                     variables: dict[str, float]) -> tuple:
+    """A tech's prerequisites (JSON list, sorted), its `potential` (normalised trigger as JSON,
+    None when absent) and whether it is rare and dangerous (1/0). Pure."""
+    pre = data.get('prerequisites')
+    pre = pre if isinstance(pre, list) else [pre] if pre is not None else []
+    flat = sorted(str(x).strip('"') for x in pre if not isinstance(x, dict))
+    potential = data.get('potential')
+    tree = normalize_trigger(potential, dlc_triggers, variables) if isinstance(potential, dict) else None
+    return (json.dumps(flat), json.dumps(tree, separators=(',', ':')) if tree else None,
+            int(str(data.get('is_rare')) == 'yes'), int(str(data.get('is_dangerous')) == 'yes'))
+
+
 def extract_techs(
     technologies: dict,
     loc: dict[str, str],
     scripted_vars: dict[str, float],
     w: Writer,
     verbose: bool,
+    dlc_triggers: dict[str, str] | None = None,
 ) -> None:
-    """All non-repeatable techs with their base cost. @variables come from the global
-    scripted_variables and the technology files' own top-level @definitions."""
+    """All non-repeatable techs with their base cost and what researching them needs
+    (`technology_requirement`). @variables come from the global scripted_variables and the
+    technology files' own top-level @definitions."""
     variables = dict(scripted_vars)
     for k, v in technologies.items():
         if k.startswith('@'):
@@ -143,6 +160,11 @@ def extract_techs(
             (key, label, description, area, category, tier, cost, sort_order),
         )
         _write_tech_modifiers(w, loc, 'technology_modifier', key, technologies[key], variables, verbose)
+        w.execute(
+            """INSERT OR REPLACE INTO technology_requirement
+               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
+               VALUES (?, ?, ?, ?, ?)""",
+            (key, *tech_requirement(technologies[key], dlc_triggers, variables)))
         if verbose:
             print(f"  {key} ({area}) tier={tier} cost={cost}")
 
