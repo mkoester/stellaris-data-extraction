@@ -32,6 +32,26 @@ def influence_cost(data: dict, variables: dict[str, float]) -> float | None:
     return None
 
 
+def ai_weight_model(data: dict, variables: dict[str, float], trig) -> dict | None:
+    """`ai_weight = { base modifier = { factor|add … <trigger> desc } }` → `{base, modifiers:
+    [{factor, add, trigger}]}`, each trigger normalized by `trig(block, variables)` (the AI's own
+    scope; `from` is the proposer). None without an ai_weight."""
+    blocks = _as_blocks(data.get('ai_weight'))
+    if not blocks:
+        return None
+    aw = blocks[0]
+    mods = []
+    for m in _as_blocks(aw.get('modifier')):
+        cond = {k: v for k, v in m.items() if k not in ('factor', 'add', 'desc')}
+        mods.append({
+            'factor': _resolve_var(m['factor'], variables) if m.get('factor') is not None else None,
+            'add': _resolve_var(m['add'], variables) if m.get('add') is not None else None,
+            'trigger': trig(cond, variables) if cond else None
+        })
+    base = aw.get('base', aw.get('weight'))
+    return {'base': _resolve_var(base, variables) if base is not None else None, 'modifiers': mods}
+
+
 def yes(v) -> int:
     return 1 if v == 'yes' else 0
 
@@ -62,14 +82,16 @@ def extract_diplomacy(install_dir: Path, loc: dict[str, str], scripted_vars: dic
         level = data.get('level')
         w.execute(
             """INSERT INTO resolution (key, category_key, name, description, level, target,
-               influence_cost, repeal, potential_json, allow_json, valid_target_json, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               influence_cost, repeal, potential_json, allow_json, valid_target_json,
+               ai_weight_json, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (key, member_of.get(key), ctx.text(key), ctx.text(f'{key}_desc', True, rvars),
              int(float(str(level))) if level is not None else None, yes(data.get('target')),
              influence_cost(data, rvars), yes(data.get('fire_and_forget')),
              dumps(ctx.trig(data.get('potential'), rvars)),
              dumps(ctx.trig(data.get('allow'), rvars)),
-             dumps(ctx.trig(data.get('valid_target'), rvars)), order))
+             dumps(ctx.trig(data.get('valid_target'), rvars)),
+             dumps(ai_weight_model(data, rvars, ctx.trig)), order))
 
     # --- subject agreement terms, their values and presets: names only ---
     terms = _load(common / 'agreement_terms', scripted_vars)

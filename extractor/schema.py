@@ -1548,6 +1548,7 @@ CREATE TABLE resolution (
     potential_json TEXT,                   -- offered at all (normalized trigger, proposer's scope)
     allow_json     TEXT,                   -- proposable: the tier below in force, none of it active
     valid_target_json TEXT,                -- target = 1: which empire it may name (target's scope)
+    ai_weight_json TEXT,                   -- {"base":7,"modifiers":[{"factor":2,"add":null,"trigger":…}]}: an AI's vote
     sort_order     INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE agreement_term (

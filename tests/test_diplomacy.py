@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.diplomacy import category_members, influence_cost
+from extractor.diplomacy import ai_weight_model, category_members, influence_cost
 from extractor.triggers import normalize_trigger
 
 
@@ -39,6 +39,21 @@ class TestResolutionTriggers(unittest.TestCase):
         self.assertEqual(normalize_trigger(r['allow']), {'op': 'not', 'args': [{'op': 'or', 'args': [
             {'leaf': 'is_active_resolution', 'value': 'a1'},
             {'leaf': 'is_active_resolution', 'value': 'a2'}]}]})
+
+
+class TestAiWeight(unittest.TestCase):
+    def test_base_and_factors_with_their_conditions(self):
+        # 4.5.2 resolution_commerce_buzzword_standardization, shortened
+        r = parse('x = { ai_weight = { base = @loved modifier = { factor = 2 is_megacorp = yes '
+                  'desc = gov_megacorporation } modifier = { factor = 0.1 is_gestalt = yes } } }')['x']
+        self.assertEqual(ai_weight_model(r, {'@loved': 7.0}, lambda b, v: normalize_trigger(b, None, v)), {
+            'base': 7.0,
+            'modifiers': [
+                {'factor': 2.0, 'add': None, 'trigger': {'leaf': 'is_megacorp', 'value': 'yes'}},
+                {'factor': 0.1, 'add': None, 'trigger': {'leaf': 'is_gestalt', 'value': 'yes'}}]})
+
+    def test_none_without_an_ai_weight(self):
+        self.assertIsNone(ai_weight_model(parse('x = { target = no }')['x'], {}, lambda b, v: normalize_trigger(b, None, v)))
 
 
 if __name__ == '__main__':
