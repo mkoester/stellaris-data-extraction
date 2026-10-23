@@ -4,7 +4,7 @@ of the same key (`static_modifier`)."""
 
 from pathlib import Path
 import sys
-from .traditions import _Ctx, _load
+from .traditions import _Ctx, _load, dumps
 from .triggers import _scripted_trigger_index, dlc_trigger_map
 from .values import _as_blocks, _resolve_var, _to_list
 from .writer import Writer
@@ -62,10 +62,14 @@ def extract_diplomacy(install_dir: Path, loc: dict[str, str], scripted_vars: dic
         level = data.get('level')
         w.execute(
             """INSERT INTO resolution (key, category_key, name, description, level, target,
-               influence_cost, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+               influence_cost, repeal, potential_json, allow_json, valid_target_json, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (key, member_of.get(key), ctx.text(key), ctx.text(f'{key}_desc', True, rvars),
              int(float(str(level))) if level is not None else None, yes(data.get('target')),
-             influence_cost(data, rvars), order))
+             influence_cost(data, rvars), yes(data.get('fire_and_forget')),
+             dumps(ctx.trig(data.get('potential'), rvars)),
+             dumps(ctx.trig(data.get('allow'), rvars)),
+             dumps(ctx.trig(data.get('valid_target'), rvars)), order))
 
     # --- subject agreement terms, their values and presets: names only ---
     terms = _load(common / 'agreement_terms', scripted_vars)

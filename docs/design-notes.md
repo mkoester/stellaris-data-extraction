@@ -552,7 +552,12 @@ A sibling repo collects hard-won, poorly-documented Stellaris findings — engin
 For the dashboard, which reads both from saves by key (`resolution.<id>.type`, a subject agreement's
 `term_data`). **Resolutions**: `resolution` per `common/resolutions/` entry with its category — the
 first `resolution_categories` entry listing it in `resolution_types` (one resolution is in none) —,
-`level`, `target` and the influence cost; `resolution_category.group_key` → `resolution_group`.
+`level`, `target`, the influence cost, `repeal` (`fire_and_forget = yes`: repeals one in force and
+is never kept active) and the normalized `potential_json` / `allow_json` (the dashboard's list of
+what is proposable: a tier's `allow` names the tier below with `is_active_resolution`, a repeal's
+`potential` the one it repeals; DLCs, global flags, the Politics tradition, perks) and
+`valid_target_json` (for `target = 1`: which empire it may name, in the target's scope);
+`resolution_category.group_key` → `resolution_group`.
 **A resolution's effects are not here**: its `modifier = { <its own key> = 1 }` names the static
 modifier of the same key (`static_modifier` / `static_modifier_modifier`, 102 resolutions in
 4.5.2). **Agreements**: names only — `agreement_term` (with `term_type` and `hidden`),

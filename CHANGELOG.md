@@ -8,6 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- What it takes to propose each Galactic Community resolution — the tier below in force, DLCs,
+  traditions — and which resolutions are repeals.
 - Build cost and upkeep of districts and ship sizes (stations, outposts, ships' hulls), the jobs
   each district adds, and build times.
 - What each technology needs: its prerequisites, who can get it at all, and whether it is rare or

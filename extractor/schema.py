@@ -1544,6 +1544,10 @@ CREATE TABLE resolution (
     level          INTEGER,
     target         INTEGER NOT NULL DEFAULT 0, -- 1: names a target country
     influence_cost REAL,
+    repeal         INTEGER NOT NULL DEFAULT 0, -- 1: fire_and_forget — repeals one in force, never stays
+    potential_json TEXT,                   -- offered at all (normalized trigger, proposer's scope)
+    allow_json     TEXT,                   -- proposable: the tier below in force, none of it active
+    valid_target_json TEXT,                -- target = 1: which empire it may name (target's scope)
     sort_order     INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE agreement_term (
