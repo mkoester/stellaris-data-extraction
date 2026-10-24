@@ -108,6 +108,38 @@ def _job_resource_blocks(jdef: dict, load_script) -> dict[str, list]:
     return out
 
 
+def _names(v) -> list:
+    """A key that may hold one value or, repeated, a list of them."""
+    return v if isinstance(v, list) else [v]
+
+
+def _job_budget_source(jdef: dict, load_script) -> str | None:
+    """The budget source a job's output is booked under — its `resources.category`
+    (`planet_technician` for `technician_drone` too: drone jobs reuse the organic jobs'
+    categories), following resources- and job-level inline scripts as
+    `_job_resource_blocks` does. None when the job has no resources block."""
+    seen: set[str] = set()
+
+    def find(node) -> str | None:
+        if not isinstance(node, dict):
+            return None
+        res = node.get('resources')
+        if isinstance(res, dict):
+            if isinstance(res.get('category'), str):
+                return res['category']
+            for sn in _names(res.get('inline_script')):
+                if isinstance(sn, str) and (cat := find({'resources': load_script(sn)})):
+                    return cat
+        for sn in _names(node.get('inline_script')):
+            if isinstance(sn, str) and sn not in seen:
+                seen.add(sn)
+                if cat := find(load_script(sn)):
+                    return cat
+        return None
+
+    return find(jdef)
+
+
 def extract_jobs(install_dir: Path, loc: dict[str, str],
                  scripted_vars: dict[str, float], inline_scripts_dir: Path,
                  w: Writer, verbose: bool) -> None:
@@ -155,8 +187,9 @@ def extract_jobs(install_dir: Path, loc: dict[str, str],
             raw_desc = loc.get('job_' + key + '_desc')
             desc = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
             w.execute(
-                "INSERT OR REPLACE INTO job (key, name, category, description, sort_order) VALUES (?, ?, ?, ?, ?)",
-                (key, name, category, desc, order))
+                """INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (key, name, category, desc, _job_budget_source(jdef, load_script), order))
             order += 1
             # Base-empire figures: unconditional blocks plus those whose trigger a plain
             # empire meets, following resources- and job-level inline scripts alike.

@@ -70,6 +70,7 @@ extractor/
   traits.py              traits, trait modifiers, trait categories
   government.py          ethics, policy restrictions, civics, authorities, origins
   jobs.py                pop jobs, job swaps
+  colony_types.py        colony designations
   buildings.py           building reference data + building-effect helpers
   empires.py             prescripted empires, initializers, rooms, flag assets
   precursors.py          precursors, relics, deposits, home systems
@@ -119,6 +120,7 @@ Cross-module imports keep the original (underscore-prefixed) helper names; the p
 | Prescripted empires         | `prescripted_countries/`                            |
 | Initializers + flags + rooms| `common/solar_system_initializers/`, `flags/`, rooms regex-scanned from `prescripted_countries/` |
 | Jobs                        | `common/pop_jobs/` (+ `common/inline_scripts/`)     |
+| Colony types                | `common/colony_types/` (+ `common/inline_scripts/colony_types/`) |
 | Buildings reference         | `common/buildings/`                                 |
 | Job swaps                   | `common/pop_jobs/` + `common/scripted_triggers/`    |
 | Repeatable techs            | `common/technology/`                                |
@@ -336,6 +338,12 @@ The home systems each precursor leads you to (planets, deposits, megastructures)
 ## Jobs Extraction (`extract_jobs`, jobs.py)
 
 `common/pop_jobs/` → `job` (+ `job_resource`, `job_modifier`): category, flavour description, base produces/upkeep, and non-resource effects (amenities, crime, …) for the plain-empire state. Many jobs keep their figures in an **inline script**, under `resources` (`output/*`: foundry/researcher/…) or at job level (`jobs/job_telepath_resources`) — `_job_resource_blocks` expands both (cached, possibly nested). Per-file `@vars` overlay the global `scripted_vars`. `job_resource` is the sum of the blocks that apply to a plain empire (`_eval_job_resources` with an empty state; drone jobs are evaluated as gestalt), so civic-, flag- or building-gated extras drop out (Pleasure Seekers' civilian upkeep). Two corrections: a `mult = value:…` block is dropped when an unconditional block already gives its resources (`_drop_scaled_duplicates`: polytechnic's stockpile bonus), and when no block of a kind applies, `_fallback_block` shows the first of a set of alternatives every empire pays one of (organic/lithoid/infernal, hive/machine, an `= no` complement). Known gaps: subject-tier upkeep (`overlord_beholder`) and `overlord_offspring_drone_feeder` show none.
+
+`job.budget_source` is the job's `resources.category` (`_job_budget_source`, inline scripts followed): the key the country budget books its output under, `planet_<x>`. Drone jobs reuse the organic jobs' categories (`technician_drone` → `planet_technician`, `fabricator` → `planet_metallurgists`), and some jobs share the generic `planet_jobs` (`patrol_drone`) — so the job key cannot be derived from the budget source. 4.5.2: 265 of 365 jobs have one.
+
+## Colony Types (`extract_colony_types`, colony_types.py)
+
+`common/colony_types/` → `colony_type` (+ `colony_type_modifier`): the designations' localised name and description (`col_<x>`, `col_<x>_desc`, `$ref$`s expanded) and their unconditional `planet_modifier`s — own blocks plus the `colony_types/colony_type_planet_modifier*` inline scripts filled with `MODIFIER`/`MODIFIER2` (`colony_type_modifiers`). `triggered_planet_modifier` extras (Adaptability finished +5 %, GalCom resolutions) are left out. 4.5.2: 101 designations, 175 modifier rows.
 
 ## Buildings Reference (`extract_buildings_ref`, buildings.py)
 

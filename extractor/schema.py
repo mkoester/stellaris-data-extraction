@@ -452,6 +452,8 @@ CREATE TABLE job (
     name        TEXT,               -- localised, e.g. "Miner"
     category    TEXT,               -- worker | specialist | ruler | complex_drone | …
     description TEXT,               -- cleaned flavour tooltip
+    budget_source TEXT,             -- resources.category: the country budget's source key
+                                    -- (technician_drone → planet_technician); empire dashboard
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE job_resource (
@@ -473,6 +475,26 @@ CREATE TABLE job_modifier (
     sort_order INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (job_key, modifier),
     FOREIGN KEY (job_key) REFERENCES job(key)
+);
+
+-- Colony designations (common/colony_types): name, description and the unconditional
+-- planet modifiers each grants (inline colony_type_planet_modifier* scripts filled in;
+-- triggered extras left out). Empire dashboard: the designation tooltip.
+DROP TABLE IF EXISTS colony_type_modifier;
+DROP TABLE IF EXISTS colony_type;
+CREATE TABLE colony_type (
+    key         TEXT PRIMARY KEY,   -- e.g. "col_mining"
+    name        TEXT,               -- localised, e.g. "Mining World"
+    description TEXT,
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE colony_type_modifier (
+    colony_type_key TEXT NOT NULL,
+    modifier        TEXT NOT NULL,  -- e.g. "miner_jobs_bonus_workforce_mult"
+    value           REAL NOT NULL,
+    sort_order      INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (colony_type_key, modifier),
+    FOREIGN KEY (colony_type_key) REFERENCES colony_type(key)
 );
 
 -- Buildings (reference / wiki): every building, its category, description, build/upkeep

@@ -19,6 +19,8 @@ All notable changes to this project are documented here. The format follows
   attitudes trade, and opinion modifiers.
 - More game defines: outpost and claim costs, the market fee, pop growth, and the AI's trade
   constants.
+- Which budget source each job's output is booked under (drone jobs share the organic jobs'),
+  and the colony designations with their descriptions and modifiers.
 
 ### Fixed
 

@@ -9,6 +9,7 @@ from . import __version__
 from .buildings import (extract_anomaly_levels, extract_buildings_ref, extract_district_zone_names,
                         extract_resources)
 from .clausewitz import parse_file
+from .colony_types import extract_colony_types
 from .empires import extract_flag_assets, extract_flag_colors, extract_initializers, extract_prescripted_empires, extract_rooms
 from .diplomacy import extract_diplomacy
 from .federations import extract_federations
@@ -401,6 +402,7 @@ Examples:
     extract_rooms(install_dir, w, args.verbose)
     print(f"\n[jobs] {install_dir / 'common' / 'pop_jobs'}", file=progress)
     extract_jobs(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
+    extract_colony_types(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
     print(f"\n[buildings-ref] {install_dir / 'common' / 'buildings'}", file=progress)
     extract_buildings_ref(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
     print(f"\n[district-zone-names] {install_dir / 'common' / 'districts'}, zones", file=progress)
