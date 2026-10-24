@@ -452,6 +452,8 @@ CREATE TABLE job (
     name        TEXT,               -- localised, e.g. "Miner"
     category    TEXT,               -- worker | specialist | ruler | complex_drone | …
     description TEXT,               -- cleaned flavour tooltip
+    budget_source TEXT,             -- resources.category: the country budget's source key
+                                    -- (technician_drone → planet_technician); empire dashboard
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE job_resource (
@@ -473,6 +475,26 @@ CREATE TABLE job_modifier (
     sort_order INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (job_key, modifier),
     FOREIGN KEY (job_key) REFERENCES job(key)
+);
+
+-- Colony designations (common/colony_types): name, description and the unconditional
+-- planet modifiers each grants (inline colony_type_planet_modifier* scripts filled in;
+-- triggered extras left out). Empire dashboard: the designation tooltip.
+DROP TABLE IF EXISTS colony_type_modifier;
+DROP TABLE IF EXISTS colony_type;
+CREATE TABLE colony_type (
+    key         TEXT PRIMARY KEY,   -- e.g. "col_mining"
+    name        TEXT,               -- localised, e.g. "Mining World"
+    description TEXT,
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE colony_type_modifier (
+    colony_type_key TEXT NOT NULL,
+    modifier        TEXT NOT NULL,  -- e.g. "miner_jobs_bonus_workforce_mult"
+    value           REAL NOT NULL,
+    sort_order      INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (colony_type_key, modifier),
+    FOREIGN KEY (colony_type_key) REFERENCES colony_type(key)
 );
 
 -- Buildings (reference / wiki): every building, its category, description, build/upkeep
@@ -1113,10 +1135,122 @@ CREATE TABLE government_type (
     key   TEXT PRIMARY KEY,
     name  TEXT
 );
+-- Cost and upkeep of districts and ship sizes (stations, outposts, …), the regular empire's
+-- (unconditional, else first block), before modifiers. Empire dashboard: one-off spending, trade-offs.
+DROP TABLE IF EXISTS district_resource;
+CREATE TABLE district_resource (
+    key      TEXT NOT NULL,                -- e.g. "district_mining"
+    kind     TEXT NOT NULL,                -- 'cost' | 'upkeep' | 'produces'
+    resource TEXT NOT NULL,
+    amount   REAL NOT NULL,
+    PRIMARY KEY (key, kind, resource)
+);
+DROP TABLE IF EXISTS district_job;
+CREATE TABLE district_job (
+    key    TEXT NOT NULL,                  -- e.g. "district_mining"
+    job    TEXT NOT NULL,                  -- from job_<x>_add, e.g. "miner"
+    amount REAL NOT NULL,                  -- positions, in pops (the save's job positions' unit)
+    PRIMARY KEY (key, job)
+);
+-- base_buildtime of districts, ship sizes and buildings, days before modifiers (stations have none).
+DROP TABLE IF EXISTS build_time;
+CREATE TABLE build_time (
+    key  TEXT PRIMARY KEY,
+    days REAL NOT NULL
+);
+DROP TABLE IF EXISTS ship_size_resource;
+CREATE TABLE ship_size_resource (
+    key      TEXT NOT NULL,                -- e.g. "mining_station", "starbase_outpost"
+    kind     TEXT NOT NULL,
+    resource TEXT NOT NULL,
+    amount   REAL NOT NULL,
+    PRIMARY KEY (key, kind, resource)
+);
+-- Starbase modules and buildings (empire dashboard: what a system cost). Names from `sm_<key>`.
+DROP TABLE IF EXISTS starbase_part;
+CREATE TABLE starbase_part (
+    key   TEXT PRIMARY KEY,                -- e.g. "solar_panel_network", "hydroponics_bay"
+    kind  TEXT NOT NULL,                   -- 'module' | 'building'
+    name  TEXT
+);
+-- Starbase levels: how many modules and buildings each holds; cost and upkeep are its ship size's.
+DROP TABLE IF EXISTS starbase_level;
+CREATE TABLE starbase_level (
+    key            TEXT PRIMARY KEY,       -- e.g. "starbase_level_starport"
+    ship_size      TEXT,                   -- e.g. "starbase_starport" (ship_size_resource)
+    next_level     TEXT,
+    module_slots   INTEGER NOT NULL DEFAULT 0,
+    building_slots INTEGER NOT NULL DEFAULT 0
+);
+DROP TABLE IF EXISTS starbase_module_resource;
+CREATE TABLE starbase_module_resource (
+    key      TEXT NOT NULL,
+    kind     TEXT NOT NULL,                -- 'cost' | 'upkeep' | 'produces' (unconditional block)
+    resource TEXT NOT NULL,
+    amount   REAL NOT NULL,
+    PRIMARY KEY (key, kind, resource)
+);
+DROP TABLE IF EXISTS starbase_building_resource;
+CREATE TABLE starbase_building_resource (
+    key      TEXT NOT NULL,
+    kind     TEXT NOT NULL,
+    resource TEXT NOT NULL,
+    amount   REAL NOT NULL,
+    PRIMARY KEY (key, kind, resource)
+);
+-- common/strategic_resources: market lots (price per unit = market_price / market_amount, in
+-- trade) and the AI's weights (empire dashboard: values in trade, the AI's view of a deal).
+DROP TABLE IF EXISTS strategic_resource;
+CREATE TABLE strategic_resource (
+    key           TEXT PRIMARY KEY,        -- e.g. "energy"
+    name          TEXT,
+    category      TEXT,                    -- basic / advanced / research / …
+    tradable      INTEGER NOT NULL DEFAULT 0,
+    market_amount REAL,                    -- NULL: not on the market
+    market_price  REAL,
+    max           REAL,                    -- base storage
+    ai_weight     REAL,                    -- `ai_weight.weight`, conditions left out
+    ai_wants      REAL,                    -- `ai_wants.base`, conditions left out
+    sort_order    INTEGER NOT NULL DEFAULT 0
+);
+-- AI personalities: how good a deal must be for them (1.0 = equal for both sides).
+DROP TABLE IF EXISTS personality;
+CREATE TABLE personality (
+    key               TEXT PRIMARY KEY,    -- e.g. "peaceful_traders"
+    name              TEXT,
+    trade_willingness REAL
+);
+-- AI attitudes; trade = 0 refuses every trade deal (OFFER_TRADE_ACCEPTANCE_ATTITUDE).
+DROP TABLE IF EXISTS attitude;
+CREATE TABLE attitude (
+    key   TEXT PRIMARY KEY,                -- e.g. "cordial"
+    name  TEXT,
+    trade INTEGER NOT NULL DEFAULT 0
+);
+-- Opinion modifiers, base values (conditional factors left out); e.g. opinion_trade_gift.
+DROP TABLE IF EXISTS opinion_modifier;
+CREATE TABLE opinion_modifier (
+    key          TEXT PRIMARY KEY,
+    name         TEXT,
+    opinion      REAL,
+    accumulative INTEGER NOT NULL DEFAULT 0,
+    min          REAL,
+    max          REAL,
+    decay        REAL                      -- per month
+);
 DROP TABLE IF EXISTS zone;
 CREATE TABLE zone (
     key   TEXT PRIMARY KEY,                -- e.g. "zone_research_unity"
     name  TEXT                             -- e.g. "Archives"
+);
+-- What researching a tech needs (empire dashboard: techs within reach).
+DROP TABLE IF EXISTS technology_requirement;
+CREATE TABLE technology_requirement (
+    tech_key           TEXT PRIMARY KEY,
+    prerequisites_json TEXT NOT NULL,      -- ["tech_sensors_4"]: all researched first
+    potential_json     TEXT,               -- normalised trigger: who can get it at all (NULL: anyone)
+    is_rare            INTEGER NOT NULL DEFAULT 0,
+    is_dangerous       INTEGER NOT NULL DEFAULT 0
 );
 DROP TABLE IF EXISTS technology_modifier;
 DROP TABLE IF EXISTS technology;
@@ -1432,6 +1566,11 @@ CREATE TABLE resolution (
     level          INTEGER,
     target         INTEGER NOT NULL DEFAULT 0, -- 1: names a target country
     influence_cost REAL,
+    repeal         INTEGER NOT NULL DEFAULT 0, -- 1: fire_and_forget — repeals one in force, never stays
+    potential_json TEXT,                   -- offered at all (normalized trigger, proposer's scope)
+    allow_json     TEXT,                   -- proposable: the tier below in force, none of it active
+    valid_target_json TEXT,                -- target = 1: which empire it may name (target's scope)
+    ai_weight_json TEXT,                   -- {"base":7,"modifiers":[{"factor":2,"add":null,"trigger":…}]}: an AI's vote
     sort_order     INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE agreement_term (

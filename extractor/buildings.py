@@ -8,6 +8,7 @@ from .dds import dds_pixel, hex_color
 from .government import _gate_owners
 from .localisation import _clean_loc
 from .modifiers import _write_modifier_label
+from .politics import expand_inline
 from .situations import outcomes_json
 from .triggers import _scripted_trigger_index
 from .values import _as_blocks, _flatten_text, _resolve_modifier_float, _resolve_var
@@ -55,11 +56,13 @@ def extract_buildings_ref(install_dir: Path, loc: dict[str, str],
                 "INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES (?, ?, ?, ?, ?)",
                 (key, name, category, desc, order))
             order += 1
-            for r_order, (kind, resource, amt) in enumerate(_building_resources(bdef, variables)):
+            for r_order, (kind, resource, amt) in enumerate(
+                    _building_resources(bdef, variables, script_loader(inline_scripts_dir))):
                 w.execute(
                     """INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES (?, ?, ?, ?, ?)""",
                     (key, kind, resource, amt, r_order))
+            _write_build_time(w, key, bdef, variables)
             for j_order, (jk, amt) in enumerate(_building_inline_jobs(bdef, variables, inline_scripts_dir)):
                 job = re.sub(r'^job_', '', re.sub(r'_add$', '', jk))
                 w.execute(
@@ -83,6 +86,61 @@ def extract_buildings_ref(install_dir: Path, loc: dict[str, str],
         print(f"  buildings: {order}")
 
 
+def script_loader(inline_scripts_dir: Path):
+    """name → an inline script's text, or None when the game has no such script."""
+    def load(name: str) -> str | None:
+        path = inline_scripts_dir / f'{name}.txt'
+        return path.read_text(encoding='utf-8-sig') if path.exists() else None
+    return load
+
+
+def extract_resources(directory: Path, table: str, scripted_vars: dict[str, float],
+                      inline_scripts_dir: Path, w: Writer, verbose: bool,
+                      jobs_table: str | None = None) -> None:
+    """Every definition in `directory` with a resources block → `table` (key, kind, resource,
+    amount): districts' and ship sizes' cost and upkeep; its `base_buildtime` → `build_time`;
+    with `jobs_table`, the jobs its `jobs/*` inline scripts add (districts). Per file, since
+    `@variables` resolve per file (4.5.2 `@base_cost`: 300 in rural districts, 30 in wilderness
+    ones)."""
+    n = 0
+    for f in sorted(directory.glob('*.txt')):
+        try:
+            data = parse_file(f)
+        except Exception as e:
+            print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+            continue
+        variables = dict(scripted_vars)
+        for k, v in data.items():
+            if k.startswith('@'):
+                fv = _resolve_modifier_float(v)
+                if fv is not None:
+                    variables[k] = fv
+        for key, ddef in sorted(data.items()):
+            if key.startswith('@') or not isinstance(ddef, dict):
+                continue
+            for kind, resource, amt in _building_resources(ddef, variables, script_loader(inline_scripts_dir)):
+                w.execute(f"INSERT OR REPLACE INTO {table} (key, kind, resource, amount) VALUES (?, ?, ?, ?)",
+                          (key, kind, resource, amt))
+                n += 1
+            _write_build_time(w, key, ddef, variables)
+            if jobs_table:
+                for jk, amt in _building_inline_jobs(ddef, variables, inline_scripts_dir):
+                    job = re.sub(r'^job_', '', re.sub(r'_add$', '', jk))
+                    w.execute(f"INSERT OR IGNORE INTO {jobs_table} (key, job, amount) VALUES (?, ?, ?)",
+                              (key, job, amt))
+    w.commit()
+    if verbose:
+        print(f"  {table}: {n} rows")
+
+
+def _write_build_time(w: Writer, key: str, ddef: dict, variables: dict[str, float]) -> None:
+    """A definition's `base_buildtime` (starbase modules and buildings: `construction_days`; days,
+    before modifiers) → build_time, when it has one."""
+    days = _resolve_var(ddef.get('base_buildtime', ddef.get('construction_days')), variables)
+    if days is not None:
+        w.execute("INSERT OR REPLACE INTO build_time (key, days) VALUES (?, ?)", (key, days))
+
+
 def _building_cap(raw, variables: dict[str, float]) -> int | None:
     """A building build-cap → int, or None when uncapped. Accepts a flat value
     (`base_cap_amount = 1`) or a block whose `base` is the baseline cap
@@ -95,25 +153,32 @@ def _building_cap(raw, variables: dict[str, float]) -> int | None:
     return int(v) if v is not None else None
 
 
-def _building_resources(bdef: dict, variables: dict[str, float]
+def _building_resources(bdef: dict, variables: dict[str, float], load_script=None
                         ) -> list[tuple[str, str, float]]:
-    """A building's resources block → [(kind, resource, amount)] for
+    """A building's (district's, ship size's) resources block → [(kind, resource, amount)] for
     kind in cost/upkeep/produces, resolving @vars. Where a kind has several blocks
     (e.g. a conditional `is_wilderness_empire` cost), the unconditional one (no
-    `trigger`) is the primary; the gated variants are skipped."""
+    `trigger`) is the primary, else the first — the regular empire's: 4.5.2's
+    `buildings/nomadic_cost_switcher` and the stations' `country_uses_bio_ships = no` come
+    first. Blocks from `resources.inline_script` count too: `load_script(name)` → the
+    script's text, or None (4.5.2 buildings declare their cost only so)."""
     rows: list[tuple[str, str, float]] = []
     res = bdef.get('resources')
     if isinstance(res, list):
         res = next((b for b in reversed(res) if isinstance(b, dict)), None)
     if not isinstance(res, dict):
         return rows
+    inlined = [expand_inline(text, {k: str(v).strip('"') for k, v in ref.items() if k != 'script'})
+               for ref in _as_blocks(res.get('inline_script'))
+               if load_script and isinstance(ref.get('script'), str)
+               for text in [load_script(ref['script'].strip('"'))] if text]
     for kind in ('cost', 'upkeep', 'produces'):
-        blocks = _as_blocks(res.get(kind))
+        blocks = [b for src in (res, *inlined) for b in _as_blocks(src.get(kind)) if isinstance(b, dict)]
         block = next((b for b in blocks if 'trigger' not in b), blocks[0] if blocks else None)
         if not isinstance(block, dict):
             continue
         for resource, raw in block.items():
-            if resource in ('category', 'trigger'):
+            if resource in ('category', 'trigger', 'mult'):
                 continue
             amt = _resolve_var(raw, variables)
             if amt is not None:

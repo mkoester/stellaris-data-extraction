@@ -6,12 +6,15 @@ import json
 import sqlite3
 import sys
 from . import __version__
-from .buildings import extract_anomaly_levels, extract_buildings_ref, extract_district_zone_names
+from .buildings import (extract_anomaly_levels, extract_buildings_ref, extract_district_zone_names,
+                        extract_resources)
 from .clausewitz import parse_file
+from .colony_types import extract_colony_types
 from .empires import extract_flag_assets, extract_flag_colors, extract_initializers, extract_prescripted_empires, extract_rooms
 from .diplomacy import extract_diplomacy
 from .federations import extract_federations
 from .shroud import extract_shroud
+from .economy import extract_economy
 from .focus import extract_focus
 from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_council_positions, extract_ethics, extract_government_types, extract_origins, extract_policy_restrictions
 from .jobs import extract_job_swaps, extract_jobs
@@ -27,7 +30,7 @@ from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_a
 from .tech import extract_fallen_empire_techs, extract_repeatable_techs, extract_techs
 from .traditions import extract_edicts_agendas, extract_traditions
 from .traits import TRAIT_CATEGORIES, extract_trait_categories, extract_trait_modifiers, extract_traits, is_species_trait_file
-from .triggers import _scripted_trigger_index, _signals, extract_scripted_triggers
+from .triggers import _scripted_trigger_index, _signals, dlc_trigger_map, extract_scripted_triggers
 from .values import _as_blocks, _resolve_modifier_float
 from .writer import Writer
 
@@ -399,12 +402,23 @@ Examples:
     extract_rooms(install_dir, w, args.verbose)
     print(f"\n[jobs] {install_dir / 'common' / 'pop_jobs'}", file=progress)
     extract_jobs(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
+    extract_colony_types(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
     print(f"\n[buildings-ref] {install_dir / 'common' / 'buildings'}", file=progress)
     extract_buildings_ref(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
     print(f"\n[district-zone-names] {install_dir / 'common' / 'districts'}, zones", file=progress)
     extract_district_zone_names(install_dir, _merge_dir(install_dir / 'common' / 'districts', progress),
                                 _merge_dir(install_dir / 'common' / 'zones', progress),
                                 loc, w, args.verbose)
+    extract_resources(install_dir / 'common' / 'districts', 'district_resource', scripted_vars,
+                      inline_scripts_dir, w, args.verbose, jobs_table='district_job')
+    print(f"\n[ship-sizes] {install_dir / 'common' / 'ship_sizes'}", file=progress)
+    extract_resources(install_dir / 'common' / 'ship_sizes', 'ship_size_resource', scripted_vars,
+                      inline_scripts_dir, w, args.verbose)
+    for folder, table in (('starbase_modules', 'starbase_module_resource'),
+                          ('starbase_buildings', 'starbase_building_resource')):
+        print(f"\n[{folder}] {install_dir / 'common' / folder}", file=progress)
+        extract_resources(install_dir / 'common' / folder, table, scripted_vars,
+                          inline_scripts_dir, w, args.verbose)
     extract_anomaly_levels(_merge_dir(install_dir / 'common' / 'anomalies', progress), loc, w, args.verbose)
     print(f"\n[static-modifiers] {static_mod_dir}", file=progress)
     extract_static_modifiers(static_mods, loc, w, args.verbose)
@@ -413,7 +427,8 @@ Examples:
 
     # --- technologies (non-repeatable, with base cost) ---
     print(f"\n[techs] {technology_dir}", file=progress)
-    extract_techs(technologies, loc, scripted_vars, w, args.verbose)
+    extract_techs(technologies, loc, scripted_vars, w, args.verbose,
+                  dlc_trigger_map(_scripted_trigger_index(install_dir)))
 
     # --- repeatable technologies ---
     print(f"\n[repeatable-techs] {technology_dir}", file=progress)
@@ -460,6 +475,8 @@ Examples:
     extract_diplomacy(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[shroud] {install_dir / 'common' / 'patrons'}", file=progress)
     extract_shroud(install_dir, loc, scripted_vars, w, progress)
+    print(f"\n[economy] {install_dir / 'common' / 'strategic_resources'}, personalities, …", file=progress)
+    extract_economy(install_dir, loc, scripted_vars, w, progress)
 
     w.close()
 
