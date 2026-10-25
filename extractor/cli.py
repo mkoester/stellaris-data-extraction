@@ -10,6 +10,7 @@ from .buildings import (extract_anomaly_levels, extract_buildings_ref, extract_d
                         extract_resources)
 from .clausewitz import parse_file
 from .colony_types import extract_colony_types
+from .cooldowns import extract_action_timers
 from .empires import extract_flag_assets, extract_flag_colors, extract_initializers, extract_prescripted_empires, extract_rooms
 from .diplomacy import extract_diplomacy
 from .federations import extract_federations
@@ -469,6 +470,8 @@ Examples:
     extract_focus(install_dir, loc, w, progress)
     print(f"\n[situations + special projects] {install_dir / 'common' / 'situations'}", file=progress)
     extract_situations(install_dir, loc, w, progress)
+    print(f"\n[action timers] decisions, artifact and astral actions, enclave deals", file=progress)
+    extract_action_timers(install_dir, loc, w, progress)
     print(f"\n[federations] {install_dir / 'common' / 'federation_types'}", file=progress)
     extract_federations(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[resolutions + agreement terms] {install_dir / 'common' / 'resolutions'}", file=progress)

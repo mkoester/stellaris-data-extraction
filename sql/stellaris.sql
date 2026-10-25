@@ -1102,6 +1102,20 @@ CREATE TABLE focus_reward (
                                            -- (permanent until researched), by if/else branch
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
+-- Timers of player actions (decisions, artifact and astral actions, enclave deals): the timed
+-- modifiers and timed flags an action sets or waits on, for the empire dashboard's upcoming list.
+DROP TABLE IF EXISTS action_timer;
+CREATE TABLE action_timer (
+    timer_kind  TEXT NOT NULL,             -- modifier / flag
+    timer_key   TEXT NOT NULL,             -- e.g. "arcane_deciphering_cooldown"
+    action_kind TEXT NOT NULL,             -- decision / artifact_action / astral_action / enclave
+    action_key  TEXT NOT NULL,             -- e.g. "artifact_arcane_deciphering", an enclave option's name key
+    action_name TEXT,
+    role        TEXT NOT NULL,             -- cooldown: the action waits for it to end (NOT = { has_* });
+                                           -- effect: the action only sets it
+    days        INTEGER,                   -- its length where the action sets it with a number
+    PRIMARY KEY (timer_kind, timer_key, action_kind, action_key)
+);
 -- Situations (common/situations) and their approaches, special projects (common/special_projects).
 DROP TABLE IF EXISTS situation_approach;
 DROP TABLE IF EXISTS situation;
@@ -108867,6 +108881,942 @@ INSERT OR REPLACE INTO special_project
 INSERT OR REPLACE INTO special_project
                    (key, name, description, days, department, outcomes_json)
                    VALUES ('STAR_CROSSED_SURVIVOR_POD_PROJECT', 'Scan the Survivor Pod', 'We must fly to the indicated system and scan the pod to determine whether its occupant still lives.', 180, 'physics_technology', '[{"event": "arkship.1395", "name": "Last Survivor"}]');
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_food_boost', 'decision', 'decision_planet_food_boost', 'Encourage Colony Growth', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_growth_discouraged', 'decision', 'decision_planet_food_boost', 'Encourage Colony Growth', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_population_control', 'decision', 'decision_planet_food_boost', 'Encourage Colony Growth', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_luxuries_boost', 'decision', 'decision_planet_luxuries_boost', 'Distribute Luxury Goods', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_population_control', 'decision', 'decision_enact_population_control', 'Declare Population Controls', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_population_control_gestalt', 'decision', 'decision_enact_population_control_gestalt', 'Cease Drone Production', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_robot_assembly_control', 'decision', 'decision_enact_robot_assembly_control', 'Cease Robot Assembly', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_population_expelled', 'decision', 'decision_expel_population', 'Expel Excess Population', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_growth_discouraged', 'decision', 'decision_discourage_growth', 'Discourage Colony Growth', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'penal_colony', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'penal_experimental_sentencing', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'resort_colony', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'slave_colony', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'penal_colony', 'decision', 'decision_slave_colony', 'Create Thrall-World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'resort_colony', 'decision', 'decision_slave_colony', 'Create Thrall-World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'slave_colony', 'decision', 'decision_slave_colony', 'Create Thrall-World', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'penal_colony', 'decision', 'decision_resort_colony', 'Create Resort World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'resort_colony', 'decision', 'decision_resort_colony', 'Create Resort World', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'slave_colony', 'decision', 'decision_resort_colony', 'Create Resort World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mastery_of_nature', 'decision', 'decision_mastery_of_nature', 'Mastery of Nature', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'consecrated', 'decision', 'decision_consecrated_worlds', 'Consecrate World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'consecrated_world', 'decision', 'decision_consecrated_worlds', 'Consecrate World', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'legendary_leader_planet', 'decision', 'decision_arcology_project', 'Arcology Project', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'resolution_breached_terraformed', 'decision', 'decision_arcology_project', 'Arcology Project', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'penal_colony', 'decision', 'decision_arcology_project', 'Arcology Project', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'pm_wenkwort_custodian', 'decision', 'decision_arcology_project', 'Arcology Project', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'resort_colony', 'decision', 'decision_arcology_project', 'Arcology Project', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'slave_colony', 'decision', 'decision_arcology_project', 'Arcology Project', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'resolution_breached_terraformed', 'decision', 'decision_arcology_project_relic', 'Restore Ecumenopolis', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_1', 'decision', 'decision_market_nomination', 'Galactic Market Hub Nomination', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_2', 'decision', 'decision_market_nomination', 'Galactic Market Hub Nomination', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_3', 'decision', 'decision_market_nomination', 'Galactic Market Hub Nomination', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_4', 'decision', 'decision_market_nomination', 'Galactic Market Hub Nomination', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_5', 'decision', 'decision_market_nomination', 'Galactic Market Hub Nomination', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_2', 'decision', 'decision_boost_market_nomination', 'Boost Nomination Bid', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_3', 'decision', 'decision_boost_market_nomination', 'Boost Nomination Bid', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_4', 'decision', 'decision_boost_market_nomination', 'Boost Nomination Bid', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_5', 'decision', 'decision_boost_market_nomination', 'Boost Nomination Bid', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'divine_algorithm', 'decision', 'decision_divine_algorithm', 'Implement Divine Algorithm', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artist_monument_erected', 'decision', 'decision_art_monument', 'Exhibit Art Monument', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'being_devoured', 'decision', 'decision_lithoid_swarm_consume_world', 'Consume World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'recently_eaten_planet', 'decision', 'decision_lithoid_swarm_consume_world', 'Consume World', 'effect', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'being_devoured_modifier', 'decision', 'decision_lithoid_swarm_consume_world', 'Consume World', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'crystalline_architecture_mod', 'decision', 'decision_crystalline_architecture', 'Crystalline Construction', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'flooded_habitat', 'decision', 'decision_flood_habitat', 'Flood Habitat', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'finish_shroud_forged_control_flag', 'decision', 'decision_open_shroud_rift', 'Pierce the Shroud', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'entrapping_shroud_entity', 'decision', 'decision_entrap_shroud_entity', 'Entrap Shroud Entity', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroud_forged_trapped_entity', 'decision', 'decision_entrap_shroud_entity', 'Entrap Shroud Entity', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroud_forged_trapped_lesser_entity', 'decision', 'decision_entrap_shroud_entity', 'Entrap Shroud Entity', 'cooldown', 7200);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planetary_workshift_deployed', 'decision', 'decision_planetary_workshift', 'Enforce Planetary Work Shifts', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'anticrime_campaign', 'decision', 'decision_launch_anticrime_campaign', 'Launch Anti-Crime Campaign', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'crime_lord_deal', 'decision', 'decision_launch_anticrime_campaign', 'Launch Anti-Crime Campaign', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'anticrime_campaign', 'decision', 'decision_negotiate_with_crime_lords', 'Negotiate with Crime Lords', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'crime_lord_deal', 'decision', 'decision_negotiate_with_crime_lords', 'Negotiate with Crime Lords', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'crime_lord_deal_broken', 'decision', 'decision_end_crime_lord_deal', 'End Deal with Crime Lords', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'bunkbeds_deployed', 'decision', 'decision_caravaneer_bunkbeds', 'Trium Bunk Beds Deployment', 'cooldown', 28800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tupperware_deployed', 'decision', 'decision_caravaneer_tupperware', 'Trium Food Container Deployment', 'cooldown', 28800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'atmospheric_deodorizer_deployed', 'decision', 'decision_caravaneer_atmospheric_deodorizer', 'Trium Atmospheric Deodorizer Deployment', 'cooldown', 28800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tissue_growth_stimulants', 'decision', 'decision_tissue_growth_stimulants', 'Deploy Tissue Growth Stimulants', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'explosive_fungifoam_housing', 'decision', 'decision_explosive_fungifoam_housing', 'Construct Explosive Fungiform Housing Units', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_museum_exhibits', 'decision', 'decision_museum_exhibits', 'Send Artifacts to Museum Exhibits', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_manager_awards', 'decision', 'decision_manager_awards', 'Initiate Performance Competition', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_sanctuary_exhibits', 'decision', 'decision_sanctuary_exhibits', 'Send Artifacts to Organic Sanctuaries', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_artifact_relays_hivemind', 'decision', 'decision_artifact_relays_hivemind', 'Incorporate Artifact Relays', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_artifact_relays_machine', 'decision', 'decision_artifact_relays_machine', 'Incorporate Artifact Relays', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'oracle_software_integration', 'decision', 'decision_machine_oracle', 'Activate Oracle Nexus', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'pm_yuht_cleansing', 'decision', 'decision_yuht_cleanseplanet', 'Initiate Yuht Cleansing Process', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'pm_extradimensional_experimentation', 'decision', 'decision_extradimensional_experimentation', 'Extradimensional Experimentation', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'intentionally_tidally_locked', 'decision', 'decision_tidal_lock_planet', 'Intentional Tidal Locking', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'being_devoured', 'decision', 'decision_nanotech_swarm_consume_world', 'Subsume World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'recently_eaten_planet', 'decision', 'decision_nanotech_swarm_consume_world', 'Subsume World', 'effect', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'being_devoured_modifier_nanotech', 'decision', 'decision_nanotech_swarm_consume_world', 'Subsume World', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'storm_hunkered_down_modifier', 'decision', 'decision_hunker_down', 'Hunker Down', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'cultivated_worldscaping_modifier', 'decision', 'decision_cultivated_worldscaping', 'Cultivated Worldscaping', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mastery_of_nature', 'decision', 'decision_cultivated_worldscaping', 'Cultivated Worldscaping', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'exhibiting_prismatic_ice', 'decision', 'decision_prismatic_ice_exhibit', 'Prismatic Ice Exhibit', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'recently_toxified_planet', 'decision', 'decision_toxify_world', 'Toxify World', 'effect', 180);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'toxifying_planet', 'decision', 'decision_toxify_world', 'Toxify World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'living_metal_distribution_effect', 'decision', 'decision_living_metal_distribution', 'Distribute Living Metal', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'forging_our_own_path', 'decision', 'decision_add_aura_blocker', 'Add Shrouded Vegetation blockers', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'thought_police_established', 'decision', 'decision_thought_police', 'Thought Police', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroud_surge', 'decision', 'decision_banish', 'Banish', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_deep_sleep', 'decision', 'decision_deep_sleep', 'Prepare the Deep Sleep', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'already_embarking', 'decision', 'decision_nomad_embarkation', 'Embark', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'arcane_deciphering_cooldown', 'artifact_action', 'artifact_arcane_deciphering', 'Reverse-Engineer Arcane Technology', 'cooldown', 720);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'completed_lcluster_chain', 'artifact_action', 'artifact_lgate_clue', 'Discover L-Gate Insight', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_lgate_insight_cooldown', 'artifact_action', 'artifact_lgate_clue', 'Discover L-Gate Insight', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'proclaim_religious_finding', 'artifact_action', 'artifact_proclaim_religious_finding', 'Proclaim Religious Revelation', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'proclaim_superiority', 'artifact_action', 'artifact_proclaim_superiority', 'Proclaim Superiority', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'celebrate_diversity', 'artifact_action', 'artifact_celebrate_diversity', 'Celebrate Diversity', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_applications_cooldown', 'artifact_action', 'artifact_find_military_applications', 'Find Military Applications', 'cooldown', 900);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_applications_cooldown', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'cooldown', 900);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_sell_cooldown', 'artifact_action', 'artifact_sell_collector', 'Sell to Private Collectors', 'cooldown', 180);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'irassian_research_started', 'artifact_action', 'artifact_irassian_research', 'Secrets of the Irassians', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'yuht_research_started', 'artifact_action', 'artifact_yuht_research', 'Secrets of the Yuht', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'inetian_research_started', 'artifact_action', 'artifact_inetian_research', 'Secrets of the Inetian Traders', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'adakkaria_research_started', 'artifact_action', 'artifact_adakkaria_research', 'Secrets of the adAkkaria', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'vultaum_research_started', 'artifact_action', 'artifact_vultaum_research', 'Secrets of the Vultaum', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'cybrex_research_started', 'artifact_action', 'artifact_cybrex_research', 'Secrets of the Cybrex', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'league_research_started', 'artifact_action', 'artifact_league_research', 'Secrets of the First League', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'baol_research_started', 'artifact_action', 'artifact_baol_research', 'Secrets of the Baol', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'zroni_research_started', 'artifact_action', 'artifact_zroni_research', 'Secrets of the Zroni', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_precursor_insight_cooldown', 'artifact_action', 'artifact_precursor_clue', 'Discover Precursor Insight', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'astral_boost_modifier', 'astral_action', 'action_astral_boost', 'Astral Boost', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'gain_physics_insight_modifier', 'astral_action', 'action_gain_physics_insight', 'Gain Physics Insight', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'flash_forge_hyper_relay_activated', 'astral_action', 'action_flash_forge_hyper_relay', 'Flash Forge Hyper Relay', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'lateral_artifacting_available', 'astral_action', 'action_lateral_artifacting', 'Lateral Artifacting', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_xuracorp', 'enclave', 'leviathans.130.a', '1 Exotic Gases Exotic Gases/month for 10 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_xur', 'enclave', 'leviathans.130.a', '1 Exotic Gases Exotic Gases/month for 10 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_xuracorp', 'enclave', 'leviathans.130.b', '2 Exotic Gases Exotic Gases/month for 20 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_xur', 'enclave', 'leviathans.130.b', '2 Exotic Gases Exotic Gases/month for 20 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_xuracorp', 'enclave', 'leviathans.130.c', '3 Exotic Gases Exotic Gases/month for 30 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_xur', 'enclave', 'leviathans.130.c', '3 Exotic Gases Exotic Gases/month for 30 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_xuracorp', 'enclave', 'leviathans.130.d', '4 Exotic Gases Exotic Gases/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_xur', 'enclave', 'leviathans.130.d', '4 Exotic Gases Exotic Gases/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_xur', 'enclave', 'leviathans.130.d', '4 Exotic Gases Exotic Gases/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_xur', 'enclave', 'leviathans.130.d', '4 Exotic Gases Exotic Gases/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_4_xur', 'enclave', 'leviathans.130.d', '4 Exotic Gases Exotic Gases/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_5_xur', 'enclave', 'leviathans.130.d', '4 Exotic Gases Exotic Gases/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_xuracorp', 'enclave', 'leviathans.130.e', '5 Exotic Gases Exotic Gases/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_xur', 'enclave', 'leviathans.130.e', '5 Exotic Gases Exotic Gases/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_xur', 'enclave', 'leviathans.130.e', '5 Exotic Gases Exotic Gases/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_xur', 'enclave', 'leviathans.130.e', '5 Exotic Gases Exotic Gases/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_4_xur', 'enclave', 'leviathans.130.e', '5 Exotic Gases Exotic Gases/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_5_xur', 'enclave', 'leviathans.130.e', '5 Exotic Gases Exotic Gases/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_riggans', 'enclave', 'leviathans.131.a', '1 Volatile Motes Volatile Motes/month for 10 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_rig', 'enclave', 'leviathans.131.a', '1 Volatile Motes Volatile Motes/month for 10 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_riggans', 'enclave', 'leviathans.131.b', '2 Volatile Motes Volatile Motes/month for 20 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_rig', 'enclave', 'leviathans.131.b', '2 Volatile Motes Volatile Motes/month for 20 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_riggans', 'enclave', 'leviathans.131.c', '3 Volatile Motes Volatile Motes/month for 30 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_rig', 'enclave', 'leviathans.131.c', '3 Volatile Motes Volatile Motes/month for 30 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_riggans', 'enclave', 'leviathans.131.d', '4 Volatile Motes Volatile Motes/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_rig', 'enclave', 'leviathans.131.d', '4 Volatile Motes Volatile Motes/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_rig', 'enclave', 'leviathans.131.d', '4 Volatile Motes Volatile Motes/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_rig', 'enclave', 'leviathans.131.d', '4 Volatile Motes Volatile Motes/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_4_rig', 'enclave', 'leviathans.131.d', '4 Volatile Motes Volatile Motes/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_5_rig', 'enclave', 'leviathans.131.d', '4 Volatile Motes Volatile Motes/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_riggans', 'enclave', 'leviathans.131.e', '5 Volatile Motes Volatile Motes/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_rig', 'enclave', 'leviathans.131.e', '5 Volatile Motes Volatile Motes/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_rig', 'enclave', 'leviathans.131.e', '5 Volatile Motes Volatile Motes/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_rig', 'enclave', 'leviathans.131.e', '5 Volatile Motes Volatile Motes/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_4_rig', 'enclave', 'leviathans.131.e', '5 Volatile Motes Volatile Motes/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_5_rig', 'enclave', 'leviathans.131.e', '5 Volatile Motes Volatile Motes/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_muutagans', 'enclave', 'leviathans.132.a', '1 Rare Crystals Rare Crystals/month for 10 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_mut', 'enclave', 'leviathans.132.a', '1 Rare Crystals Rare Crystals/month for 10 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_muutagans', 'enclave', 'leviathans.132.b', '2 Rare Crystals Rare Crystals/month for 20 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_mut', 'enclave', 'leviathans.132.b', '2 Rare Crystals Rare Crystals/month for 20 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_muutagans', 'enclave', 'leviathans.132.c', '3 Rare Crystals Rare Crystals/month for 30 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_mut', 'enclave', 'leviathans.132.c', '3 Rare Crystals Rare Crystals/month for 30 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_muutagans', 'enclave', 'leviathans.132.d', '4 Rare Crystals Rare Crystals/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_mut', 'enclave', 'leviathans.132.d', '4 Rare Crystals Rare Crystals/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_mut', 'enclave', 'leviathans.132.d', '4 Rare Crystals Rare Crystals/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_mut', 'enclave', 'leviathans.132.d', '4 Rare Crystals Rare Crystals/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_4_mut', 'enclave', 'leviathans.132.d', '4 Rare Crystals Rare Crystals/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_5_mut', 'enclave', 'leviathans.132.d', '4 Rare Crystals Rare Crystals/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_muutagans', 'enclave', 'leviathans.132.e', '5 Rare Crystals Rare Crystals/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_mut', 'enclave', 'leviathans.132.e', '5 Rare Crystals Rare Crystals/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_mut', 'enclave', 'leviathans.132.e', '5 Rare Crystals Rare Crystals/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_mut', 'enclave', 'leviathans.132.e', '5 Rare Crystals Rare Crystals/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_4_mut', 'enclave', 'leviathans.132.e', '5 Rare Crystals Rare Crystals/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_5_mut', 'enclave', 'leviathans.132.e', '5 Rare Crystals Rare Crystals/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_artist_patron', 'enclave', 'leviathans.300.b', 'We wish to become your patron.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'artist_festival_purchased', 'enclave', 'leviathans.300.c', 'Organize a festival across our worlds.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'artist_building_patron', 'enclave', 'leviathans.300.f', 'We want to invest in a Ministry of Culture.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_artist_patron', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'artist_festival_purchased', 'enclave', 'DEAL', 'It''s a deal!', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_artist_festival', 'enclave', 'DEAL', 'It''s a deal!', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_artist_festival_outrage', 'enclave', 'UNFORTUNATE', 'Unfortunate.', 'effect', 720);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'cultural_clemency', 'enclave', 'leviathans.337.b', 'All part of the fun.', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tent_heist', 'enclave', 'leviathans.337.c', 'Confiscate their campsite.', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'curator_insight', 'enclave', 'leviathans.500.b', 'Can you aid us in our research?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'offered_information', 'enclave', 'leviathans.500.g', 'We have uncovered the Infinity Machine''s secret.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'curator_clue_purchased', 'enclave', 'leviathans.500.i', 'What do you know about the L-Gates?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'tech_containment_vessel_acquired', 'enclave', 'leviathans.500.j', 'Can you help us populate our Vivarium?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'ancient_wonders_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'antique_threat_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'curator_guidance_cooldown', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', 180);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'enclave_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'galactic_landmark_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'marauder_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'natural_spectacle_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'precursor_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'space_ecology_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'curator_insight', 'enclave', 'leviathans.507.a', 'We would like to purchase this service.', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'offered_information', 'enclave', 'leviathans.500.g', 'We have uncovered the Infinity Machine''s secret.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'draconic_beats', 'enclave', 'leviathans.510.b', 'Tell us how to defeat it.', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_fortress_info_1', 'enclave', 'leviathans.515.b', 'Can the fortress be entered?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_fortress_info_2', 'enclave', 'leviathans.515.c', 'Who built the fortress?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_fortress_info_3', 'enclave', 'leviathans.515.d', 'How is the fortress powered?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'curator_buff_stellarite', 'enclave', 'leviathans.510.b', 'Tell us how to defeat it.', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'dimensional_horror_weak_points', 'enclave', 'leviathans.525.b', '$leviathans.510.b$', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'asteroid_hive_weak_points', 'enclave', 'leviathans.530.b', '$leviathans.510.b$', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'curator_buff_sphere', 'enclave', 'leviathans.510.b', 'Tell us how to defeat it.', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'automated_dreadnought_weak_points', 'enclave', 'leviathans.540.b', '$leviathans.510.b$', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_wraith_info_1', 'enclave', 'leviathans.545.b', 'What about red Wraiths?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_wraith_info_2', 'enclave', 'leviathans.545.c', 'What about yellow Wraiths?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_wraith_info_3', 'enclave', 'leviathans.545.d', 'What about blue Wraiths?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'curator_buff_hatchling', 'enclave', 'leviathans.550.b', 'How is it defeated?', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'scavenger_weak_points', 'enclave', 'leviathans.555.c', '$leviathans.510.b$', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'elderly_tiyanki_weak_points', 'enclave', 'leviathans.556.c', '$leviathans.510.b$', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'curator_unplugged_notalk', 'enclave', 'leviathans.559.b', 'We prefer not to talk about it.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_opus_sentinel_info', 'enclave', 'leviathans.559.c', 'Where can we find this entity?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'opus_sentinel_encounter', 'enclave', 'leviathans.559.c', 'Where can we find this entity?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_curators', 'enclave', 'leviathans.590.a', 'Of course. You shall have your donation.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_curators', 'enclave', 'leviathans.598.a', '$leviathans.590.a$', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'curator_clue_purchased', 'enclave', 'leviathans.600.a', 'Please do.', 'cooldown', 2520);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'offered_information', 'enclave', 'leviathans.4000.b', 'Forget it.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'fleet_commandeered', 'enclave', 'enclave.205.a', 'We wish to rent a fleet.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'merc_ai_delay', 'enclave', 'enclave.205.a', 'We wish to rent a fleet.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'mercenary_enclave_bought_mercenary_garrison', 'enclave', 'enclave.205.c', 'We are interested in setting up Mercenary Garrisons.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'enclave.205.g', 'What logistical solutions can you offer?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_1', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_3', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_5', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tactic_v_khan', 'enclave', 'enclave.240.a', 'The Great Khan.', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tactic_v_gray', 'enclave', 'enclave.240.b', 'The Gray Tempest', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tactic_v_swarm', 'enclave', 'enclave.240.c', 'The Prethoryn Swarm', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tactic_v_extradimensional', 'enclave', 'enclave.240.d', 'The Extradimensional Invaders', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tactic_v_ai_empire', 'enclave', 'enclave.240.e', 'The Contingency AI', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tactic_v_synth_queen', 'enclave', 'enclave.240.f', 'Cetana', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'small_merc_army_hired', 'enclave', 'enclave.270.a', 'A small contingent of mercenaries.', 'cooldown', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'small_mecha_merc_army_hired', 'enclave', 'enclave.270.b', 'A small force of elite mechanized mercenaries.', 'cooldown', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'medium_merc_army_hired', 'enclave', 'enclave.270.c', 'A sizeable troop of mercenaries.', 'cooldown', 540);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'medium_mecha_merc_army_hired', 'enclave', 'enclave.270.d', 'A strike group of elite mechanized mercenaries.', 'cooldown', 720);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'large_merc_army_hired', 'enclave', 'enclave.270.e', 'A large platoon of mercenaries.', 'cooldown', 1080);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'upgraded_station', 'enclave', 'enclave.205.d', 'We want to help you field a bigger fleet.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_5', 'enclave', 'enclave.205.d', 'We want to help you field a bigger fleet.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'fleet_commandeered', 'enclave', 'enclave.280.b', 'We want you to recall your fleet.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'updating_databanks', 'enclave', 'enclave.280.c', 'We are inclined to share our technology with you.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_1', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_3', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_5', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'merc_financial_troubles', 'enclave', 'enclave.2025.a', 'Disappointing.', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'merc_financial_troubles', 'enclave', 'enclave.2025.b', 'You''re fired. See the Board about your severance package.', 'effect', 1000);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'enclave.2025.c', 'Let us help instead.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'enclave.2025.c', 'Let us help instead.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'updating_databanks', 'enclave', 'DEAL', 'It''s a deal!', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_scrapped', 'enclave', 'enclave.305.a', 'We''d like to scrap a fleet.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.305.b', 'What reclaimed vessels do you have?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_bought_salvage_works', 'enclave', 'enclave.305.c', 'Tell us about Salvage Works buildings.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'salvager_insight', 'enclave', 'enclave.305.f', 'Can you help us with engineering research?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'jaunted_traveler_secret_revealed', 'enclave', 'enclave.405.f', 'We met someone claiming to be a Veilfarer...', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_scrapped', 'enclave', 'enclave.310.b', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_scrapping_organic', 'enclave', 'enclave.310.b', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_scrapped', 'enclave', 'enclave.310.c', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_scrapping_organic', 'enclave', 'enclave.310.c', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_scrapped', 'enclave', 'enclave.310.d', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_scrapping_organic', 'enclave', 'enclave.310.d', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_scrapped', 'enclave', 'enclave.310.e', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_scrapping_organic', 'enclave', 'enclave.310.e', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.b', 'Reclaimed Corvette.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.bb', 'Reclaimed Corvette squadron.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.frigate', 'Reclaimed Frigate.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.frigate_bulk', 'Reclaimed Frigate squadron.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.c', 'Reclaimed Destroyer.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_destroyer', 'enclave', 'enclave.320.c', 'Reclaimed Destroyer.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.d', 'Reclaimed Cruiser.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_cruiser', 'enclave', 'enclave.320.d', 'Reclaimed Cruiser.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.e', 'Reclaimed Battleship.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_battleship', 'enclave', 'enclave.320.e', 'Reclaimed Battleship.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_overdrive', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'salvager_overdrive', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 720);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_salvage_commission_active', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', 90);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'salvager_insight', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_scrap_bonus_engineering', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_scrap_bonus_physics', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'divination_purchase', 'enclave', 'enclave.405.a', 'What is to be our fate?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'shroudwalker_teacher_cooldown', 'enclave', 'enclave.405.b', 'Would you be willing to send us a teacher from your order?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'shroudwalker_insight_cooldown', 'enclave', 'enclave.405.c', 'Can you give us insight on another empire?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'shroudwalker_enclave_bought_shroud_beacon', 'enclave', 'enclave.405.d', 'Tell us about travel via the Shroud.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'purchased_zro_tech', 'enclave', 'enclave.405.e', 'Could you teach us how to harvest Zro?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'psionic_rift_help_received', 'enclave', 'enclave.405.g', 'Open an Astral Rift.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'psionic_theory_help_received', 'enclave', 'enclave.405.h', 'Help us open our minds.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'jaunted_traveler_secret_revealed', 'enclave', 'enclave.405.f', 'We met someone claiming to be a Veilfarer...', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'divination_purchase', 'enclave', 'enclave.410.b', 'We shall pay.', 'cooldown', 180);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'shroudwalker_enclave_bought_shroud_beacon', 'enclave', 'enclave.420.b', 'We would like a Shroud Beacon.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroudwalkers_depart_reverence', 'enclave', 'enclave.4240.a', 'May the Shroud embrace you.', 'effect', 7200);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroudwalkers_depart_anger', 'enclave', 'enclave.4240.b', 'How can you abandon us?', 'effect', 7200);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroudwalkers_depart_reverence', 'enclave', 'enclave.4245.a', 'You are wise to leave.', 'effect', 7200);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroudwalkers_depart_anger', 'enclave', 'enclave.4245.b', 'Once we were students. Now we are Masters.', 'effect', 7200);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_00', 'enclave', 'enclave.5565.a', 'We will provide what aid we can.', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_01', 'enclave', 'enclave.5565.a', 'We will provide what aid we can.', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_02', 'enclave', 'enclave.5565.b', 'You may pass, but we cannot spare the food.', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_03', 'enclave', 'enclave.5565.b', 'You may pass, but we cannot spare the food.', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_04', 'enclave', 'enclave.5565.c', 'You are not welcome here.', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_05', 'enclave', 'enclave.5565.c', 'You are not welcome here.', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_06', 'enclave', 'UNDERSTOOD', 'Understood.', 'effect', 1801);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_07', 'enclave', 'enclave.5575.a', 'Intolerable.', 'effect', 1801);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'shroudwalker_teacher_cooldown', 'enclave', 'enclave.7100.a', 'We wish to learn.', 'cooldown', 720);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroudwalker_zro_tithe', 'enclave', 'enclave.7250.a', 'You''ll get your share. Teach us.', 'effect', -1);
 INSERT INTO federation_type (key, name, description, base_intel, potential_json,
                allow_json, unlocked_by_json, excluded_by_json, sort_order)
                VALUES ('default_federation', 'Galactic Union', 'Members of this Federation are united in readiness to cooperate. Together, they will deal with whatever problems may arise.', 60, '{"leaf":"always","value":"yes"}', '{"op":"and","args":[{"leaf":"federation_check_for_subject_trigger","value":"yes"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_barbaric_despoilers"}]}]}', NULL, '["civic_barbaric_despoilers"]', 0);

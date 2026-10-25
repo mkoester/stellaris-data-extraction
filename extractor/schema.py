@@ -1107,6 +1107,20 @@ CREATE TABLE focus_reward (
                                            -- (permanent until researched), by if/else branch
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
+-- Timers of player actions (decisions, artifact and astral actions, enclave deals): the timed
+-- modifiers and timed flags an action sets or waits on, for the empire dashboard's upcoming list.
+DROP TABLE IF EXISTS action_timer;
+CREATE TABLE action_timer (
+    timer_kind  TEXT NOT NULL,             -- modifier / flag
+    timer_key   TEXT NOT NULL,             -- e.g. "arcane_deciphering_cooldown"
+    action_kind TEXT NOT NULL,             -- decision / artifact_action / astral_action / enclave
+    action_key  TEXT NOT NULL,             -- e.g. "artifact_arcane_deciphering", an enclave option's name key
+    action_name TEXT,
+    role        TEXT NOT NULL,             -- cooldown: the action waits for it to end (NOT = { has_* });
+                                           -- effect: the action only sets it
+    days        INTEGER,                   -- its length where the action sets it with a number
+    PRIMARY KEY (timer_kind, timer_key, action_kind, action_key)
+);
 -- Situations (common/situations) and their approaches, special projects (common/special_projects).
 DROP TABLE IF EXISTS situation_approach;
 DROP TABLE IF EXISTS situation;

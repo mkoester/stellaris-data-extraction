@@ -10,6 +10,8 @@ All notable changes to this project are documented here. The format follows
 
 - Species rights carry the game's tooltip, which citizenships take a slavery or purge type, and
   the modifiers each right grants its pops (`species_right_modifier`), for the empire dashboard.
+- `action_timer`: the timed modifiers and timed flags each decision, artifact action, astral
+  action and enclave deal sets or waits on, for the empire dashboard's cooldowns.
 
 ### Fixed
 

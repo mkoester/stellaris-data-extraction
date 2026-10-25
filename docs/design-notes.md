@@ -506,6 +506,17 @@ ids their `on_success` fires (`event_ids`: weighted `1 = anomaly.35`, `anomaly_e
 so `_LOC_ENTRY` accepts `.` in keys (before 2026-10-18 it did not, and every dotted key was
 missing). The dashboard shows outcomes only behind a spoiler setting.
 
+## Action timers (cooldowns.py)
+
+`action_timer`: for each decision, artifact action and astral action (`potential`, `allow`,
+`effect`) and each enclave event option (`leviathans_events_1.txt`, `overlord_enclaves_events.txt`:
+`allow`/`trigger`, the rest as effect), the timed modifiers (`add_modifier` with `days`) and timed
+flags (`set_timed_*_flag`) it sets, and the modifiers and flags it needs absent (`NOT = { has_* }`).
+`role = cooldown` for those it waits on, `effect` for those it only sets. A waited-on key need not
+be a timer (`NOT = { has_country_flag = attacked_xuracorp }` is permanent); the dashboard only
+matches keys the save holds with an end date. `days` is null where the length is an unresolved
+`@var` (the traders' `@traderDealDuration`). 4.5.2: 312 rows.
+
 ## Scripted triggers, edict prerequisites, species rights
 
 `scripted_trigger`: every parameter-free `common/scripted_triggers` definition, normalised, so a
