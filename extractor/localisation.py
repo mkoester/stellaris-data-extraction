@@ -58,7 +58,7 @@ _LOC_COMMAND    = re.compile(r'\[[^\]]*\]')
 
 # Icons that are pure decoration / category markers — their name is never useful
 # text (it only ever sits next to the thing it depicts), so drop them outright.
-_ICON_DROP      = re.compile(r'^(job|mod|trigger|leader|relic|tradition|edict|ascension)_|^building$|_node$')
+_ICON_DROP      = re.compile(r'^(job|mod|trigger|leader|relic|tradition|edict|ascension|pop_cat)_|^building$|_node$')
 
 def _render_icon(m: re.Match) -> str:
     """£icon£ → its name as words, unless it's a decoration icon (dropped). Resource
@@ -191,10 +191,6 @@ def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False,
     # [command] strip would drop it. Non-job scopes fall through and are stripped.
     s = _LOC_SCOPE_NAME.sub(
         lambda m: loc.get('job_' + m.group(1) + ('_plural' if m.group(2) else ''), ''), s)
-    # A tag opening a line takes its space along ("\n§Y[civilian.GetIcon]\u00a0Civilians", a
-    # no-break space in the game's text): left behind, it would read as the indent of a sub-item
-    # and fold the line into the one above.
-    s = re.sub(r'(^|\\n|\n)((?:§[A-Za-z!])*)\[[^\]]*\][ \u00a0]', r'\1\2', s)
     s = _LOC_COMMAND.sub('', s)        # drop leftover [Command.Chain] tags
     s = _LOC_FMT_CODE.sub('', s)       # strip §X colour codes
     s = _LOC_ICON.sub(_render_icon, s) # £icon£ → word (or dropped, if decoration)
@@ -208,7 +204,9 @@ def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False,
     for raw in s.split('\n'):
         content = _dedup_adjacent(_drop_icon_echo(raw))
         if content:
-            rows.append((len(raw) - len(raw.lstrip()), content))
+            # $t$ is four spaces: indent in those steps, so the space an icon leaves at the
+            # start of a line ("\n£pop_cat_worker£ Workers") is no sub-item
+            rows.append(((len(raw) - len(raw.lstrip())) // 4, content))
     if not keep_newlines:
         return re.sub(r'\s+', ' ', ' '.join(c for _, c in rows)).strip()
     # Tooltip: one rule per line, "- " bullet stripped. A more-indented line is a

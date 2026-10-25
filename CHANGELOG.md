@@ -14,7 +14,8 @@ All notable changes to this project are documented here. The format follows
 ### Fixed
 
 - A tooltip line opening with an icon is no longer folded into the line above
-  ("Adds the Tankbound trait., Farmers, …").
+  ("Adds the Tankbound trait., Farmers, …"): only `$t$`'s four spaces indent a sub-item.
+- Stratum icons are dropped like other decoration icons ("Pop Cat Ruler Elites" → "Elites").
 
 ## [0.1.1] - 2026-10-24
 

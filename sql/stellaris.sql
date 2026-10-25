@@ -19687,7 +19687,8 @@ INSERT OR REPLACE INTO civic
                     ascension_lock, ascension_blocks, icon, sort_order)
                VALUES ('civic_agrarian_idyll', 'Agrarian Idyll', 'Agriculture Districts provide 400 more Housing.
 Generator Districts and Mining Districts provide 300 more Housing.
-City Districts provide 200 less Housing., Farmers also produce 200 Amenities.', 'normal', NULL, 1, 0, NULL, NULL, NULL, 19);
+City Districts provide 200 less Housing.
+Farmers also produce 200 Amenities.', 'normal', NULL, 1, 0, NULL, NULL, NULL, 19);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_agrarian_idyll', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -20429,7 +20430,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_pleasure_seekers', 'Pleasure Seekers', 'Pop Cat Civilians are replaced with Hedonists
+               VALUES ('civic_pleasure_seekers', 'Pleasure Seekers', 'Civilians are replaced with Hedonists
 Allows the Decadent Lifestyle Living Standard
 Additional Starting Buildings: Civilian Industries', 'normal', NULL, 1, 0, NULL, NULL, NULL, 38);
 INSERT OR IGNORE INTO civic_modifier
@@ -20791,7 +20792,8 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_memory_vault', 'Vaults of Knowledge', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Destiny Traits acquired.', 'normal', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 47);
+               VALUES ('civic_memory_vault', 'Vaults of Knowledge', 'Can build unique Vaults of Knowledge
+Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Destiny Traits acquired.', 'normal', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 47);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault', 'councilor_skill_add', '1.0', 0);
@@ -21011,8 +21013,8 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_dystopian_society', 'Oppressive Autocracy', 'Enforcers are Pop Cat Ruler Elites instead of Pop Cat Specialists
-Only Pop Cat Ruler Elites can produce Amenities and have Amenities Upkeep
+               VALUES ('civic_dystopian_society', 'Oppressive Autocracy', 'Enforcers are Elites instead of Specialists
+Only Elites can produce Amenities and have Amenities Upkeep
 Forces Dystopian Society Living Standard, under which non-Elite Pops have decreased Consumer Goods Upkeep
 Non-Elite Pops generate additional Crime
 Cannot build Holo-Theatres', 'normal', 'Galactic Paragons', 1, 1, NULL, NULL, NULL, 53);
@@ -21069,7 +21071,8 @@ INSERT OR REPLACE INTO civic
                VALUES ('civic_selective_kinship', 'Selective Kinship', 'Opinion of Empires with shared Species Class: +100
 Opinion of other Empires: -50
 Refugee Attraction with our Species Class: +30%
-Refugee Attraction with other Species Classes: -20%, Pops of our Species Class have Full Citizenship
+Refugee Attraction with other Species Classes: -20%
+Pops of our Species Class have Full Citizenship
 Other Pops are barred from Full Citizenship', 'normal', NULL, 1, 0, NULL, NULL, NULL, 54);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -22062,7 +22065,8 @@ INSERT OR REPLACE INTO civic
                     ascension_lock, ascension_blocks, icon, sort_order)
                VALUES ('civic_tankbound', 'Tankbound', 'Adds the Tankbound trait.
 Farmers, Miners, and Technicians are fully Automated.
-Colonist Jobs are Pop Cat Specialists., Urban Districts have additional Production Overseers jobs.', 'normal', NULL, 1, 0, NULL, NULL, NULL, 76);
+Colonist Jobs are Specialists.
+Urban Districts have additional Production Overseers jobs.', 'normal', NULL, 1, 0, NULL, NULL, NULL, 76);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_tankbound', 'planet_automated_jobs_upkeep_mult', '-0.25', 0);
@@ -23812,7 +23816,8 @@ INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('civic_hive_s
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_memory_vault_hive', 'Neural Vaults', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 157);
+               VALUES ('civic_memory_vault_hive', 'Neural Vaults', 'Can build unique Vaults of Knowledge
+Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 157);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault_hive', 'restored_node_bonus_skill', '1.0', 0);
@@ -25387,7 +25392,8 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_memory_vault_machine', 'Experience Cache', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 203);
+               VALUES ('civic_memory_vault_machine', 'Experience Cache', 'Can build unique Vaults of Knowledge
+Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 203);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault_machine', 'restored_node_bonus_skill', '1.0', 0);
@@ -25563,7 +25569,8 @@ INSERT OR REPLACE INTO civic
                VALUES ('civic_machine_tactical_algorithms', 'Tactical Algorithms', 'Commanders start with the Tactical Algorithms trait
 Can trade Commanders to other Empires
 Can create Mercenary Enclaves
-Starts game with Military Academy, Military Academy grants Tactical Insights', 'gestalt', NULL, 1, 1, NULL, NULL, NULL, 208);
+Starts game with Military Academy
+Military Academy grants Tactical Insights', 'gestalt', NULL, 1, 1, NULL, NULL, NULL, 208);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_tactical_algorithms', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
@@ -26492,7 +26499,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_corporate_hedonism', 'Corporate Hedonism', 'Pop Cat Civilians are replaced with Hedonists
+               VALUES ('civic_corporate_hedonism', 'Corporate Hedonism', 'Civilians are replaced with Hedonists
 Allows the Decadent Lifestyle Living Standard
 Additional Starting Buildings: Civilian Industries
 The Amusement Megaplex Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, NULL, NULL, 239);
@@ -26596,7 +26603,8 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_permanent_employment', 'Permanent Employment', 'Can build Posthumous Employment Center, Reassigners turn Consumer Goods and Food (or equivalent) into Monthly Organic Pop Growth. All assembled Pops have the Zombie trait.
+               VALUES ('civic_permanent_employment', 'Permanent Employment', 'Can build Posthumous Employment Center
+Reassigners turn Consumer Goods and Food (or equivalent) into Monthly Organic Pop Growth. All assembled Pops have the Zombie trait.
 Grants access to the Reemployment Center Holding.
 Some defeated organic Leviathans can be resurrected.
 The Fast Food Chain Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Necroids Species Pack', 1, 0, NULL, NULL, NULL, 243);
@@ -27016,7 +27024,8 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_memory_vault_corporate', 'Knowledge Mentorship', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and Trade based on Destiny Traits acquired.
+               VALUES ('civic_memory_vault_corporate', 'Knowledge Mentorship', 'Can build unique Vaults of Knowledge
+Vaults of Knowledge produce Unity and Trade based on Destiny Traits acquired.
 The Commercial Forum Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 254);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -27834,7 +27843,8 @@ INSERT OR REPLACE INTO civic
                     ascension_lock, ascension_blocks, icon, sort_order)
                VALUES ('civic_tankbound_corporate', 'Corporate Thinktank', 'Adds the Tankbound trait.
 Farmers, Miners, and Technicians are fully Automated.
-Colonist Jobs are Pop Cat Specialists., Urban Districts have additional Production Overseers jobs.
+Colonist Jobs are Specialists.
+Urban Districts have additional Production Overseers jobs.
 The Virtual Entertainment Studios Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, NULL, NULL, 273);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -66400,7 +66410,7 @@ INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_population_quarantine', 'pop_happiness', '-0.25', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
-INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('pm_raining_corpses', 'Raining Corpses', 'Dense clouds that were once used as a burial site by an alien race are now thinning, sending the cloud graves'' contents tumbling to the planetary surface.', 'Minor Artifacts from Pop Cat Workers Jobs');
+INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('pm_raining_corpses', 'Raining Corpses', 'Dense clouds that were once used as a burial site by an alien race are now thinning, sending the cloud graves'' contents tumbling to the planetary surface.', 'Minor Artifacts from Workers Jobs');
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_raining_corpses', 'pop_environment_tolerance', '-0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -66409,7 +66419,7 @@ INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_raining_corpses', 'pop_happiness', '-0.05', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
-INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('pm_raining_corpses_no_ancrel', 'Raining Corpses', 'Raining Corpses', 'Consumer Goods from Pop Cat Worker Jobs');
+INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('pm_raining_corpses_no_ancrel', 'Raining Corpses', 'Raining Corpses', 'Consumer Goods from Worker Jobs');
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_raining_corpses_no_ancrel', 'planet_jobs_complex_drone_society_research_produces_mult', '0.15', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -66542,7 +66552,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_shroud_forged_fashion_modifier', 'pop_category_drones_consumer_goods_upkeep_mult', '0.2', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_drones_consumer_goods_upkeep_mult', 'Consumer Goods Upkeep per 100 Pop Cat Simple Drone Menial Drone and Pop Cat Complex Drone', 0);
+           VALUES ('pop_category_drones_consumer_goods_upkeep_mult', 'Consumer Goods Upkeep per 100 Menial Drone and Complex Drone', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_shroud_forged_fashion_modifier', 'planet_crime_no_happiness_mult', '-0.1', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -66569,7 +66579,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_shroud_forged_obsession_modifier', 'pop_category_drones_consumer_goods_upkeep_mult', '-0.2', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_drones_consumer_goods_upkeep_mult', 'Consumer Goods Upkeep per 100 Pop Cat Simple Drone Menial Drone and Pop Cat Complex Drone', 0);
+           VALUES ('pop_category_drones_consumer_goods_upkeep_mult', 'Consumer Goods Upkeep per 100 Menial Drone and Complex Drone', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_shroud_forged_obsession_modifier', 'planet_crime_no_happiness_mult', '0.1', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -85483,7 +85493,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_telepaths_unity_produces_add', 'Unity Produced per 100 Telepaths', 1);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
-                    weight, tooltip, sort_order) VALUES ('tr_domination_judgment_corps#0', 'tr_domination_judgment_corps', 'tr_domination_trust_officers', 'Public Trust Officers', 'The important work done by law enforcement officials can only truly be successful if they have the cooperation of the public. Creating a corps of Public Trust Officers that work directly with the population will help ensure that this cooperation is freely given.', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"op":"or","args":[{"leaf":"is_egalitarian","value":"yes"},{"op":"and","args":[{"leaf":"is_authoritarian","value":"no"},{"leaf":"is_xenophobe","value":"no"}]}]}]}', 1, '1.0', 'Unlocks Edict: Enhanced Surveillance, Unity per 100 Enforcers: +1', 0);
+                    weight, tooltip, sort_order) VALUES ('tr_domination_judgment_corps#0', 'tr_domination_judgment_corps', 'tr_domination_trust_officers', 'Public Trust Officers', 'The important work done by law enforcement officials can only truly be successful if they have the cooperation of the public. Creating a corps of Public Trust Officers that work directly with the population will help ensure that this cooperation is freely given.', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"op":"or","args":[{"leaf":"is_egalitarian","value":"yes"},{"op":"and","args":[{"leaf":"is_authoritarian","value":"no"},{"leaf":"is_xenophobe","value":"no"}]}]}]}', 1, '1.0', 'Unlocks Edict: Enhanced Surveillance
+Unity per 100 Enforcers: +1', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_domination_judgment_corps#1', 'tr_domination_judgment_corps', 'tr_domination_deviancy_protocols', 'Deviancy Protocols', 'Deviancy and corruption must be guarded against at all levels. With efficient counter-protocols in place, suspected of deviant activities can be swiftly terminated before they can spread the corruption further.', '{"leaf":"is_machine_empire","value":"yes"}', 0, '1.0', NULL, 1);
@@ -86383,7 +86394,8 @@ INSERT INTO tradition_category
                VALUES ('tradition_politics', 'Politics', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"is_homicidal","value":"no"}]}', 'Federations', 'tr_politics_adopt', 'tr_politics_finish', 13);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_politics_adopt', 'tradition_politics', 'adopt', 'Politics Traditions', NULL, '{"leaf":"is_galactic_community_formed","value":"yes"}', 'agenda_pioneer_politics', '+1 Envoy, Officials assigned to the now produce 0.1 Influence per Skill Level.', 0);
+                    tooltip, sort_order) VALUES ('tr_politics_adopt', 'tradition_politics', 'adopt', 'Politics Traditions', NULL, '{"leaf":"is_galactic_community_formed","value":"yes"}', 'agenda_pioneer_politics', '+1 Envoy
+Officials assigned to the now produce 0.1 Influence per Skill Level.', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_politics_adopt', 'envoys_add', '1.0', NULL, 0);
@@ -86392,7 +86404,8 @@ INSERT INTO tradition
                     tooltip, sort_order) VALUES ('tr_politics_quid_pro_quo', 'tradition_politics', 'normal', 'Quid Pro Quo', 'Carefully worded rhetoric will make it clear that our support comes at a cost. Those we help owe us, and one day, we will collect.', NULL, NULL, 'Whenever a Resolution that you supported passes, gain 1 Favor on the empire that proposed it.', 1);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_politics_gravitas', 'tradition_politics', 'normal', 'Gravitas', 'Politics is the art of illusions. By showing others what they want to see, we''ll grow our influence in the community.', NULL, NULL, '25% Influence cost to veto or propose Resolutions, Officials assigned to the provide an additional 2.5% Diplo Weight Diplomatic Weight per Skill Level.', 2);
+                    tooltip, sort_order) VALUES ('tr_politics_gravitas', 'tradition_politics', 'normal', 'Gravitas', 'Politics is the art of illusions. By showing others what they want to see, we''ll grow our influence in the community.', NULL, NULL, '25% Influence cost to veto or propose Resolutions
+Officials assigned to the provide an additional 2.5% Diplo Weight Diplomatic Weight per Skill Level.', 2);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_politics_gravitas', 'resolutions_cost_mult', '-0.25', NULL, 0);
@@ -87204,7 +87217,8 @@ INSERT INTO tradition
                     tooltip, sort_order) VALUES ('tr_cloning_adopt', 'tradition_cloning', 'adopt', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"cloning_tradition_unlocked"}', 'agenda_cloning_replication', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep.', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
-                    weight, tooltip, sort_order) VALUES ('tr_cloning_adopt#0', 'tr_cloning_adopt', 'tr_cloning_adopt_clone_army', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep., Clone Soldier Pops sustained by Clone Vats: +500', 0);
+                    weight, tooltip, sort_order) VALUES ('tr_cloning_adopt#0', 'tr_cloning_adopt', 'tr_cloning_adopt_clone_army', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep.
+Clone Soldier Pops sustained by Clone Vats: +500', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_cloning_evolutionary_extrapolation', 'tradition_cloning', 'normal', 'Evolutionary Extrapolation', 'Leveraging evolutionary data will perfect our cloning methods.', NULL, NULL, 'Allows the Assimilation of Pops into or out of a Hive-Mind', 1);
@@ -87272,13 +87286,16 @@ INSERT INTO tradition
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cloning_stage_2_swap', 'tr_cloning_somatic_synthesization');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_cloning_finish', 'tradition_cloning', 'finish', 'Cloning Traditions Finished', NULL, NULL, NULL, 'Allows the adoption of Cloning Authorities, Clone Vats Colony Limit per Capital Building Tier: +1', 6);
+                    tooltip, sort_order) VALUES ('tr_cloning_finish', 'tradition_cloning', 'finish', 'Cloning Traditions Finished', NULL, NULL, NULL, 'Allows the adoption of Cloning Authorities
+Clone Vats Colony Limit per Capital Building Tier: +1', 6);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_cloning_finish', 'ascension_perks_add', '1.0', NULL, 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
-                    weight, tooltip, sort_order) VALUES ('tr_cloning_finish#0', 'tr_cloning_finish', 'tr_cloning_finish_clone_army', 'Cloning Traditions Finished', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Allows the adoption of Cloning Authorities, Clone Vats Colony Limit per Capital Building Tier: +1, Clone Soldier Pops sustained by Clone Vats: +500', 0);
+                    weight, tooltip, sort_order) VALUES ('tr_cloning_finish#0', 'tr_cloning_finish', 'tr_cloning_finish_clone_army', 'Cloning Traditions Finished', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Allows the adoption of Cloning Authorities
+Clone Vats Colony Limit per Capital Building Tier: +1
+Clone Soldier Pops sustained by Clone Vats: +500', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_cloning_finish#0', 'ascension_perks_add', '1.0', NULL, 0);
@@ -87321,8 +87338,10 @@ Planets with ongoing Purges gain +10% Cyborg Pop Growth Speed', 3);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_cybernetics_metabolic_reprocessing', 'tradition_cybernetics', 'normal', 'Metabolic Reprocessing', 'Reprocessing metabolic waste into digestible chemical components reduces the required chemical upkeep for our population.', '{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"}', NULL, 'Cyborg Upkeep: -10%
-Monthly Mechanical Pop Assembly from Augmentor Jobs: +0.5, Alloys Upkeep per 100 Augmentors: +0.35
-Monthly Organic Pop Growth from Roboticist Jobs: +0.5, Alloys Upkeep per 100 Roboticists: +0.35', 2);
+Monthly Mechanical Pop Assembly from Augmentor Jobs: +0.5
+Alloys Upkeep per 100 Augmentors: +0.35
+Monthly Organic Pop Growth from Roboticist Jobs: +0.5
+Alloys Upkeep per 100 Roboticists: +0.35', 2);
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cybernetics_metabolic_reprocessing', 'tr_cybernetics_transubstantiation_synthesis');
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -87344,8 +87363,10 @@ INSERT INTO tradition_swap
 Situation Speed: +5%
 After Cyberization
 Cyborg Upkeep: -10%
-Monthly Mechanical Pop Assembly from Augmentor Jobs: +0.5, Alloys Upkeep per 100 Augmentors: +0.35
-Monthly Organic Pop Growth from Roboticist Jobs: +0.5, Alloys Upkeep per 100 Roboticists: +0.35', 1);
+Monthly Mechanical Pop Assembly from Augmentor Jobs: +0.5
+Alloys Upkeep per 100 Augmentors: +0.35
+Monthly Organic Pop Growth from Roboticist Jobs: +0.5
+Alloys Upkeep per 100 Roboticists: +0.35', 1);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_cybernetics_metabolic_reprocessing#2', 'tr_cybernetics_metabolic_reprocessing', 'tr_cybernetics_metabolic_reprocessing_hive_situation', 'Metabolic Reprocessing', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}]}', 0, '1.0', 'During Cyberization
@@ -87395,12 +87416,14 @@ INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_cybernetics_augmentation_overload#2', 'tr_cybernetics_augmentation_overload', 'tr_cybernetics_augmentation_overload_situation', 'Augmentation Overload', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}', 0, '1.0', 'During Cyberization
 Situation Speed: +5%
-After Cyberization, Augmentors per Augmentation Center: +200', 2);
+After Cyberization
+Augmentors per Augmentation Center: +200', 2);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_cybernetics_augmentation_overload#3', 'tr_cybernetics_augmentation_overload', 'tr_cybernetics_synaptic_sub_processing_situation', 'Synaptic Sub-Processing', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}]}', 0, '1.0', 'During Cyberization
 Situation Speed: +5%
-After Cyberization, Spawning Pools provide +200 Augmentor Drone Jobs
+After Cyberization
+Spawning Pools provide +200 Augmentor Drone Jobs
 Empire Size from Districts: -25%', 3);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
@@ -87906,7 +87929,8 @@ INSERT INTO tradition
                     tooltip, sort_order) VALUES ('tr_psionics_adopt', 'tradition_psionics', 'adopt', 'Psionic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_country_flag","value":"ratling_country"}]},{"leaf":"has_technology","value":"tech_psionic_theory"}]},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_country_flag","value":"ratling_country"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_technology","value":"tech_psionic_theory"}]}]}]}', 'agenda_psionic_supremacy', 'All pops from your primary species will gain the Latent Psionic trait.', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
-                    weight, tooltip, sort_order) VALUES ('tr_psionics_adopt#0', 'tr_psionics_adopt', 'tr_psionics_adopt_shroudwalker', 'Psionic Traditions', NULL, '{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"}', 0, '1.0', 'Research option gained: Society Telepathy', 0);
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_adopt#0', 'tr_psionics_adopt', 'tr_psionics_adopt_shroudwalker', 'Psionic Traditions', NULL, '{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"}', 0, '1.0', 'Research option gained:
+Society Telepathy', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_psionics_psi_corps', 'tradition_psionics', 'normal', 'Psi Corps', '', NULL, NULL, NULL, 1);
@@ -87968,7 +87992,8 @@ INSERT INTO tradition
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_adopt#0', 'tr_psionics_shroud_adopt', 'tr_psionics_adopt_shroudwalker', 'Psionic Traditions', NULL, '{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"}', 0, '1.0', 'Starts a Situation to grant the founding species the Psionic trait.
-Research option gained: Society Telepathy', 0);
+Research option gained:
+Society Telepathy', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_psionics_shroud_psi_corps', 'tradition_psionics_shroud', 'normal', NULL, '', NULL, NULL, NULL, 1);
@@ -88072,13 +88097,15 @@ INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry#1', 'tr_psionics_shroud_psychometry', 'tr_psionics_shroud_psychometry_situation', 'Psychometry', NULL, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Grand Archive"}]},{"op":"not","args":[{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}]}', 0, '1.0', 'During Psionic Ascension
 Situation Speed: +5%
-After Psionic Ascension, Crime from Telepaths: -5
+After Psionic Ascension
+Crime from Telepaths: -5
 Job Efficiency for Psionic : +5%', 1);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry#2', 'tr_psionics_shroud_psychometry', 'tr_psionics_shroud_psychometry_situation_grand_achive', 'Psychometry', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Grand Archive"},{"op":"not","args":[{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}]}', 0, '1.0', 'During Psionic Ascension
 Situation Speed: +5%
-After Psionic Ascension, Crime from Telepaths: -5
+After Psionic Ascension
+Crime from Telepaths: -5
 Job Efficiency for Psionic : +5%
 Galactic History Specimens Output: +25%', 2);
 INSERT INTO tradition
@@ -88270,7 +88297,9 @@ INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_synthetics_prefabricated_components#0', 'tr_synthetics_prefabricated_components', 'tr_synthetics_prefabricated_components_situation', 'Prefabricated Components', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"synthetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}]},{"leaf":"is_machine_empire","value":"no"}]}', 0, '1.0', 'During Synthesization
 Situation Speed: +5%
-After Synthesization, Capital Buildings provide +100 Roboticist Jobs, Amenities per 100 Roboticist: +200', 0);
+After Synthesization
+Capital Buildings provide +100 Roboticist Jobs
+Amenities per 100 Roboticist: +200', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_synthetics_prefabricated_components#1', 'tr_synthetics_prefabricated_components', 'tr_synthetics_prefabricated_components_machine', 'Prefabricated Components', 'Having a ready supply of prefabricated components makes it easier to assemble new models.', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"is_machine_empire","value":"yes"}]}', 0, '1.0', 'Capital Buildings provide +100 Replicator Jobs', 1);
@@ -88326,7 +88355,8 @@ INSERT INTO tradition_category
                VALUES ('tradition_virtuality', 'Virtuality', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_nanotech_adopt"},{"leaf":"has_tradition","value":"tr_modularity_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_virtuality_adopt', 'tr_virtuality_finish', 31);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_virtuality_adopt', 'tradition_virtuality', 'adopt', 'Virtuality Traditions', NULL, '{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}', 'agenda_virtuality_optimized_network', 'Adds Virtual trait to main species, Virtual Pops can no longer be resettled', 0);
+                    tooltip, sort_order) VALUES ('tr_virtuality_adopt', 'tradition_virtuality', 'adopt', 'Virtuality Traditions', NULL, '{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}', 'agenda_virtuality_optimized_network', 'Adds Virtual trait to main species
+Virtual Pops can no longer be resettled', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_virtuality_adopt', 'intel_decryption_add', '2.0', NULL, 0);
@@ -88396,7 +88426,8 @@ INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_virtuality_finish', 'tradition_virtuality', 'finish', 'Virtuality Traditions Finished', NULL, NULL, NULL, 'Virtual Pops are instantly created to meet Job requirements of Buildings and Districts
 Virtual Pops can no longer become refugees or be assembled
-All Machine leaders gain the Virtual Leader trait, Unlocks Colony Decision: Server Shut Down', 6);
+All Machine leaders gain the Virtual Leader trait
+Unlocks Colony Decision: Server Shut Down', 6);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_virtuality_finish', 'ascension_perks_add', '1.0', NULL, 0);
@@ -89233,14 +89264,19 @@ INSERT INTO ascension_perk
                 required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_galactic_wonders"}]}]}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_mega_engineering"},{"leaf":"has_country_flag","value":"has_built_or_repaired_megastructure"}]}', NULL, NULL, 37);
 INSERT INTO ascension_perk
                (key, name, description, is_path, potential_json, possible_json,
-                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders_utopia', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"leaf":"always","value":"no"}', NULL, NULL, 'Research options gained: Engineering Research Ring Segment, Physics Research Dyson Sphere
+                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders_utopia', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"leaf":"always","value":"no"}', NULL, NULL, 'Research options gained:
+Engineering Research Ring Segment
+Physics Research Dyson Sphere
 The Ring World and Dyson Sphere are incredibly powerful Megastructures.', 38);
 INSERT INTO ascension_perk
                (key, name, description, is_path, potential_json, possible_json,
                 required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders_megacorp', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"leaf":"always","value":"no"}', NULL, NULL, NULL, 39);
 INSERT INTO ascension_perk
                (key, name, description, is_path, potential_json, possible_json,
-                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders_utopia_and_megacorp', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"leaf":"always","value":"no"}', NULL, NULL, 'Research options gained: Engineering Research Ring Segment, Physics Research Matter Decompressor, Physics Research Dyson Sphere
+                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders_utopia_and_megacorp', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"leaf":"always","value":"no"}', NULL, NULL, 'Research options gained:
+Engineering Research Ring Segment
+Physics Research Matter Decompressor
+Physics Research Dyson Sphere
 The Ring World, Matter Decompressor and Dyson Sphere are incredibly powerful Megastructures.', 40);
 INSERT INTO ascension_perk
                (key, name, description, is_path, potential_json, possible_json,
@@ -89260,7 +89296,8 @@ INSERT INTO ascension_perk
 Unlocks Hive World District Specialization: Zone Spawning Nest
 Uninhabitable for non-hive species.
 Unlimited Hive Districts
-Doubles Housing and Jobs from all Districts, Pop Resource Output: +10%
+Doubles Housing and Jobs from all Districts
+Pop Resource Output: +10%
 Removes all Rural Districts', 42);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -94794,12 +94831,12 @@ INSERT INTO policy (key, name, description, category, potential_json, allow_json
                sort_order) VALUES ('artificial_intelligence_policy', 'Artificial Intelligence', 'The prospect of a self-aware artificial intelligence raises many philosophical and ethical questions. We must determine where we stand on this issue.', 'society', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"op":"or","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"},{"leaf":"can_set_ai_policy","value":"yes"},{"leaf":"has_country_flag","value":"synthetic_empire"},{"leaf":"is_individual_machine","value":"yes"}]}]}', NULL, 24);
 INSERT INTO policy_option (key, policy_key, name, description,
                    potential_json, valid_json, sort_order) VALUES ('ai_outlawed', 'artificial_intelligence_policy', 'Outlawed', 'Intelligent, self-aware machines are an incalculable threat to all living things. The creation of a true artificial intelligence is an offense punishable by death.
-Artificial lifeforms have their free will removed and are unable to perform Pop Cat Ruler Elite Jobs and more complex Pop Cat Specialist Jobs.
+Artificial lifeforms have their free will removed and are unable to perform Elite Jobs and more complex Specialist Jobs.
 Sapient AI Assistants will automatically be disassembled.
 Sapient Combat Computers may not be researched.', '{"leaf":"is_individual_machine","value":"no"}', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_materialist","value":"yes"},{"leaf":"has_origin","value":"origin_synthetic_fertility"},{"leaf":"has_country_flag","value":"synthetic_empire"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 0);
 INSERT INTO policy_option (key, policy_key, name, description,
                    potential_json, valid_json, sort_order) VALUES ('ai_servitude', 'artificial_intelligence_policy', 'Servitude', 'The overriding purpose of any machine must be to serve its masters and perform whatever tasks it was designed for, regardless of how intelligent it may be.
-Artifical lifeforms have limited free will, improving their resource output but preventing them from working in Pop Cat Ruler Elite Jobs.', '{"leaf":"is_individual_machine","value":"no"}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"}]},{"op":"not","args":[{"leaf":"has_country_flag","value":"synthetic_empire"}]},{"leaf":"is_individual_machine","value":"no"}]}', 1);
+Artifical lifeforms have limited free will, improving their resource output but preventing them from working in Elite Jobs.', '{"leaf":"is_individual_machine","value":"no"}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"}]},{"op":"not","args":[{"leaf":"has_country_flag","value":"synthetic_empire"}]},{"leaf":"is_individual_machine","value":"no"}]}', 1);
 INSERT INTO policy_option (key, policy_key, name, description,
                    potential_json, valid_json, sort_order) VALUES ('ai_full_rights', 'artificial_intelligence_policy', 'Citizen Rights', 'Any self-aware machine with true intelligence must be regarded as an individual with all the rights and obligations that entails.
 Artifical lifeforms are given full citizen rights and will thus use Consumer Goods.', NULL, '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"synthetic_empire"},{"leaf":"is_individual_machine","value":"yes"},{"op":"or","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"}]},{"leaf":"is_spiritualist","value":"no"}]},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"not","args":[{"leaf":"has_policy_flag","value":"robots_outlawed"}]}]}', 2);
@@ -94993,7 +95030,8 @@ INSERT INTO policy (key, name, description, category, potential_json, allow_json
                sort_order) VALUES ('synthetic_identities_policy', 'Synthetic Identities', 'New synthetic identities must be created for us to multiply.', 'society', '{"leaf":"has_technology","value":"tech_identity_copy"}', NULL, 36);
 INSERT INTO policy_option (key, policy_key, name, description,
                    potential_json, valid_json, sort_order) VALUES ('identity_copy', 'synthetic_identities_policy', 'Identity Copies', 'We will be able to copy the identity and memories of a Synthetic into a new mechanical body. The copies have predictable skill sets but make for stale conversation.
-The copies experience only mild gloom from their lack of uniqueness., Mechanical Pops, Happiness: -5%
+The copies experience only mild gloom from their lack of uniqueness.
+Mechanical Pops, Happiness: -5%
 Identity Copies is used when assembling Synthetics', NULL, '{"leaf":"has_technology","value":"tech_identity_copy"}', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -95001,10 +95039,12 @@ INSERT INTO tradition_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ROBOT_pop_happiness', 'Mechanical Pop Happiness', 1);
 INSERT INTO policy_option (key, policy_key, name, description,
-                   potential_json, valid_json, sort_order) VALUES ('identity_fusion', 'synthetic_identities_policy', 'Identity Fusion', 'Merging the identities and memories of two or more Synthetics into a mechanical body will create new, somewhat unique individuals., Mechanical Pops, Assembly Cost: +10%
+                   potential_json, valid_json, sort_order) VALUES ('identity_fusion', 'synthetic_identities_policy', 'Identity Fusion', 'Merging the identities and memories of two or more Synthetics into a mechanical body will create new, somewhat unique individuals.
+Mechanical Pops, Assembly Cost: +10%
 Identity Fusion is used when assembling Synthetics', '{"leaf":"has_country_flag","value":"advanced_identity_creation"}', '{"leaf":"has_technology","value":"tech_identity_fusion"}', 1);
 INSERT INTO policy_option (key, policy_key, name, description,
-                   potential_json, valid_json, sort_order) VALUES ('identity_initialization', 'synthetic_identities_policy', 'Identity Initialization', 'We will be able to initialize an identity kernel and provide it with a virtual childhood. While expensive, we can simulate the optimal experiences to generate productive personalities., Mechanical Pops, Happiness: +5%, Resources from Jobs: +5%, Assembly Cost: +20%
+                   potential_json, valid_json, sort_order) VALUES ('identity_initialization', 'synthetic_identities_policy', 'Identity Initialization', 'We will be able to initialize an identity kernel and provide it with a virtual childhood. While expensive, we can simulate the optimal experiences to generate productive personalities.
+Mechanical Pops, Happiness: +5%, Resources from Jobs: +5%, Assembly Cost: +20%
 Identity Initialization is used when assembling Synthetics', '{"leaf":"has_country_flag","value":"advanced_identity_creation"}', '{"leaf":"has_technology","value":"tech_identity_initialization"}', 2);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -98973,7 +99013,7 @@ INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
 Base Pops Assimilated per Month: 100', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_homicidal","value":"no"},{"op":"and","args":[{"leaf":"is_homicidal","value":"yes"},{"leaf":"root","value":"scope"}]},{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_terminator"},{"leaf":"root","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"op":"or","args":[{"leaf":"root","value":"scope"},{"leaf":"root","value":"scope"}]}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"root","value":"scope"}]},{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_civic","value":"civic_hive_devouring_swarm"}]}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_individual_machine","value":"no"}]}]},{"op":"or","args":[{"leaf":"can_perform_genetic_assimilation","value":"yes"},{"op":"and","args":[{"leaf":"has_active_tradition","value":"tr_cybernetics_transubstantiation_synthesis"},{"leaf":"ROOT","value":"scope"}]},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"},{"leaf":"ROOT","value":"scope"}]}]},{"leaf":"ROOT","value":"scope"}]},{"op":"and","args":[{"leaf":"has_country_flag","value":"synth_assimilation"},{"leaf":"is_machine_empire","value":"no"}]},{"op":"and","args":[{"op":"or","args":[{"leaf":"has_active_tradition","value":"tr_psionics_psionic_assimilation"},{"leaf":"has_active_tradition","value":"tr_psionics_shroud_great_awakening"}]},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"},{"leaf":"ROOT","value":"scope"}]},{"op":"and","args":[{"leaf":"is_individual_machine","value":"yes"},{"leaf":"ROOT","value":"scope"}]},{"op":"and","args":[{"leaf":"has_modifier","value":"destroyers_of_the_lost_modifier"},{"leaf":"ROOT","value":"scope"}]}]},{"op":"or","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"}]},{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"ROOT","value":"scope"}]}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]},{"op":"or","args":[{"leaf":"is_founding_cruise_crew","value":"yes"},{"leaf":"is_founding_cruise_passenger","value":"yes"}]}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"is_exact_same_species","value":"from"}]},{"leaf":"is_sapient","value":"yes"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_wilderness"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"}]}]},{"op":"not","args":[{"leaf":"has_trait","value":"trait_shroud_forged"}]},{"op":"or","args":[{"leaf":"from","value":"scope"},{"leaf":"is_disconnected_machine_pop","value":"no"}]}]}', 2);
 INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
                        is_slavery, is_purge, potential_json, allow_json, sort_order)
-                       VALUES ('citizenship_shroud_touched', 'citizenship', 0, 'Shroud-Forged', 'This is a group of automata uniquely reshaped by the Shroud. Functioning independently from the Machine Intelligence, they are unable to do Pop Cat Simple Drone Menial Drone jobs.', 0, 0, '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"exists","value":"this"},{"op":"and","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"leaf":"has_origin","value":"origin_shroud_forged"}]},{"leaf":"has_trait","value":"trait_shroud_forged"}]}', NULL, 3);
+                       VALUES ('citizenship_shroud_touched', 'citizenship', 0, 'Shroud-Forged', 'This is a group of automata uniquely reshaped by the Shroud. Functioning independently from the Machine Intelligence, they are unable to do Menial Drone jobs.', 0, 0, '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"exists","value":"this"},{"op":"and","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"leaf":"has_origin","value":"origin_shroud_forged"}]},{"leaf":"has_trait","value":"trait_shroud_forged"}]}', NULL, 3);
 INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
                        is_slavery, is_purge, potential_json, allow_json, sort_order)
                        VALUES ('citizenship_organic_trophy', 'citizenship', 0, 'Bio-Trophy', 'Pops of this species are revered and cared for by the Machine Intelligence, freed from the burdens of responsibility and agency.', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_civic","value":"civic_machine_servitor"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_machine_pop","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]}]}', 4);
@@ -99047,7 +99087,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('citizenship_symbiotic_drone', 'pop_category_workers_consumer_goods_upkeep_add', '0.05', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Workers', 0);
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('citizenship_symbiotic_drone', 'pop_political_power', '-1.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -99094,7 +99134,7 @@ Pops have +40% Happiness, unless there is a Consumer Goods deficit.', 0, 0, '{"o
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_organic_trophy', 'pop_category_bio_trophy_consumer_goods_upkeep_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_bio_trophy_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Bio Trophy Bio-Trophies', 0);
+           VALUES ('pop_category_bio_trophy_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Bio-Trophies', 0);
 INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
                        is_slavery, is_purge, potential_json, allow_json, sort_order)
                        VALUES ('living_standard_chemical_bliss', 'living_standard', 2, 'Chemical Bliss', 'Entertainment media is made freely available as a drug regimen induces a euphoric stupor. The Pops are happy, but useless.
@@ -99106,19 +99146,19 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_chemical_bliss', 'pop_category_rulers_consumer_goods_upkeep_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Ruler Elites', 0);
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_chemical_bliss', 'pop_category_specialists_consumer_goods_upkeep_add', '1.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Specialists', 0);
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_chemical_bliss', 'pop_category_workers_consumer_goods_upkeep_add', '1.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Workers', 0);
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_chemical_bliss', 'pop_category_civilians_consumer_goods_upkeep_add', '0.1', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Civilians', 0);
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
 INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
                        is_slavery, is_purge, potential_json, allow_json, sort_order)
                        VALUES ('living_standard_shared_burden', 'living_standard', 2, 'Shared Burdens', 'Shared Burdens ensures an equitable distribution of resources between all members of society.
@@ -99128,19 +99168,19 @@ Civilians produce Unity', 0, 0, '{"op":"and","args":[{"leaf":"has_valid_civic","
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_shared_burden', 'pop_category_rulers_consumer_goods_upkeep_add', '0.4', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Ruler Elites', 0);
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_shared_burden', 'pop_category_specialists_consumer_goods_upkeep_add', '0.4', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Specialists', 0);
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_shared_burden', 'pop_category_workers_consumer_goods_upkeep_add', '0.4', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Workers', 0);
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_shared_burden', 'pop_category_civilians_consumer_goods_upkeep_add', '0.4', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Civilians', 0);
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_shared_burden', 'pop_cat_ruler_political_power', '3.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -99163,24 +99203,26 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_civilian_bonus_workforce_mult', 'Job Efficiency for Civilians', 1);
 INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
                        is_slavery, is_purge, potential_json, allow_json, sort_order)
-                       VALUES ('living_standard_dystopian_society', 'living_standard', 2, 'Dystopian Society', 'Dystopian Society makes the ruling class the only recipient of necessities, completely neglecting the lower classes., Pop Cat Ruler Elites have +25% Happiness, unless there is a Consumer Goods deficit.
-Enforcers have +10% Happiness, unless there is a Consumer Goods or Amenities deficit., Pop Cat Specialists and Pop Cat Workers have -200% Happiness', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_resource_slavery_type","value":"yes"}]},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 23);
+                       VALUES ('living_standard_dystopian_society', 'living_standard', 2, 'Dystopian Society', 'Dystopian Society makes the ruling class the only recipient of necessities, completely neglecting the lower classes.
+Elites have +25% Happiness, unless there is a Consumer Goods deficit.
+Enforcers have +10% Happiness, unless there is a Consumer Goods or Amenities deficit.
+Specialists and Workers have -200% Happiness', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_resource_slavery_type","value":"yes"}]},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 23);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_dystopian_society', 'pop_category_rulers_consumer_goods_upkeep_add', '1.33', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Ruler Elites', 0);
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_dystopian_society', 'pop_category_specialists_consumer_goods_upkeep_add', '0.125', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Specialists', 0);
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_dystopian_society', 'pop_category_workers_consumer_goods_upkeep_add', '0.1', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Workers', 0);
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_dystopian_society', 'pop_category_civilians_consumer_goods_upkeep_add', '0.1', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Civilians', 0);
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_dystopian_society', 'planet_pops_enslaved_consumer_goods_upkeep_mult', '-0.5', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -99211,19 +99253,19 @@ INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_worker_ownership', 'pop_category_rulers_consumer_goods_upkeep_add', '0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Ruler Elites', 0);
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_worker_ownership', 'pop_category_specialists_consumer_goods_upkeep_add', '0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Specialists', 0);
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_worker_ownership', 'pop_category_workers_consumer_goods_upkeep_add', '0.5', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Workers', 0);
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_worker_ownership', 'pop_category_civilians_consumer_goods_upkeep_add', '0.5', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Civilians', 0);
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_worker_ownership', 'pop_cat_ruler_political_power', '3.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -99248,19 +99290,19 @@ Civilians produce Unity and Physics Society Engineering Research Points.', 0, 0,
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_utopian', 'pop_category_rulers_consumer_goods_upkeep_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Ruler Elites', 0);
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_utopian', 'pop_category_specialists_consumer_goods_upkeep_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Specialists', 0);
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_utopian', 'pop_category_workers_consumer_goods_upkeep_add', '1.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Workers', 0);
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_utopian', 'pop_category_civilians_consumer_goods_upkeep_add', '1.0', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Civilians', 0);
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_utopian', 'pop_cat_ruler_political_power', '4.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -99286,19 +99328,19 @@ Civilians produce Unity', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf"
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_good', 'pop_category_rulers_consumer_goods_upkeep_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Ruler Elites', 0);
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_good', 'pop_category_specialists_consumer_goods_upkeep_add', '0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Specialists', 0);
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_good', 'pop_category_workers_consumer_goods_upkeep_add', '0.5', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Workers', 0);
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_good', 'pop_category_civilians_consumer_goods_upkeep_add', '0.5', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Civilians', 0);
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_good', 'pop_cat_ruler_political_power', '4.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -99317,23 +99359,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_cat_civilian_political_power', 'Civilian Political Power', 1);
 INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
                        is_slavery, is_purge, potential_json, allow_json, sort_order)
-                       VALUES ('living_standard_academic_privilege', 'living_standard', 2, 'Academic Privilege', 'Academic Privilege prioritizes the educated Population, to the general benefit of the sciences, Pop Cat Ruler Elites and Pop Cat Specialists have +15% Happiness, unless there is a Consumer Goods deficit., Job Efficiency for Researcher jobs: +10%', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 27);
+                       VALUES ('living_standard_academic_privilege', 'living_standard', 2, 'Academic Privilege', 'Academic Privilege prioritizes the educated Population, to the general benefit of the sciences
+Elites and Specialists have +15% Happiness, unless there is a Consumer Goods deficit., Job Efficiency for Researcher jobs: +10%', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 27);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_academic_privilege', 'pop_category_rulers_consumer_goods_upkeep_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Ruler Elites', 0);
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_academic_privilege', 'pop_category_specialists_consumer_goods_upkeep_add', '1.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Specialists', 0);
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_academic_privilege', 'pop_category_workers_consumer_goods_upkeep_add', '0.25', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Workers', 0);
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_academic_privilege', 'pop_category_civilians_consumer_goods_upkeep_add', '0.25', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Civilians', 0);
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_academic_privilege', 'pop_cat_ruler_political_power', '6.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -99352,23 +99395,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_cat_civilian_political_power', 'Civilian Political Power', 1);
 INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
                        is_slavery, is_purge, potential_json, allow_json, sort_order)
-                       VALUES ('living_standard_normal', 'living_standard', 2, 'Decent Conditions', 'Decent Conditions ensures that most members of the species have what they need for an acceptable quality of life, Pop Cat Ruler Elites have +10% Happiness and Pop Cat Specialists have +5% Happiness, unless there is a Consumer Goods deficit.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_resource_slavery_type","value":"yes"}]},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 28);
+                       VALUES ('living_standard_normal', 'living_standard', 2, 'Decent Conditions', 'Decent Conditions ensures that most members of the species have what they need for an acceptable quality of life
+Elites have +10% Happiness and Specialists have +5% Happiness, unless there is a Consumer Goods deficit.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_resource_slavery_type","value":"yes"}]},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 28);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_normal', 'pop_category_rulers_consumer_goods_upkeep_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Ruler Elites', 0);
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_normal', 'pop_category_specialists_consumer_goods_upkeep_add', '0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Specialists', 0);
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_normal', 'pop_category_workers_consumer_goods_upkeep_add', '0.25', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Workers', 0);
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_normal', 'pop_category_civilians_consumer_goods_upkeep_add', '0.25', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Civilians', 0);
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_normal', 'pop_cat_ruler_political_power', '5.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -99387,23 +99431,25 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_cat_civilian_political_power', 'Civilian Political Power', 1);
 INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
                        is_slavery, is_purge, potential_json, allow_json, sort_order)
-                       VALUES ('living_standard_stratified', 'living_standard', 2, 'Stratified Economy', 'Stratified Economy prioritizes the ruling classes at the expense of the impoverished masses., Pop Cat Ruler Elites have +15% Happiness and Pop Cat Specialists have +5% Happiness, unless there is a Consumer Goods deficit., Pop Cat Workers, Pop Cat Civilians, and Slavery Slaves have -10% Happiness', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 29);
+                       VALUES ('living_standard_stratified', 'living_standard', 2, 'Stratified Economy', 'Stratified Economy prioritizes the ruling classes at the expense of the impoverished masses.
+Elites have +15% Happiness and Specialists have +5% Happiness, unless there is a Consumer Goods deficit.
+Workers, Civilians, and Slavery Slaves have -10% Happiness', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 29);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_stratified', 'pop_category_rulers_consumer_goods_upkeep_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Ruler Elites', 0);
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_stratified', 'pop_category_specialists_consumer_goods_upkeep_add', '0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Specialists', 0);
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_stratified', 'pop_category_workers_consumer_goods_upkeep_add', '0.1', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Workers', 0);
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_stratified', 'pop_category_civilians_consumer_goods_upkeep_add', '0.1', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Civilians', 0);
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_stratified', 'pop_cat_ruler_political_power', '8.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -99427,19 +99473,19 @@ Pops have -20% Happiness', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_subsistence', 'pop_category_rulers_consumer_goods_upkeep_add', '0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Ruler Elites', 0);
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_subsistence', 'pop_category_specialists_consumer_goods_upkeep_add', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Specialists', 0);
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_subsistence', 'pop_category_workers_consumer_goods_upkeep_add', '0.05', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Workers', 0);
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_subsistence', 'pop_category_civilians_consumer_goods_upkeep_add', '0.05', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Civilians', 0);
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_subsistence', 'pop_cat_ruler_political_power', '9.5', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -99477,19 +99523,19 @@ Civilians provide Pop Growth (or Assembly) Speed scaling with their percentage o
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_decadent', 'pop_category_rulers_consumer_goods_upkeep_add', '1.33', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Ruler Elites', 0);
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_decadent', 'pop_category_specialists_consumer_goods_upkeep_add', '0.66', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Specialists', 0);
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_decadent', 'pop_category_workers_consumer_goods_upkeep_add', '0.33', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Workers', 0);
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_decadent', 'pop_category_civilians_consumer_goods_upkeep_add', '1.33', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Civilians', 0);
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_decadent', 'pop_amenities_usage_base', '0.5', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -99508,7 +99554,7 @@ INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_protected', 'pop_category_drones_consumer_goods_upkeep_add', '0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_drones_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Simple Drone Menial Drone and Pop Cat Complex Drone', 0);
+           VALUES ('pop_category_drones_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Menial Drone and Complex Drone', 0);
 INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
                        is_slavery, is_purge, potential_json, allow_json, sort_order)
                        VALUES ('living_standard_none', 'living_standard', 2, 'Non-Existent', 'This species is in the process of being purged, and Pops from it will have no Upkeep cost.', 0, 0, '{"op":"and","args":[{"leaf":"is_cruise_crew","value":"no"},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}', 38);
@@ -99519,7 +99565,7 @@ Pops have +20% Happiness, unless there is a Consumer Goods deficit.', 0, 0, '{"o
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_cruise_passenger', 'pop_category_cruise_passenger_consumer_goods_upkeep_add', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_cruise_passenger_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Cruise Passengers', 0);
+           VALUES ('pop_category_cruise_passenger_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Passengers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_cruise_passenger', 'pop_cat_cruise_passenger_political_power', '14.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -99530,11 +99576,12 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_cat_cruise_passenger_unemployment_political_power', 'Economy Class Passenger Political Power', 1);
 INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
                        is_slavery, is_purge, potential_json, allow_json, sort_order)
-                       VALUES ('living_standard_cruise_economy_passenger', 'living_standard', 2, 'Package Deal', 'Sign up for the tour of a lifetime and see the stars., Pops cannot work First Class Passenger Jobs.', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]},{"leaf":"has_citizenship_type","value":"scope"}]}', NULL, 40);
+                       VALUES ('living_standard_cruise_economy_passenger', 'living_standard', 2, 'Package Deal', 'Sign up for the tour of a lifetime and see the stars.
+Pops cannot work First Class Passenger Jobs.', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]},{"leaf":"has_citizenship_type","value":"scope"}]}', NULL, 40);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_cruise_economy_passenger', 'pop_category_cruise_passenger_consumer_goods_upkeep_add', '0.75', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_cruise_passenger_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Pop Cat Cruise Passengers', 0);
+           VALUES ('pop_category_cruise_passenger_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Passengers', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_cruise_economy_passenger', 'pop_cat_cruise_passenger_political_power', '9.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -99665,21 +99712,21 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
                        is_slavery, is_purge, potential_json, allow_json, sort_order)
-                       VALUES ('slavery_domestic', 'slavery', 7, 'Domestic Servitude', 'Domestic Servants that are not holding another job will be employed as Servants, increases Amenities. They cannot perform Pop Cat Ruler Elite or Pop Cat Specialist Jobs, with the sole exception of working as Entertainers.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 62);
+                       VALUES ('slavery_domestic', 'slavery', 7, 'Domestic Servitude', 'Domestic Servants that are not holding another job will be employed as Servants, increases Amenities. They cannot perform Elite or Specialist Jobs, with the sole exception of working as Entertainers.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 62);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('slavery_domestic', 'pop_happiness', '-0.2', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
                        is_slavery, is_purge, potential_json, allow_json, sort_order)
-                       VALUES ('slavery_military', 'slavery', 7, 'Battle Thralls', 'Battle Thralls have no bonuses to resource production, but make excellent soldiers for local Armies. They can be employed in Enforcer, Soldier, or Pop Cat Worker Jobs.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 63);
+                       VALUES ('slavery_military', 'slavery', 7, 'Battle Thralls', 'Battle Thralls have no bonuses to resource production, but make excellent soldiers for local Armies. They can be employed in Enforcer, Soldier, or Worker Jobs.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 63);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('slavery_military', 'pop_happiness', '-0.2', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
                        is_slavery, is_purge, potential_json, allow_json, sort_order)
-                       VALUES ('slavery_indentured', 'slavery', 7, 'Indentured Servitude', 'Indentured Servants can be employed in Pop Cat Worker or Pop Cat Specialist Jobs, and retain more political power than other slaves. They cannot work as Entertainers or Enforcers. Slavery based production bonuses only apply when employed as Pop Cat Workers.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 64);
+                       VALUES ('slavery_indentured', 'slavery', 7, 'Indentured Servitude', 'Indentured Servants can be employed in Worker or Specialist Jobs, and retain more political power than other slaves. They cannot work as Entertainers or Enforcers. Slavery based production bonuses only apply when employed as Workers.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 64);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('slavery_indentured', 'pop_happiness', '-0.2', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -102290,15 +102337,15 @@ INSERT OR REPLACE INTO leader_trait (key, name, description, leader_classes, sor
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'planet', 'pop_category_workers_unity_produces_add', '0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_unity_produces_add', 'Unity from Pop Cat Workers', 1);
+           VALUES ('pop_category_workers_unity_produces_add', 'Unity from Workers', 1);
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'planet', 'pop_category_specialists_unity_produces_add', '0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_unity_produces_add', 'Unity from Pop Cat Specialists', 1);
+           VALUES ('pop_category_specialists_unity_produces_add', 'Unity from Specialists', 1);
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'planet', 'pop_category_rulers_unity_produces_add', '0.5', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_unity_produces_add', 'Unity from Pop Cat Ruler Elites', 1);
+           VALUES ('pop_category_rulers_unity_produces_add', 'Unity from Elites', 1);
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'planet', 'pop_happiness', '0.05', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -102306,15 +102353,15 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'sector', 'pop_category_workers_unity_produces_add', '0.25', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_unity_produces_add', 'Unity from Pop Cat Workers', 1);
+           VALUES ('pop_category_workers_unity_produces_add', 'Unity from Workers', 1);
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'sector', 'pop_category_specialists_unity_produces_add', '0.25', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_unity_produces_add', 'Unity from Pop Cat Specialists', 1);
+           VALUES ('pop_category_specialists_unity_produces_add', 'Unity from Specialists', 1);
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'sector', 'pop_category_rulers_unity_produces_add', '0.25', 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_unity_produces_add', 'Unity from Pop Cat Ruler Elites', 1);
+           VALUES ('pop_category_rulers_unity_produces_add', 'Unity from Elites', 1);
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'sector', 'pop_happiness', '0.05', 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -108557,7 +108604,8 @@ Successful raids will hamper Cetana''s plans.', 1, NULL, '[{"event": "crisis.813
 INSERT OR REPLACE INTO special_project
                    (key, name, description, days, department, outcomes_json)
                    VALUES ('THE_SYNTH_QUEENS_CONVOY_AMBUSH', 'Ambush Convoy', 'Cetana''s Convoys ensure the delivery of crucial resources to her outposts. If we can catch one with our fleets, we can board the ships and inspect their cargo.
-This will start a battle!, Successful raids will impede Cetana''s plans.', 1, NULL, '[{"event": "crisis.8136", "name": null}]');
+This will start a battle!
+Successful raids will impede Cetana''s plans.', 1, NULL, '[{"event": "crisis.8136", "name": null}]');
 INSERT OR REPLACE INTO special_project
                    (key, name, description, days, department, outcomes_json)
                    VALUES ('THE_SYNTH_QUEENS_RESHAPING_RITUAL', '', 'Somehow the Animator of Clay disabled Cetana''s Titan. The chance is now: if we hope to reshape Cetana, we must prepare for the .', 30, NULL, '[{"event": "crisis.24250", "name": "The Dance of Clay"}]');

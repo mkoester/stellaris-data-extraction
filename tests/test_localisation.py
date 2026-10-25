@@ -79,6 +79,19 @@ class TestCleanLoc(unittest.TestCase):
                          'produce Unity', loc, keep_newlines=True)
         self.assertEqual(out, 'Happiness.\nCivilians produce Unity')
 
+    def test_an_icon_opening_a_line_is_no_indent(self):
+        # 4.5.2 DYSTOPIAN_LIVING_STANDARDS_POP_EFFECTS: a stratum's icon (dropped) opens a line
+        loc = {'WORKERS': '£pop_cat_worker£\u00a0$pop_cat_worker_plural$',
+               'pop_cat_worker_plural': 'Workers'}
+        out = _clean_loc('deficit.\\n\\n$WORKERS$ have §R-200%§! Happiness', loc,
+                         keep_newlines=True)
+        self.assertEqual(out, 'deficit.\nWorkers have -200% Happiness')
+
+    def test_four_spaces_indent_a_sub_item(self):
+        loc = {'t': '    '}
+        out = _clean_loc('Starting Technologies:\\n$t$Lasers\\n$t$Shields', loc, keep_newlines=True)
+        self.assertEqual(out, 'Starting Technologies: Lasers, Shields')
+
 
 class TestLoadLocalisation(unittest.TestCase):
     def write_and_load(self, content: str) -> dict[str, str]:
