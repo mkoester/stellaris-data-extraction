@@ -1034,16 +1034,29 @@ CREATE TABLE prescripted_name (
     text TEXT NOT NULL                     -- e.g. "Dolores Muwanga"
 );
 -- Species rights (common/species_rights/<kind>/): every option per kind, `kind` being the save's
--- field in country.modules.standard_species_rights_module.primary.
+-- field in country.modules.standard_species_rights_module.primary, with its tooltip and the
+-- unconditional pop group modifiers it grants (species_right_modifier).
+DROP TABLE IF EXISTS species_right_modifier;
 DROP TABLE IF EXISTS species_right;
 CREATE TABLE species_right (
     key            TEXT PRIMARY KEY,       -- e.g. "living_standard_normal"
     kind           TEXT NOT NULL,          -- citizenship / living_standard / military_service / …
     kind_order     INTEGER NOT NULL,       -- the game's order of the kinds
     name           TEXT,                   -- e.g. "Decent Conditions"
+    description    TEXT,                   -- the game's tooltip (`<key>_tooltip`)
+    is_slavery     INTEGER NOT NULL DEFAULT 0, -- a citizenship whose species takes a slavery type
+    is_purge       INTEGER NOT NULL DEFAULT 0, -- a citizenship whose species takes a purge type
     potential_json TEXT,
     allow_json     TEXT,
     sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE species_right_modifier (
+    right_key   TEXT NOT NULL,
+    modifier    TEXT NOT NULL,             -- e.g. "pop_bonus_workforce_mult"
+    value       REAL NOT NULL,
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (right_key, modifier),
+    FOREIGN KEY (right_key) REFERENCES species_right(key)
 );
 -- Leader traits (common/traits, the leader files) and their untriggered modifiers by scope
 -- (country, self, councilor, fleet, army, planet, sector), for the empire dashboard.

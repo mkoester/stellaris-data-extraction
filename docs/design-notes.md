@@ -513,7 +513,10 @@ reader can evaluate a `some_trigger = yes` leaf by its body (1,575 of 1,587 in 4
 `$PARAM$` are skipped, `has_parameters`). `edict.prerequisites_json`: the techs an edict needs.
 `species_right` (rights.py): every option of `common/species_rights/<kind>/`, with `kind` as the
 save names the field and `kind_order` the game's order. Their triggers are in the species' scope
-with the country as `from`; `unwrap_from` folds `from = { … }` in.
+with the country as `from`; `unwrap_from` folds `from = { … }` in. `description` is the game's
+tooltip (`<key>_tooltip`); `is_slavery` / `is_purge` mark the citizenships whose species take a
+slavery or purge type (the other types do nothing without one); `species_right_modifier` holds
+the unconditional `pop_group_modifier` entries (`right_modifiers`; triggered ones left out).
 
 ## Prescripted names (`extract_prescripted_names`, misc.py)
 

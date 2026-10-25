@@ -462,7 +462,7 @@ Examples:
     extract_prescripted_names(loc, name_keys, w)
     extract_scripted_triggers(install_dir, w)
     print(f"\n[species rights] {install_dir / 'common' / 'species_rights'}", file=progress)
-    extract_species_rights(install_dir, loc, w, progress)
+    extract_species_rights(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[leader traits] {install_dir / 'common' / 'traits'}", file=progress)
     extract_leader_traits(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[empire focus] {install_dir / 'common' / 'country_focus'}", file=progress)

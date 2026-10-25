@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Species rights carry the game's tooltip, which citizenships take a slavery or purge type, and
+  the modifiers each right grants its pops (`species_right_modifier`), for the empire dashboard.
+
+### Fixed
+
+- A tooltip line opening with an icon is no longer folded into the line above
+  ("Adds the Tankbound trait., Farmers, …").
+
 ## [0.1.1] - 2026-10-24
 
 ### Added

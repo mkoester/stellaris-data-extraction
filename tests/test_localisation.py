@@ -71,6 +71,14 @@ class TestCleanLoc(unittest.TestCase):
         out = _clean_loc('- Rule one\\n- Rule two', {}, keep_newlines=True)
         self.assertEqual(out, 'Rule one\nRule two')
 
+    def test_a_tag_opening_a_line_is_no_indent(self):
+        # 4.5.2 UNEMPLOYED_PRODUCE_UNITY (Social Welfare's tooltip): the dropped icon's space
+        # used to fold the line into the one above, "Happiness., Civilians produce Unity"
+        loc = {'job_civilian_plural': 'Civilians'}
+        out = _clean_loc('Happiness§!.\\n\\n§Y[civilian.GetIcon]\u00a0[civilian.GetNamePlural]§! '
+                         'produce Unity', loc, keep_newlines=True)
+        self.assertEqual(out, 'Happiness.\nCivilians produce Unity')
+
 
 class TestLoadLocalisation(unittest.TestCase):
     def write_and_load(self, content: str) -> dict[str, str]:

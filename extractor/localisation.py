@@ -191,6 +191,10 @@ def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False,
     # [command] strip would drop it. Non-job scopes fall through and are stripped.
     s = _LOC_SCOPE_NAME.sub(
         lambda m: loc.get('job_' + m.group(1) + ('_plural' if m.group(2) else ''), ''), s)
+    # A tag opening a line takes its space along ("\n§Y[civilian.GetIcon]\u00a0Civilians", a
+    # no-break space in the game's text): left behind, it would read as the indent of a sub-item
+    # and fold the line into the one above.
+    s = re.sub(r'(^|\\n|\n)((?:§[A-Za-z!])*)\[[^\]]*\][ \u00a0]', r'\1\2', s)
     s = _LOC_COMMAND.sub('', s)        # drop leftover [Command.Chain] tags
     s = _LOC_FMT_CODE.sub('', s)       # strip §X colour codes
     s = _LOC_ICON.sub(_render_icon, s) # £icon£ → word (or dropped, if decoration)
