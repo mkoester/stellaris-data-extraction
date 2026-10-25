@@ -12,7 +12,9 @@ All notable changes to this project are documented here. The format follows
   the modifiers each right grants its pops (`species_right_modifier`), for the empire dashboard.
 - `action_timer`: the timed modifiers and timed flags each decision, artifact action, astral
   action, relic, diplomatic action, federation law and enclave deal sets or waits on, for the
-  empire dashboard's cooldowns; `astral_action_cooldown`, each astral action's own cooldown.
+  empire dashboard's cooldowns — those set by the events an action fires included, and a timer
+  only an effect's `limit` waits on as role `bonus` (the action stays possible: Insult with
+  Satisfying Insults); `astral_action_cooldown`, each astral action's own cooldown.
 
 ### Fixed
 

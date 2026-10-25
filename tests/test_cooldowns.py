@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.cooldowns import action_timers, astral_cooldowns, expand_inline, gates, timers
+from extractor.cooldowns import action_timers, astral_cooldowns, expand_inline, fired, gates, timers
 
 # Shaped like artifact_arcane_deciphering (common/artifact_actions/artifact_actions.txt, 4.5.2).
 ARTIFACT = """
@@ -62,7 +62,7 @@ class TestMoreSources(unittest.TestCase):
     def test_gate_in_the_effects_limit(self):
         d = parse(INSULT)
         self.assertEqual(action_timers([], [d['on_accept']]),
-                         [('modifier', 'satisfying_insult_recently', 'cooldown', 1800)])
+                         [('modifier', 'satisfying_insult_recently', 'bonus', 1800)])
 
     def test_inline_script_with_parameters(self):
         script = 'NOT = { has_modifier = relic_activation_cooldown } last_activated_relic = $RELIC$'
@@ -80,6 +80,26 @@ class TestMoreSources(unittest.TestCase):
     def test_astral_action_cooldowns(self):
         d = parse('@ten = 3600\naction_lock = { cooldown = @ten }\naction_other = { unlock_threshold = 3 }')
         self.assertEqual(astral_cooldowns(d, {}), {'action_lock': 3600})
+
+
+class TestFiredEvents(unittest.TestCase):
+    # Find Military Applications (4.5.2): its effect fires ancrel.10010, whose option adds the
+    # Combat Drugs modifier
+    def test_timers_of_the_events_it_fires(self):
+        effect = parse('effect = { add_modifier = { modifier = artifact_find_applications_cooldown days = 900 } '
+                       'owner = { country_event = { id = ancrel.10010 } } }')['effect']
+        event = parse('e = { id = ancrel.10010 option = { add_modifier = { '
+                      'modifier = artifact_find_military_application_army years = 5 } } }')['e']
+        events = {'ancrel.10010': event}
+        self.assertEqual(fired([effect], events), [event])
+        self.assertIn(('modifier', 'artifact_find_military_application_army', 'effect', 1800),
+                      action_timers([], [effect], events=events))
+
+    def test_a_loop_of_events_ends(self):
+        events = {'a.1': parse('e = { id = a.1 immediate = { country_event = { id = a.2 } } }')['e'],
+                  'a.2': parse('e = { id = a.2 immediate = { country_event = { id = a.1 } } }')['e']}
+        start = parse('x = { country_event = { id = a.1 } }')['x']
+        self.assertEqual(len(fired([start], events, depth=5)), 2)
 
 
 if __name__ == '__main__':

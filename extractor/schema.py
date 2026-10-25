@@ -1118,7 +1118,8 @@ CREATE TABLE action_timer (
     action_key  TEXT NOT NULL,             -- e.g. "artifact_arcane_deciphering", an enclave option's name key
     action_name TEXT,
     role        TEXT NOT NULL,             -- cooldown: the action waits for it to end (NOT = { has_* });
-                                           -- effect: the action only sets it
+                                           -- bonus: only an `if` in its effect waits (the action
+                                           -- stays possible, without that part); effect: only sets it
     days        INTEGER,                   -- its length where the action sets it with a number
     PRIMARY KEY (timer_kind, timer_key, action_kind, action_key)
 );

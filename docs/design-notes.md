@@ -515,8 +515,14 @@ missing). The dashboard shows outcomes only behind a spoiler setting.
 federation laws (`potential`/`allow`, `on_enact`): the timed modifiers (`add_modifier` with `days`,
 `@vars` from `common/scripted_variables`) and timed flags (`set_timed_*_flag`) it sets, and the
 modifiers and flags it needs absent (`NOT = { has_* }`) — in its triggers, or in the `limit` of an
-`if` in its effect that sets the same timer (Satisfying Insults).
-`role = cooldown` for those it waits on, `effect` for those it only sets. A waited-on key need not
+`if` in its effect that sets the same timer (Satisfying Insults). Timers set by the events an
+action fires (`fired()`, two levels, every `events/*.txt` indexed) count as its effects: Find
+Military Applications adds its Combat Drugs modifier in `ancrel.10010`'s option. Enclave options
+are not followed — their events are menus, and a "back" option would collect every other option's
+timers (40 effect rows → 463).
+`role = cooldown` for those its triggers wait on, `bonus` for those only an effect's `limit` waits
+on (the action stays possible, it just does not set the timer again: Insult with Satisfying
+Insults, checked in game 2026-10-25), `effect` for those it only sets. A waited-on key need not
 be a timer (`NOT = { has_country_flag = attacked_xuracorp }` is permanent); the dashboard only
 matches keys the save holds with an end date. `days` is null where the length is an unresolved
 `@var` (the traders' `@traderDealDuration`). 4.5.2: 531 rows.

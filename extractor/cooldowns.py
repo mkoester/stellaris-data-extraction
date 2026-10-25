@@ -7,6 +7,7 @@ import sys
 import re
 from .clausewitz import Parser, parse_file, tokenize
 from .localisation import _clean_loc
+from .situations import event_ids
 from .values import _as_blocks
 from .writer import Writer
 
@@ -128,21 +129,49 @@ def timers(effect, variables: dict[str, float] | None = None) -> dict[tuple[str,
     return out
 
 
+def fired(effect_blocks: list, events: dict, depth: int = 2) -> list:
+    """The events an effect fires (`country_event = { id = ancrel.10010 }`), and theirs, up to
+    `depth` levels: Find Military Applications sets its Combat Drugs modifier in the event's
+    option, not in its own effect."""
+    out: list = []
+    seen: set[str] = set()
+    level = [i for b in effect_blocks for i in event_ids(b)]
+    for _ in range(depth):
+        nxt: list[str] = []
+        for i in level:
+            if i in seen or i not in events:
+                continue
+            seen.add(i)
+            out.append(events[i])
+            nxt += event_ids({k: v for k, v in events[i].items() if k != 'id'})
+        level = nxt
+    return out
+
+
 def action_timers(gate_blocks: list, effect_blocks: list,
-                  variables: dict[str, float] | None = None) -> list[tuple[str, str, str, int | None]]:
-    """(kind, key, role, days): `cooldown` for a timer the action waits on (whether it sets it
-    or something else does; in its triggers or in its effect's `limit`s), `effect` for one it
-    only sets."""
+                  variables: dict[str, float] | None = None,
+                  events: dict | None = None) -> list[tuple[str, str, str, int | None]]:
+    """(kind, key, role, days): `cooldown` for a timer the action waits on in its triggers
+    (whether it sets it or something else does), `bonus` for one only its effect's `limit` waits
+    on — the action stays possible, it just does not set it again (Satisfying Insults) — and
+    `effect` for one it only sets."""
     waits: set[tuple[str, str]] = set()
     for b in gate_blocks:
         waits |= gates(b)
     sets: dict[tuple[str, str], int | None] = {}
+    bonus: set[tuple[str, str]] = set()
     for b in effect_blocks:
         sets.update(timers(b, variables))
-        waits |= {g for g in effect_gates(b) if g in sets}
+        bonus |= {g for g in effect_gates(b) if g in sets}
+    bonus -= waits
+    for ev in fired(effect_blocks, events or {}):
+        for k, d in timers(ev, variables).items():
+            sets.setdefault(k, d)
     return sorted(
         [(k, key, 'cooldown', sets.get((k, key))) for k, key in waits]
-        + [(k, key, 'effect', d) for (k, key), d in sets.items() if (k, key) not in waits])
+        + [(k, key, 'bonus', sets.get((k, key))) for k, key in bonus]
+        + [(k, key, 'effect', d) for (k, key), d in sets.items()
+           if (k, key) not in waits | bonus])
 
 
 # ── Extraction ────────────────────────────────────────────────────────────────
@@ -214,6 +243,17 @@ def astral_cooldowns(data: dict, variables: dict[str, float]) -> dict[str, int]:
 def extract_action_timers(install_dir: Path, loc: dict[str, str], scripted_vars: dict[str, float],
                           load_script, w: Writer, progress=sys.stderr) -> None:
     common = install_dir / 'common'
+    events: dict = {}
+    for f in sorted((install_dir / 'events').glob('*.txt')):
+        try:
+            data_file = parse_file(f)
+        except Exception as e:  # one broken file must not stop the rest
+            print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+            continue
+        for ev_type in ('country_event', 'planet_event', 'ship_event', 'fleet_event', 'event'):
+            for ev in _as_blocks(data_file.get(ev_type)):
+                if isinstance(ev.get('id'), str):
+                    events.setdefault(ev['id'], ev)
     n = n_astral = 0
     for folder, kind, gate_keys, effect_keys in _ACTION_DIRS:
         for f in _files(common / folder):
@@ -223,7 +263,8 @@ def extract_action_timers(install_dir: Path, loc: dict[str, str], scripted_vars:
                     continue
                 triggers = [data.get(k) for k in gate_keys]
                 triggers += [t for b in triggers for t in expand_inline(b, load_script)]
-                rows = action_timers(triggers, [data.get(k) for k in effect_keys], scripted_vars)
+                rows = action_timers(triggers, [data.get(k) for k in effect_keys], scripted_vars,
+                                     events)
                 n += _insert(w, kind, key, _name(loc, kind, key, data), rows)
             if kind == 'astral_action':
                 for key, days in sorted(astral_cooldowns(data_file, scripted_vars).items()):
@@ -241,6 +282,8 @@ def extract_action_timers(install_dir: Path, loc: dict[str, str], scripted_vars:
                 if not key:
                     continue
                 rest = {k: v for k, v in option.items() if k not in ('allow', 'trigger')}
+                # not following the events an option fires: enclave events are menus, and "back"
+                # would credit every other option's timers to it
                 rows = action_timers([option.get('allow'), option.get('trigger')], [rest])
                 n += _insert(w, 'enclave', key,
                              _text(loc, key) or _text(loc, _key(event.get('title'))), rows)

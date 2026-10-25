@@ -1113,7 +1113,8 @@ CREATE TABLE action_timer (
     action_key  TEXT NOT NULL,             -- e.g. "artifact_arcane_deciphering", an enclave option's name key
     action_name TEXT,
     role        TEXT NOT NULL,             -- cooldown: the action waits for it to end (NOT = { has_* });
-                                           -- effect: the action only sets it
+                                           -- bonus: only an `if` in its effect waits (the action
+                                           -- stays possible, without that part); effect: only sets it
     days        INTEGER,                   -- its length where the action sets it with a number
     PRIMARY KEY (timer_kind, timer_key, action_kind, action_key)
 );
@@ -108921,7 +108922,7 @@ INSERT OR REPLACE INTO action_timer
                VALUES ('modifier', 'penal_colony', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'cooldown', -1);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
-               VALUES ('modifier', 'penal_experimental_sentencing', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'cooldown', -1);
+               VALUES ('modifier', 'penal_experimental_sentencing', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'bonus', -1);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('modifier', 'resort_colony', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'cooldown', NULL);
@@ -109146,6 +109147,9 @@ INSERT OR REPLACE INTO action_timer
                VALUES ('modifier', 'arcane_deciphering_cooldown', 'artifact_action', 'artifact_arcane_deciphering', 'Reverse-Engineer Arcane Technology', 'cooldown', 720);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'arcane_insight', 'artifact_action', 'artifact_arcane_deciphering', 'Reverse-Engineer Arcane Technology', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('flag', 'completed_lcluster_chain', 'artifact_action', 'artifact_lgate_clue', 'Discover L-Gate Insight', 'cooldown', NULL);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
@@ -109164,7 +109168,43 @@ INSERT OR REPLACE INTO action_timer
                VALUES ('modifier', 'artifact_find_applications_cooldown', 'artifact_action', 'artifact_find_military_applications', 'Find Military Applications', 'cooldown', 900);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_military_application_armor_damage', 'artifact_action', 'artifact_find_military_applications', 'Find Military Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_military_application_army', 'artifact_action', 'artifact_find_military_applications', 'Find Military Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_military_application_army_machine', 'artifact_action', 'artifact_find_military_applications', 'Find Military Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_military_application_shield_damage', 'artifact_action', 'artifact_find_military_applications', 'Find Military Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('modifier', 'artifact_find_applications_cooldown', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'cooldown', 900);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_amenities', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_amenities_hivemind', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_amenities_machine', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_consumer_goods', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_happy_bios', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_leader_improvement', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_leader_improvement_hivemind', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_leader_improvement_machine', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('modifier', 'artifact_sell_cooldown', 'artifact_action', 'artifact_sell_collector', 'Sell to Private Collectors', 'cooldown', 180);
@@ -109394,6 +109434,12 @@ INSERT OR REPLACE INTO action_timer
                VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_zro_crystal', 'Psionic Archive', 'cooldown', 3600);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_zro_crystal_martial', 'relic', 'r_zro_crystal', 'Psionic Archive', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_zro_crystal_state', 'relic', 'r_zro_crystal', 'Psionic Archive', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('flag', 'relic_last_baol_activated', 'relic', 'r_the_last_baol', 'The Last Baol', 'effect', 3600);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
@@ -109404,6 +109450,18 @@ INSERT OR REPLACE INTO action_timer
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('modifier', 'relic_defragmentor', 'relic', 'r_the_defragmentor', 'The Defragmentor', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'reality_perforator_1', 'relic', 'r_reality_perforator', 'Vultaum Reality Perforator', 'effect', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'reality_perforator_2', 'relic', 'r_reality_perforator', 'Vultaum Reality Perforator', 'effect', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'reality_perforator_3', 'relic', 'r_reality_perforator', 'Vultaum Reality Perforator', 'effect', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'reality_perforator_4', 'relic', 'r_reality_perforator', 'Vultaum Reality Perforator', 'effect', 360);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_reality_perforator', 'Vultaum Reality Perforator', 'cooldown', 3600);
@@ -109610,13 +109668,16 @@ INSERT OR REPLACE INTO action_timer
                VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_ask_to_join_federation', 'Ask to join Federation', 'cooldown', NULL);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'arkship_breached_closed_borders_recently', 'diplomatic_action', 'action_close_borders', 'Close Borders', 'effect', 1080);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_demand_subjugation', 'Propose Subjugation', 'cooldown', NULL);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_ask_to_become_subjugated', 'Ask to be their Subject', 'cooldown', NULL);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
-               VALUES ('modifier', 'satisfying_insult_recently', 'diplomatic_action', 'action_insult', 'Insult', 'cooldown', 1800);
+               VALUES ('modifier', 'satisfying_insult_recently', 'diplomatic_action', 'action_insult', 'Insult', 'bonus', 1800);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_pledge_secret_fealty', 'Pledge Secret Fealty', 'cooldown', NULL);
@@ -109635,6 +109696,9 @@ INSERT OR REPLACE INTO action_timer
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('modifier', 'failed_betrayal_status_quo', 'diplomatic_action', 'action_propose_secret_fealty', 'Propose Secret Fealty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'recent_comms_timed', 'diplomatic_action', 'action_reveal_presence', 'Reveal Our Presence', 'effect', 3600);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('modifier', 'culture_shock_diplomacy', 'diplomatic_action', 'action_reveal_presence', 'Reveal Our Presence', 'effect', 1800);
