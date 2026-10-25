@@ -6,7 +6,7 @@ import json
 import sqlite3
 import sys
 from . import __version__
-from .buildings import (extract_anomaly_levels, extract_buildings_ref, extract_district_zone_names,
+from .buildings import (extract_anomaly_levels, script_loader, extract_buildings_ref, extract_district_zone_names,
                         extract_resources)
 from .clausewitz import parse_file
 from .colony_types import extract_colony_types
@@ -470,8 +470,8 @@ Examples:
     extract_focus(install_dir, loc, w, progress)
     print(f"\n[situations + special projects] {install_dir / 'common' / 'situations'}", file=progress)
     extract_situations(install_dir, loc, w, progress)
-    print(f"\n[action timers] decisions, artifact and astral actions, enclave deals", file=progress)
-    extract_action_timers(install_dir, loc, w, progress)
+    print(f"\n[action timers] decisions, artifact and astral actions, relics, diplomatic actions, federation laws, enclave deals", file=progress)
+    extract_action_timers(install_dir, loc, scripted_vars, script_loader(inline_scripts_dir), w, progress)
     print(f"\n[federations] {install_dir / 'common' / 'federation_types'}", file=progress)
     extract_federations(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[resolutions + agreement terms] {install_dir / 'common' / 'resolutions'}", file=progress)

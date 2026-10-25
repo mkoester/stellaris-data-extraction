@@ -1113,13 +1113,21 @@ DROP TABLE IF EXISTS action_timer;
 CREATE TABLE action_timer (
     timer_kind  TEXT NOT NULL,             -- modifier / flag
     timer_key   TEXT NOT NULL,             -- e.g. "arcane_deciphering_cooldown"
-    action_kind TEXT NOT NULL,             -- decision / artifact_action / astral_action / enclave
+    action_kind TEXT NOT NULL,             -- decision / artifact_action / astral_action / relic /
+                                           -- diplomatic_action / federation_law / enclave
     action_key  TEXT NOT NULL,             -- e.g. "artifact_arcane_deciphering", an enclave option's name key
     action_name TEXT,
     role        TEXT NOT NULL,             -- cooldown: the action waits for it to end (NOT = { has_* });
                                            -- effect: the action only sets it
     days        INTEGER,                   -- its length where the action sets it with a number
     PRIMARY KEY (timer_kind, timer_key, action_kind, action_key)
+);
+-- An astral action's own cooldown (`cooldown`, days): tracked by the engine, not by a modifier.
+DROP TABLE IF EXISTS astral_action_cooldown;
+CREATE TABLE astral_action_cooldown (
+    key   TEXT PRIMARY KEY,                -- e.g. "action_dimensional_lock"
+    name  TEXT,
+    days  INTEGER NOT NULL
 );
 -- Situations (common/situations) and their approaches, special projects (common/special_projects).
 DROP TABLE IF EXISTS situation_approach;

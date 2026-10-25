@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.cooldowns import action_timers, gates, timers
+from extractor.cooldowns import action_timers, astral_cooldowns, expand_inline, gates, timers
 
 # Shaped like artifact_arcane_deciphering (common/artifact_actions/artifact_actions.txt, 4.5.2).
 ARTIFACT = """
@@ -44,6 +44,42 @@ class TestTimers(unittest.TestCase):
         self.assertEqual(action_timers([d['allow']], [d['effect']]), [
             ('flag', 'deciphered_recently', 'effect', 720),
             ('modifier', 'arcane_deciphering_cooldown', 'cooldown', 720)])
+
+
+# Shaped like action_insult's on_accept (common/diplomatic_actions/00_actions.txt, 4.5.2): the
+# cooldown is checked in the effect's own `limit`.
+INSULT = """
+on_accept = {
+	if = {
+		limit = { has_technology = tech_satisfying_insults NOT = { has_modifier = satisfying_insult_recently } }
+		add_modifier = { modifier = satisfying_insult_recently years = 5 }
+	}
+}
+"""
+
+
+class TestMoreSources(unittest.TestCase):
+    def test_gate_in_the_effects_limit(self):
+        d = parse(INSULT)
+        self.assertEqual(action_timers([], [d['on_accept']]),
+                         [('modifier', 'satisfying_insult_recently', 'cooldown', 1800)])
+
+    def test_inline_script_with_parameters(self):
+        script = 'NOT = { has_modifier = relic_activation_cooldown } last_activated_relic = $RELIC$'
+        load = {'relics/activation_checks': script}.get
+        d = parse('possible = { inline_script = { script = relics/activation_checks RELIC = r_x } }')
+        [body] = expand_inline(d['possible'], load)
+        self.assertEqual(body['last_activated_relic'], 'r_x')
+        self.assertEqual(gates(body), {('modifier', 'relic_activation_cooldown')})
+
+    def test_days_from_a_scripted_variable(self):
+        d = parse('e = { add_modifier = { modifier = relic_activation_cooldown days = @triumph_duration } }')
+        self.assertEqual(timers(d['e'], {'@triumph_duration': 3600.0}),
+                         {('modifier', 'relic_activation_cooldown'): 3600})
+
+    def test_astral_action_cooldowns(self):
+        d = parse('@ten = 3600\naction_lock = { cooldown = @ten }\naction_other = { unlock_threshold = 3 }')
+        self.assertEqual(astral_cooldowns(d, {}), {'action_lock': 3600})
 
 
 if __name__ == '__main__':

@@ -1,10 +1,11 @@
-"""Extraction: the timers of decisions, artifact and astral actions and enclave deals — the
-timed modifiers and timed flags an action sets, and those it waits on (for the empire
-dashboard's upcoming list: "available again", "ends")."""
+"""Extraction: the timers of decisions, artifact and astral actions, relics, diplomatic actions,
+federation laws and enclave deals — the timed modifiers and timed flags an action sets, and those
+it waits on (for the empire dashboard's upcoming list: "available again", "ends")."""
 
 from pathlib import Path
 import sys
-from .clausewitz import parse_file
+import re
+from .clausewitz import Parser, parse_file, tokenize
 from .localisation import _clean_loc
 from .values import _as_blocks
 from .writer import Writer
@@ -29,12 +30,16 @@ def _key(v) -> str | None:
     return v.strip('"') if isinstance(v, str) and not v.startswith('@') else None
 
 
-def _days(block: dict) -> int | None:
-    """`days`, `months` (30 days) or `years` (360 days) of a timer, where a number."""
+def _days(block: dict, variables: dict[str, float] | None = None) -> int | None:
+    """`days`, `months` (30 days) or `years` (360 days) of a timer, where a number or a known
+    `@variable` (relics' `@triumph_duration` lives in common/scripted_variables)."""
     for k, scale in (('days', 1), ('months', 30), ('years', 360)):
+        v = block.get(k)
+        if isinstance(v, str) and v.startswith('@') and variables:
+            v = variables.get(v)
         try:
-            return int(float(str(block[k]))) * scale
-        except (KeyError, ValueError):
+            return int(float(str(v))) * scale
+        except (TypeError, ValueError):
             continue
     return None
 
@@ -63,7 +68,47 @@ def gates(trigger) -> set[tuple[str, str]]:
     return out
 
 
-def timers(effect) -> dict[tuple[str, str], int | None]:
+def effect_gates(effect) -> set[tuple[str, str]]:
+    """The gates inside an effect's `limit` blocks: `if = { limit = { NOT = { has_modifier = x } }
+    add_modifier = x }` (Satisfying Insults) waits on x as an `allow` would."""
+    out: set[tuple[str, str]] = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            if 'limit' in node:
+                for b in _as_blocks(node['limit']):
+                    out.update(gates(b))
+        for c in _children(node):
+            walk(c)
+
+    walk(effect)
+    return out
+
+
+def expand_inline(node, load) -> list:
+    """The parsed bodies of the `inline_script = { script = x PARAM = y }` references inside a
+    block, `$PARAM$` substituted (relics' `possible`: `relics/activation_checks`)."""
+    out: list = []
+
+    def walk(n):
+        if isinstance(n, dict):
+            for ref in _as_blocks(n.get('inline_script')) + [
+                    {'script': v} for v in ([n.get('inline_script')] if isinstance(n.get('inline_script'), str) else [])]:
+                text = load(str(ref.get('script', '')).strip('"'))
+                if text is None:
+                    continue
+                for k, v in ref.items():
+                    if k != 'script':
+                        text = text.replace(f'${k}$', str(v).strip('"'))
+                out.append(Parser(tokenize(text)).parse())
+        for c in _children(n):
+            walk(c)
+
+    walk(node)
+    return out
+
+
+def timers(effect, variables: dict[str, float] | None = None) -> dict[tuple[str, str], int | None]:
     """The timed modifiers (`add_modifier = { modifier days }`) and timed flags
     (`set_timed_*_flag = { flag days }`) an effect sets, with their length in days."""
     out: dict[tuple[str, str], int | None] = {}
@@ -73,7 +118,7 @@ def timers(effect) -> dict[tuple[str, str], int | None]:
             for k, v in node.items():
                 for b in _as_blocks(v) if k == 'add_modifier' or k in _TIMED_FLAGS else []:
                     key = _key(b.get('modifier' if k == 'add_modifier' else 'flag'))
-                    days = _days(b)
+                    days = _days(b, variables)
                     if key and (days is not None or k in _TIMED_FLAGS or 'days' in b):
                         out[('modifier' if k == 'add_modifier' else 'flag', key)] = days
         for c in _children(node):
@@ -83,15 +128,18 @@ def timers(effect) -> dict[tuple[str, str], int | None]:
     return out
 
 
-def action_timers(gate_blocks: list, effect_blocks: list) -> list[tuple[str, str, str, int | None]]:
+def action_timers(gate_blocks: list, effect_blocks: list,
+                  variables: dict[str, float] | None = None) -> list[tuple[str, str, str, int | None]]:
     """(kind, key, role, days): `cooldown` for a timer the action waits on (whether it sets it
-    or something else does), `effect` for one it only sets."""
+    or something else does; in its triggers or in its effect's `limit`s), `effect` for one it
+    only sets."""
     waits: set[tuple[str, str]] = set()
     for b in gate_blocks:
         waits |= gates(b)
     sets: dict[tuple[str, str], int | None] = {}
     for b in effect_blocks:
-        sets.update(timers(b))
+        sets.update(timers(b, variables))
+        waits |= {g for g in effect_gates(b) if g in sets}
     return sorted(
         [(k, key, 'cooldown', sets.get((k, key))) for k, key in waits]
         + [(k, key, 'effect', d) for (k, key), d in sets.items() if (k, key) not in waits])
@@ -99,9 +147,17 @@ def action_timers(gate_blocks: list, effect_blocks: list) -> list[tuple[str, str
 
 # ── Extraction ────────────────────────────────────────────────────────────────
 
-# Folders of actions the player takes, with the action kind recorded.
-_ACTION_DIRS = (('decisions', 'decision'), ('artifact_actions', 'artifact_action'),
-                ('astral_actions', 'astral_action'))
+# Folders of actions the player takes: the kind recorded, the trigger blocks it is gated by and
+# the effect blocks it runs.
+_ACTION_DIRS = (
+    ('decisions', 'decision', ('potential', 'allow'), ('effect',)),
+    ('artifact_actions', 'artifact_action', ('potential', 'allow'), ('effect',)),
+    ('astral_actions', 'astral_action', ('potential', 'allow'), ('effect',)),
+    ('relics', 'relic', ('possible',), ('active_effect',)),
+    ('diplomatic_actions', 'diplomatic_action', ('potential', 'possible'), ('on_accept', 'on_decline')),
+    ('federation_laws', 'federation_law', ('potential', 'allow'), ('on_enact',)),
+)
+_LAW_CATEGORY = re.compile(r'\blaw_category_[a-z_0-9]+')
 # Enclave deals are event options (4.5.2: traders, artisans and curators in leviathans_events_1,
 # the Overlord enclaves in overlord_enclaves_events).
 _ENCLAVE_EVENTS = ('leviathans_events_1.txt', 'overlord_enclaves_events.txt')
@@ -129,18 +185,51 @@ def _insert(w: Writer, kind: str, key: str, name: str | None, rows) -> int:
     return len(rows)
 
 
-def extract_action_timers(install_dir: Path, loc: dict[str, str], w: Writer,
-                          progress=sys.stderr) -> None:
+def _name(loc: dict[str, str], kind: str, key: str, data: dict) -> str | None:
+    if kind == 'diplomatic_action':  # action_insult → ACTION_INSULT_TITLE "Insult"
+        return _text(loc, f'{key.upper()}_TITLE') or _text(loc, key)
+    if kind == 'federation_law':  # "Succession Term: 10 Years"
+        m = _LAW_CATEGORY.search(str(data.get('allow')))
+        cat = _text(loc, m.group(0)) if m else None
+        return f'{cat}: {_text(loc, key)}' if cat and _text(loc, key) else _text(loc, key)
+    return _text(loc, key)
+
+
+def astral_cooldowns(data: dict, variables: dict[str, float]) -> dict[str, int]:
+    """An astral action's own `cooldown` (days; the engine tracks it, no modifier), per action."""
+    local = {k: v for k, v in data.items() if k.startswith('@')}
+    out: dict[str, int] = {}
+    for key, block in data.items():
+        if key.startswith('@') or not isinstance(block, dict) or 'cooldown' not in block:
+            continue
+        v = block['cooldown']
+        v = local.get(v, variables.get(v)) if isinstance(v, str) and v.startswith('@') else v
+        try:
+            out[key] = int(float(str(v)))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def extract_action_timers(install_dir: Path, loc: dict[str, str], scripted_vars: dict[str, float],
+                          load_script, w: Writer, progress=sys.stderr) -> None:
     common = install_dir / 'common'
-    n = 0
-    for folder, kind in _ACTION_DIRS:
+    n = n_astral = 0
+    for folder, kind, gate_keys, effect_keys in _ACTION_DIRS:
         for f in _files(common / folder):
-            for key, data in parse_file(f).items():
+            data_file = parse_file(f)
+            for key, data in data_file.items():
                 if key.startswith('@') or not isinstance(data, dict):
                     continue
-                rows = action_timers([data.get('potential'), data.get('allow')],
-                                     [data.get('effect')])
-                n += _insert(w, kind, key, _text(loc, key), rows)
+                triggers = [data.get(k) for k in gate_keys]
+                triggers += [t for b in triggers for t in expand_inline(b, load_script)]
+                rows = action_timers(triggers, [data.get(k) for k in effect_keys], scripted_vars)
+                n += _insert(w, kind, key, _name(loc, kind, key, data), rows)
+            if kind == 'astral_action':
+                for key, days in sorted(astral_cooldowns(data_file, scripted_vars).items()):
+                    w.execute("INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) "
+                              "VALUES (?, ?, ?)", (key, _text(loc, key), days))
+                    n_astral += 1
     for name in _ENCLAVE_EVENTS:
         f = install_dir / 'events' / name
         if not f.is_file():
@@ -155,5 +244,5 @@ def extract_action_timers(install_dir: Path, loc: dict[str, str], w: Writer,
                 rows = action_timers([option.get('allow'), option.get('trigger')], [rest])
                 n += _insert(w, 'enclave', key,
                              _text(loc, key) or _text(loc, _key(event.get('title'))), rows)
-    print(f"  {n} action timers", file=progress)
+    print(f"  {n} action timers, {n_astral} astral action cooldowns", file=progress)
     w.commit()

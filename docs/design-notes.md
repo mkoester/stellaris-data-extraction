@@ -510,12 +510,18 @@ missing). The dashboard shows outcomes only behind a spoiler setting.
 
 `action_timer`: for each decision, artifact action and astral action (`potential`, `allow`,
 `effect`) and each enclave event option (`leviathans_events_1.txt`, `overlord_enclaves_events.txt`:
-`allow`/`trigger`, the rest as effect), the timed modifiers (`add_modifier` with `days`) and timed
-flags (`set_timed_*_flag`) it sets, and the modifiers and flags it needs absent (`NOT = { has_* }`).
+`allow`/`trigger`, the rest as effect), relics (`possible` with its `inline_script` expanded,
+`active_effect`), diplomatic actions (`potential`/`possible`, `on_accept`/`on_decline`) and
+federation laws (`potential`/`allow`, `on_enact`): the timed modifiers (`add_modifier` with `days`,
+`@vars` from `common/scripted_variables`) and timed flags (`set_timed_*_flag`) it sets, and the
+modifiers and flags it needs absent (`NOT = { has_* }`) — in its triggers, or in the `limit` of an
+`if` in its effect that sets the same timer (Satisfying Insults).
 `role = cooldown` for those it waits on, `effect` for those it only sets. A waited-on key need not
 be a timer (`NOT = { has_country_flag = attacked_xuracorp }` is permanent); the dashboard only
 matches keys the save holds with an end date. `days` is null where the length is an unresolved
-`@var` (the traders' `@traderDealDuration`). 4.5.2: 312 rows.
+`@var` (the traders' `@traderDealDuration`). 4.5.2: 531 rows.
+`astral_action_cooldown`: each astral action's own `cooldown` (days; the engine tracks it, no
+modifier) — 8 in 4.5.2.
 
 ## Scripted triggers, edict prerequisites, species rights
 

@@ -1108,13 +1108,21 @@ DROP TABLE IF EXISTS action_timer;
 CREATE TABLE action_timer (
     timer_kind  TEXT NOT NULL,             -- modifier / flag
     timer_key   TEXT NOT NULL,             -- e.g. "arcane_deciphering_cooldown"
-    action_kind TEXT NOT NULL,             -- decision / artifact_action / astral_action / enclave
+    action_kind TEXT NOT NULL,             -- decision / artifact_action / astral_action / relic /
+                                           -- diplomatic_action / federation_law / enclave
     action_key  TEXT NOT NULL,             -- e.g. "artifact_arcane_deciphering", an enclave option's name key
     action_name TEXT,
     role        TEXT NOT NULL,             -- cooldown: the action waits for it to end (NOT = { has_* });
                                            -- effect: the action only sets it
     days        INTEGER,                   -- its length where the action sets it with a number
     PRIMARY KEY (timer_kind, timer_key, action_kind, action_key)
+);
+-- An astral action's own cooldown (`cooldown`, days): tracked by the engine, not by a modifier.
+DROP TABLE IF EXISTS astral_action_cooldown;
+CREATE TABLE astral_action_cooldown (
+    key   TEXT PRIMARY KEY,                -- e.g. "action_dimensional_lock"
+    name  TEXT,
+    days  INTEGER NOT NULL
 );
 -- Situations (common/situations) and their approaches, special projects (common/special_projects).
 DROP TABLE IF EXISTS situation_approach;
@@ -108913,7 +108921,7 @@ INSERT OR REPLACE INTO action_timer
                VALUES ('modifier', 'penal_colony', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'cooldown', -1);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
-               VALUES ('modifier', 'penal_experimental_sentencing', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'effect', -1);
+               VALUES ('modifier', 'penal_experimental_sentencing', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'cooldown', -1);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('modifier', 'resort_colony', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'cooldown', NULL);
@@ -109202,6 +109210,671 @@ INSERT OR REPLACE INTO action_timer
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('flag', 'lateral_artifacting_available', 'astral_action', 'action_lateral_artifacting', 'Lateral Artifacting', 'effect', NULL);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_astral_boost', 'Astral Boost', 1800);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_astral_siphon', 'Astral Siphon', 3600);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_astral_splitting', 'Astral Splitting', 3600);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_dimensional_lock', 'Dimensional Lock', 3600);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_flash_forge_hyper_relay', 'Flash Forge Hyper Relay', 900);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_gain_physics_insight', 'Gain Physics Insight', 1800);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_lateral_artifacting', 'Lateral Artifacting', 3600);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_summon_dimensional_fleet', 'Summon Dimensional Fleet', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_modularium', 'The Modularium', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_flowmetal_alloy', 'Flowmetal Alloy', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'crystallinus_diffuser_machine_empire_triumph', 'relic', 'r_crystallinus_diffuser', 'Crystallinus Diffuser', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'crystallinus_diffuser_modifier', 'relic', 'r_crystallinus_diffuser', 'Crystallinus Diffuser', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_crystallinus_diffuser', 'Crystallinus Diffuser', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'everchanging_stone_modifier', 'relic', 'r_everchanging_stone', 'Ever-changing Stone', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_everchanging_stone', 'Ever-changing Stone', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'pulsestone_modifier', 'relic', 'r_pulsestone', 'Pulsestone', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_pulsestone', 'Pulsestone', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'gavel_of_the_tribunal_galcom', 'relic', 'r_gavel_of_the_tribunal', 'Gavel of the Tribunal', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'gavel_of_the_tribunal_no_galcom', 'relic', 'r_gavel_of_the_tribunal', 'Gavel of the Tribunal', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'gavel_of_the_tribunal_no_galcom_nomads', 'relic', 'r_gavel_of_the_tribunal', 'Gavel of the Tribunal', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_gavel_of_the_tribunal', 'Gavel of the Tribunal', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'entangled_relay_modifier', 'relic', 'r_entangled_relay', 'Entangled Relay', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'entangled_relay_nomads_modifier', 'relic', 'r_entangled_relay', 'Entangled Relay', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_entangled_relay', 'Entangled Relay', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'prototype_vir_core_modifier', 'relic', 'r_prototype_vir_core', 'Prototype VIR Core', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_prototype_vir_core', 'Prototype VIR Core', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_propagandosphere', 'Propagandosphere', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_executus_compendium', 'Executus Compendium', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_pattern_maker', 'The Pattern Maker', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_vaporous_mega_orchid', 'Vaporous Mega-Orchid', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_tiyanki_matriarch_nerve_core', 'Tiyanki Matriarch Nerve Core', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tiyanki_matriarch_nerve_core', 'relic', 'r_tiyanki_matriarch_nerve_core', 'Tiyanki Matriarch Nerve Core', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_preservation_chamber', 'Preservation Chamber', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'celestial_resonator_modifier', 'relic', 'r_celestial_resonator', 'Celestial Resonator', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_celestial_resonator', 'Celestial Resonator', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_celestial_chart_4', 'Celestial Chart', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_mutated_voidworm_nest', 'Mutated Voidworm Nest', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'ether_drake_triumph', 'relic', 'r_dragon_trophy', 'Ether Drake Trophy', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_dragon_trophy', 'Ether Drake Trophy', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'drums_of_war', 'relic', 'r_khans_throne', 'Khan''s Throne', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_khans_throne', 'Khan''s Throne', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_worm_scales', 'Scales of the Worm', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'worm_scales', 'relic', 'r_worm_scales', 'Scales of the Worm', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_rubricator', 'The Rubricator', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_galaxy', 'Miniature Galaxy', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_omnicodex', 'The Omnicodex', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_surveyor', 'The Surveyor', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_galatron', 'The Galatron', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'ancient_sword', 'relic', 'r_ancient_sword', 'Blade of the Huntress', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_ancient_sword', 'Blade of the Huntress', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_severed_head', 'Head of Zarqlan', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'severed_head_modifier', 'relic', 'r_severed_head', 'Head of Zarqlan', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_odryskan_crystal', 'Crystal of Odryskia', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_rulerchip', 'RulerChip', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'rulerchip_intergenerational_knowledge', 'relic', 'r_the_rulerchip', 'RulerChip', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_voidspawn_myocardium', 'Voidspawn Myocardium', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'voidslayers', 'relic', 'r_voidspawn_myocardium', 'Voidspawn Myocardium', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'voidspawn_devourer', 'relic', 'r_voidspawn_myocardium', 'Voidspawn Myocardium', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_prethoryn_queen', 'Prethoryn Brood-Queen', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_unbidden_warlock', 'Extradimensional Warlock', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'unbidden_ritual', 'relic', 'r_unbidden_warlock', 'Extradimensional Warlock', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'contingency_calculation', 'relic', 'r_contingency_core', 'Isolated Contingency Core', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_contingency_core', 'Isolated Contingency Core', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'cetanas_heart_hive_modifier', 'relic', 'r_cetanas_heart', 'Cetana''s Heart', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_cetanas_heart', 'Cetana''s Heart', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_zro_crystal', 'Psionic Archive', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'relic_last_baol_activated', 'relic', 'r_the_last_baol', 'The Last Baol', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_last_baol', 'The Last Baol', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_defragmentor', 'The Defragmentor', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_defragmentor', 'relic', 'r_the_defragmentor', 'The Defragmentor', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_reality_perforator', 'Vultaum Reality Perforator', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'javorian_pox', 'relic', 'r_pox_sample', 'Javorian Pox Sample', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_pox_sample', 'Javorian Pox Sample', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_cryo_core', 'Yuht Cryo Core', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'yuht_cryo_core', 'relic', 'r_cryo_core', 'Yuht Cryo Core', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_war_forge', 'Cybrex War Forge', 'cooldown', 900);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_A', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_B', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_F', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_G', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_K', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_M', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_M_giant', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_T_dwarf', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_black_hole', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_crisis_empire_star', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_crisis_star', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_lightbringer', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_neutron', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_pulsar', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_rift_star', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_toxic_god', 'Maw of the Toxic Entity', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'jump_drive_allowed', 'relic', 'r_wormhole_key', 'The Key', 'effect', 100);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'paragon_relic_wormhole_key', 'relic', 'r_wormhole_key', 'The Key', 'effect', 100);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_wormhole_key', 'The Key', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_core_of_the_reckoning', 'Core of the Reckoning', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'ever_spinning_top_modifier', 'relic', 'r_ever_spinning_top', 'Ever Spinning Top', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_ever_spinning_top', 'Ever Spinning Top', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_celestial_tear', 'Celestial Tear', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_plasmic_core', 'Plasmic Core', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_infinity_root', 'Infinity Root', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_time_crystal', 'Time Crystal', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_daedalus_seal', 'Daedalus Seal', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_lost_patron', 'The Dreamer', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_continuum', 'The Continuum', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'eternal_throne_modifier', 'relic', 'r_eternal_throne', 'Eternal Throne', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_eternal_throne', 'Eternal Throne', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_weather_manipulator', 'The Disturbance Oppressor', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'storm_relic_repelling_field_modifier', 'relic', 'r_weather_manipulator', 'The Disturbance Oppressor', 'effect', 1080);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'started_placing_storm', 'relic', 'r_the_tempest_invocator', 'The Tempest Invocator', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_tempest_invocator', 'The Tempest Invocator', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tempest_invocator_active_modifier', 'relic', 'r_the_tempest_invocator', 'The Tempest Invocator', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'pyroglyphic_codex_mod', 'relic', 'r_pyroglyphic_codex', 'Pyroglyphic Codex', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_pyroglyphic_codex', 'Pyroglyphic Codex', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'relic_cs_trigger', 'relic', 'r_crystallized_singularity', 'Crystallized Singularity', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'crystallized_singularity_mod', 'relic', 'r_crystallized_singularity', 'Crystallized Singularity', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_crystallized_singularity', 'Crystallized Singularity', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'cfl_trophy', 'relic', 'r_cfl_trophy', 'Champion''s Forge Live! Trophy', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_cfl_trophy', 'Champion''s Forge Live! Trophy', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_tarnished_cfl_trophy', 'Tarnished Champion''s Forge Live! Trophy', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tarnished_cfl_trophy', 'relic', 'r_tarnished_cfl_trophy', 'Tarnished Champion''s Forge Live! Trophy', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'solarpunk_country', 'diplomatic_action', 'action_improve_relation', NULL, 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'fotd_seperatist_country', 'diplomatic_action', 'action_build_spy_network', NULL, 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'solarpunk_country', 'diplomatic_action', 'action_build_spy_network', NULL, 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'solarpunk_country', 'diplomatic_action', 'action_harm_relation', NULL, 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'proxy_war_cooldown', 'diplomatic_action', 'action_start_proxy_war', 'Start Proxy War', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_form_defensive_pact', 'Form Defensive Pact', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_form_non_aggression_pact', 'Form Non-Aggression Pact', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_form_waystation_pact', 'Form Wayline Pact', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_form_research_agreement', 'Form Research Agreement', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_guarantee_independence', 'Guarantee Independence', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_support_independence', 'Support Independence', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_form_migration_pact', 'Offer Migration Treaty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_offer_federation_association_status', NULL, 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_ask_for_federation_association_status', NULL, 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_invite_to_federation', 'Invite to Federation', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_ask_to_join_federation', 'Ask to join Federation', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_demand_subjugation', 'Propose Subjugation', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_ask_to_become_subjugated', 'Ask to be their Subject', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'satisfying_insult_recently', 'diplomatic_action', 'action_insult', 'Insult', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_pledge_secret_fealty', 'Pledge Secret Fealty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'failed_betrayal', 'diplomatic_action', 'action_pledge_secret_fealty', 'Pledge Secret Fealty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'failed_betrayal_status_quo', 'diplomatic_action', 'action_pledge_secret_fealty', 'Pledge Secret Fealty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_propose_secret_fealty', 'Propose Secret Fealty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'failed_betrayal', 'diplomatic_action', 'action_propose_secret_fealty', 'Propose Secret Fealty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'failed_betrayal_status_quo', 'diplomatic_action', 'action_propose_secret_fealty', 'Propose Secret Fealty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'culture_shock_diplomacy', 'diplomatic_action', 'action_reveal_presence', 'Reveal Our Presence', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'solarpunk_country', 'diplomatic_action', 'action_societal_enlightenment', 'Offer Societal Guidance', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'solarpunk_country', 'diplomatic_action', 'action_open_technological_enlightenment', 'Provide Technology', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'tech_frozen', 'diplomatic_action', 'action_open_technological_enlightenment', 'Provide Technology', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_centralization_cooldown', 'federation_law', 'centralization_minimal', 'Federation Centralization: Minimal', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_centralization_cooldown', 'federation_law', 'centralization_low', 'Federation Centralization: Low', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_centralization_cooldown', 'federation_law', 'centralization_medium', 'Federation Centralization: Medium', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_centralization_cooldown', 'federation_law', 'centralization_high', 'Federation Centralization: High', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_centralization_cooldown', 'federation_law', 'centralization_very_high', 'Federation Centralization: Very High', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_none', 'Fleet Contribution: None', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_low', 'Fleet Contribution: Low', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_medium', 'Fleet Contribution: Medium', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_high', 'Fleet Contribution: High', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_low_trade', 'Fleet Contribution: Low', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_medium_trade', 'Fleet Contribution: Medium', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_high_trade', 'Fleet Contribution: High', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_low_research', 'Fleet Contribution: Low', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_medium_research', 'Fleet Contribution: Medium', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_low_martial', 'Fleet Contribution: Low', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_medium_martial', 'Fleet Contribution: Medium', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_high_martial', 'Fleet Contribution: High', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_low_hegemony', 'Fleet Contribution: Low', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_medium_hegemony', 'Fleet Contribution: Medium', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_high_hegemony', 'Fleet Contribution: High', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_type_rotation', 'Succession Type: Rotation', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_type_cooldown', 'federation_law', 'succession_type_rotation', 'Succession Type: Rotation', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_type_challenge', 'Succession Type: Challenge', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_type_cooldown', 'federation_law', 'succession_type_challenge', 'Succession Type: Challenge', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_type_random', 'Succession Type: Random', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_type_cooldown', 'federation_law', 'succession_type_random', 'Succession Type: Random', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_type_cooldown', 'federation_law', 'succession_type_strongest', 'Succession Type: Strongest', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_type_cooldown', 'federation_law', 'succession_type_strongest_hegemony', 'Succession Type: Strongest', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_term_years_10', 'Succession Term: 10 Years', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_term_years_20', 'Succession Term: 20 Years', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_term_years_30', 'Succession Term: 30 Years', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_term_years_40', 'Succession Term: 40 Years', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_term_status_change', 'Succession Term: Status Change', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_build_fleets_cooldown', 'federation_law', 'federation_build_fleets_everyone', 'Federation Fleet Construction: Everyone', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_build_fleets_cooldown', 'federation_law', 'federation_build_fleets_only_leader', 'Federation Fleet Construction: Only Leader', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_allow_subjects_to_join_cooldown', 'federation_law', 'allow_subjects_to_join_no', 'Can Subjects Join: No', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_allow_subjects_to_join_cooldown', 'federation_law', 'allow_subjects_to_join_yes', 'Can Subjects Join: Yes', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_voting_weight_cooldown', 'federation_law', 'vote_weight_equal', 'Vote Weight: Equal', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_voting_weight_cooldown', 'federation_law', 'vote_weight_diplomatic', 'Vote Weight: Diplomatic', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_war_declaration_vote_cooldown', 'federation_law', 'declare_war_unanimous_vote', 'War Declaration: Unanimous Vote', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_war_declaration_vote_cooldown', 'federation_law', 'declare_war_majority_vote', 'War Declaration: Majority Vote', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_war_declaration_vote_cooldown', 'federation_law', 'declare_war_majority_vote_hegemony', 'War Declaration: Majority Vote', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_war_declaration_vote_cooldown', 'federation_law', 'declare_war_president_vote', 'War Declaration: President Decides', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_invite_members_vote_cooldown', 'federation_law', 'invite_members_unanimous_vote', 'Invite Members: Unanimous Vote', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_invite_members_vote_cooldown', 'federation_law', 'invite_members_president_vote', 'Invite Members: President Decides', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_invite_members_vote_cooldown', 'federation_law', 'invite_members_president_vote_hegemony', 'Invite Members: President Decides', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_invite_members_vote_cooldown', 'federation_law', 'invite_members_majority_vote', 'Invite Members: Majority Vote', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_kick_members_vote_cooldown', 'federation_law', 'kick_members_majority_vote', 'Kick Members: Majority Vote', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_kick_members_vote_cooldown', 'federation_law', 'kick_members_president_vote', 'Kick Members: President Decides', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_kick_members_vote_cooldown', 'federation_law', 'kick_members_president_vote_hegemony', 'Kick Members: President Decides', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_free_migration_cooldown', 'federation_law', 'free_migration_no', 'Free Migration: Disabled', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_free_migration_cooldown', 'federation_law', 'free_migration_yes', 'Free Migration: Enabled', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_separate_treaties_cooldown', 'federation_law', 'treaties_separate_no', 'Separate Treaties: Prohibited', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_separate_treaties_cooldown', 'federation_law', 'treaties_separate_yes', 'Separate Treaties: Allowed', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_challenge_cooldown', 'federation_law', 'challenge_type_arena_combat', 'Succession Challenge Type: Arena Combat', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_challenge_cooldown', 'federation_law', 'challenge_type_psionic_battle', 'Succession Challenge Type: Psionic Battle', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_challenge_cooldown', 'federation_law', 'challenge_type_bidding_war', 'Succession Challenge Type: Golden Rule', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_challenge_cooldown', 'federation_law', 'challenge_type_thesis', 'Succession Challenge Type: Thesis Defense', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_challenge_cooldown', 'federation_law', 'challenge_type_conclave', 'Succession Challenge Type: Spiritual Conclave', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_power_cooldown', 'federation_law', 'succession_power_economy', 'Succession Power: Economy', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_power_cooldown', 'federation_law', 'succession_power_diplomatic_weight', 'Succession Power: Diplomatic Weight', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_power_cooldown', 'federation_law', 'succession_power_tech', 'Succession Power: Technology', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_power_cooldown', 'federation_law', 'succession_power_fleet', 'Succession Power: Fleets', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_type_cooldown', 'federation_law', 'succession_type_none', 'None', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_term_perpetual', 'Perpetual', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_separate_treaties_cooldown', 'federation_law', 'treaties_separate_no_imperial_loyalists', 'Separate Treaties: Prohibited', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_centralization_cooldown', 'federation_law', 'centralization_imperial_loyalists', 'Galactic Imperium', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_kick_members_vote_cooldown', 'federation_law', 'kick_members_president_vote_imperial_loyalists', 'President Decides', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_war_declaration_vote_cooldown', 'federation_law', 'declare_war_president_vote_imperial_loyalists', 'President Decides', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_invite_members_vote_cooldown', 'federation_law', 'invite_members_president_vote_imperial_loyalists', 'President Decides', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_allow_subjects_to_join_cooldown', 'federation_law', 'allow_subjects_to_join_yes_imperial_loyalists', 'Yes', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_voting_weight_cooldown', 'federation_law', 'vote_weight_diplomatic_imperial_loyalists', 'Diplomatic', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_commercial_pact_cooldown', 'federation_law', 'commercial_pact_no', 'Commercial Pacts: Disabled', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_commercial_pact_cooldown', 'federation_law', 'commercial_pact_yes', 'Commercial Pacts: Enabled', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_research_pact_cooldown', 'federation_law', 'research_pact_no', 'Research Agreements: Disabled', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_research_pact_cooldown', 'federation_law', 'research_pact_yes', 'Research Agreements: Enabled', 'cooldown', NULL);
 INSERT OR REPLACE INTO action_timer
                (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
                VALUES ('flag', 'attacked_xuracorp', 'enclave', 'leviathans.130.a', '1 Exotic Gases Exotic Gases/month for 10 Energy Credits/month.', 'cooldown', NULL);
