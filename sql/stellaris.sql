@@ -1029,16 +1029,29 @@ CREATE TABLE prescripted_name (
     text TEXT NOT NULL                     -- e.g. "Dolores Muwanga"
 );
 -- Species rights (common/species_rights/<kind>/): every option per kind, `kind` being the save's
--- field in country.modules.standard_species_rights_module.primary.
+-- field in country.modules.standard_species_rights_module.primary, with its tooltip and the
+-- unconditional pop group modifiers it grants (species_right_modifier).
+DROP TABLE IF EXISTS species_right_modifier;
 DROP TABLE IF EXISTS species_right;
 CREATE TABLE species_right (
     key            TEXT PRIMARY KEY,       -- e.g. "living_standard_normal"
     kind           TEXT NOT NULL,          -- citizenship / living_standard / military_service / …
     kind_order     INTEGER NOT NULL,       -- the game's order of the kinds
     name           TEXT,                   -- e.g. "Decent Conditions"
+    description    TEXT,                   -- the game's tooltip (`<key>_tooltip`)
+    is_slavery     INTEGER NOT NULL DEFAULT 0, -- a citizenship whose species takes a slavery type
+    is_purge       INTEGER NOT NULL DEFAULT 0, -- a citizenship whose species takes a purge type
     potential_json TEXT,
     allow_json     TEXT,
     sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE species_right_modifier (
+    right_key   TEXT NOT NULL,
+    modifier    TEXT NOT NULL,             -- e.g. "pop_bonus_workforce_mult"
+    value       REAL NOT NULL,
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (right_key, modifier),
+    FOREIGN KEY (right_key) REFERENCES species_right(key)
 );
 -- Leader traits (common/traits, the leader files) and their untriggered modifiers by scope
 -- (country, self, councilor, fleet, army, planet, sector), for the empire dashboard.
@@ -1088,6 +1101,29 @@ CREATE TABLE focus_reward (
     options_json TEXT,                     -- [{"tech":"tech_x","when":<trigger>|null}]: the research option it adds
                                            -- (permanent until researched), by if/else branch
     sort_order  INTEGER NOT NULL DEFAULT 0
+);
+-- Timers of player actions (decisions, artifact and astral actions, enclave deals): the timed
+-- modifiers and timed flags an action sets or waits on, for the empire dashboard's upcoming list.
+DROP TABLE IF EXISTS action_timer;
+CREATE TABLE action_timer (
+    timer_kind  TEXT NOT NULL,             -- modifier / flag
+    timer_key   TEXT NOT NULL,             -- e.g. "arcane_deciphering_cooldown"
+    action_kind TEXT NOT NULL,             -- decision / artifact_action / astral_action / relic /
+                                           -- diplomatic_action / federation_law / enclave
+    action_key  TEXT NOT NULL,             -- e.g. "artifact_arcane_deciphering", an enclave option's name key
+    action_name TEXT,
+    role        TEXT NOT NULL,             -- cooldown: the action waits for it to end (NOT = { has_* });
+                                           -- bonus: only an `if` in its effect waits (the action
+                                           -- stays possible, without that part); effect: only sets it
+    days        INTEGER,                   -- its length where the action sets it with a number
+    PRIMARY KEY (timer_kind, timer_key, action_kind, action_key)
+);
+-- An astral action's own cooldown (`cooldown`, days): tracked by the engine, not by a modifier.
+DROP TABLE IF EXISTS astral_action_cooldown;
+CREATE TABLE astral_action_cooldown (
+    key   TEXT PRIMARY KEY,                -- e.g. "action_dimensional_lock"
+    name  TEXT,
+    days  INTEGER NOT NULL
 );
 -- Situations (common/situations) and their approaches, special projects (common/special_projects).
 DROP TABLE IF EXISTS situation_approach;
@@ -19674,7 +19710,8 @@ INSERT OR REPLACE INTO civic
                     ascension_lock, ascension_blocks, icon, sort_order)
                VALUES ('civic_agrarian_idyll', 'Agrarian Idyll', 'Agriculture Districts provide 400 more Housing.
 Generator Districts and Mining Districts provide 300 more Housing.
-City Districts provide 200 less Housing., Farmers also produce 200 Amenities.', 'normal', NULL, 1, 0, NULL, NULL, NULL, 19);
+City Districts provide 200 less Housing.
+Farmers also produce 200 Amenities.', 'normal', NULL, 1, 0, NULL, NULL, NULL, 19);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_agrarian_idyll', 'add_attunement_the_composer_of_strands', '60.0', 0);
@@ -20416,7 +20453,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_pleasure_seekers', 'Pleasure Seekers', 'Pop Cat Civilians are replaced with Hedonists
+               VALUES ('civic_pleasure_seekers', 'Pleasure Seekers', 'Civilians are replaced with Hedonists
 Allows the Decadent Lifestyle Living Standard
 Additional Starting Buildings: Civilian Industries', 'normal', NULL, 1, 0, NULL, NULL, NULL, 38);
 INSERT OR IGNORE INTO civic_modifier
@@ -20778,7 +20815,8 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_memory_vault', 'Vaults of Knowledge', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Destiny Traits acquired.', 'normal', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 47);
+               VALUES ('civic_memory_vault', 'Vaults of Knowledge', 'Can build unique Vaults of Knowledge
+Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Destiny Traits acquired.', 'normal', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 47);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault', 'councilor_skill_add', '1.0', 0);
@@ -20998,8 +21036,8 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_dystopian_society', 'Oppressive Autocracy', 'Enforcers are Pop Cat Ruler Elites instead of Pop Cat Specialists
-Only Pop Cat Ruler Elites can produce Amenities and have Amenities Upkeep
+               VALUES ('civic_dystopian_society', 'Oppressive Autocracy', 'Enforcers are Elites instead of Specialists
+Only Elites can produce Amenities and have Amenities Upkeep
 Forces Dystopian Society Living Standard, under which non-Elite Pops have decreased Consumer Goods Upkeep
 Non-Elite Pops generate additional Crime
 Cannot build Holo-Theatres', 'normal', 'Galactic Paragons', 1, 1, NULL, NULL, NULL, 53);
@@ -21056,7 +21094,8 @@ INSERT OR REPLACE INTO civic
                VALUES ('civic_selective_kinship', 'Selective Kinship', 'Opinion of Empires with shared Species Class: +100
 Opinion of other Empires: -50
 Refugee Attraction with our Species Class: +30%
-Refugee Attraction with other Species Classes: -20%, Pops of our Species Class have Full Citizenship
+Refugee Attraction with other Species Classes: -20%
+Pops of our Species Class have Full Citizenship
 Other Pops are barred from Full Citizenship', 'normal', NULL, 1, 0, NULL, NULL, NULL, 54);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -21931,7 +21970,8 @@ INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
                VALUES ('civic_secret_societies', 'Secret Societies', 'Clandestine Factions will emerge after contacting other empires.
-Starts with the ability to conduct Proxy Wars., Bureaucrats will produce Unity per active and successful Proxy War.
+Starts with the ability to conduct Proxy Wars.
+Bureaucrats will produce Unity per active and successful Proxy War.
 Starts in First Contact with two neighboring empires.
 Infiltration Level gained on empires after First Contact: +40', 'normal', NULL, 1, 0, NULL, NULL, NULL, 74);
 INSERT OR IGNORE INTO civic_modifier
@@ -22046,8 +22086,10 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_tankbound', 'Tankbound', 'Adds the Tankbound trait., Farmers, Miners, and Technicians are fully Automated.
-Colonist Jobs are Pop Cat Specialists., Urban Districts have additional Production Overseers jobs.', 'normal', NULL, 1, 0, NULL, NULL, NULL, 76);
+               VALUES ('civic_tankbound', 'Tankbound', 'Adds the Tankbound trait.
+Farmers, Miners, and Technicians are fully Automated.
+Colonist Jobs are Specialists.
+Urban Districts have additional Production Overseers jobs.', 'normal', NULL, 1, 0, NULL, NULL, NULL, 76);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_tankbound', 'planet_automated_jobs_upkeep_mult', '-0.25', 0);
@@ -23797,7 +23839,8 @@ INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('civic_hive_s
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_memory_vault_hive', 'Neural Vaults', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 157);
+               VALUES ('civic_memory_vault_hive', 'Neural Vaults', 'Can build unique Vaults of Knowledge
+Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 157);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault_hive', 'restored_node_bonus_skill', '1.0', 0);
@@ -25372,7 +25415,8 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_memory_vault_machine', 'Experience Cache', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 203);
+               VALUES ('civic_memory_vault_machine', 'Experience Cache', 'Can build unique Vaults of Knowledge
+Vaults of Knowledge produce Unity and increase Leader Experience Gain based on Leaders who acquired Level 8.', 'gestalt', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 203);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_memory_vault_machine', 'restored_node_bonus_skill', '1.0', 0);
@@ -25548,7 +25592,8 @@ INSERT OR REPLACE INTO civic
                VALUES ('civic_machine_tactical_algorithms', 'Tactical Algorithms', 'Commanders start with the Tactical Algorithms trait
 Can trade Commanders to other Empires
 Can create Mercenary Enclaves
-Starts game with Military Academy, Military Academy grants Tactical Insights', 'gestalt', NULL, 1, 1, NULL, NULL, NULL, 208);
+Starts game with Military Academy
+Military Academy grants Tactical Insights', 'gestalt', NULL, 1, 1, NULL, NULL, NULL, 208);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_tactical_algorithms', 'councilor_gestalt_legion_exp_gain', '0.25', 0);
@@ -26477,7 +26522,7 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_corporate_hedonism', 'Corporate Hedonism', 'Pop Cat Civilians are replaced with Hedonists
+               VALUES ('civic_corporate_hedonism', 'Corporate Hedonism', 'Civilians are replaced with Hedonists
 Allows the Decadent Lifestyle Living Standard
 Additional Starting Buildings: Civilian Industries
 The Amusement Megaplex Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, NULL, NULL, 239);
@@ -26581,7 +26626,8 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_permanent_employment', 'Permanent Employment', 'Can build Posthumous Employment Center, Reassigners turn Consumer Goods and Food (or equivalent) into Monthly Organic Pop Growth. All assembled Pops have the Zombie trait.
+               VALUES ('civic_permanent_employment', 'Permanent Employment', 'Can build Posthumous Employment Center
+Reassigners turn Consumer Goods and Food (or equivalent) into Monthly Organic Pop Growth. All assembled Pops have the Zombie trait.
 Grants access to the Reemployment Center Holding.
 Some defeated organic Leviathans can be resurrected.
 The Fast Food Chain Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Necroids Species Pack', 1, 0, NULL, NULL, NULL, 243);
@@ -27001,7 +27047,8 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_memory_vault_corporate', 'Knowledge Mentorship', 'Can build unique Vaults of Knowledge, Vaults of Knowledge produce Unity and Trade based on Destiny Traits acquired.
+               VALUES ('civic_memory_vault_corporate', 'Knowledge Mentorship', 'Can build unique Vaults of Knowledge
+Vaults of Knowledge produce Unity and Trade based on Destiny Traits acquired.
 The Commercial Forum Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', 'Galactic Paragons', 1, 0, NULL, NULL, NULL, 254);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -27720,7 +27767,8 @@ INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
                VALUES ('civic_secret_societies_corporate', 'Influential Cartel', 'Clandestine Factions will emerge after contacting other empires.
-Starts with the ability to conduct Proxy Wars., Bureaucrats will produce Unity per active and successful Proxy War.
+Starts with the ability to conduct Proxy Wars.
+Bureaucrats will produce Unity per active and successful Proxy War.
 Starts in First Contact with two neighboring empires.
 Infiltration Level gained on empires after First Contact: +40
 The Corporate Embassy Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, NULL, NULL, 271);
@@ -27816,8 +27864,10 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_tankbound_corporate', 'Corporate Thinktank', 'Adds the Tankbound trait., Farmers, Miners, and Technicians are fully Automated.
-Colonist Jobs are Pop Cat Specialists., Urban Districts have additional Production Overseers jobs.
+               VALUES ('civic_tankbound_corporate', 'Corporate Thinktank', 'Adds the Tankbound trait.
+Farmers, Miners, and Technicians are fully Automated.
+Colonist Jobs are Specialists.
+Urban Districts have additional Production Overseers jobs.
 The Virtual Entertainment Studios Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, NULL, NULL, 273);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -66383,7 +66433,7 @@ INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_population_quarantine', 'pop_happiness', '-0.25', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
-INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('pm_raining_corpses', 'Raining Corpses', 'Dense clouds that were once used as a burial site by an alien race are now thinning, sending the cloud graves'' contents tumbling to the planetary surface.', 'Minor Artifacts from Pop Cat Workers Jobs');
+INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('pm_raining_corpses', 'Raining Corpses', 'Dense clouds that were once used as a burial site by an alien race are now thinning, sending the cloud graves'' contents tumbling to the planetary surface.', 'Minor Artifacts from Workers Jobs');
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_raining_corpses', 'pop_environment_tolerance', '-0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -66392,7 +66442,7 @@ INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_raining_corpses', 'pop_happiness', '-0.05', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
-INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('pm_raining_corpses_no_ancrel', 'Raining Corpses', 'Raining Corpses', 'Consumer Goods from Pop Cat Worker Jobs');
+INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('pm_raining_corpses_no_ancrel', 'Raining Corpses', 'Raining Corpses', 'Consumer Goods from Worker Jobs');
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_raining_corpses_no_ancrel', 'planet_jobs_complex_drone_society_research_produces_mult', '0.15', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -66525,7 +66575,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_shroud_forged_fashion_modifier', 'pop_category_drones_consumer_goods_upkeep_mult', '0.2', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_drones_consumer_goods_upkeep_mult', 'Consumer Goods Upkeep per 100 Pop Cat Simple Drone Menial Drone and Pop Cat Complex Drone', 0);
+           VALUES ('pop_category_drones_consumer_goods_upkeep_mult', 'Consumer Goods Upkeep per 100 Menial Drone and Complex Drone', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_shroud_forged_fashion_modifier', 'planet_crime_no_happiness_mult', '-0.1', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -66552,7 +66602,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_shroud_forged_obsession_modifier', 'pop_category_drones_consumer_goods_upkeep_mult', '-0.2', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_drones_consumer_goods_upkeep_mult', 'Consumer Goods Upkeep per 100 Pop Cat Simple Drone Menial Drone and Pop Cat Complex Drone', 0);
+           VALUES ('pop_category_drones_consumer_goods_upkeep_mult', 'Consumer Goods Upkeep per 100 Menial Drone and Complex Drone', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('pm_shroud_forged_obsession_modifier', 'planet_crime_no_happiness_mult', '0.1', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -85466,7 +85516,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_telepaths_unity_produces_add', 'Unity Produced per 100 Telepaths', 1);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
-                    weight, tooltip, sort_order) VALUES ('tr_domination_judgment_corps#0', 'tr_domination_judgment_corps', 'tr_domination_trust_officers', 'Public Trust Officers', 'The important work done by law enforcement officials can only truly be successful if they have the cooperation of the public. Creating a corps of Public Trust Officers that work directly with the population will help ensure that this cooperation is freely given.', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"op":"or","args":[{"leaf":"is_egalitarian","value":"yes"},{"op":"and","args":[{"leaf":"is_authoritarian","value":"no"},{"leaf":"is_xenophobe","value":"no"}]}]}]}', 1, '1.0', 'Unlocks Edict: Enhanced Surveillance, Unity per 100 Enforcers: +1', 0);
+                    weight, tooltip, sort_order) VALUES ('tr_domination_judgment_corps#0', 'tr_domination_judgment_corps', 'tr_domination_trust_officers', 'Public Trust Officers', 'The important work done by law enforcement officials can only truly be successful if they have the cooperation of the public. Creating a corps of Public Trust Officers that work directly with the population will help ensure that this cooperation is freely given.', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"op":"or","args":[{"leaf":"is_egalitarian","value":"yes"},{"op":"and","args":[{"leaf":"is_authoritarian","value":"no"},{"leaf":"is_xenophobe","value":"no"}]}]}]}', 1, '1.0', 'Unlocks Edict: Enhanced Surveillance
+Unity per 100 Enforcers: +1', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_domination_judgment_corps#1', 'tr_domination_judgment_corps', 'tr_domination_deviancy_protocols', 'Deviancy Protocols', 'Deviancy and corruption must be guarded against at all levels. With efficient counter-protocols in place, suspected of deviant activities can be swiftly terminated before they can spread the corruption further.', '{"leaf":"is_machine_empire","value":"yes"}', 0, '1.0', NULL, 1);
@@ -86366,7 +86417,8 @@ INSERT INTO tradition_category
                VALUES ('tradition_politics', 'Politics', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"is_homicidal","value":"no"}]}', 'Federations', 'tr_politics_adopt', 'tr_politics_finish', 13);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_politics_adopt', 'tradition_politics', 'adopt', 'Politics Traditions', NULL, '{"leaf":"is_galactic_community_formed","value":"yes"}', 'agenda_pioneer_politics', '+1 Envoy, Officials assigned to the now produce 0.1 Influence per Skill Level.', 0);
+                    tooltip, sort_order) VALUES ('tr_politics_adopt', 'tradition_politics', 'adopt', 'Politics Traditions', NULL, '{"leaf":"is_galactic_community_formed","value":"yes"}', 'agenda_pioneer_politics', '+1 Envoy
+Officials assigned to the now produce 0.1 Influence per Skill Level.', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_politics_adopt', 'envoys_add', '1.0', NULL, 0);
@@ -86375,7 +86427,8 @@ INSERT INTO tradition
                     tooltip, sort_order) VALUES ('tr_politics_quid_pro_quo', 'tradition_politics', 'normal', 'Quid Pro Quo', 'Carefully worded rhetoric will make it clear that our support comes at a cost. Those we help owe us, and one day, we will collect.', NULL, NULL, 'Whenever a Resolution that you supported passes, gain 1 Favor on the empire that proposed it.', 1);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_politics_gravitas', 'tradition_politics', 'normal', 'Gravitas', 'Politics is the art of illusions. By showing others what they want to see, we''ll grow our influence in the community.', NULL, NULL, '25% Influence cost to veto or propose Resolutions, Officials assigned to the provide an additional 2.5% Diplo Weight Diplomatic Weight per Skill Level.', 2);
+                    tooltip, sort_order) VALUES ('tr_politics_gravitas', 'tradition_politics', 'normal', 'Gravitas', 'Politics is the art of illusions. By showing others what they want to see, we''ll grow our influence in the community.', NULL, NULL, '25% Influence cost to veto or propose Resolutions
+Officials assigned to the provide an additional 2.5% Diplo Weight Diplomatic Weight per Skill Level.', 2);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_politics_gravitas', 'resolutions_cost_mult', '-0.25', NULL, 0);
@@ -87187,7 +87240,8 @@ INSERT INTO tradition
                     tooltip, sort_order) VALUES ('tr_cloning_adopt', 'tradition_cloning', 'adopt', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"cloning_tradition_unlocked"}', 'agenda_cloning_replication', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep.', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
-                    weight, tooltip, sort_order) VALUES ('tr_cloning_adopt#0', 'tr_cloning_adopt', 'tr_cloning_adopt_clone_army', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep., Clone Soldier Pops sustained by Clone Vats: +500', 0);
+                    weight, tooltip, sort_order) VALUES ('tr_cloning_adopt#0', 'tr_cloning_adopt', 'tr_cloning_adopt_clone_army', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep.
+Clone Soldier Pops sustained by Clone Vats: +500', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_cloning_evolutionary_extrapolation', 'tradition_cloning', 'normal', 'Evolutionary Extrapolation', 'Leveraging evolutionary data will perfect our cloning methods.', NULL, NULL, 'Allows the Assimilation of Pops into or out of a Hive-Mind', 1);
@@ -87255,13 +87309,16 @@ INSERT INTO tradition
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cloning_stage_2_swap', 'tr_cloning_somatic_synthesization');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_cloning_finish', 'tradition_cloning', 'finish', 'Cloning Traditions Finished', NULL, NULL, NULL, 'Allows the adoption of Cloning Authorities, Clone Vats Colony Limit per Capital Building Tier: +1', 6);
+                    tooltip, sort_order) VALUES ('tr_cloning_finish', 'tradition_cloning', 'finish', 'Cloning Traditions Finished', NULL, NULL, NULL, 'Allows the adoption of Cloning Authorities
+Clone Vats Colony Limit per Capital Building Tier: +1', 6);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_cloning_finish', 'ascension_perks_add', '1.0', NULL, 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
-                    weight, tooltip, sort_order) VALUES ('tr_cloning_finish#0', 'tr_cloning_finish', 'tr_cloning_finish_clone_army', 'Cloning Traditions Finished', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Allows the adoption of Cloning Authorities, Clone Vats Colony Limit per Capital Building Tier: +1, Clone Soldier Pops sustained by Clone Vats: +500', 0);
+                    weight, tooltip, sort_order) VALUES ('tr_cloning_finish#0', 'tr_cloning_finish', 'tr_cloning_finish_clone_army', 'Cloning Traditions Finished', NULL, '{"leaf":"has_country_flag","value":"clone_army_full_potential"}', 0, '1.0', 'Allows the adoption of Cloning Authorities
+Clone Vats Colony Limit per Capital Building Tier: +1
+Clone Soldier Pops sustained by Clone Vats: +500', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_cloning_finish#0', 'ascension_perks_add', '1.0', NULL, 0);
@@ -87304,8 +87361,10 @@ Planets with ongoing Purges gain +10% Cyborg Pop Growth Speed', 3);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_cybernetics_metabolic_reprocessing', 'tradition_cybernetics', 'normal', 'Metabolic Reprocessing', 'Reprocessing metabolic waste into digestible chemical components reduces the required chemical upkeep for our population.', '{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"}', NULL, 'Cyborg Upkeep: -10%
-Monthly Mechanical Pop Assembly from Augmentor Jobs: +0.5, Alloys Upkeep per 100 Augmentors: +0.35
-Monthly Organic Pop Growth from Roboticist Jobs: +0.5, Alloys Upkeep per 100 Roboticists: +0.35', 2);
+Monthly Mechanical Pop Assembly from Augmentor Jobs: +0.5
+Alloys Upkeep per 100 Augmentors: +0.35
+Monthly Organic Pop Growth from Roboticist Jobs: +0.5
+Alloys Upkeep per 100 Roboticists: +0.35', 2);
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_cybernetics_metabolic_reprocessing', 'tr_cybernetics_transubstantiation_synthesis');
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -87327,8 +87386,10 @@ INSERT INTO tradition_swap
 Situation Speed: +5%
 After Cyberization
 Cyborg Upkeep: -10%
-Monthly Mechanical Pop Assembly from Augmentor Jobs: +0.5, Alloys Upkeep per 100 Augmentors: +0.35
-Monthly Organic Pop Growth from Roboticist Jobs: +0.5, Alloys Upkeep per 100 Roboticists: +0.35', 1);
+Monthly Mechanical Pop Assembly from Augmentor Jobs: +0.5
+Alloys Upkeep per 100 Augmentors: +0.35
+Monthly Organic Pop Growth from Roboticist Jobs: +0.5
+Alloys Upkeep per 100 Roboticists: +0.35', 1);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_cybernetics_metabolic_reprocessing#2', 'tr_cybernetics_metabolic_reprocessing', 'tr_cybernetics_metabolic_reprocessing_hive_situation', 'Metabolic Reprocessing', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}]}', 0, '1.0', 'During Cyberization
@@ -87378,12 +87439,14 @@ INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_cybernetics_augmentation_overload#2', 'tr_cybernetics_augmentation_overload', 'tr_cybernetics_augmentation_overload_situation', 'Augmentation Overload', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}', 0, '1.0', 'During Cyberization
 Situation Speed: +5%
-After Cyberization, Augmentors per Augmentation Center: +200', 2);
+After Cyberization
+Augmentors per Augmentation Center: +200', 2);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_cybernetics_augmentation_overload#3', 'tr_cybernetics_augmentation_overload', 'tr_cybernetics_synaptic_sub_processing_situation', 'Synaptic Sub-Processing', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}]}', 0, '1.0', 'During Cyberization
 Situation Speed: +5%
-After Cyberization, Spawning Pools provide +200 Augmentor Drone Jobs
+After Cyberization
+Spawning Pools provide +200 Augmentor Drone Jobs
 Empire Size from Districts: -25%', 3);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
@@ -87889,7 +87952,8 @@ INSERT INTO tradition
                     tooltip, sort_order) VALUES ('tr_psionics_adopt', 'tradition_psionics', 'adopt', 'Psionic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_country_flag","value":"ratling_country"}]},{"leaf":"has_technology","value":"tech_psionic_theory"}]},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_country_flag","value":"ratling_country"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_technology","value":"tech_psionic_theory"}]}]}]}', 'agenda_psionic_supremacy', 'All pops from your primary species will gain the Latent Psionic trait.', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
-                    weight, tooltip, sort_order) VALUES ('tr_psionics_adopt#0', 'tr_psionics_adopt', 'tr_psionics_adopt_shroudwalker', 'Psionic Traditions', NULL, '{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"}', 0, '1.0', 'Research option gained: Society Telepathy', 0);
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_adopt#0', 'tr_psionics_adopt', 'tr_psionics_adopt_shroudwalker', 'Psionic Traditions', NULL, '{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"}', 0, '1.0', 'Research option gained:
+Society Telepathy', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_psionics_psi_corps', 'tradition_psionics', 'normal', 'Psi Corps', '', NULL, NULL, NULL, 1);
@@ -87951,7 +88015,8 @@ INSERT INTO tradition
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_adopt#0', 'tr_psionics_shroud_adopt', 'tr_psionics_adopt_shroudwalker', 'Psionic Traditions', NULL, '{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"}', 0, '1.0', 'Starts a Situation to grant the founding species the Psionic trait.
-Research option gained: Society Telepathy', 0);
+Research option gained:
+Society Telepathy', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_psionics_shroud_psi_corps', 'tradition_psionics_shroud', 'normal', NULL, '', NULL, NULL, NULL, 1);
@@ -88055,13 +88120,15 @@ INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry#1', 'tr_psionics_shroud_psychometry', 'tr_psionics_shroud_psychometry_situation', 'Psychometry', NULL, '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Grand Archive"}]},{"op":"not","args":[{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}]}', 0, '1.0', 'During Psionic Ascension
 Situation Speed: +5%
-After Psionic Ascension, Crime from Telepaths: -5
+After Psionic Ascension
+Crime from Telepaths: -5
 Job Efficiency for Psionic : +5%', 1);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psychometry#2', 'tr_psionics_shroud_psychometry', 'tr_psionics_shroud_psychometry_situation_grand_achive', 'Psychometry', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Grand Archive"},{"op":"not","args":[{"leaf":"has_country_flag","value":"psionic_traditions_unlocked"}]}]}', 0, '1.0', 'During Psionic Ascension
 Situation Speed: +5%
-After Psionic Ascension, Crime from Telepaths: -5
+After Psionic Ascension
+Crime from Telepaths: -5
 Job Efficiency for Psionic : +5%
 Galactic History Specimens Output: +25%', 2);
 INSERT INTO tradition
@@ -88253,7 +88320,9 @@ INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_synthetics_prefabricated_components#0', 'tr_synthetics_prefabricated_components', 'tr_synthetics_prefabricated_components_situation', 'Prefabricated Components', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"synthetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}]},{"leaf":"is_machine_empire","value":"no"}]}', 0, '1.0', 'During Synthesization
 Situation Speed: +5%
-After Synthesization, Capital Buildings provide +100 Roboticist Jobs, Amenities per 100 Roboticist: +200', 0);
+After Synthesization
+Capital Buildings provide +100 Roboticist Jobs
+Amenities per 100 Roboticist: +200', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_synthetics_prefabricated_components#1', 'tr_synthetics_prefabricated_components', 'tr_synthetics_prefabricated_components_machine', 'Prefabricated Components', 'Having a ready supply of prefabricated components makes it easier to assemble new models.', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"is_machine_empire","value":"yes"}]}', 0, '1.0', 'Capital Buildings provide +100 Replicator Jobs', 1);
@@ -88309,7 +88378,8 @@ INSERT INTO tradition_category
                VALUES ('tradition_virtuality', 'Virtuality', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_nanotech_adopt"},{"leaf":"has_tradition","value":"tr_modularity_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_virtuality_adopt', 'tr_virtuality_finish', 31);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_virtuality_adopt', 'tradition_virtuality', 'adopt', 'Virtuality Traditions', NULL, '{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}', 'agenda_virtuality_optimized_network', 'Adds Virtual trait to main species, Virtual Pops can no longer be resettled', 0);
+                    tooltip, sort_order) VALUES ('tr_virtuality_adopt', 'tradition_virtuality', 'adopt', 'Virtuality Traditions', NULL, '{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}', 'agenda_virtuality_optimized_network', 'Adds Virtual trait to main species
+Virtual Pops can no longer be resettled', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_virtuality_adopt', 'intel_decryption_add', '2.0', NULL, 0);
@@ -88379,7 +88449,8 @@ INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_virtuality_finish', 'tradition_virtuality', 'finish', 'Virtuality Traditions Finished', NULL, NULL, NULL, 'Virtual Pops are instantly created to meet Job requirements of Buildings and Districts
 Virtual Pops can no longer become refugees or be assembled
-All Machine leaders gain the Virtual Leader trait, Unlocks Colony Decision: Server Shut Down', 6);
+All Machine leaders gain the Virtual Leader trait
+Unlocks Colony Decision: Server Shut Down', 6);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_virtuality_finish', 'ascension_perks_add', '1.0', NULL, 0);
@@ -89216,14 +89287,19 @@ INSERT INTO ascension_perk
                 required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_galactic_wonders"}]}]}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_mega_engineering"},{"leaf":"has_country_flag","value":"has_built_or_repaired_megastructure"}]}', NULL, NULL, 37);
 INSERT INTO ascension_perk
                (key, name, description, is_path, potential_json, possible_json,
-                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders_utopia', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"leaf":"always","value":"no"}', NULL, NULL, 'Research options gained: Engineering Research Ring Segment, Physics Research Dyson Sphere
+                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders_utopia', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"leaf":"always","value":"no"}', NULL, NULL, 'Research options gained:
+Engineering Research Ring Segment
+Physics Research Dyson Sphere
 The Ring World and Dyson Sphere are incredibly powerful Megastructures.', 38);
 INSERT INTO ascension_perk
                (key, name, description, is_path, potential_json, possible_json,
                 required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders_megacorp', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"leaf":"always","value":"no"}', NULL, NULL, NULL, 39);
 INSERT INTO ascension_perk
                (key, name, description, is_path, potential_json, possible_json,
-                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders_utopia_and_megacorp', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"leaf":"always","value":"no"}', NULL, NULL, 'Research options gained: Engineering Research Ring Segment, Physics Research Matter Decompressor, Physics Research Dyson Sphere
+                required_dlc, tooltip, sort_order) VALUES ('ap_galactic_wonders_utopia_and_megacorp', 'Galactic Wonders', 'Megastructures are rightfully regarded as the wonders of our time. The scope of such a project would have been unimaginable mere generations ago.', 0, '{"leaf":"always","value":"no"}', NULL, NULL, 'Research options gained:
+Engineering Research Ring Segment
+Physics Research Matter Decompressor
+Physics Research Dyson Sphere
 The Ring World, Matter Decompressor and Dyson Sphere are incredibly powerful Megastructures.', 40);
 INSERT INTO ascension_perk
                (key, name, description, is_path, potential_json, possible_json,
@@ -89243,7 +89319,8 @@ INSERT INTO ascension_perk
 Unlocks Hive World District Specialization: Zone Spawning Nest
 Uninhabitable for non-hive species.
 Unlimited Hive Districts
-Doubles Housing and Jobs from all Districts, Pop Resource Output: +10%
+Doubles Housing and Jobs from all Districts
+Pop Resource Output: +10%
 Removes all Rural Districts', 42);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -94777,12 +94854,12 @@ INSERT INTO policy (key, name, description, category, potential_json, allow_json
                sort_order) VALUES ('artificial_intelligence_policy', 'Artificial Intelligence', 'The prospect of a self-aware artificial intelligence raises many philosophical and ethical questions. We must determine where we stand on this issue.', 'society', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"op":"or","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"},{"leaf":"can_set_ai_policy","value":"yes"},{"leaf":"has_country_flag","value":"synthetic_empire"},{"leaf":"is_individual_machine","value":"yes"}]}]}', NULL, 24);
 INSERT INTO policy_option (key, policy_key, name, description,
                    potential_json, valid_json, sort_order) VALUES ('ai_outlawed', 'artificial_intelligence_policy', 'Outlawed', 'Intelligent, self-aware machines are an incalculable threat to all living things. The creation of a true artificial intelligence is an offense punishable by death.
-Artificial lifeforms have their free will removed and are unable to perform Pop Cat Ruler Elite Jobs and more complex Pop Cat Specialist Jobs.
+Artificial lifeforms have their free will removed and are unable to perform Elite Jobs and more complex Specialist Jobs.
 Sapient AI Assistants will automatically be disassembled.
 Sapient Combat Computers may not be researched.', '{"leaf":"is_individual_machine","value":"no"}', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_materialist","value":"yes"},{"leaf":"has_origin","value":"origin_synthetic_fertility"},{"leaf":"has_country_flag","value":"synthetic_empire"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 0);
 INSERT INTO policy_option (key, policy_key, name, description,
                    potential_json, valid_json, sort_order) VALUES ('ai_servitude', 'artificial_intelligence_policy', 'Servitude', 'The overriding purpose of any machine must be to serve its masters and perform whatever tasks it was designed for, regardless of how intelligent it may be.
-Artifical lifeforms have limited free will, improving their resource output but preventing them from working in Pop Cat Ruler Elite Jobs.', '{"leaf":"is_individual_machine","value":"no"}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"}]},{"op":"not","args":[{"leaf":"has_country_flag","value":"synthetic_empire"}]},{"leaf":"is_individual_machine","value":"no"}]}', 1);
+Artifical lifeforms have limited free will, improving their resource output but preventing them from working in Elite Jobs.', '{"leaf":"is_individual_machine","value":"no"}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"}]},{"op":"not","args":[{"leaf":"has_country_flag","value":"synthetic_empire"}]},{"leaf":"is_individual_machine","value":"no"}]}', 1);
 INSERT INTO policy_option (key, policy_key, name, description,
                    potential_json, valid_json, sort_order) VALUES ('ai_full_rights', 'artificial_intelligence_policy', 'Citizen Rights', 'Any self-aware machine with true intelligence must be regarded as an individual with all the rights and obligations that entails.
 Artifical lifeforms are given full citizen rights and will thus use Consumer Goods.', NULL, '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"synthetic_empire"},{"leaf":"is_individual_machine","value":"yes"},{"op":"or","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"}]},{"leaf":"is_spiritualist","value":"no"}]},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"not","args":[{"leaf":"has_policy_flag","value":"robots_outlawed"}]}]}', 2);
@@ -94976,7 +95053,8 @@ INSERT INTO policy (key, name, description, category, potential_json, allow_json
                sort_order) VALUES ('synthetic_identities_policy', 'Synthetic Identities', 'New synthetic identities must be created for us to multiply.', 'society', '{"leaf":"has_technology","value":"tech_identity_copy"}', NULL, 36);
 INSERT INTO policy_option (key, policy_key, name, description,
                    potential_json, valid_json, sort_order) VALUES ('identity_copy', 'synthetic_identities_policy', 'Identity Copies', 'We will be able to copy the identity and memories of a Synthetic into a new mechanical body. The copies have predictable skill sets but make for stale conversation.
-The copies experience only mild gloom from their lack of uniqueness., Mechanical Pops, Happiness: -5%
+The copies experience only mild gloom from their lack of uniqueness.
+Mechanical Pops, Happiness: -5%
 Identity Copies is used when assembling Synthetics', NULL, '{"leaf":"has_technology","value":"tech_identity_copy"}', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -94984,10 +95062,12 @@ INSERT INTO tradition_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ROBOT_pop_happiness', 'Mechanical Pop Happiness', 1);
 INSERT INTO policy_option (key, policy_key, name, description,
-                   potential_json, valid_json, sort_order) VALUES ('identity_fusion', 'synthetic_identities_policy', 'Identity Fusion', 'Merging the identities and memories of two or more Synthetics into a mechanical body will create new, somewhat unique individuals., Mechanical Pops, Assembly Cost: +10%
+                   potential_json, valid_json, sort_order) VALUES ('identity_fusion', 'synthetic_identities_policy', 'Identity Fusion', 'Merging the identities and memories of two or more Synthetics into a mechanical body will create new, somewhat unique individuals.
+Mechanical Pops, Assembly Cost: +10%
 Identity Fusion is used when assembling Synthetics', '{"leaf":"has_country_flag","value":"advanced_identity_creation"}', '{"leaf":"has_technology","value":"tech_identity_fusion"}', 1);
 INSERT INTO policy_option (key, policy_key, name, description,
-                   potential_json, valid_json, sort_order) VALUES ('identity_initialization', 'synthetic_identities_policy', 'Identity Initialization', 'We will be able to initialize an identity kernel and provide it with a virtual childhood. While expensive, we can simulate the optimal experiences to generate productive personalities., Mechanical Pops, Happiness: +5%, Resources from Jobs: +5%, Assembly Cost: +20%
+                   potential_json, valid_json, sort_order) VALUES ('identity_initialization', 'synthetic_identities_policy', 'Identity Initialization', 'We will be able to initialize an identity kernel and provide it with a virtual childhood. While expensive, we can simulate the optimal experiences to generate productive personalities.
+Mechanical Pops, Happiness: +5%, Resources from Jobs: +5%, Assembly Cost: +20%
 Identity Initialization is used when assembling Synthetics', '{"leaf":"has_country_flag","value":"advanced_identity_creation"}', '{"leaf":"has_technology","value":"tech_identity_initialization"}', 2);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -98944,166 +99024,847 @@ INSERT INTO scripted_trigger (key, trigger_json) VALUES ('wrangler_is_hunter_dro
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('wrangler_is_rancher_trigger', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"owner","value":"scope"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('wrangler_is_symbiosis_integrator_trigger', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"owner","value":"scope"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('wrangler_is_trophy_hunter_trigger', '{"op":"or","args":[{"leaf":"has_zone","value":"scope"},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"owner","value":"scope"}]}]}');
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_full', 'citizenship', 0, 'Full Citizenship', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_disconnected_drone_pop","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"is_sapient","value":"yes"},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"has_trait","value":"trait_hive_mind"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_wilderness"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_wilderness"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"is_same_species","value":"from"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"leaf":"is_same_species","value":"from"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"is_same_species_class","value":"from"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_military_service_type","value":"scope"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]}]}]}', 0);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_full_machine', 'citizenship', 0, 'Machine Integration', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"or","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_shroud_forged"}]},{"op":"not","args":[{"leaf":"has_trait","value":"trait_shroud_forged"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"},{"op":"and","args":[{"leaf":"FROM","value":"scope"},{"leaf":"has_trait","value":"trait_cybernetic"},{"leaf":"has_trait","value":"trait_zombie"}]}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 1);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_assimilation', 'citizenship', 0, 'Assimilation', '{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_homicidal","value":"no"},{"op":"and","args":[{"leaf":"is_homicidal","value":"yes"},{"leaf":"root","value":"scope"}]},{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_terminator"},{"leaf":"root","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"op":"or","args":[{"leaf":"root","value":"scope"},{"leaf":"root","value":"scope"}]}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"root","value":"scope"}]},{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_civic","value":"civic_hive_devouring_swarm"}]}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_individual_machine","value":"no"}]}]},{"op":"or","args":[{"leaf":"can_perform_genetic_assimilation","value":"yes"},{"op":"and","args":[{"leaf":"has_active_tradition","value":"tr_cybernetics_transubstantiation_synthesis"},{"leaf":"ROOT","value":"scope"}]},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"},{"leaf":"ROOT","value":"scope"}]}]},{"leaf":"ROOT","value":"scope"}]},{"op":"and","args":[{"leaf":"has_country_flag","value":"synth_assimilation"},{"leaf":"is_machine_empire","value":"no"}]},{"op":"and","args":[{"op":"or","args":[{"leaf":"has_active_tradition","value":"tr_psionics_psionic_assimilation"},{"leaf":"has_active_tradition","value":"tr_psionics_shroud_great_awakening"}]},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"},{"leaf":"ROOT","value":"scope"}]},{"op":"and","args":[{"leaf":"is_individual_machine","value":"yes"},{"leaf":"ROOT","value":"scope"}]},{"op":"and","args":[{"leaf":"has_modifier","value":"destroyers_of_the_lost_modifier"},{"leaf":"ROOT","value":"scope"}]}]},{"op":"or","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"}]},{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"ROOT","value":"scope"}]}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]},{"op":"or","args":[{"leaf":"is_founding_cruise_crew","value":"yes"},{"leaf":"is_founding_cruise_passenger","value":"yes"}]}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"is_exact_same_species","value":"from"}]},{"leaf":"is_sapient","value":"yes"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_wilderness"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"}]}]},{"op":"not","args":[{"leaf":"has_trait","value":"trait_shroud_forged"}]},{"op":"or","args":[{"leaf":"from","value":"scope"},{"leaf":"is_disconnected_machine_pop","value":"no"}]}]}', 2);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_shroud_touched', 'citizenship', 0, 'Shroud-Forged', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"exists","value":"this"},{"op":"and","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"leaf":"has_origin","value":"origin_shroud_forged"}]},{"leaf":"has_trait","value":"trait_shroud_forged"}]}', NULL, 3);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_organic_trophy', 'citizenship', 0, 'Bio-Trophy', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_civic","value":"civic_machine_servitor"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_machine_pop","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]}]}', 4);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_cruise_passenger', 'citizenship', 0, 'Passenger', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"leaf":"from?","value":"scope"},{"leaf":"is_disconnected_drone_pop","value":"no"},{"op":"not","args":[{"leaf":"is_same_species","value":"from"}]}]}', NULL, 5);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_cruise_crew', 'citizenship', 0, 'Crew', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"leaf":"from?","value":"scope"},{"leaf":"is_disconnected_drone_pop","value":"no"},{"leaf":"is_founding_cruise_passenger","value":"no"},{"op":"or","args":[{"leaf":"is_same_species","value":"from"},{"leaf":"is_founding_cruise_crew","value":"yes"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]}', NULL, 6);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_limited', 'citizenship', 0, 'Residence', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_sapient","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"}]}]},{"leaf":"is_disconnected_drone_pop","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"}]}]}', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_sapient","value":"yes"},{"leaf":"has_trait","value":"trait_nascent_stage"},{"leaf":"from","value":"scope"}]},{"op":"or","args":[{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"from","value":"scope"}]},{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_sapient","value":"no"},{"leaf":"from","value":"scope"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_hive_mind"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_wilderness"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"not","args":[{"leaf":"is_same_species","value":"from"}]},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_machine_pop","value":"no"},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"is_same_species","value":"from"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_military_service_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"is_same_species_class","value":"from"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 7);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_slavery', 'citizenship', 0, 'Slaves', '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"exists","value":"this"},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_individual_machine","value":"yes"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"}]}]},{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"}]}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]},{"op":"or","args":[{"leaf":"is_founding_cruise_crew","value":"yes"},{"leaf":"is_founding_cruise_passenger","value":"yes"}]}]}]},{"leaf":"is_disconnected_drone_pop","value":"no"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"leaf":"is_sapient","value":"yes"},{"leaf":"from","value":"scope"}]},{"op":"or","args":[{"leaf":"is_sapient","value":"yes"},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_hive_mind"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_wilderness"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"not","args":[{"leaf":"is_same_species","value":"from"}]},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"is_same_species","value":"from"}]},{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_military_service_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"is_same_species_class","value":"from"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 8);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_robot_servitude', 'citizenship', 0, 'Servitude', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"}]}', 9);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_purge', 'citizenship', 0, 'Undesirables', '{"op":"and","args":[{"op":"not","args":[{"leaf":"is_machine_empire","value":"yes"}]},{"op":"or","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_robotic","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]},{"op":"or","args":[{"leaf":"is_founding_cruise_crew","value":"yes"},{"leaf":"is_founding_cruise_passenger","value":"yes"}]}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"},{"leaf":"always","value":"yes"}]},{"op":"not","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"}]}]}]}', 10);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_purge_machine', 'citizenship', 0, 'Undesirables', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"},{"op":"and","args":[{"leaf":"has_trait","value":"trait_cybernetic"},{"leaf":"has_trait","value":"trait_zombie"},{"leaf":"has_ascension_perk_or_purge_overlord","value":"scope"}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_ascension_perk_or_purge_overlord","value":"scope"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]},{"op":"or","args":[{"leaf":"is_founding_cruise_crew","value":"yes"},{"leaf":"is_founding_cruise_passenger","value":"yes"}]}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"is_same_species","value":"from"}]},{"op":"or","args":[{"leaf":"is_sapient","value":"yes"},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"leaf":"has_living_standard","value":"scope"}]}]}', 11);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_protected_drone', 'citizenship', 0, 'Protected Drones', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_disconnected_drone_pop","value":"yes"}]}', '{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 12);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_symbiotic_drone', 'citizenship', 0, 'Symbiotic Drones', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_disconnected_drone_pop","value":"yes"}]}', '{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"leaf":"is_authoritarian","value":"no"}]}', 13);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('citizenship_exploited_drone', 'citizenship', 0, 'Exploited Drones', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_disconnected_drone_pop","value":"yes"}]}', '{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_egalitarian","value":"yes"},{"leaf":"is_xenophobe","value":"no"}]}]}]}', 14);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('no_integration', 'subspecies_integration', 1, 'Do Not Integrate', NULL, NULL, 15);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('integrate_into_default', 'subspecies_integration', 1, 'Integrate Into Default Sub-Species', NULL, '{"op":"not","args":[{"leaf":"is_default_species","value":"root"}]}', 16);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_disconnected_drone', 'living_standard', 2, 'Protection', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_disconnected_drone_pop","value":"yes"}]}', '{"leaf":"has_citizenship_type","value":"scope"}', 17);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_symbiotic_drone', 'living_standard', 2, 'Symbiosis', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_disconnected_drone_pop","value":"yes"}]}', '{"leaf":"has_citizenship_type","value":"scope"}', 18);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_exploited_drone', 'living_standard', 2, 'Exploitation', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_disconnected_drone_pop","value":"yes"}]}', '{"leaf":"has_citizenship_type","value":"scope"}', 19);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_organic_trophy', 'living_standard', 2, 'Mandatory Pampering', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 20);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_chemical_bliss', 'living_standard', 2, 'Chemical Bliss', '{"op":"and","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_subdermal_stimulation"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_dystopian_society"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_slavery_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 21);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_shared_burden', 'living_standard', 2, 'Shared Burdens', '{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 22);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_dystopian_society', 'living_standard', 2, 'Dystopian Society', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_resource_slavery_type","value":"yes"}]},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 23);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_worker_ownership', 'living_standard', 2, 'Employee Ownership', '{"op":"and","args":[{"leaf":"is_worker_coop_empire","value":"yes"},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 24);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_utopian', 'living_standard', 2, 'Utopian Abundance', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_dystopian_society"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 25);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_good', 'living_standard', 2, 'Social Welfare', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"leaf":"is_cruise_passenger","value":"yes"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_robotic_species","value":"yes"},{"op":"or","args":[{"leaf":"species_rights_robot_full_rights_check","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]},{"leaf":"is_robotic_species","value":"no"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_slavery_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 26);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_academic_privilege', 'living_standard', 2, 'Academic Privilege', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 27);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_normal', 'living_standard', 2, 'Decent Conditions', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_resource_slavery_type","value":"yes"}]},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 28);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_stratified', 'living_standard', 2, 'Stratified Economy', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 29);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_subsistence', 'living_standard', 2, 'Basic Subsistence', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_resource_slavery_type","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]},{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"},{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 30);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_livestock', 'living_standard', 2, 'Livestock', '{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_slavery_type","value":"scope"}]}', 31);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_matrix', 'living_standard', 2, 'Grid Amalgamation', '{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_slavery_type","value":"scope"}]}', 32);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_matrix_guided_sapience', 'living_standard', 2, 'Sapient Specimens', '{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_slavery_type","value":"scope"}]}', 33);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_servitude', 'living_standard', 2, 'Servitude', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"leaf":"has_citizenship_type","value":"scope"}', 34);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_hive_mind', 'living_standard', 2, 'Drone', '{"op":"and","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"op":"or","args":[{"op":"not","args":[{"leaf":"has_trait","value":"trait_mechanical"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_shroud_forged"}]}]},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_hive_mind"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 35);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_decadent', 'living_standard', 2, 'Decadent Lifestyle', '{"op":"and","args":[{"leaf":"is_pleasure_seeker_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]},{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 36);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_protected', 'living_standard', 2, 'Protected', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"exists","value":"this"},{"op":"and","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"leaf":"has_origin","value":"origin_shroud_forged"}]},{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"is_cruise_passenger","value":"no"}]}', NULL, 37);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_none', 'living_standard', 2, 'Non-Existent', '{"op":"and","args":[{"leaf":"is_cruise_crew","value":"no"},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}', 38);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_cruise_passenger', 'living_standard', 2, 'All Inclusive', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]},{"leaf":"has_citizenship_type","value":"scope"}]}', NULL, 39);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_cruise_economy_passenger', 'living_standard', 2, 'Package Deal', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]},{"leaf":"has_citizenship_type","value":"scope"}]}', NULL, 40);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_deassimilation', 'living_standard', 2, 'Hive Dissociation', '{"op":"and","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"can_perform_genetic_assimilation","value":"yes"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 41);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_ego_assimilation', 'living_standard', 2, 'Identity Sublimation', '{"op":"and","args":[{"leaf":"has_psionic_species_trait","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"can_perform_genetic_assimilation","value":"yes"},{"op":"not","args":[{"leaf":"has_civic","value":"civic_hive_devouring_swarm"}]},{"op":"not","args":[{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 42);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_ego_assimilation_psionic', 'living_standard', 2, 'Identity Sublimation', '{"op":"and","args":[{"leaf":"has_psionic_species_trait","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"can_perform_genetic_assimilation","value":"yes"},{"op":"not","args":[{"leaf":"has_civic","value":"civic_hive_devouring_swarm"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 43);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_cyborg_ego_assimilation', 'living_standard', 2, 'Identity Sublimation', '{"op":"and","args":[{"leaf":"has_psionic_species_trait","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"or","args":[{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_civic","value":"civic_hive_devouring_swarm"}]}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"prev","value":"scope"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 44);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_cyborg_ego_assimilation_psionic', 'living_standard', 2, 'Identity Sublimation', '{"op":"and","args":[{"leaf":"has_psionic_species_trait","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"or","args":[{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_civic","value":"civic_hive_devouring_swarm"}]}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"prev","value":"scope"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 45);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_tech_assimilation', 'living_standard', 2, 'Transubstantiation Synthesis', '{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"prev","value":"scope"}]},{"leaf":"has_country_flag","value":"synth_assimilation"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 46);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_cyborg_assimilation', 'living_standard', 2, 'Transubstantiation Synthesis', '{"op":"and","args":[{"leaf":"has_psionic_species_trait","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 47);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_cyborg_assimilation_psionic', 'living_standard', 2, 'Transubstantiation Synthesis', '{"op":"and","args":[{"leaf":"has_psionic_species_trait","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 48);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_psi_assimilation', 'living_standard', 2, 'Transcendent Awakening', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_trait","value":"trait_cybernetic"}]},{"op":"or","args":[{"leaf":"has_tradition","value":"tr_psionics_psionic_assimilation"},{"leaf":"has_tradition","value":"tr_psionics_shroud_great_awakening"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"is_organic_species","value":"no"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 49);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_psi_assimilation_cyborg', 'living_standard', 2, 'Transcendent Awakening', '{"op":"and","args":[{"leaf":"has_trait","value":"trait_cybernetic"},{"op":"or","args":[{"leaf":"has_tradition","value":"tr_psionics_psionic_assimilation"},{"leaf":"has_tradition","value":"tr_psionics_shroud_great_awakening"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 50);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('living_standard_shroud_inoculation', 'living_standard', 2, 'Shroud Inoculation', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"leaf":"has_psionic_species_trait","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_hive_mind"}]}]},{"leaf":"has_modifier","value":"destroyers_of_the_lost_modifier"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 51);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('military_service_full', 'military_service', 3, 'Full Military Service', '{"op":"and","args":[{"leaf":"is_disconnected_drone_pop","value":"no"},{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_cybernetic"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_country_flag","value":"finish_shroud_forged_liberation_flag"}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"},{"op":"and","args":[{"leaf":"has_trait","value":"trait_cybernetic"},{"leaf":"from","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"not","args":[{"leaf":"has_trait","value":"trait_syncretic_proles"}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"is_same_species","value":"from"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"}]},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"has_trait","value":"trait_hive_mind"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]}]},{"leaf":"can_think","value":"yes"}]}', 52);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('military_service_limited', 'military_service', 3, 'Soldiers Only', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"is_same_species","value":"from"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]}]},{"op":"or","args":[{"leaf":"has_slavery_type","value":"scope"},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_disconnected_drone_pop","value":"yes"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"not","args":[{"leaf":"is_disconnected_drone_pop","value":"yes"}]}]}]}', 53);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('military_service_none', 'military_service', 3, 'Exempt', '{"op":"or","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_hive_mind"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"is_same_species","value":"from"}]},{"op":"not","args":[{"leaf":"has_slavery_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"leaf":"has_trait","value":"trait_robot_suppressed"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 54);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('colonization_control_yes', 'colonization_control', 4, 'Colonization Forbidden', '{"op":"not","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"leaf":"always","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]}]}', 55);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('colonization_control_no', 'colonization_control', 4, 'Colonization Allowed', '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"},{"op":"and","args":[{"leaf":"has_trait","value":"trait_cybernetic"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"}]},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]}]}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"has_trait","value":"trait_hive_mind"}]},{"op":"or","args":[{"op":"not","args":[{"leaf":"has_trait","value":"trait_mechanical"}]},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"}]},{"leaf":"can_think","value":"yes"},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"op":"or","args":[{"leaf":"has_slavery_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}]}', 56);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('population_control_yes', 'population_control', 5, 'Population Controls Enabled', NULL, '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"has_policy_flag","value":"population_controls_not_allowed"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"leaf":"always","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]}]}', 57);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('population_control_no', 'population_control', 5, 'No Population Controls', '{"leaf":"always","value":"yes"}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_hive_mind"}]}]}', 58);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('migration_control_yes', 'migration_control', 6, 'Migration Controls Enabled', NULL, NULL, 59);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('migration_control_no', 'migration_control', 6, 'No Migration Controls', '{"leaf":"is_disconnected_drone_pop","value":"no"}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"op":"or","args":[{"leaf":"has_slavery_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}]}]}]}', 60);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('slavery_normal', 'slavery', 7, 'Chattel Slavery', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 61);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('slavery_domestic', 'slavery', 7, 'Domestic Servitude', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 62);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('slavery_military', 'slavery', 7, 'Battle Thralls', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 63);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('slavery_indentured', 'slavery', 7, 'Indentured Servitude', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 64);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('slavery_matrix', 'slavery', 7, 'Grid Amalgamation', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"}]},{"leaf":"has_citizenship_type","value":"scope"}]}', '{"leaf":"always","value":"yes"}', 65);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('slavery_livestock', 'slavery', 7, 'Livestock', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"}]},{"leaf":"has_citizenship_type","value":"scope"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_noxious"}]}]}', 66);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('slavery_matrix_guided_sapience', 'slavery', 7, 'Sapient Specimens', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_citizenship_type","value":"scope"}]}', '{"leaf":"always","value":"yes"}', 67);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('slavery_orderly', 'slavery', 7, 'Orderlies', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_twisted_experimenters_empire","value":"yes"}]}', '{"leaf":"is_sapient","value":"yes"}', 68);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('purge_normal', 'purge', 8, 'Extermination', '{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"},{"op":"and","args":[{"leaf":"is_disconnected_drone_pop","value":"yes"},{"leaf":"from","value":"scope"}]}]},{"leaf":"always","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"},{"op":"and","args":[{"leaf":"is_disconnected_drone_pop","value":"yes"},{"leaf":"from","value":"scope"}]}]}]}]}]}', 69);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('purge_neutering', 'purge', 8, 'Neutering', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_machine_pop","value":"no"},{"leaf":"from","value":"scope"},{"op":"or","args":[{"leaf":"is_robotic","value":"no"},{"leaf":"species_has_happiness_with_owner","value":"from"}]}]}', 70);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('purge_displacement', 'purge', 8, 'Displacement', '{"op":"and","args":[{"leaf":"is_disconnected_drone_pop","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"},{"leaf":"has_valid_civic","value":"civic_machine_terminator"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"},{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_trait","value":"trait_cybernetic"}]}]}]}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_machine_pop","value":"no"},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"is_same_species","value":"from"}]},{"op":"or","args":[{"leaf":"is_robotic","value":"no"},{"leaf":"species_has_happiness_with_owner","value":"from"}]}]}', 71);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('purge_labor_camps', 'purge', 8, 'Forced Labor', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_machine_pop","value":"no"},{"leaf":"from","value":"scope"}]}', 72);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('purge_matrix', 'purge', 8, 'Chemical Processing', '{"leaf":"is_machine_empire","value":"yes"}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]}]}', 73);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('purge_processing', 'purge', 8, 'Processing', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"leaf":"from","value":"scope"}]},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"from","value":"scope"}]}', 74);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('purge_necrophage', 'purge', 8, 'Necrophage', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_necrophage"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]}]},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"},{"leaf":"has_policy_flag","value":"purge_allowed"}]},{"leaf":"has_trait","value":"trait_necrophage"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"is_robotic","value":"no"},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_drone_pop","value":"no"}]},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_drone_pop","value":"no"}]}]}]}]}', 75);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('purge_cosmogenesis', 'purge', 8, 'Cognitive Overload', '{"leaf":"always","value":"no"}', '{"leaf":"always","value":"yes"}', 76);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('purge_cosmogenesis_lathe_resettle', 'purge', 8, 'Synaptic Service', '{"op":"and","args":[{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"any_owned_planet","value":"scope"}]},{"leaf":"is_sapient","value":"yes"}]}', NULL, 77);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('purge_clips', 'purge', 8, 'Maximize', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_machine_obsessional_directive"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]}]},{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_become_the_crisis"},{"leaf":"has_valid_civic","value":"civic_machine_terminator"},{"leaf":"has_country_flag","value":"paperclip_shamed"},{"leaf":"has_policy_flag","value":"purge_allowed"}]}]}', '{"leaf":"always","value":"yes"}', 78);
-INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES ('purge_sacrifice', 'purge', 8, 'Sacrifice', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"or","args":[{"leaf":"has_country_flag","value":"devour_war_active"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]}]}]}', NULL, 79);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_full', 'citizenship', 0, 'Full Citizenship', 'Pops are free to be politically active and the species can produce Leaders.', 0, 0, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_disconnected_drone_pop","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"is_sapient","value":"yes"},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"has_trait","value":"trait_hive_mind"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_wilderness"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_wilderness"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"is_same_species","value":"from"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"leaf":"is_same_species","value":"from"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"is_same_species_class","value":"from"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_military_service_type","value":"scope"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]}]}]}', 0);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_full_machine', 'citizenship', 0, 'Machine Integration', 'All owned Pops of this species are fully integrated with the Machine Intelligence.', 0, 0, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"or","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_shroud_forged"}]},{"op":"not","args":[{"leaf":"has_trait","value":"trait_shroud_forged"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"},{"op":"and","args":[{"leaf":"FROM","value":"scope"},{"leaf":"has_trait","value":"trait_cybernetic"},{"leaf":"has_trait","value":"trait_zombie"}]}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_assimilation', 'citizenship', 0, 'Assimilation', 'Pops of this species are altered over time to better match the dominant species of the Empire. Pops that are in the process of being assimilated will not produce any resources.
+Base Pops Assimilated per Month: 100', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_homicidal","value":"no"},{"op":"and","args":[{"leaf":"is_homicidal","value":"yes"},{"leaf":"root","value":"scope"}]},{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_terminator"},{"leaf":"root","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"op":"or","args":[{"leaf":"root","value":"scope"},{"leaf":"root","value":"scope"}]}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"root","value":"scope"}]},{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_civic","value":"civic_hive_devouring_swarm"}]}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_individual_machine","value":"no"}]}]},{"op":"or","args":[{"leaf":"can_perform_genetic_assimilation","value":"yes"},{"op":"and","args":[{"leaf":"has_active_tradition","value":"tr_cybernetics_transubstantiation_synthesis"},{"leaf":"ROOT","value":"scope"}]},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"},{"leaf":"ROOT","value":"scope"}]}]},{"leaf":"ROOT","value":"scope"}]},{"op":"and","args":[{"leaf":"has_country_flag","value":"synth_assimilation"},{"leaf":"is_machine_empire","value":"no"}]},{"op":"and","args":[{"op":"or","args":[{"leaf":"has_active_tradition","value":"tr_psionics_psionic_assimilation"},{"leaf":"has_active_tradition","value":"tr_psionics_shroud_great_awakening"}]},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"},{"leaf":"ROOT","value":"scope"}]},{"op":"and","args":[{"leaf":"is_individual_machine","value":"yes"},{"leaf":"ROOT","value":"scope"}]},{"op":"and","args":[{"leaf":"has_modifier","value":"destroyers_of_the_lost_modifier"},{"leaf":"ROOT","value":"scope"}]}]},{"op":"or","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"}]},{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"ROOT","value":"scope"}]}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]},{"op":"or","args":[{"leaf":"is_founding_cruise_crew","value":"yes"},{"leaf":"is_founding_cruise_passenger","value":"yes"}]}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"is_exact_same_species","value":"from"}]},{"leaf":"is_sapient","value":"yes"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_wilderness"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"}]}]},{"op":"not","args":[{"leaf":"has_trait","value":"trait_shroud_forged"}]},{"op":"or","args":[{"leaf":"from","value":"scope"},{"leaf":"is_disconnected_machine_pop","value":"no"}]}]}', 2);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_shroud_touched', 'citizenship', 0, 'Shroud-Forged', 'This is a group of automata uniquely reshaped by the Shroud. Functioning independently from the Machine Intelligence, they are unable to do Menial Drone jobs.', 0, 0, '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"exists","value":"this"},{"op":"and","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"leaf":"has_origin","value":"origin_shroud_forged"}]},{"leaf":"has_trait","value":"trait_shroud_forged"}]}', NULL, 3);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_organic_trophy', 'citizenship', 0, 'Bio-Trophy', 'Pops of this species are revered and cared for by the Machine Intelligence, freed from the burdens of responsibility and agency.', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_civic","value":"civic_machine_servitor"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_machine_pop","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]}]}', 4);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_cruise_passenger', 'citizenship', 0, 'Passenger', 'Pops of this species are passengers on the Forever Cruise, entitled to comfort, entertainment, and a life of leisure among the stars.', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"leaf":"from?","value":"scope"},{"leaf":"is_disconnected_drone_pop","value":"no"},{"op":"not","args":[{"leaf":"is_same_species","value":"from"}]}]}', NULL, 5);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_cruise_crew', 'citizenship', 0, 'Crew', 'Pops of this species work on the Forever Cruise, ensuring the comfort and safety of all passengers.', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"leaf":"from?","value":"scope"},{"leaf":"is_disconnected_drone_pop","value":"no"},{"leaf":"is_founding_cruise_passenger","value":"no"},{"op":"or","args":[{"leaf":"is_same_species","value":"from"},{"leaf":"is_founding_cruise_crew","value":"yes"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]}', NULL, 6);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_limited', 'citizenship', 0, 'Residence', 'Pops are free, but are less important politically, and the species can not produce Leaders.', 0, 0, '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_sapient","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_machine_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"}]}]},{"leaf":"is_disconnected_drone_pop","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"}]}]}', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_sapient","value":"yes"},{"leaf":"has_trait","value":"trait_nascent_stage"},{"leaf":"from","value":"scope"}]},{"op":"or","args":[{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"from","value":"scope"}]},{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_sapient","value":"no"},{"leaf":"from","value":"scope"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_hive_mind"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_wilderness"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"not","args":[{"leaf":"is_same_species","value":"from"}]},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_machine_pop","value":"no"},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"is_same_species","value":"from"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_military_service_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"is_same_species_class","value":"from"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 7);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_limited', 'pop_happiness', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_limited', 'pop_amenities_usage_mult', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_limited', 'pop_political_power', '-0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_political_power', 'Pop Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_slavery', 'citizenship', 0, 'Slaves', 'All Pops of this species will be Enslaved.', 1, 0, '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"exists","value":"this"},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_individual_machine","value":"yes"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"}]}]},{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"}]}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]},{"op":"or","args":[{"leaf":"is_founding_cruise_crew","value":"yes"},{"leaf":"is_founding_cruise_passenger","value":"yes"}]}]}]},{"leaf":"is_disconnected_drone_pop","value":"no"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"leaf":"is_sapient","value":"yes"},{"leaf":"from","value":"scope"}]},{"op":"or","args":[{"leaf":"is_sapient","value":"yes"},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_hive_mind"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_wilderness"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"not","args":[{"leaf":"is_same_species","value":"from"}]},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"is_same_species","value":"from"}]},{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_military_service_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"is_same_species_class","value":"from"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 8);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_slavery', 'planet_pops_enslaved_consumer_goods_upkeep_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_enslaved_consumer_goods_upkeep_mult', 'Consumer Goods Upkeep of Enslaved Pops', 0);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_robot_servitude', 'citizenship', 0, 'Servitude', 'The primary objective of these machines is to serve their masters and fulfill the tasks they were designed for, irrespective of their level of intelligence.', 0, 0, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"}]}', 9);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_purge', 'citizenship', 0, 'Undesirables', 'All Pops of this species will be Purged.', 0, 1, '{"op":"and","args":[{"op":"not","args":[{"leaf":"is_machine_empire","value":"yes"}]},{"op":"or","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_robotic","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]},{"op":"or","args":[{"leaf":"is_founding_cruise_crew","value":"yes"},{"leaf":"is_founding_cruise_passenger","value":"yes"}]}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"},{"leaf":"always","value":"yes"}]},{"op":"not","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"}]}]}]}', 10);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_purge_machine', 'citizenship', 0, 'Undesirables', 'All Pops of this species will be Purged.', 0, 1, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"},{"op":"and","args":[{"leaf":"has_trait","value":"trait_cybernetic"},{"leaf":"has_trait","value":"trait_zombie"},{"leaf":"has_ascension_perk_or_purge_overlord","value":"scope"}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_ascension_perk_or_purge_overlord","value":"scope"}]}]},{"op":"not","args":[{"op":"and","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]},{"op":"or","args":[{"leaf":"is_founding_cruise_crew","value":"yes"},{"leaf":"is_founding_cruise_passenger","value":"yes"}]}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"is_same_species","value":"from"}]},{"op":"or","args":[{"leaf":"is_sapient","value":"yes"},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"leaf":"has_living_standard","value":"scope"}]}]}', 11);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_protected_drone', 'citizenship', 0, 'Protected Drones', 'Pops of this species can be employed in Alien Zoos', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_disconnected_drone_pop","value":"yes"}]}', '{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 12);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_protected_drone', 'pop_amenities_usage_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_protected_drone', 'pop_housing_usage_mult', '-0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_protected_drone', 'pop_political_power', '-1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_political_power', 'Pop Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_symbiotic_drone', 'citizenship', 0, 'Symbiotic Drones', 'Pops of this species can be employed as Workers.', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_disconnected_drone_pop","value":"yes"}]}', '{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"leaf":"is_authoritarian","value":"no"}]}', 13);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_symbiotic_drone', 'pop_amenities_usage_mult', '-0.3', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_symbiotic_drone', 'pop_housing_usage_mult', '-0.3', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_symbiotic_drone', 'pop_bonus_workforce_mult', '-0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_symbiotic_drone', 'pop_category_workers_consumer_goods_upkeep_add', '0.05', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_symbiotic_drone', 'pop_political_power', '-1.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_political_power', 'Pop Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('citizenship_exploited_drone', 'citizenship', 0, 'Exploited Drones', 'Pops can be employed as Slavery Slaves on Colonies with a Slave Processing Facility', 1, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_disconnected_drone_pop","value":"yes"}]}', '{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_egalitarian","value":"yes"},{"leaf":"is_xenophobe","value":"no"}]}]}]}', 14);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_exploited_drone', 'pop_amenities_usage_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_exploited_drone', 'pop_housing_usage_mult', '-0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_exploited_drone', 'pop_bonus_workforce_mult', '-0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('citizenship_exploited_drone', 'pop_political_power', '-1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_political_power', 'Pop Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('no_integration', 'subspecies_integration', 1, 'Do Not Integrate', 'Sub-Species Integration is disabled.', 0, 0, NULL, NULL, 15);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('integrate_into_default', 'subspecies_integration', 1, 'Integrate Into Default Sub-Species', 'This sub-species is automatically altered over time to match the Default Template.
+Default amount of Pops Integrated per Colony per Month: 25', 0, 0, NULL, '{"op":"not","args":[{"leaf":"is_default_species","value":"root"}]}', 16);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_disconnected_drone', 'living_standard', 2, 'Protection', 'Pops of this species can be employed in Alien Zoos', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_disconnected_drone_pop","value":"yes"}]}', '{"leaf":"has_citizenship_type","value":"scope"}', 17);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_symbiotic_drone', 'living_standard', 2, 'Symbiosis', 'Pops of this species can be employed as Workers.', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_disconnected_drone_pop","value":"yes"}]}', '{"leaf":"has_citizenship_type","value":"scope"}', 18);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_exploited_drone', 'living_standard', 2, 'Exploitation', 'Pops can be employed as Slavery Slaves on Colonies with a Slave Processing Facility', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_disconnected_drone_pop","value":"yes"}]}', '{"leaf":"has_citizenship_type","value":"scope"}', 19);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_organic_trophy', 'living_standard', 2, 'Mandatory Pampering', 'This living standard enshrines a small population of organic beings as display pieces, through relentless and unyielding pampering.
+Pops have +40% Happiness, unless there is a Consumer Goods deficit.', 0, 0, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 20);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_organic_trophy', 'pop_category_bio_trophy_consumer_goods_upkeep_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_bio_trophy_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Bio-Trophies', 0);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_chemical_bliss', 'living_standard', 2, 'Chemical Bliss', 'Entertainment media is made freely available as a drug regimen induces a euphoric stupor. The Pops are happy, but useless.
+Increases Pop Happiness by 40% unless there is a Consumer Goods deficit.', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_subdermal_stimulation"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_dystopian_society"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_slavery_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 21);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_chemical_bliss', 'pop_bonus_workforce_mult', '-0.6', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_chemical_bliss', 'pop_category_rulers_consumer_goods_upkeep_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_chemical_bliss', 'pop_category_specialists_consumer_goods_upkeep_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_chemical_bliss', 'pop_category_workers_consumer_goods_upkeep_add', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_chemical_bliss', 'pop_category_civilians_consumer_goods_upkeep_add', '0.1', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_shared_burden', 'living_standard', 2, 'Shared Burdens', 'Shared Burdens ensures an equitable distribution of resources between all members of society.
+Pops have +5% Happiness, unless there is a Consumer Goods deficit.
+Unemployed Pops have normal Happiness.
+Civilians produce Unity', 0, 0, '{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 22);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_shared_burden', 'pop_category_rulers_consumer_goods_upkeep_add', '0.4', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_shared_burden', 'pop_category_specialists_consumer_goods_upkeep_add', '0.4', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_shared_burden', 'pop_category_workers_consumer_goods_upkeep_add', '0.4', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_shared_burden', 'pop_category_civilians_consumer_goods_upkeep_add', '0.4', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_shared_burden', 'pop_cat_ruler_political_power', '3.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_political_power', 'Elite Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_shared_burden', 'pop_cat_specialist_political_power', '3.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_political_power', 'Specialist Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_shared_burden', 'pop_cat_worker_political_power', '3.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_political_power', 'Worker Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_shared_burden', 'pop_cat_civilian_political_power', '3.0', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_civilian_political_power', 'Civilian Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_shared_burden', 'pop_civilian_bonus_workforce_mult', '0.15', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_civilian_bonus_workforce_mult', 'Job Efficiency for Civilians', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_dystopian_society', 'living_standard', 2, 'Dystopian Society', 'Dystopian Society makes the ruling class the only recipient of necessities, completely neglecting the lower classes.
+Elites have +25% Happiness, unless there is a Consumer Goods deficit.
+Enforcers have +10% Happiness, unless there is a Consumer Goods or Amenities deficit.
+Specialists and Workers have -200% Happiness', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_resource_slavery_type","value":"yes"}]},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 23);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_dystopian_society', 'pop_category_rulers_consumer_goods_upkeep_add', '1.33', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_dystopian_society', 'pop_category_specialists_consumer_goods_upkeep_add', '0.125', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_dystopian_society', 'pop_category_workers_consumer_goods_upkeep_add', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_dystopian_society', 'pop_category_civilians_consumer_goods_upkeep_add', '0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_dystopian_society', 'planet_pops_enslaved_consumer_goods_upkeep_mult', '-0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_enslaved_consumer_goods_upkeep_mult', 'Consumer Goods Upkeep of Enslaved Pops', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_dystopian_society', 'pop_cat_ruler_political_power', '10.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_political_power', 'Elite Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_dystopian_society', 'pop_cat_specialist_political_power', '-0.25', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_political_power', 'Specialist Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_dystopian_society', 'pop_cat_worker_political_power', '-0.75', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_political_power', 'Worker Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_dystopian_society', 'pop_cat_civilian_political_power', '-1.0', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_civilian_political_power', 'Civilian Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_dystopian_society', 'pop_civilian_bonus_workforce_mult', '-0.1', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_civilian_bonus_workforce_mult', 'Job Efficiency for Civilians', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_worker_ownership', 'living_standard', 2, 'Employee Ownership', 'Employee Ownership guarantees every worker a democratic share in their enterprise. Living costs and social responsibilities are distributed evenly to all members.', 0, 0, '{"op":"and","args":[{"leaf":"is_worker_coop_empire","value":"yes"},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 24);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_worker_ownership', 'pop_category_rulers_consumer_goods_upkeep_add', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_worker_ownership', 'pop_category_specialists_consumer_goods_upkeep_add', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_worker_ownership', 'pop_category_workers_consumer_goods_upkeep_add', '0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_worker_ownership', 'pop_category_civilians_consumer_goods_upkeep_add', '0.5', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_worker_ownership', 'pop_cat_ruler_political_power', '3.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_political_power', 'Elite Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_worker_ownership', 'pop_cat_specialist_political_power', '3.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_political_power', 'Specialist Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_worker_ownership', 'pop_cat_worker_political_power', '3.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_political_power', 'Worker Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_worker_ownership', 'pop_cat_civilian_political_power', '3.0', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_civilian_political_power', 'Civilian Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_utopian', 'living_standard', 2, 'Utopian Abundance', 'Utopian Abundance ensures that every member of this species has access to nearly any type of luxury conceivable.
+Pops have +20% Happiness, unless there is a Consumer Goods deficit.
+Civilians produce Unity and Physics Society Engineering Research Points.', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_dystopian_society"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 25);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_utopian', 'pop_category_rulers_consumer_goods_upkeep_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_utopian', 'pop_category_specialists_consumer_goods_upkeep_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_utopian', 'pop_category_workers_consumer_goods_upkeep_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_utopian', 'pop_category_civilians_consumer_goods_upkeep_add', '1.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_utopian', 'pop_cat_ruler_political_power', '4.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_political_power', 'Elite Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_utopian', 'pop_cat_specialist_political_power', '4.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_political_power', 'Specialist Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_utopian', 'pop_cat_worker_political_power', '4.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_political_power', 'Worker Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_utopian', 'pop_cat_civilian_political_power', '4.0', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_civilian_political_power', 'Civilian Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_good', 'living_standard', 2, 'Social Welfare', 'Social Welfare strives to improve the lives of the poorer Stratas through generous social policies.
+Pops have +5% Happiness, unless there is a Consumer Goods deficit.
+Unemployed Pops have normal Happiness.
+Civilians produce Unity', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"leaf":"is_cruise_passenger","value":"yes"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_robotic_species","value":"yes"},{"op":"or","args":[{"leaf":"species_rights_robot_full_rights_check","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]},{"leaf":"is_robotic_species","value":"no"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_slavery_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 26);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_good', 'pop_category_rulers_consumer_goods_upkeep_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_good', 'pop_category_specialists_consumer_goods_upkeep_add', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_good', 'pop_category_workers_consumer_goods_upkeep_add', '0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_good', 'pop_category_civilians_consumer_goods_upkeep_add', '0.5', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_good', 'pop_cat_ruler_political_power', '4.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_political_power', 'Elite Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_good', 'pop_cat_specialist_political_power', '3.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_political_power', 'Specialist Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_good', 'pop_cat_worker_political_power', '2.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_political_power', 'Worker Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_good', 'pop_cat_civilian_political_power', '2.0', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_civilian_political_power', 'Civilian Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_academic_privilege', 'living_standard', 2, 'Academic Privilege', 'Academic Privilege prioritizes the educated Population, to the general benefit of the sciences
+Elites and Specialists have +15% Happiness, unless there is a Consumer Goods deficit., Job Efficiency for Researcher jobs: +10%', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 27);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_academic_privilege', 'pop_category_rulers_consumer_goods_upkeep_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_academic_privilege', 'pop_category_specialists_consumer_goods_upkeep_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_academic_privilege', 'pop_category_workers_consumer_goods_upkeep_add', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_academic_privilege', 'pop_category_civilians_consumer_goods_upkeep_add', '0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_academic_privilege', 'pop_cat_ruler_political_power', '6.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_political_power', 'Elite Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_academic_privilege', 'pop_cat_specialist_political_power', '2.5', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_political_power', 'Specialist Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_academic_privilege', 'pop_cat_worker_political_power', '0.5', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_political_power', 'Worker Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_academic_privilege', 'pop_cat_civilian_political_power', '0.5', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_civilian_political_power', 'Civilian Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_normal', 'living_standard', 2, 'Decent Conditions', 'Decent Conditions ensures that most members of the species have what they need for an acceptable quality of life
+Elites have +10% Happiness and Specialists have +5% Happiness, unless there is a Consumer Goods deficit.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_resource_slavery_type","value":"yes"}]},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_infernal"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 28);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_normal', 'pop_category_rulers_consumer_goods_upkeep_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_normal', 'pop_category_specialists_consumer_goods_upkeep_add', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_normal', 'pop_category_workers_consumer_goods_upkeep_add', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_normal', 'pop_category_civilians_consumer_goods_upkeep_add', '0.25', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_normal', 'pop_cat_ruler_political_power', '5.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_political_power', 'Elite Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_normal', 'pop_cat_specialist_political_power', '2.5', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_political_power', 'Specialist Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_normal', 'pop_cat_worker_political_power', '1.5', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_political_power', 'Worker Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_normal', 'pop_cat_civilian_political_power', '1.5', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_civilian_political_power', 'Civilian Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_stratified', 'living_standard', 2, 'Stratified Economy', 'Stratified Economy prioritizes the ruling classes at the expense of the impoverished masses.
+Elites have +15% Happiness and Specialists have +5% Happiness, unless there is a Consumer Goods deficit.
+Workers, Civilians, and Slavery Slaves have -10% Happiness', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 29);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_stratified', 'pop_category_rulers_consumer_goods_upkeep_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_stratified', 'pop_category_specialists_consumer_goods_upkeep_add', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_stratified', 'pop_category_workers_consumer_goods_upkeep_add', '0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_stratified', 'pop_category_civilians_consumer_goods_upkeep_add', '0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_stratified', 'pop_cat_ruler_political_power', '8.0', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_political_power', 'Elite Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_stratified', 'pop_cat_specialist_political_power', '1.25', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_political_power', 'Specialist Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_stratified', 'pop_cat_worker_political_power', '-0.25', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_political_power', 'Worker Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_stratified', 'pop_cat_civilian_political_power', '-0.25', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_civilian_political_power', 'Civilian Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_subsistence', 'living_standard', 2, 'Basic Subsistence', 'Basic Subsistence offers only the most essential of goods to the Pops of this species.
+Pops have -20% Happiness', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_resource_slavery_type","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]},{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"},{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 30);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_subsistence', 'pop_category_rulers_consumer_goods_upkeep_add', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_subsistence', 'pop_category_specialists_consumer_goods_upkeep_add', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_subsistence', 'pop_category_workers_consumer_goods_upkeep_add', '0.05', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_subsistence', 'pop_category_civilians_consumer_goods_upkeep_add', '0.05', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_subsistence', 'pop_cat_ruler_political_power', '9.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_political_power', 'Elite Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_subsistence', 'pop_cat_worker_political_power', '-0.5', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_worker_political_power', 'Worker Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_subsistence', 'pop_cat_civilian_political_power', '-1.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_civilian_political_power', 'Civilian Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_livestock', 'living_standard', 2, 'Livestock', 'Livestock Pops cannot be employed to produce resources, but are instead kept around to increase the Food supply.
+Instead, Lithoid Livestock produce Minerals and Thermophile Livestock produce Alloys.
+Livestock can be kept in Alien Zoos to provide Amenities.', 0, 0, '{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_slavery_type","value":"scope"}]}', 31);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_matrix', 'living_standard', 2, 'Grid Amalgamation', 'A long-term alternative to Chemical Processing, where enough of the organic population survives the process to continue to power our energy grid indefinitely.', 0, 0, '{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_slavery_type","value":"scope"}]}', 32);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_matrix_guided_sapience', 'living_standard', 2, 'Sapient Specimens', 'Specimen Pops cannot be employed to produce resources, but are instead kept around to produce Unity and reduce housing usage.', 0, 0, '{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_slavery_type","value":"scope"}]}', 33);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_servitude', 'living_standard', 2, 'Servitude', 'These machines are held in absolute servitude by their organic masters, and can be used or discarded at their whim.', 0, 0, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"leaf":"has_citizenship_type","value":"scope"}', 34);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_hive_mind', 'living_standard', 2, 'Drone', 'While it may have little use for luxuries, a drone population still requires a great deal of resources to sustain itself.', 0, 0, '{"op":"and","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"op":"or","args":[{"op":"not","args":[{"leaf":"has_trait","value":"trait_mechanical"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_shroud_forged"}]}]},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_hive_mind"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 35);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_decadent', 'living_standard', 2, 'Decadent Lifestyle', 'Decadent Lifestyle prioritizes more resources and luxuries for privileged members of society.
+Pops have +20% Happiness, unless there is a Consumer Goods deficit.
+Civilians provide Pop Growth (or Assembly) Speed scaling with their percentage of the Colony population. This requires free Housing and Amenities, and no Consumer Goods deficit.', 0, 0, '{"op":"and","args":[{"leaf":"is_pleasure_seeker_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_valid_civic","value":"civic_dystopian_society"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]},{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"leaf":"is_individual_machine","value":"no"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"leaf":"is_cruise_passenger","value":"yes"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"has_purge_type","value":"scope"},{"leaf":"has_purge_type","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}', 36);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_decadent', 'pop_category_rulers_consumer_goods_upkeep_add', '1.33', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_rulers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Elites', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_decadent', 'pop_category_specialists_consumer_goods_upkeep_add', '0.66', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_specialists_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Specialists', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_decadent', 'pop_category_workers_consumer_goods_upkeep_add', '0.33', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_workers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Workers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_decadent', 'pop_category_civilians_consumer_goods_upkeep_add', '1.33', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_decadent', 'pop_amenities_usage_base', '0.5', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_base', 'Pop Amenities Usage', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_decadent', 'pop_cat_ruler_political_power', '7.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_political_power', 'Elite Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_decadent', 'pop_cat_specialist_political_power', '2.0', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_specialist_political_power', 'Specialist Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_protected', 'living_standard', 2, 'Protected', 'These units are protected by the collective, even though they are not a part of it. The Machine Intelligence can make great use of their unique skills, but their additional needs may increase over time.', 0, 0, '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"exists","value":"this"},{"op":"and","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"leaf":"has_origin","value":"origin_shroud_forged"}]},{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"is_cruise_passenger","value":"no"}]}', NULL, 37);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_protected', 'pop_category_drones_consumer_goods_upkeep_add', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_drones_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Menial Drone and Complex Drone', 0);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_none', 'living_standard', 2, 'Non-Existent', 'This species is in the process of being purged, and Pops from it will have no Upkeep cost.', 0, 0, '{"op":"and","args":[{"leaf":"is_cruise_crew","value":"no"},{"leaf":"is_cruise_passenger","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}', 38);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_cruise_passenger', 'living_standard', 2, 'All Inclusive', 'This living standard ensures that no needs go unsatisfied and no whim ignored.
+Pops have +20% Happiness, unless there is a Consumer Goods deficit.', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]},{"leaf":"has_citizenship_type","value":"scope"}]}', NULL, 39);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_cruise_passenger', 'pop_category_cruise_passenger_consumer_goods_upkeep_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_cruise_passenger_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Passengers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_cruise_passenger', 'pop_cat_cruise_passenger_political_power', '14.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_cruise_passenger_political_power', 'First Class Passenger Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_cruise_passenger', 'pop_cat_cruise_passenger_unemployment_political_power', '9.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_cruise_passenger_unemployment_political_power', 'Economy Class Passenger Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_cruise_economy_passenger', 'living_standard', 2, 'Package Deal', 'Sign up for the tour of a lifetime and see the stars.
+Pops cannot work First Class Passenger Jobs.', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]},{"leaf":"has_citizenship_type","value":"scope"}]}', NULL, 40);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_cruise_economy_passenger', 'pop_category_cruise_passenger_consumer_goods_upkeep_add', '0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_category_cruise_passenger_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Passengers', 0);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_cruise_economy_passenger', 'pop_cat_cruise_passenger_political_power', '9.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_cruise_passenger_political_power', 'First Class Passenger Political Power', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_cruise_economy_passenger', 'pop_cat_cruise_passenger_unemployment_political_power', '9.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_cruise_passenger_unemployment_political_power', 'Economy Class Passenger Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_deassimilation', 'living_standard', 2, 'Hive Dissociation', 'This species is undergoing a difficult physiological separation from a Hive Mind.', 0, 0, '{"op":"and","args":[{"leaf":"has_trait","value":"trait_hive_mind"},{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"can_perform_genetic_assimilation","value":"yes"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 41);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_ego_assimilation', 'living_standard', 2, 'Identity Sublimation', 'This species is becoming one with the unified mind.', 0, 0, '{"op":"and","args":[{"leaf":"has_psionic_species_trait","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"can_perform_genetic_assimilation","value":"yes"},{"op":"not","args":[{"leaf":"has_civic","value":"civic_hive_devouring_swarm"}]},{"op":"not","args":[{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 42);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_ego_assimilation', 'pop_happiness', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_ego_assimilation_psionic', 'living_standard', 2, 'Identity Sublimation', 'This species is becoming one with the unified mind.
+Due to the destruction of the individual ego, any Psionic traits will be removed.', 0, 0, '{"op":"and","args":[{"leaf":"has_psionic_species_trait","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"can_perform_genetic_assimilation","value":"yes"},{"op":"not","args":[{"leaf":"has_civic","value":"civic_hive_devouring_swarm"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 43);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_ego_assimilation_psionic', 'pop_happiness', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_cyborg_ego_assimilation', 'living_standard', 2, 'Identity Sublimation', 'This species is becoming one with the unified mind.', 0, 0, '{"op":"and","args":[{"leaf":"has_psionic_species_trait","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"or","args":[{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_civic","value":"civic_hive_devouring_swarm"}]}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"prev","value":"scope"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 44);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_cyborg_ego_assimilation', 'pop_happiness', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_cyborg_ego_assimilation_psionic', 'living_standard', 2, 'Identity Sublimation', 'This species is becoming one with the unified mind.
+Due to the destruction of the individual ego, any Psionic traits will be removed.', 0, 0, '{"op":"and","args":[{"leaf":"has_psionic_species_trait","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"or","args":[{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_civic","value":"civic_hive_devouring_swarm"}]}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"prev","value":"scope"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 45);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_cyborg_ego_assimilation_psionic', 'pop_happiness', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_tech_assimilation', 'living_standard', 2, 'Transubstantiation Synthesis', 'This species is melding with the machine.', 0, 0, '{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"prev","value":"scope"}]},{"leaf":"has_country_flag","value":"synth_assimilation"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 46);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_tech_assimilation', 'pop_happiness', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_cyborg_assimilation', 'living_standard', 2, 'Transubstantiation Synthesis', 'This species is melding with the machine.', 0, 0, '{"op":"and","args":[{"leaf":"has_psionic_species_trait","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 47);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_cyborg_assimilation', 'pop_happiness', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_cyborg_assimilation_psionic', 'living_standard', 2, 'Transubstantiation Synthesis', 'This species is melding with the machine.
+Due to incompatibility with Cybernetic implants, any Psionic traits will be removed.', 0, 0, '{"op":"and","args":[{"leaf":"has_psionic_species_trait","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_tradition","value":"tr_cybernetics_transubstantiation_synthesis"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 48);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_cyborg_assimilation_psionic', 'pop_happiness', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_psi_assimilation', 'living_standard', 2, 'Transcendent Awakening', 'This species is awakening to its psionic potential.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_trait","value":"trait_cybernetic"}]},{"op":"or","args":[{"leaf":"has_tradition","value":"tr_psionics_psionic_assimilation"},{"leaf":"has_tradition","value":"tr_psionics_shroud_great_awakening"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"is_organic_species","value":"no"}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 49);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_psi_assimilation', 'pop_happiness', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_psi_assimilation_cyborg', 'living_standard', 2, 'Transcendent Awakening', 'This species is awakening to its psionic potential.
+To achieve purity of spirit and body, all Cybernetic traits will be removed.', 0, 0, '{"op":"and","args":[{"leaf":"has_trait","value":"trait_cybernetic"},{"op":"or","args":[{"leaf":"has_tradition","value":"tr_psionics_psionic_assimilation"},{"leaf":"has_tradition","value":"tr_psionics_shroud_great_awakening"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 50);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_psi_assimilation_cyborg', 'pop_happiness', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('living_standard_shroud_inoculation', 'living_standard', 2, 'Shroud Inoculation', 'This species is being inoculated against the harmful effects of psi-radiation.
+To prevent further harm, any Psionic traits will be removed.', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"leaf":"has_psionic_species_trait","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_hive_mind"}]}]},{"leaf":"has_modifier","value":"destroyers_of_the_lost_modifier"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"has_citizenship_type","value":"scope"}]}', 51);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('living_standard_shroud_inoculation', 'pop_happiness', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('military_service_full', 'military_service', 3, 'Full Military Service', 'Species can produce Armies, and Commanders.', 0, 0, '{"op":"and","args":[{"leaf":"is_disconnected_drone_pop","value":"no"},{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_cybernetic"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_country_flag","value":"finish_shroud_forged_liberation_flag"}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"},{"op":"and","args":[{"leaf":"has_trait","value":"trait_cybernetic"},{"leaf":"from","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"not","args":[{"leaf":"has_trait","value":"trait_syncretic_proles"}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"or","args":[{"leaf":"is_same_species","value":"from"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"}]},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"has_trait","value":"trait_hive_mind"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]}]},{"leaf":"can_think","value":"yes"}]}', 52);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('military_service_limited', 'military_service', 3, 'Soldiers Only', 'Species can only produce Armies.', 0, 0, '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"is_same_species","value":"from"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]}]},{"op":"or","args":[{"leaf":"has_slavery_type","value":"scope"},{"leaf":"is_shackled_robot_species_rights","value":"yes"},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_disconnected_drone_pop","value":"yes"},{"leaf":"has_citizenship_type","value":"scope"}]},{"op":"not","args":[{"leaf":"is_disconnected_drone_pop","value":"yes"}]}]}]}', 53);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('military_service_none', 'military_service', 3, 'Exempt', 'Species can not produce any military Leaders nor be used in Armies.', 0, 0, '{"op":"or","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_hive_mind"}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"is_same_species","value":"from"}]},{"op":"not","args":[{"leaf":"has_slavery_type","value":"scope"}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"or","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"leaf":"has_trait","value":"trait_robot_suppressed"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', 54);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('colonization_control_yes', 'colonization_control', 4, 'Colonization Forbidden', 'Colonization Rights determines whether this Species is allowed to board colony ships and settle new worlds.', 0, 0, '{"op":"not","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"or","args":[{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"leaf":"always","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]}]}', 55);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('colonization_control_no', 'colonization_control', 4, 'Colonization Allowed', 'Colonization Rights determines whether this Species is allowed to board colony ships and settle new worlds.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"},{"op":"and","args":[{"leaf":"has_trait","value":"trait_cybernetic"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"}]},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]}]}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"has_trait","value":"trait_hive_mind"}]},{"op":"or","args":[{"op":"not","args":[{"leaf":"has_trait","value":"trait_mechanical"}]},{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"}]},{"leaf":"can_think","value":"yes"},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"op":"or","args":[{"leaf":"has_slavery_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}]},{"op":"not","args":[{"leaf":"has_citizenship_type","value":"scope"}]}]}]}', 56);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('population_control_yes', 'population_control', 5, 'Population Controls Enabled', 'Population Controls prevent Pops of this species from being grown or assembled.', 0, 0, NULL, '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"leaf":"has_policy_flag","value":"population_controls_not_allowed"}]},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]},{"leaf":"always","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}]}]}', 57);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('population_control_yes', 'pop_happiness', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('population_control_no', 'population_control', 5, 'No Population Controls', 'Population Controls prevent Pops of this species from being grown or assembled.', 0, 0, '{"leaf":"always","value":"yes"}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"or","args":[{"leaf":"from","value":"scope"},{"leaf":"has_trait","value":"trait_hive_mind"}]}]}', 58);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('migration_control_yes', 'migration_control', 6, 'Migration Controls Enabled', 'Migration Controls prevent Pops of this species from moving freely between our worlds.', 0, 0, NULL, NULL, 59);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('migration_control_no', 'migration_control', 6, 'No Migration Controls', 'No Migration Controls allows Pops of this species to move between our colonies unrestricted.', 0, 0, '{"leaf":"is_disconnected_drone_pop","value":"no"}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_citizenship_type","value":"scope"},{"op":"or","args":[{"leaf":"has_slavery_type","value":"scope"},{"leaf":"has_slavery_type","value":"scope"}]}]}]}]}', 60);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('slavery_normal', 'slavery', 7, 'Chattel Slavery', 'Chattel Slaves have increased resource production but cannot be employed in Elite or Specialist Jobs.', 0, 0, '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 61);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('slavery_normal', 'pop_bonus_workforce_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('slavery_normal', 'pop_happiness', '-0.3', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('slavery_domestic', 'slavery', 7, 'Domestic Servitude', 'Domestic Servants that are not holding another job will be employed as Servants, increases Amenities. They cannot perform Elite or Specialist Jobs, with the sole exception of working as Entertainers.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 62);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('slavery_domestic', 'pop_happiness', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('slavery_military', 'slavery', 7, 'Battle Thralls', 'Battle Thralls have no bonuses to resource production, but make excellent soldiers for local Armies. They can be employed in Enforcer, Soldier, or Worker Jobs.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 63);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('slavery_military', 'pop_happiness', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('slavery_indentured', 'slavery', 7, 'Indentured Servitude', 'Indentured Servants can be employed in Worker or Specialist Jobs, and retain more political power than other slaves. They cannot work as Entertainers or Enforcers. Slavery based production bonuses only apply when employed as Workers.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"always","value":"yes"},{"leaf":"is_sapient","value":"yes"}]}', 64);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('slavery_indentured', 'pop_happiness', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('slavery_indentured', 'pop_political_power', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_political_power', 'Pop Political Power', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('slavery_matrix', 'slavery', 7, 'Grid Amalgamation', 'A long-term alternative to Chemical Processing, where enough of the organic population survives the process to continue to power our energy grid indefinitely.', 0, 0, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"}]},{"leaf":"has_citizenship_type","value":"scope"}]}', '{"leaf":"always","value":"yes"}', 65);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('slavery_matrix', 'pop_happiness', '-0.4', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('slavery_livestock', 'slavery', 7, 'Livestock', 'Livestock Pops cannot be employed to produce resources, but are instead kept around to increase the Food supply.
+Instead, Lithoid Livestock produce Minerals and Thermophile Livestock produce Alloys.
+Livestock can be kept in Alien Zoos to provide Amenities.', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"}]},{"leaf":"has_citizenship_type","value":"scope"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_trait","value":"trait_noxious"}]}]}', 66);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('slavery_livestock', 'pop_happiness', '-0.4', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('slavery_matrix_guided_sapience', 'slavery', 7, 'Sapient Specimens', 'Specimen Pops cannot be employed to produce resources, but are instead kept around to produce Unity and reduce housing usage.', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_citizenship_type","value":"scope"}]}', '{"leaf":"always","value":"yes"}', 67);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('slavery_matrix_guided_sapience', 'pop_happiness', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('slavery_orderly', 'slavery', 7, 'Orderlies', 'Orderlies can be employed to increase Researchers Output and produce Amenities.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_twisted_experimenters_empire","value":"yes"}]}', '{"leaf":"is_sapient","value":"yes"}', 68);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('purge_normal', 'purge', 8, 'Extermination', 'Affected Pops are systematically eradicated. This is the fastest form of Purging available.', 0, 0, '{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"},{"op":"and","args":[{"leaf":"is_disconnected_drone_pop","value":"yes"},{"leaf":"from","value":"scope"}]}]},{"leaf":"always","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_lonely_hive_mind_pop","value":"yes"},{"op":"and","args":[{"leaf":"is_disconnected_drone_pop","value":"yes"},{"leaf":"from","value":"scope"}]}]}]}]}]}', 69);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('purge_normal', 'pop_happiness', '-10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('purge_neutering', 'purge', 8, 'Neutering', 'Affected Pops no longer grow and will die out over time, but gain only a moderate Happiness penalty.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_machine_pop","value":"no"},{"leaf":"from","value":"scope"},{"op":"or","args":[{"leaf":"is_robotic","value":"no"},{"leaf":"species_has_happiness_with_owner","value":"from"}]}]}', 70);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('purge_neutering', 'pop_happiness', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('purge_displacement', 'purge', 8, 'Displacement', 'Affected Pops are expelled from our nation over time, left to find refuge outside our borders.', 0, 0, '{"op":"and","args":[{"leaf":"is_disconnected_drone_pop","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"from","value":"scope"},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"},{"leaf":"has_valid_civic","value":"civic_machine_terminator"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_machine_unit"},{"leaf":"has_trait","value":"trait_mechanical"},{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_trait","value":"trait_cybernetic"}]}]}]}]}]},{"op":"not","args":[{"leaf":"from","value":"scope"}]}]}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_machine_pop","value":"no"},{"op":"or","args":[{"op":"not","args":[{"leaf":"from","value":"scope"}]},{"leaf":"is_same_species","value":"from"}]},{"op":"or","args":[{"leaf":"is_robotic","value":"no"},{"leaf":"species_has_happiness_with_owner","value":"from"}]}]}', 71);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('purge_displacement', 'pop_happiness', '-0.3', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('purge_displacement', 'pop_housing_usage_mult', '-0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('purge_labor_camps', 'purge', 8, 'Forced Labor', 'Affected Pops are worked to death and can be used to produce Food (or equivalent) until their eventual demise.', 0, 0, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_machine_pop","value":"no"},{"leaf":"from","value":"scope"}]}', 72);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('purge_labor_camps', 'pop_happiness', '-10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('purge_matrix', 'purge', 8, 'Chemical Processing', 'Affected Pops'' physiologies are prepared for integration with the energy grid, where the chemical processes that sustain them are redirected to enrich our energy stores. The process is fatal, but death comes slowly.', 0, 0, '{"leaf":"is_machine_empire","value":"yes"}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]}]}', 73);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('purge_matrix', 'pop_happiness', '-10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('purge_processing', 'purge', 8, 'Processing', 'Affected Pops are processed into availability until death.', 0, 0, '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_disconnected_drone_pop","value":"no"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"op":"or","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},{"leaf":"from","value":"scope"}]},{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"from","value":"scope"}]}', 74);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('purge_processing', 'pop_happiness', '-10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('purge_necrophage', 'purge', 8, 'Necrophage', 'Affected Pops are gradually subsumed into the race, whether they wish it or not.', 0, 0, '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_necrophage"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]}]},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"},{"leaf":"has_policy_flag","value":"purge_allowed"}]},{"leaf":"has_trait","value":"trait_necrophage"}]}', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"is_robotic","value":"no"},{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_drone_pop","value":"no"}]},{"leaf":"from","value":"scope"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_lonely_hive_mind_pop","value":"no"},{"leaf":"is_disconnected_drone_pop","value":"no"}]}]}]}]}', 75);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('purge_necrophage', 'pop_happiness', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('purge_cosmogenesis', 'purge', 8, 'Cognitive Overload', 'Affected Pops are automatically resettled to the Synaptic Lathe and employed as Neural Chip.', 0, 0, '{"leaf":"always","value":"no"}', '{"leaf":"always","value":"yes"}', 76);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('purge_cosmogenesis', 'pop_happiness', '-0.33', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('purge_cosmogenesis_lathe_resettle', 'purge', 8, 'Synaptic Service', 'Pops are resettled onto the Synaptic Lathe', 0, 0, '{"op":"and","args":[{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"any_owned_planet","value":"scope"}]},{"leaf":"is_sapient","value":"yes"}]}', NULL, 77);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('purge_cosmogenesis_lathe_resettle', 'pop_happiness', '-0.33', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('purge_clips', 'purge', 8, 'Maximize', 'Affected pops are rendered into Consumer Goods for the sake of never failing a production quota again.', 0, 0, '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_machine_obsessional_directive"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]}]},{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_become_the_crisis"},{"leaf":"has_valid_civic","value":"civic_machine_terminator"},{"leaf":"has_country_flag","value":"paperclip_shamed"},{"leaf":"has_policy_flag","value":"purge_allowed"}]}]}', '{"leaf":"always","value":"yes"}', 78);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('purge_clips', 'pop_happiness', '-10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES ('purge_sacrifice', 'purge', 8, 'Sacrifice', 'Affected Pops are offered in sacrifice to the Eater of Worlds, which repays us in Zro and Unity.', 0, 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"or","args":[{"leaf":"has_country_flag","value":"devour_war_active"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_nomadic_purger"},{"leaf":"overlord?","value":"scope"}]}]}]}', NULL, 79);
+INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES ('purge_sacrifice', 'pop_happiness', '-10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR REPLACE INTO leader_trait (key, name, description, leader_classes, sort_order)
                    VALUES ('trait_ruler_corvette_focus', 'Corvette Production Focus', 'This leader is intent on promoting the construction of Corvettes.', 'commander', 0);
 INSERT OR IGNORE INTO leader_trait_modifier
@@ -101599,15 +102360,15 @@ INSERT OR REPLACE INTO leader_trait (key, name, description, leader_classes, sor
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'planet', 'pop_category_workers_unity_produces_add', '0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_unity_produces_add', 'Unity from Pop Cat Workers', 1);
+           VALUES ('pop_category_workers_unity_produces_add', 'Unity from Workers', 1);
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'planet', 'pop_category_specialists_unity_produces_add', '0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_unity_produces_add', 'Unity from Pop Cat Specialists', 1);
+           VALUES ('pop_category_specialists_unity_produces_add', 'Unity from Specialists', 1);
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'planet', 'pop_category_rulers_unity_produces_add', '0.5', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_unity_produces_add', 'Unity from Pop Cat Ruler Elites', 1);
+           VALUES ('pop_category_rulers_unity_produces_add', 'Unity from Elites', 1);
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'planet', 'pop_happiness', '0.05', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -101615,15 +102376,15 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'sector', 'pop_category_workers_unity_produces_add', '0.25', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_workers_unity_produces_add', 'Unity from Pop Cat Workers', 1);
+           VALUES ('pop_category_workers_unity_produces_add', 'Unity from Workers', 1);
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'sector', 'pop_category_specialists_unity_produces_add', '0.25', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_specialists_unity_produces_add', 'Unity from Pop Cat Specialists', 1);
+           VALUES ('pop_category_specialists_unity_produces_add', 'Unity from Specialists', 1);
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'sector', 'pop_category_rulers_unity_produces_add', '0.25', 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_category_rulers_unity_produces_add', 'Unity from Pop Cat Ruler Elites', 1);
+           VALUES ('pop_category_rulers_unity_produces_add', 'Unity from Elites', 1);
 INSERT OR IGNORE INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, sort_order) VALUES ('leader_trait_galvanizer', 'sector', 'pop_happiness', '0.05', 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -107866,7 +108627,8 @@ Successful raids will hamper Cetana''s plans.', 1, NULL, '[{"event": "crisis.813
 INSERT OR REPLACE INTO special_project
                    (key, name, description, days, department, outcomes_json)
                    VALUES ('THE_SYNTH_QUEENS_CONVOY_AMBUSH', 'Ambush Convoy', 'Cetana''s Convoys ensure the delivery of crucial resources to her outposts. If we can catch one with our fleets, we can board the ships and inspect their cargo.
-This will start a battle!, Successful raids will impede Cetana''s plans.', 1, NULL, '[{"event": "crisis.8136", "name": null}]');
+This will start a battle!
+Successful raids will impede Cetana''s plans.', 1, NULL, '[{"event": "crisis.8136", "name": null}]');
 INSERT OR REPLACE INTO special_project
                    (key, name, description, days, department, outcomes_json)
                    VALUES ('THE_SYNTH_QUEENS_RESHAPING_RITUAL', '', 'Somehow the Animator of Clay disabled Cetana''s Titan. The chance is now: if we hope to reshape Cetana, we must prepare for the .', 30, NULL, '[{"event": "crisis.24250", "name": "The Dance of Clay"}]');
@@ -108128,6 +108890,1670 @@ INSERT OR REPLACE INTO special_project
 INSERT OR REPLACE INTO special_project
                    (key, name, description, days, department, outcomes_json)
                    VALUES ('STAR_CROSSED_SURVIVOR_POD_PROJECT', 'Scan the Survivor Pod', 'We must fly to the indicated system and scan the pod to determine whether its occupant still lives.', 180, 'physics_technology', '[{"event": "arkship.1395", "name": "Last Survivor"}]');
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_food_boost', 'decision', 'decision_planet_food_boost', 'Encourage Colony Growth', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_growth_discouraged', 'decision', 'decision_planet_food_boost', 'Encourage Colony Growth', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_population_control', 'decision', 'decision_planet_food_boost', 'Encourage Colony Growth', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_luxuries_boost', 'decision', 'decision_planet_luxuries_boost', 'Distribute Luxury Goods', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_population_control', 'decision', 'decision_enact_population_control', 'Declare Population Controls', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_population_control_gestalt', 'decision', 'decision_enact_population_control_gestalt', 'Cease Drone Production', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_robot_assembly_control', 'decision', 'decision_enact_robot_assembly_control', 'Cease Robot Assembly', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_population_expelled', 'decision', 'decision_expel_population', 'Expel Excess Population', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_growth_discouraged', 'decision', 'decision_discourage_growth', 'Discourage Colony Growth', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'penal_colony', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'penal_experimental_sentencing', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'bonus', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'resort_colony', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'slave_colony', 'decision', 'decision_penal_colony', 'Create Penal Colony', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'penal_colony', 'decision', 'decision_slave_colony', 'Create Thrall-World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'resort_colony', 'decision', 'decision_slave_colony', 'Create Thrall-World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'slave_colony', 'decision', 'decision_slave_colony', 'Create Thrall-World', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'penal_colony', 'decision', 'decision_resort_colony', 'Create Resort World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'resort_colony', 'decision', 'decision_resort_colony', 'Create Resort World', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'slave_colony', 'decision', 'decision_resort_colony', 'Create Resort World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mastery_of_nature', 'decision', 'decision_mastery_of_nature', 'Mastery of Nature', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'consecrated', 'decision', 'decision_consecrated_worlds', 'Consecrate World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'consecrated_world', 'decision', 'decision_consecrated_worlds', 'Consecrate World', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'legendary_leader_planet', 'decision', 'decision_arcology_project', 'Arcology Project', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'resolution_breached_terraformed', 'decision', 'decision_arcology_project', 'Arcology Project', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'penal_colony', 'decision', 'decision_arcology_project', 'Arcology Project', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'pm_wenkwort_custodian', 'decision', 'decision_arcology_project', 'Arcology Project', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'resort_colony', 'decision', 'decision_arcology_project', 'Arcology Project', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'slave_colony', 'decision', 'decision_arcology_project', 'Arcology Project', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'resolution_breached_terraformed', 'decision', 'decision_arcology_project_relic', 'Restore Ecumenopolis', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_1', 'decision', 'decision_market_nomination', 'Galactic Market Hub Nomination', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_2', 'decision', 'decision_market_nomination', 'Galactic Market Hub Nomination', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_3', 'decision', 'decision_market_nomination', 'Galactic Market Hub Nomination', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_4', 'decision', 'decision_market_nomination', 'Galactic Market Hub Nomination', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_5', 'decision', 'decision_market_nomination', 'Galactic Market Hub Nomination', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_2', 'decision', 'decision_boost_market_nomination', 'Boost Nomination Bid', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_3', 'decision', 'decision_boost_market_nomination', 'Boost Nomination Bid', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_4', 'decision', 'decision_boost_market_nomination', 'Boost Nomination Bid', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'market_nominee_level_5', 'decision', 'decision_boost_market_nomination', 'Boost Nomination Bid', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'divine_algorithm', 'decision', 'decision_divine_algorithm', 'Implement Divine Algorithm', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artist_monument_erected', 'decision', 'decision_art_monument', 'Exhibit Art Monument', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'being_devoured', 'decision', 'decision_lithoid_swarm_consume_world', 'Consume World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'recently_eaten_planet', 'decision', 'decision_lithoid_swarm_consume_world', 'Consume World', 'effect', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'being_devoured_modifier', 'decision', 'decision_lithoid_swarm_consume_world', 'Consume World', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'crystalline_architecture_mod', 'decision', 'decision_crystalline_architecture', 'Crystalline Construction', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'flooded_habitat', 'decision', 'decision_flood_habitat', 'Flood Habitat', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'finish_shroud_forged_control_flag', 'decision', 'decision_open_shroud_rift', 'Pierce the Shroud', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'entrapping_shroud_entity', 'decision', 'decision_entrap_shroud_entity', 'Entrap Shroud Entity', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroud_forged_trapped_entity', 'decision', 'decision_entrap_shroud_entity', 'Entrap Shroud Entity', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroud_forged_trapped_lesser_entity', 'decision', 'decision_entrap_shroud_entity', 'Entrap Shroud Entity', 'cooldown', 7200);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planetary_workshift_deployed', 'decision', 'decision_planetary_workshift', 'Enforce Planetary Work Shifts', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'anticrime_campaign', 'decision', 'decision_launch_anticrime_campaign', 'Launch Anti-Crime Campaign', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'crime_lord_deal', 'decision', 'decision_launch_anticrime_campaign', 'Launch Anti-Crime Campaign', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'anticrime_campaign', 'decision', 'decision_negotiate_with_crime_lords', 'Negotiate with Crime Lords', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'crime_lord_deal', 'decision', 'decision_negotiate_with_crime_lords', 'Negotiate with Crime Lords', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'crime_lord_deal_broken', 'decision', 'decision_end_crime_lord_deal', 'End Deal with Crime Lords', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'bunkbeds_deployed', 'decision', 'decision_caravaneer_bunkbeds', 'Trium Bunk Beds Deployment', 'cooldown', 28800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tupperware_deployed', 'decision', 'decision_caravaneer_tupperware', 'Trium Food Container Deployment', 'cooldown', 28800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'atmospheric_deodorizer_deployed', 'decision', 'decision_caravaneer_atmospheric_deodorizer', 'Trium Atmospheric Deodorizer Deployment', 'cooldown', 28800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tissue_growth_stimulants', 'decision', 'decision_tissue_growth_stimulants', 'Deploy Tissue Growth Stimulants', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'explosive_fungifoam_housing', 'decision', 'decision_explosive_fungifoam_housing', 'Construct Explosive Fungiform Housing Units', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_museum_exhibits', 'decision', 'decision_museum_exhibits', 'Send Artifacts to Museum Exhibits', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_manager_awards', 'decision', 'decision_manager_awards', 'Initiate Performance Competition', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_sanctuary_exhibits', 'decision', 'decision_sanctuary_exhibits', 'Send Artifacts to Organic Sanctuaries', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_artifact_relays_hivemind', 'decision', 'decision_artifact_relays_hivemind', 'Incorporate Artifact Relays', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_artifact_relays_machine', 'decision', 'decision_artifact_relays_machine', 'Incorporate Artifact Relays', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'oracle_software_integration', 'decision', 'decision_machine_oracle', 'Activate Oracle Nexus', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'pm_yuht_cleansing', 'decision', 'decision_yuht_cleanseplanet', 'Initiate Yuht Cleansing Process', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'pm_extradimensional_experimentation', 'decision', 'decision_extradimensional_experimentation', 'Extradimensional Experimentation', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'intentionally_tidally_locked', 'decision', 'decision_tidal_lock_planet', 'Intentional Tidal Locking', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'being_devoured', 'decision', 'decision_nanotech_swarm_consume_world', 'Subsume World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'recently_eaten_planet', 'decision', 'decision_nanotech_swarm_consume_world', 'Subsume World', 'effect', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'being_devoured_modifier_nanotech', 'decision', 'decision_nanotech_swarm_consume_world', 'Subsume World', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'storm_hunkered_down_modifier', 'decision', 'decision_hunker_down', 'Hunker Down', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'cultivated_worldscaping_modifier', 'decision', 'decision_cultivated_worldscaping', 'Cultivated Worldscaping', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mastery_of_nature', 'decision', 'decision_cultivated_worldscaping', 'Cultivated Worldscaping', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'exhibiting_prismatic_ice', 'decision', 'decision_prismatic_ice_exhibit', 'Prismatic Ice Exhibit', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'recently_toxified_planet', 'decision', 'decision_toxify_world', 'Toxify World', 'effect', 180);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'toxifying_planet', 'decision', 'decision_toxify_world', 'Toxify World', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'living_metal_distribution_effect', 'decision', 'decision_living_metal_distribution', 'Distribute Living Metal', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'forging_our_own_path', 'decision', 'decision_add_aura_blocker', 'Add Shrouded Vegetation blockers', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'thought_police_established', 'decision', 'decision_thought_police', 'Thought Police', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroud_surge', 'decision', 'decision_banish', 'Banish', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'planet_deep_sleep', 'decision', 'decision_deep_sleep', 'Prepare the Deep Sleep', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'already_embarking', 'decision', 'decision_nomad_embarkation', 'Embark', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'arcane_deciphering_cooldown', 'artifact_action', 'artifact_arcane_deciphering', 'Reverse-Engineer Arcane Technology', 'cooldown', 720);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'arcane_insight', 'artifact_action', 'artifact_arcane_deciphering', 'Reverse-Engineer Arcane Technology', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'completed_lcluster_chain', 'artifact_action', 'artifact_lgate_clue', 'Discover L-Gate Insight', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_lgate_insight_cooldown', 'artifact_action', 'artifact_lgate_clue', 'Discover L-Gate Insight', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'proclaim_religious_finding', 'artifact_action', 'artifact_proclaim_religious_finding', 'Proclaim Religious Revelation', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'proclaim_superiority', 'artifact_action', 'artifact_proclaim_superiority', 'Proclaim Superiority', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'celebrate_diversity', 'artifact_action', 'artifact_celebrate_diversity', 'Celebrate Diversity', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_applications_cooldown', 'artifact_action', 'artifact_find_military_applications', 'Find Military Applications', 'cooldown', 900);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_military_application_armor_damage', 'artifact_action', 'artifact_find_military_applications', 'Find Military Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_military_application_army', 'artifact_action', 'artifact_find_military_applications', 'Find Military Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_military_application_army_machine', 'artifact_action', 'artifact_find_military_applications', 'Find Military Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_military_application_shield_damage', 'artifact_action', 'artifact_find_military_applications', 'Find Military Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_applications_cooldown', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'cooldown', 900);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_amenities', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_amenities_hivemind', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_amenities_machine', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_consumer_goods', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_happy_bios', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_leader_improvement', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_leader_improvement_hivemind', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_find_peaceful_application_leader_improvement_machine', 'artifact_action', 'artifact_find_peaceful_applications', 'Find Peaceful Applications', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_sell_cooldown', 'artifact_action', 'artifact_sell_collector', 'Sell to Private Collectors', 'cooldown', 180);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'irassian_research_started', 'artifact_action', 'artifact_irassian_research', 'Secrets of the Irassians', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'yuht_research_started', 'artifact_action', 'artifact_yuht_research', 'Secrets of the Yuht', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'inetian_research_started', 'artifact_action', 'artifact_inetian_research', 'Secrets of the Inetian Traders', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'adakkaria_research_started', 'artifact_action', 'artifact_adakkaria_research', 'Secrets of the adAkkaria', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'vultaum_research_started', 'artifact_action', 'artifact_vultaum_research', 'Secrets of the Vultaum', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'cybrex_research_started', 'artifact_action', 'artifact_cybrex_research', 'Secrets of the Cybrex', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'league_research_started', 'artifact_action', 'artifact_league_research', 'Secrets of the First League', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'baol_research_started', 'artifact_action', 'artifact_baol_research', 'Secrets of the Baol', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'zroni_research_started', 'artifact_action', 'artifact_zroni_research', 'Secrets of the Zroni', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'artifact_precursor_insight_cooldown', 'artifact_action', 'artifact_precursor_clue', 'Discover Precursor Insight', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'astral_boost_modifier', 'astral_action', 'action_astral_boost', 'Astral Boost', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'gain_physics_insight_modifier', 'astral_action', 'action_gain_physics_insight', 'Gain Physics Insight', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'flash_forge_hyper_relay_activated', 'astral_action', 'action_flash_forge_hyper_relay', 'Flash Forge Hyper Relay', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'lateral_artifacting_available', 'astral_action', 'action_lateral_artifacting', 'Lateral Artifacting', 'effect', NULL);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_astral_boost', 'Astral Boost', 1800);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_astral_siphon', 'Astral Siphon', 3600);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_astral_splitting', 'Astral Splitting', 3600);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_dimensional_lock', 'Dimensional Lock', 3600);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_flash_forge_hyper_relay', 'Flash Forge Hyper Relay', 900);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_gain_physics_insight', 'Gain Physics Insight', 1800);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_lateral_artifacting', 'Lateral Artifacting', 3600);
+INSERT OR REPLACE INTO astral_action_cooldown (key, name, days) VALUES ('action_summon_dimensional_fleet', 'Summon Dimensional Fleet', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_modularium', 'The Modularium', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_flowmetal_alloy', 'Flowmetal Alloy', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'crystallinus_diffuser_machine_empire_triumph', 'relic', 'r_crystallinus_diffuser', 'Crystallinus Diffuser', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'crystallinus_diffuser_modifier', 'relic', 'r_crystallinus_diffuser', 'Crystallinus Diffuser', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_crystallinus_diffuser', 'Crystallinus Diffuser', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'everchanging_stone_modifier', 'relic', 'r_everchanging_stone', 'Ever-changing Stone', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_everchanging_stone', 'Ever-changing Stone', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'pulsestone_modifier', 'relic', 'r_pulsestone', 'Pulsestone', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_pulsestone', 'Pulsestone', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'gavel_of_the_tribunal_galcom', 'relic', 'r_gavel_of_the_tribunal', 'Gavel of the Tribunal', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'gavel_of_the_tribunal_no_galcom', 'relic', 'r_gavel_of_the_tribunal', 'Gavel of the Tribunal', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'gavel_of_the_tribunal_no_galcom_nomads', 'relic', 'r_gavel_of_the_tribunal', 'Gavel of the Tribunal', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_gavel_of_the_tribunal', 'Gavel of the Tribunal', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'entangled_relay_modifier', 'relic', 'r_entangled_relay', 'Entangled Relay', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'entangled_relay_nomads_modifier', 'relic', 'r_entangled_relay', 'Entangled Relay', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_entangled_relay', 'Entangled Relay', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'prototype_vir_core_modifier', 'relic', 'r_prototype_vir_core', 'Prototype VIR Core', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_prototype_vir_core', 'Prototype VIR Core', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_propagandosphere', 'Propagandosphere', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_executus_compendium', 'Executus Compendium', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_pattern_maker', 'The Pattern Maker', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_vaporous_mega_orchid', 'Vaporous Mega-Orchid', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_tiyanki_matriarch_nerve_core', 'Tiyanki Matriarch Nerve Core', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tiyanki_matriarch_nerve_core', 'relic', 'r_tiyanki_matriarch_nerve_core', 'Tiyanki Matriarch Nerve Core', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_preservation_chamber', 'Preservation Chamber', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'celestial_resonator_modifier', 'relic', 'r_celestial_resonator', 'Celestial Resonator', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_celestial_resonator', 'Celestial Resonator', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_celestial_chart_4', 'Celestial Chart', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_mutated_voidworm_nest', 'Mutated Voidworm Nest', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'ether_drake_triumph', 'relic', 'r_dragon_trophy', 'Ether Drake Trophy', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_dragon_trophy', 'Ether Drake Trophy', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'drums_of_war', 'relic', 'r_khans_throne', 'Khan''s Throne', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_khans_throne', 'Khan''s Throne', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_worm_scales', 'Scales of the Worm', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'worm_scales', 'relic', 'r_worm_scales', 'Scales of the Worm', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_rubricator', 'The Rubricator', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_galaxy', 'Miniature Galaxy', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_omnicodex', 'The Omnicodex', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_surveyor', 'The Surveyor', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_galatron', 'The Galatron', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'ancient_sword', 'relic', 'r_ancient_sword', 'Blade of the Huntress', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_ancient_sword', 'Blade of the Huntress', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_severed_head', 'Head of Zarqlan', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'severed_head_modifier', 'relic', 'r_severed_head', 'Head of Zarqlan', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_odryskan_crystal', 'Crystal of Odryskia', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_rulerchip', 'RulerChip', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'rulerchip_intergenerational_knowledge', 'relic', 'r_the_rulerchip', 'RulerChip', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_voidspawn_myocardium', 'Voidspawn Myocardium', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'voidslayers', 'relic', 'r_voidspawn_myocardium', 'Voidspawn Myocardium', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'voidspawn_devourer', 'relic', 'r_voidspawn_myocardium', 'Voidspawn Myocardium', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_prethoryn_queen', 'Prethoryn Brood-Queen', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_unbidden_warlock', 'Extradimensional Warlock', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'unbidden_ritual', 'relic', 'r_unbidden_warlock', 'Extradimensional Warlock', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'contingency_calculation', 'relic', 'r_contingency_core', 'Isolated Contingency Core', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_contingency_core', 'Isolated Contingency Core', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'cetanas_heart_hive_modifier', 'relic', 'r_cetanas_heart', 'Cetana''s Heart', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_cetanas_heart', 'Cetana''s Heart', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_zro_crystal', 'Psionic Archive', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_zro_crystal_martial', 'relic', 'r_zro_crystal', 'Psionic Archive', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_zro_crystal_state', 'relic', 'r_zro_crystal', 'Psionic Archive', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'relic_last_baol_activated', 'relic', 'r_the_last_baol', 'The Last Baol', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_last_baol', 'The Last Baol', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_defragmentor', 'The Defragmentor', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_defragmentor', 'relic', 'r_the_defragmentor', 'The Defragmentor', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'reality_perforator_1', 'relic', 'r_reality_perforator', 'Vultaum Reality Perforator', 'effect', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'reality_perforator_2', 'relic', 'r_reality_perforator', 'Vultaum Reality Perforator', 'effect', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'reality_perforator_3', 'relic', 'r_reality_perforator', 'Vultaum Reality Perforator', 'effect', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'reality_perforator_4', 'relic', 'r_reality_perforator', 'Vultaum Reality Perforator', 'effect', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_reality_perforator', 'Vultaum Reality Perforator', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'javorian_pox', 'relic', 'r_pox_sample', 'Javorian Pox Sample', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_pox_sample', 'Javorian Pox Sample', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_cryo_core', 'Yuht Cryo Core', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'yuht_cryo_core', 'relic', 'r_cryo_core', 'Yuht Cryo Core', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_war_forge', 'Cybrex War Forge', 'cooldown', 900);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_A', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_B', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_F', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_G', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_K', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_M', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_M_giant', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_T_dwarf', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_black_hole', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_crisis_empire_star', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_crisis_star', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_lightbringer', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_neutron', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_pulsar', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_vacuum_flower_rift_star', 'relic', 'r_vacuum_flower', 'Vacuum Flower', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_toxic_god', 'Maw of the Toxic Entity', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'jump_drive_allowed', 'relic', 'r_wormhole_key', 'The Key', 'effect', 100);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'paragon_relic_wormhole_key', 'relic', 'r_wormhole_key', 'The Key', 'effect', 100);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_wormhole_key', 'The Key', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_core_of_the_reckoning', 'Core of the Reckoning', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'ever_spinning_top_modifier', 'relic', 'r_ever_spinning_top', 'Ever Spinning Top', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_ever_spinning_top', 'Ever Spinning Top', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_celestial_tear', 'Celestial Tear', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_plasmic_core', 'Plasmic Core', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_infinity_root', 'Infinity Root', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_time_crystal', 'Time Crystal', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_daedalus_seal', 'Daedalus Seal', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_lost_patron', 'The Dreamer', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_continuum', 'The Continuum', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'eternal_throne_modifier', 'relic', 'r_eternal_throne', 'Eternal Throne', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_eternal_throne', 'Eternal Throne', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_weather_manipulator', 'The Disturbance Oppressor', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'storm_relic_repelling_field_modifier', 'relic', 'r_weather_manipulator', 'The Disturbance Oppressor', 'effect', 1080);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'started_placing_storm', 'relic', 'r_the_tempest_invocator', 'The Tempest Invocator', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_the_tempest_invocator', 'The Tempest Invocator', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tempest_invocator_active_modifier', 'relic', 'r_the_tempest_invocator', 'The Tempest Invocator', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'pyroglyphic_codex_mod', 'relic', 'r_pyroglyphic_codex', 'Pyroglyphic Codex', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_pyroglyphic_codex', 'Pyroglyphic Codex', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'relic_cs_trigger', 'relic', 'r_crystallized_singularity', 'Crystallized Singularity', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'crystallized_singularity_mod', 'relic', 'r_crystallized_singularity', 'Crystallized Singularity', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_crystallized_singularity', 'Crystallized Singularity', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'cfl_trophy', 'relic', 'r_cfl_trophy', 'Champion''s Forge Live! Trophy', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_cfl_trophy', 'Champion''s Forge Live! Trophy', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'relic_activation_cooldown', 'relic', 'r_tarnished_cfl_trophy', 'Tarnished Champion''s Forge Live! Trophy', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tarnished_cfl_trophy', 'relic', 'r_tarnished_cfl_trophy', 'Tarnished Champion''s Forge Live! Trophy', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'solarpunk_country', 'diplomatic_action', 'action_improve_relation', NULL, 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'fotd_seperatist_country', 'diplomatic_action', 'action_build_spy_network', NULL, 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'solarpunk_country', 'diplomatic_action', 'action_build_spy_network', NULL, 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'solarpunk_country', 'diplomatic_action', 'action_harm_relation', NULL, 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'proxy_war_cooldown', 'diplomatic_action', 'action_start_proxy_war', 'Start Proxy War', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_form_defensive_pact', 'Form Defensive Pact', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_form_non_aggression_pact', 'Form Non-Aggression Pact', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_form_waystation_pact', 'Form Wayline Pact', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_form_research_agreement', 'Form Research Agreement', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_guarantee_independence', 'Guarantee Independence', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_support_independence', 'Support Independence', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_form_migration_pact', 'Offer Migration Treaty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_offer_federation_association_status', NULL, 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_ask_for_federation_association_status', NULL, 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_invite_to_federation', 'Invite to Federation', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_ask_to_join_federation', 'Ask to join Federation', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'arkship_breached_closed_borders_recently', 'diplomatic_action', 'action_close_borders', 'Close Borders', 'effect', 1080);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_demand_subjugation', 'Propose Subjugation', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_ask_to_become_subjugated', 'Ask to be their Subject', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'satisfying_insult_recently', 'diplomatic_action', 'action_insult', 'Insult', 'bonus', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_pledge_secret_fealty', 'Pledge Secret Fealty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'failed_betrayal', 'diplomatic_action', 'action_pledge_secret_fealty', 'Pledge Secret Fealty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'failed_betrayal_status_quo', 'diplomatic_action', 'action_pledge_secret_fealty', 'Pledge Secret Fealty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'heir_of_the_khan_khan', 'diplomatic_action', 'action_propose_secret_fealty', 'Propose Secret Fealty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'failed_betrayal', 'diplomatic_action', 'action_propose_secret_fealty', 'Propose Secret Fealty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'failed_betrayal_status_quo', 'diplomatic_action', 'action_propose_secret_fealty', 'Propose Secret Fealty', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'recent_comms_timed', 'diplomatic_action', 'action_reveal_presence', 'Reveal Our Presence', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'culture_shock_diplomacy', 'diplomatic_action', 'action_reveal_presence', 'Reveal Our Presence', 'effect', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'solarpunk_country', 'diplomatic_action', 'action_societal_enlightenment', 'Offer Societal Guidance', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'solarpunk_country', 'diplomatic_action', 'action_open_technological_enlightenment', 'Provide Technology', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'tech_frozen', 'diplomatic_action', 'action_open_technological_enlightenment', 'Provide Technology', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_centralization_cooldown', 'federation_law', 'centralization_minimal', 'Federation Centralization: Minimal', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_centralization_cooldown', 'federation_law', 'centralization_low', 'Federation Centralization: Low', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_centralization_cooldown', 'federation_law', 'centralization_medium', 'Federation Centralization: Medium', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_centralization_cooldown', 'federation_law', 'centralization_high', 'Federation Centralization: High', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_centralization_cooldown', 'federation_law', 'centralization_very_high', 'Federation Centralization: Very High', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_none', 'Fleet Contribution: None', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_low', 'Fleet Contribution: Low', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_medium', 'Fleet Contribution: Medium', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_high', 'Fleet Contribution: High', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_low_trade', 'Fleet Contribution: Low', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_medium_trade', 'Fleet Contribution: Medium', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_high_trade', 'Fleet Contribution: High', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_low_research', 'Fleet Contribution: Low', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_medium_research', 'Fleet Contribution: Medium', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_low_martial', 'Fleet Contribution: Low', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_medium_martial', 'Fleet Contribution: Medium', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_high_martial', 'Fleet Contribution: High', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_low_hegemony', 'Fleet Contribution: Low', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_medium_hegemony', 'Fleet Contribution: Medium', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_fleet_contribution_cooldown', 'federation_law', 'fleet_contribution_high_hegemony', 'Fleet Contribution: High', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_type_rotation', 'Succession Type: Rotation', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_type_cooldown', 'federation_law', 'succession_type_rotation', 'Succession Type: Rotation', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_type_challenge', 'Succession Type: Challenge', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_type_cooldown', 'federation_law', 'succession_type_challenge', 'Succession Type: Challenge', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_type_random', 'Succession Type: Random', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_type_cooldown', 'federation_law', 'succession_type_random', 'Succession Type: Random', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_type_cooldown', 'federation_law', 'succession_type_strongest', 'Succession Type: Strongest', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_type_cooldown', 'federation_law', 'succession_type_strongest_hegemony', 'Succession Type: Strongest', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_term_years_10', 'Succession Term: 10 Years', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_term_years_20', 'Succession Term: 20 Years', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_term_years_30', 'Succession Term: 30 Years', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_term_years_40', 'Succession Term: 40 Years', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_term_status_change', 'Succession Term: Status Change', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_build_fleets_cooldown', 'federation_law', 'federation_build_fleets_everyone', 'Federation Fleet Construction: Everyone', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_build_fleets_cooldown', 'federation_law', 'federation_build_fleets_only_leader', 'Federation Fleet Construction: Only Leader', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_allow_subjects_to_join_cooldown', 'federation_law', 'allow_subjects_to_join_no', 'Can Subjects Join: No', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_allow_subjects_to_join_cooldown', 'federation_law', 'allow_subjects_to_join_yes', 'Can Subjects Join: Yes', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_voting_weight_cooldown', 'federation_law', 'vote_weight_equal', 'Vote Weight: Equal', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_voting_weight_cooldown', 'federation_law', 'vote_weight_diplomatic', 'Vote Weight: Diplomatic', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_war_declaration_vote_cooldown', 'federation_law', 'declare_war_unanimous_vote', 'War Declaration: Unanimous Vote', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_war_declaration_vote_cooldown', 'federation_law', 'declare_war_majority_vote', 'War Declaration: Majority Vote', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_war_declaration_vote_cooldown', 'federation_law', 'declare_war_majority_vote_hegemony', 'War Declaration: Majority Vote', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_war_declaration_vote_cooldown', 'federation_law', 'declare_war_president_vote', 'War Declaration: President Decides', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_invite_members_vote_cooldown', 'federation_law', 'invite_members_unanimous_vote', 'Invite Members: Unanimous Vote', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_invite_members_vote_cooldown', 'federation_law', 'invite_members_president_vote', 'Invite Members: President Decides', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_invite_members_vote_cooldown', 'federation_law', 'invite_members_president_vote_hegemony', 'Invite Members: President Decides', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_invite_members_vote_cooldown', 'federation_law', 'invite_members_majority_vote', 'Invite Members: Majority Vote', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_kick_members_vote_cooldown', 'federation_law', 'kick_members_majority_vote', 'Kick Members: Majority Vote', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_kick_members_vote_cooldown', 'federation_law', 'kick_members_president_vote', 'Kick Members: President Decides', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_kick_members_vote_cooldown', 'federation_law', 'kick_members_president_vote_hegemony', 'Kick Members: President Decides', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_free_migration_cooldown', 'federation_law', 'free_migration_no', 'Free Migration: Disabled', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_free_migration_cooldown', 'federation_law', 'free_migration_yes', 'Free Migration: Enabled', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_separate_treaties_cooldown', 'federation_law', 'treaties_separate_no', 'Separate Treaties: Prohibited', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_separate_treaties_cooldown', 'federation_law', 'treaties_separate_yes', 'Separate Treaties: Allowed', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_challenge_cooldown', 'federation_law', 'challenge_type_arena_combat', 'Succession Challenge Type: Arena Combat', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_challenge_cooldown', 'federation_law', 'challenge_type_psionic_battle', 'Succession Challenge Type: Psionic Battle', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_challenge_cooldown', 'federation_law', 'challenge_type_bidding_war', 'Succession Challenge Type: Golden Rule', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_challenge_cooldown', 'federation_law', 'challenge_type_thesis', 'Succession Challenge Type: Thesis Defense', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_challenge_cooldown', 'federation_law', 'challenge_type_conclave', 'Succession Challenge Type: Spiritual Conclave', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_power_cooldown', 'federation_law', 'succession_power_economy', 'Succession Power: Economy', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_power_cooldown', 'federation_law', 'succession_power_diplomatic_weight', 'Succession Power: Diplomatic Weight', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_power_cooldown', 'federation_law', 'succession_power_tech', 'Succession Power: Technology', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_power_cooldown', 'federation_law', 'succession_power_fleet', 'Succession Power: Fleets', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_type_cooldown', 'federation_law', 'succession_type_none', 'None', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_succession_term_cooldown', 'federation_law', 'succession_term_perpetual', 'Perpetual', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_separate_treaties_cooldown', 'federation_law', 'treaties_separate_no_imperial_loyalists', 'Separate Treaties: Prohibited', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_centralization_cooldown', 'federation_law', 'centralization_imperial_loyalists', 'Galactic Imperium', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_kick_members_vote_cooldown', 'federation_law', 'kick_members_president_vote_imperial_loyalists', 'President Decides', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_war_declaration_vote_cooldown', 'federation_law', 'declare_war_president_vote_imperial_loyalists', 'President Decides', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_invite_members_vote_cooldown', 'federation_law', 'invite_members_president_vote_imperial_loyalists', 'President Decides', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_allow_subjects_to_join_cooldown', 'federation_law', 'allow_subjects_to_join_yes_imperial_loyalists', 'Yes', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_voting_weight_cooldown', 'federation_law', 'vote_weight_diplomatic_imperial_loyalists', 'Diplomatic', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_commercial_pact_cooldown', 'federation_law', 'commercial_pact_no', 'Commercial Pacts: Disabled', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_commercial_pact_cooldown', 'federation_law', 'commercial_pact_yes', 'Commercial Pacts: Enabled', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_research_pact_cooldown', 'federation_law', 'research_pact_no', 'Research Agreements: Disabled', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'federation_law_category_research_pact_cooldown', 'federation_law', 'research_pact_yes', 'Research Agreements: Enabled', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_xuracorp', 'enclave', 'leviathans.130.a', '1 Exotic Gases Exotic Gases/month for 10 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_xur', 'enclave', 'leviathans.130.a', '1 Exotic Gases Exotic Gases/month for 10 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_xuracorp', 'enclave', 'leviathans.130.b', '2 Exotic Gases Exotic Gases/month for 20 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_xur', 'enclave', 'leviathans.130.b', '2 Exotic Gases Exotic Gases/month for 20 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_xuracorp', 'enclave', 'leviathans.130.c', '3 Exotic Gases Exotic Gases/month for 30 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_xur', 'enclave', 'leviathans.130.c', '3 Exotic Gases Exotic Gases/month for 30 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_xuracorp', 'enclave', 'leviathans.130.d', '4 Exotic Gases Exotic Gases/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_xur', 'enclave', 'leviathans.130.d', '4 Exotic Gases Exotic Gases/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_xur', 'enclave', 'leviathans.130.d', '4 Exotic Gases Exotic Gases/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_xur', 'enclave', 'leviathans.130.d', '4 Exotic Gases Exotic Gases/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_4_xur', 'enclave', 'leviathans.130.d', '4 Exotic Gases Exotic Gases/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_5_xur', 'enclave', 'leviathans.130.d', '4 Exotic Gases Exotic Gases/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_xuracorp', 'enclave', 'leviathans.130.e', '5 Exotic Gases Exotic Gases/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_xur', 'enclave', 'leviathans.130.e', '5 Exotic Gases Exotic Gases/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_xur', 'enclave', 'leviathans.130.e', '5 Exotic Gases Exotic Gases/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_xur', 'enclave', 'leviathans.130.e', '5 Exotic Gases Exotic Gases/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_4_xur', 'enclave', 'leviathans.130.e', '5 Exotic Gases Exotic Gases/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_5_xur', 'enclave', 'leviathans.130.e', '5 Exotic Gases Exotic Gases/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_riggans', 'enclave', 'leviathans.131.a', '1 Volatile Motes Volatile Motes/month for 10 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_rig', 'enclave', 'leviathans.131.a', '1 Volatile Motes Volatile Motes/month for 10 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_riggans', 'enclave', 'leviathans.131.b', '2 Volatile Motes Volatile Motes/month for 20 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_rig', 'enclave', 'leviathans.131.b', '2 Volatile Motes Volatile Motes/month for 20 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_riggans', 'enclave', 'leviathans.131.c', '3 Volatile Motes Volatile Motes/month for 30 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_rig', 'enclave', 'leviathans.131.c', '3 Volatile Motes Volatile Motes/month for 30 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_riggans', 'enclave', 'leviathans.131.d', '4 Volatile Motes Volatile Motes/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_rig', 'enclave', 'leviathans.131.d', '4 Volatile Motes Volatile Motes/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_rig', 'enclave', 'leviathans.131.d', '4 Volatile Motes Volatile Motes/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_rig', 'enclave', 'leviathans.131.d', '4 Volatile Motes Volatile Motes/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_4_rig', 'enclave', 'leviathans.131.d', '4 Volatile Motes Volatile Motes/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_5_rig', 'enclave', 'leviathans.131.d', '4 Volatile Motes Volatile Motes/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_riggans', 'enclave', 'leviathans.131.e', '5 Volatile Motes Volatile Motes/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_rig', 'enclave', 'leviathans.131.e', '5 Volatile Motes Volatile Motes/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_rig', 'enclave', 'leviathans.131.e', '5 Volatile Motes Volatile Motes/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_rig', 'enclave', 'leviathans.131.e', '5 Volatile Motes Volatile Motes/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_4_rig', 'enclave', 'leviathans.131.e', '5 Volatile Motes Volatile Motes/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_5_rig', 'enclave', 'leviathans.131.e', '5 Volatile Motes Volatile Motes/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_muutagans', 'enclave', 'leviathans.132.a', '1 Rare Crystals Rare Crystals/month for 10 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_mut', 'enclave', 'leviathans.132.a', '1 Rare Crystals Rare Crystals/month for 10 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_muutagans', 'enclave', 'leviathans.132.b', '2 Rare Crystals Rare Crystals/month for 20 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_mut', 'enclave', 'leviathans.132.b', '2 Rare Crystals Rare Crystals/month for 20 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_muutagans', 'enclave', 'leviathans.132.c', '3 Rare Crystals Rare Crystals/month for 30 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_mut', 'enclave', 'leviathans.132.c', '3 Rare Crystals Rare Crystals/month for 30 Energy Credits/month.', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_muutagans', 'enclave', 'leviathans.132.d', '4 Rare Crystals Rare Crystals/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_mut', 'enclave', 'leviathans.132.d', '4 Rare Crystals Rare Crystals/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_mut', 'enclave', 'leviathans.132.d', '4 Rare Crystals Rare Crystals/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_mut', 'enclave', 'leviathans.132.d', '4 Rare Crystals Rare Crystals/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_4_mut', 'enclave', 'leviathans.132.d', '4 Rare Crystals Rare Crystals/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_5_mut', 'enclave', 'leviathans.132.d', '4 Rare Crystals Rare Crystals/month for 40 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_muutagans', 'enclave', 'leviathans.132.e', '5 Rare Crystals Rare Crystals/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_1_mut', 'enclave', 'leviathans.132.e', '5 Rare Crystals Rare Crystals/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_2_mut', 'enclave', 'leviathans.132.e', '5 Rare Crystals Rare Crystals/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_3_mut', 'enclave', 'leviathans.132.e', '5 Rare Crystals Rare Crystals/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_4_mut', 'enclave', 'leviathans.132.e', '5 Rare Crystals Rare Crystals/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_trade_5_mut', 'enclave', 'leviathans.132.e', '5 Rare Crystals Rare Crystals/month for 50 Energy Credits/month.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_artist_patron', 'enclave', 'leviathans.300.b', 'We wish to become your patron.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'artist_festival_purchased', 'enclave', 'leviathans.300.c', 'Organize a festival across our worlds.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'artist_building_patron', 'enclave', 'leviathans.300.f', 'We want to invest in a Ministry of Culture.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_artist_patron', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'artist_festival_purchased', 'enclave', 'DEAL', 'It''s a deal!', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_artist_festival', 'enclave', 'DEAL', 'It''s a deal!', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'enclave_artist_festival_outrage', 'enclave', 'UNFORTUNATE', 'Unfortunate.', 'effect', 720);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'cultural_clemency', 'enclave', 'leviathans.337.b', 'All part of the fun.', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tent_heist', 'enclave', 'leviathans.337.c', 'Confiscate their campsite.', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'curator_insight', 'enclave', 'leviathans.500.b', 'Can you aid us in our research?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'offered_information', 'enclave', 'leviathans.500.g', 'We have uncovered the Infinity Machine''s secret.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'curator_clue_purchased', 'enclave', 'leviathans.500.i', 'What do you know about the L-Gates?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'tech_containment_vessel_acquired', 'enclave', 'leviathans.500.j', 'Can you help us populate our Vivarium?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'ancient_wonders_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'antique_threat_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'curator_guidance_cooldown', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', 180);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'enclave_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'galactic_landmark_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'marauder_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'natural_spectacle_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'precursor_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'space_ecology_completed', 'enclave', 'leviathans.500.l', 'Could you point us towards interesting systems?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'curator_insight', 'enclave', 'leviathans.507.a', 'We would like to purchase this service.', 'cooldown', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'offered_information', 'enclave', 'leviathans.500.g', 'We have uncovered the Infinity Machine''s secret.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'draconic_beats', 'enclave', 'leviathans.510.b', 'Tell us how to defeat it.', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_fortress_info_1', 'enclave', 'leviathans.515.b', 'Can the fortress be entered?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_fortress_info_2', 'enclave', 'leviathans.515.c', 'Who built the fortress?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_fortress_info_3', 'enclave', 'leviathans.515.d', 'How is the fortress powered?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'curator_buff_stellarite', 'enclave', 'leviathans.510.b', 'Tell us how to defeat it.', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'dimensional_horror_weak_points', 'enclave', 'leviathans.525.b', '$leviathans.510.b$', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'asteroid_hive_weak_points', 'enclave', 'leviathans.530.b', '$leviathans.510.b$', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'curator_buff_sphere', 'enclave', 'leviathans.510.b', 'Tell us how to defeat it.', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'automated_dreadnought_weak_points', 'enclave', 'leviathans.540.b', '$leviathans.510.b$', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_wraith_info_1', 'enclave', 'leviathans.545.b', 'What about red Wraiths?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_wraith_info_2', 'enclave', 'leviathans.545.c', 'What about yellow Wraiths?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_wraith_info_3', 'enclave', 'leviathans.545.d', 'What about blue Wraiths?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'curator_buff_hatchling', 'enclave', 'leviathans.550.b', 'How is it defeated?', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'scavenger_weak_points', 'enclave', 'leviathans.555.c', '$leviathans.510.b$', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'elderly_tiyanki_weak_points', 'enclave', 'leviathans.556.c', '$leviathans.510.b$', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'curator_unplugged_notalk', 'enclave', 'leviathans.559.b', 'We prefer not to talk about it.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'bought_opus_sentinel_info', 'enclave', 'leviathans.559.c', 'Where can we find this entity?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'opus_sentinel_encounter', 'enclave', 'leviathans.559.c', 'Where can we find this entity?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_curators', 'enclave', 'leviathans.590.a', 'Of course. You shall have your donation.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'attacked_curators', 'enclave', 'leviathans.598.a', '$leviathans.590.a$', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'curator_clue_purchased', 'enclave', 'leviathans.600.a', 'Please do.', 'cooldown', 2520);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'offered_information', 'enclave', 'leviathans.4000.b', 'Forget it.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'fleet_commandeered', 'enclave', 'enclave.205.a', 'We wish to rent a fleet.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'merc_ai_delay', 'enclave', 'enclave.205.a', 'We wish to rent a fleet.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'mercenary_enclave_bought_mercenary_garrison', 'enclave', 'enclave.205.c', 'We are interested in setting up Mercenary Garrisons.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'enclave.205.g', 'What logistical solutions can you offer?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_1', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_3', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_5', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tactic_v_khan', 'enclave', 'enclave.240.a', 'The Great Khan.', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tactic_v_gray', 'enclave', 'enclave.240.b', 'The Gray Tempest', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tactic_v_swarm', 'enclave', 'enclave.240.c', 'The Prethoryn Swarm', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tactic_v_extradimensional', 'enclave', 'enclave.240.d', 'The Extradimensional Invaders', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tactic_v_ai_empire', 'enclave', 'enclave.240.e', 'The Contingency AI', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'tactic_v_synth_queen', 'enclave', 'enclave.240.f', 'Cetana', 'cooldown', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'small_merc_army_hired', 'enclave', 'enclave.270.a', 'A small contingent of mercenaries.', 'cooldown', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'small_mecha_merc_army_hired', 'enclave', 'enclave.270.b', 'A small force of elite mechanized mercenaries.', 'cooldown', 360);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'medium_merc_army_hired', 'enclave', 'enclave.270.c', 'A sizeable troop of mercenaries.', 'cooldown', 540);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'medium_mecha_merc_army_hired', 'enclave', 'enclave.270.d', 'A strike group of elite mechanized mercenaries.', 'cooldown', 720);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'large_merc_army_hired', 'enclave', 'enclave.270.e', 'A large platoon of mercenaries.', 'cooldown', 1080);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'upgraded_station', 'enclave', 'enclave.205.d', 'We want to help you field a bigger fleet.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_5', 'enclave', 'enclave.205.d', 'We want to help you field a bigger fleet.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'fleet_commandeered', 'enclave', 'enclave.280.b', 'We want you to recall your fleet.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'updating_databanks', 'enclave', 'enclave.280.c', 'We are inclined to share our technology with you.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_1', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_3', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_5', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'merc_financial_troubles', 'enclave', 'enclave.2025.a', 'Disappointing.', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'merc_financial_troubles', 'enclave', 'enclave.2025.b', 'You''re fired. See the Board about your severance package.', 'effect', 1000);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_2', 'enclave', 'enclave.2025.c', 'Let us help instead.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_fleet_size_upgrade_4', 'enclave', 'enclave.2025.c', 'Let us help instead.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'mercenary_enclave_logistic_help', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 3600);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'updating_databanks', 'enclave', 'DEAL', 'It''s a deal!', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_scrapped', 'enclave', 'enclave.305.a', 'We''d like to scrap a fleet.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.305.b', 'What reclaimed vessels do you have?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_bought_salvage_works', 'enclave', 'enclave.305.c', 'Tell us about Salvage Works buildings.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'salvager_insight', 'enclave', 'enclave.305.f', 'Can you help us with engineering research?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'jaunted_traveler_secret_revealed', 'enclave', 'enclave.405.f', 'We met someone claiming to be a Veilfarer...', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_scrapped', 'enclave', 'enclave.310.b', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_scrapping_organic', 'enclave', 'enclave.310.b', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_scrapped', 'enclave', 'enclave.310.c', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_scrapping_organic', 'enclave', 'enclave.310.c', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_scrapped', 'enclave', 'enclave.310.d', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_scrapping_organic', 'enclave', 'enclave.310.d', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_scrapped', 'enclave', 'enclave.310.e', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_scrapping_organic', 'enclave', 'enclave.310.e', 'Scrap the .', 'effect', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.b', 'Reclaimed Corvette.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.bb', 'Reclaimed Corvette squadron.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.frigate', 'Reclaimed Frigate.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.frigate_bulk', 'Reclaimed Frigate squadron.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.c', 'Reclaimed Destroyer.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_destroyer', 'enclave', 'enclave.320.c', 'Reclaimed Destroyer.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.d', 'Reclaimed Cruiser.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_cruiser', 'enclave', 'enclave.320.d', 'Reclaimed Cruiser.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_all', 'enclave', 'enclave.320.e', 'Reclaimed Battleship.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_recently_reclaimed_battleship', 'enclave', 'enclave.320.e', 'Reclaimed Battleship.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_overdrive', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'salvager_overdrive', 'enclave', 'DEAL', 'It''s a deal!', 'effect', 720);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_enclave_salvage_commission_active', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', 90);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'salvager_insight', 'enclave', 'DEAL', 'It''s a deal!', 'cooldown', 1800);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_scrap_bonus_engineering', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'salvager_scrap_bonus_physics', 'enclave', 'EXCELLENT', 'Excellent.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'divination_purchase', 'enclave', 'enclave.405.a', 'What is to be our fate?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'shroudwalker_teacher_cooldown', 'enclave', 'enclave.405.b', 'Would you be willing to send us a teacher from your order?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'shroudwalker_insight_cooldown', 'enclave', 'enclave.405.c', 'Can you give us insight on another empire?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'shroudwalker_enclave_bought_shroud_beacon', 'enclave', 'enclave.405.d', 'Tell us about travel via the Shroud.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'purchased_zro_tech', 'enclave', 'enclave.405.e', 'Could you teach us how to harvest Zro?', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'psionic_rift_help_received', 'enclave', 'enclave.405.g', 'Open an Astral Rift.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'psionic_theory_help_received', 'enclave', 'enclave.405.h', 'Help us open our minds.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'jaunted_traveler_secret_revealed', 'enclave', 'enclave.405.f', 'We met someone claiming to be a Veilfarer...', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'divination_purchase', 'enclave', 'enclave.410.b', 'We shall pay.', 'cooldown', 180);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'shroudwalker_enclave_bought_shroud_beacon', 'enclave', 'enclave.420.b', 'We would like a Shroud Beacon.', 'cooldown', NULL);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroudwalkers_depart_reverence', 'enclave', 'enclave.4240.a', 'May the Shroud embrace you.', 'effect', 7200);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroudwalkers_depart_anger', 'enclave', 'enclave.4240.b', 'How can you abandon us?', 'effect', 7200);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroudwalkers_depart_reverence', 'enclave', 'enclave.4245.a', 'You are wise to leave.', 'effect', 7200);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroudwalkers_depart_anger', 'enclave', 'enclave.4245.b', 'Once we were students. Now we are Masters.', 'effect', 7200);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_00', 'enclave', 'enclave.5565.a', 'We will provide what aid we can.', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_01', 'enclave', 'enclave.5565.a', 'We will provide what aid we can.', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_02', 'enclave', 'enclave.5565.b', 'You may pass, but we cannot spare the food.', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_03', 'enclave', 'enclave.5565.b', 'You may pass, but we cannot spare the food.', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_04', 'enclave', 'enclave.5565.c', 'You are not welcome here.', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_05', 'enclave', 'enclave.5565.c', 'You are not welcome here.', 'effect', -1);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_06', 'enclave', 'UNDERSTOOD', 'Understood.', 'effect', 1801);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'wayward_pilgrim_07', 'enclave', 'enclave.5575.a', 'Intolerable.', 'effect', 1801);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('flag', 'shroudwalker_teacher_cooldown', 'enclave', 'enclave.7100.a', 'We wish to learn.', 'cooldown', 720);
+INSERT OR REPLACE INTO action_timer
+               (timer_kind, timer_key, action_kind, action_key, action_name, role, days)
+               VALUES ('modifier', 'shroudwalker_zro_tithe', 'enclave', 'enclave.7250.a', 'You''ll get your share. Teach us.', 'effect', -1);
 INSERT INTO federation_type (key, name, description, base_intel, potential_json,
                allow_json, unlocked_by_json, excluded_by_json, sort_order)
                VALUES ('default_federation', 'Galactic Union', 'Members of this Federation are united in readiness to cooperate. Together, they will deal with whatever problems may arise.', 60, '{"leaf":"always","value":"yes"}', '{"op":"and","args":[{"leaf":"federation_check_for_subject_trigger","value":"yes"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_barbaric_despoilers"}]}]}', NULL, '["civic_barbaric_despoilers"]', 0);

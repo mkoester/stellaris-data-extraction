@@ -1034,16 +1034,29 @@ CREATE TABLE prescripted_name (
     text TEXT NOT NULL                     -- e.g. "Dolores Muwanga"
 );
 -- Species rights (common/species_rights/<kind>/): every option per kind, `kind` being the save's
--- field in country.modules.standard_species_rights_module.primary.
+-- field in country.modules.standard_species_rights_module.primary, with its tooltip and the
+-- unconditional pop group modifiers it grants (species_right_modifier).
+DROP TABLE IF EXISTS species_right_modifier;
 DROP TABLE IF EXISTS species_right;
 CREATE TABLE species_right (
     key            TEXT PRIMARY KEY,       -- e.g. "living_standard_normal"
     kind           TEXT NOT NULL,          -- citizenship / living_standard / military_service / …
     kind_order     INTEGER NOT NULL,       -- the game's order of the kinds
     name           TEXT,                   -- e.g. "Decent Conditions"
+    description    TEXT,                   -- the game's tooltip (`<key>_tooltip`)
+    is_slavery     INTEGER NOT NULL DEFAULT 0, -- a citizenship whose species takes a slavery type
+    is_purge       INTEGER NOT NULL DEFAULT 0, -- a citizenship whose species takes a purge type
     potential_json TEXT,
     allow_json     TEXT,
     sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE species_right_modifier (
+    right_key   TEXT NOT NULL,
+    modifier    TEXT NOT NULL,             -- e.g. "pop_bonus_workforce_mult"
+    value       REAL NOT NULL,
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (right_key, modifier),
+    FOREIGN KEY (right_key) REFERENCES species_right(key)
 );
 -- Leader traits (common/traits, the leader files) and their untriggered modifiers by scope
 -- (country, self, councilor, fleet, army, planet, sector), for the empire dashboard.
@@ -1093,6 +1106,29 @@ CREATE TABLE focus_reward (
     options_json TEXT,                     -- [{"tech":"tech_x","when":<trigger>|null}]: the research option it adds
                                            -- (permanent until researched), by if/else branch
     sort_order  INTEGER NOT NULL DEFAULT 0
+);
+-- Timers of player actions (decisions, artifact and astral actions, enclave deals): the timed
+-- modifiers and timed flags an action sets or waits on, for the empire dashboard's upcoming list.
+DROP TABLE IF EXISTS action_timer;
+CREATE TABLE action_timer (
+    timer_kind  TEXT NOT NULL,             -- modifier / flag
+    timer_key   TEXT NOT NULL,             -- e.g. "arcane_deciphering_cooldown"
+    action_kind TEXT NOT NULL,             -- decision / artifact_action / astral_action / relic /
+                                           -- diplomatic_action / federation_law / enclave
+    action_key  TEXT NOT NULL,             -- e.g. "artifact_arcane_deciphering", an enclave option's name key
+    action_name TEXT,
+    role        TEXT NOT NULL,             -- cooldown: the action waits for it to end (NOT = { has_* });
+                                           -- bonus: only an `if` in its effect waits (the action
+                                           -- stays possible, without that part); effect: only sets it
+    days        INTEGER,                   -- its length where the action sets it with a number
+    PRIMARY KEY (timer_kind, timer_key, action_kind, action_key)
+);
+-- An astral action's own cooldown (`cooldown`, days): tracked by the engine, not by a modifier.
+DROP TABLE IF EXISTS astral_action_cooldown;
+CREATE TABLE astral_action_cooldown (
+    key   TEXT PRIMARY KEY,                -- e.g. "action_dimensional_lock"
+    name  TEXT,
+    days  INTEGER NOT NULL
 );
 -- Situations (common/situations) and their approaches, special projects (common/special_projects).
 DROP TABLE IF EXISTS situation_approach;

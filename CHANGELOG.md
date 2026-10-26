@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-10-26
+
+### Added
+
+- Species rights carry the game's tooltip, which citizenships take a slavery or purge type, and
+  the modifiers each right grants its pops (`species_right_modifier`), for the empire dashboard.
+- `action_timer`: the timed modifiers and timed flags each decision, artifact action, astral
+  action, relic, diplomatic action, federation law and enclave deal sets or waits on, for the
+  empire dashboard's cooldowns — those set by the events an action fires included, and a timer
+  only an effect's `limit` waits on as role `bonus` (the action stays possible: Insult with
+  Satisfying Insults); `astral_action_cooldown`, each astral action's own cooldown.
+
+### Fixed
+
+- A tooltip line opening with an icon is no longer folded into the line above
+  ("Adds the Tankbound trait., Farmers, …"): only `$t$`'s four spaces indent a sub-item.
+- Stratum icons are dropped like other decoration icons ("Pop Cat Ruler Elites" → "Elites").
+
 ## [0.1.1] - 2026-10-24
 
 ### Added

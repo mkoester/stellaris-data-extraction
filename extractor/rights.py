@@ -4,8 +4,10 @@ from pathlib import Path
 import sys
 from .clausewitz import parse_file
 from .localisation import _clean_loc
+from .modifiers import _block_modifier_values, _write_modifier_label
 from .traditions import dumps
 from .triggers import _scripted_trigger_index, dlc_trigger_map, normalize_trigger
+from .values import _as_blocks
 from .writer import Writer
 
 # The save's field per kind of right (country.modules.standard_species_rights_module.primary),
@@ -45,11 +47,22 @@ def unwrap_from(block):
     return out
 
 
-def extract_species_rights(install_dir: Path, loc: dict[str, str], w: Writer,
-                           progress=sys.stderr) -> None:
+def right_modifiers(d: dict, variables: dict[str, float]) -> list[tuple[str, float]]:
+    """A right's unconditional `pop_group_modifier` entries, summed over its blocks. The
+    `triggered_pop_group_modifier` ones (Social Welfare's happiness unless consumer goods run
+    short) are left out: the right's tooltip text names them with their condition."""
+    out: dict[str, float] = {}
+    for block in _as_blocks(d.get('pop_group_modifier')):
+        for k, v in _block_modifier_values(block, variables):
+            out[k] = out.get(k, 0) + v
+    return list(out.items())
+
+
+def extract_species_rights(install_dir: Path, loc: dict[str, str], variables: dict[str, float],
+                           w: Writer, progress=sys.stderr) -> None:
     base = install_dir / 'common' / 'species_rights'
     dlc = dlc_trigger_map(_scripted_trigger_index(install_dir))
-    text = lambda k: _clean_loc(loc[k], loc) if loc.get(k) else None
+    text = lambda k, **kw: _clean_loc(loc[k], loc, **kw) if loc.get(k) else None
     n = 0
     for kind_order, (folder, field) in enumerate(KINDS):
         for f in sorted((base / folder).glob('*.txt')) if (base / folder).is_dir() else []:
@@ -57,11 +70,19 @@ def extract_species_rights(install_dir: Path, loc: dict[str, str], w: Writer,
                 if key.startswith('@') or not isinstance(d, dict):
                     continue
                 w.execute(
-                    """INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, potential_json,
-                       allow_json, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    """INSERT OR REPLACE INTO species_right (key, kind, kind_order, name, description,
+                       is_slavery, is_purge, potential_json, allow_json, sort_order)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (key, field, kind_order, text(key),
+                     text(f'{key}_tooltip', keep_newlines=True),
+                     int(d.get('is_slavery') == 'yes'), int(d.get('is_purge') == 'yes'),
                      dumps(normalize_trigger(unwrap_from(d.get('potential')), dlc)),
                      dumps(normalize_trigger(unwrap_from(d.get('allow')), dlc)), n))
                 n += 1
+                for m_order, (mk, mv) in enumerate(right_modifiers(d, variables)):
+                    w.execute(
+                        """INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
+                           sort_order) VALUES (?, ?, ?, ?)""", (key, mk, mv, m_order))
+                    _write_modifier_label(w, loc, mk)
     print(f"  {n} species rights", file=progress)
     w.commit()

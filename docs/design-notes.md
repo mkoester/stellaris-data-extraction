@@ -506,6 +506,29 @@ ids their `on_success` fires (`event_ids`: weighted `1 = anomaly.35`, `anomaly_e
 so `_LOC_ENTRY` accepts `.` in keys (before 2026-10-18 it did not, and every dotted key was
 missing). The dashboard shows outcomes only behind a spoiler setting.
 
+## Action timers (cooldowns.py)
+
+`action_timer`: for each decision, artifact action and astral action (`potential`, `allow`,
+`effect`) and each enclave event option (`leviathans_events_1.txt`, `overlord_enclaves_events.txt`:
+`allow`/`trigger`, the rest as effect), relics (`possible` with its `inline_script` expanded,
+`active_effect`), diplomatic actions (`potential`/`possible`, `on_accept`/`on_decline`) and
+federation laws (`potential`/`allow`, `on_enact`): the timed modifiers (`add_modifier` with `days`,
+`@vars` from `common/scripted_variables`) and timed flags (`set_timed_*_flag`) it sets, and the
+modifiers and flags it needs absent (`NOT = { has_* }`) — in its triggers, or in the `limit` of an
+`if` in its effect that sets the same timer (Satisfying Insults). Timers set by the events an
+action fires (`fired()`, two levels, every `events/*.txt` indexed) count as its effects: Find
+Military Applications adds its Combat Drugs modifier in `ancrel.10010`'s option. Enclave options
+are not followed — their events are menus, and a "back" option would collect every other option's
+timers (40 effect rows → 463).
+`role = cooldown` for those its triggers wait on, `bonus` for those only an effect's `limit` waits
+on (the action stays possible, it just does not set the timer again: Insult with Satisfying
+Insults, checked in game 2026-10-25), `effect` for those it only sets. A waited-on key need not
+be a timer (`NOT = { has_country_flag = attacked_xuracorp }` is permanent); the dashboard only
+matches keys the save holds with an end date. `days` is null where the length is an unresolved
+`@var` (the traders' `@traderDealDuration`). 4.5.2: 531 rows.
+`astral_action_cooldown`: each astral action's own `cooldown` (days; the engine tracks it, no
+modifier) — 8 in 4.5.2.
+
 ## Scripted triggers, edict prerequisites, species rights
 
 `scripted_trigger`: every parameter-free `common/scripted_triggers` definition, normalised, so a
@@ -513,7 +536,10 @@ reader can evaluate a `some_trigger = yes` leaf by its body (1,575 of 1,587 in 4
 `$PARAM$` are skipped, `has_parameters`). `edict.prerequisites_json`: the techs an edict needs.
 `species_right` (rights.py): every option of `common/species_rights/<kind>/`, with `kind` as the
 save names the field and `kind_order` the game's order. Their triggers are in the species' scope
-with the country as `from`; `unwrap_from` folds `from = { … }` in.
+with the country as `from`; `unwrap_from` folds `from = { … }` in. `description` is the game's
+tooltip (`<key>_tooltip`); `is_slavery` / `is_purge` mark the citizenships whose species take a
+slavery or purge type (the other types do nothing without one); `species_right_modifier` holds
+the unconditional `pop_group_modifier` entries (`right_modifiers`; triggered ones left out).
 
 ## Prescripted names (`extract_prescripted_names`, misc.py)
 
