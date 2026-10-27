@@ -17,6 +17,7 @@ from .federations import extract_federations
 from .shroud import extract_shroud
 from .economy import extract_economy
 from .focus import extract_focus
+from .game_start import extract_game_start
 from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_council_positions, extract_ethics, extract_government_types, extract_origins, extract_policy_restrictions
 from .jobs import extract_job_swaps, extract_jobs
 from .leaders import extract_leader_traits
@@ -412,6 +413,8 @@ Examples:
                                 loc, w, args.verbose)
     extract_resources(install_dir / 'common' / 'districts', 'district_resource', scripted_vars,
                       inline_scripts_dir, w, args.verbose, jobs_table='district_job')
+    print(f"\n[game-start] {install_dir / 'common' / 'inline_scripts' / 'game_start'}", file=progress)
+    extract_game_start(install_dir, inline_scripts_dir, w, args.verbose)
     print(f"\n[ship-sizes] {install_dir / 'common' / 'ship_sizes'}", file=progress)
     extract_resources(install_dir / 'common' / 'ship_sizes', 'ship_size_resource', scripted_vars,
                       inline_scripts_dir, w, args.verbose)

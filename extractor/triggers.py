@@ -182,8 +182,10 @@ def _not(node: dict | None) -> dict | None:
 
 
 def normalize_trigger(block, dlc_triggers: dict[str, str] | None = None,
-                      variables: dict[str, float] | None = None) -> dict | None:
-    """Parsed trigger block → normalised tree (None for an empty block). Pure."""
+                      variables: dict[str, float] | None = None,
+                      structured=None) -> dict | None:
+    """Parsed trigger block → normalised tree (None for an empty block). Pure.
+    `structured(key, value)` may turn a block-valued check into a leaf (else it stays opaque)."""
     from .clausewitz import Cmp
     dlc_triggers = dlc_triggers or {}
     variables = variables or {}
@@ -198,6 +200,8 @@ def normalize_trigger(block, dlc_triggers: dict[str, str] | None = None,
     def leaf(k: str, v) -> dict | None:
         if isinstance(v, Cmp):
             return {'leaf': k, 'cmp': v.op, 'value': scalar(v.value)}
+        if structured and (node := structured(k, v)) is not None:
+            return node
         if isinstance(v, (dict, list)):
             # A scope or iterator (owner = {…}, any_country = {…}): kept opaque.
             return {'leaf': k, 'value': 'scope'}

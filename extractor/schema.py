@@ -1279,6 +1279,13 @@ CREATE TABLE zone (
     key   TEXT PRIMARY KEY,                -- e.g. "zone_research_unity"
     name  TEXT                             -- e.g. "Archives"
 );
+-- The scripts that build a new empire's capital (planner: starting capital), as an ordered
+-- effect list (see extractor/game_start.py). One row per setup effect.
+DROP TABLE IF EXISTS game_start_script;
+CREATE TABLE game_start_script (
+    key          TEXT PRIMARY KEY,         -- "generate_start_buildings_and_districts" | "void_dweller_home_planet_setup"
+    effects_json TEXT NOT NULL
+);
 -- What researching a tech needs (empire dashboard: techs within reach).
 DROP TABLE IF EXISTS technology_requirement;
 CREATE TABLE technology_requirement (
