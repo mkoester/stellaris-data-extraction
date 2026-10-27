@@ -220,7 +220,9 @@ CREATE TABLE ethic (
     category        TEXT,               -- "col" for normal empire ethics
     fanatic_variant TEXT,               -- key of the fanatic variant (if this is regular)
     regular_variant TEXT,               -- key of the regular variant (if this is fanatic)
-    gestalt         INTEGER DEFAULT 0   -- 1 for ethic_gestalt_consciousness
+    gestalt         INTEGER DEFAULT 0,  -- 1 for ethic_gestalt_consciousness
+    category_value  INTEGER,            -- place on the category's axis: fanatic 0, regular 1 | 3, fanatic 4
+    category_opposite INTEGER NOT NULL DEFAULT 0  -- 1 on the axis' second pole (egalitarian, xenophile, …)
 );
 
 CREATE TABLE ethic_modifier (

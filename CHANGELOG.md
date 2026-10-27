@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `ethic.category_value` and `category_opposite`: each ethic's place on its axis, and the
+  federation-cohesion defines for ethics (`FEDERATION_BASE_ETHICS`, `FEDERATION_ETHICS_PENALTY`,
+  `FEDERATION_OPPOSING_ETHICS_PENALTY`) in `game_define`, for the empire dashboard's diplomacy tab.
+
 ## [0.1.2] - 2026-10-26
 
 ### Added

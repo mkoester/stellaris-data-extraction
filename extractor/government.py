@@ -115,6 +115,17 @@ _ETHIC_SKIP_KEYS = frozenset({
     'show_only_custom_tooltip', 'custom_tooltip',
 })
 
+def _ethic_axis(ethic_data: dict) -> tuple[int | None, int]:
+    """An ethic's place on its category's axis (`category_value`, fanatic 0 … fanatic 4) and
+    whether it is the axis' opposite pole (`category_opposite`), per 99_documentation.txt."""
+    raw = ethic_data.get('category_value')
+    try:
+        value = int(raw) if raw is not None else None
+    except (ValueError, TypeError):
+        value = None
+    return value, 1 if ethic_data.get('category_opposite') == 'yes' else 0
+
+
 def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
     # Collect @variable definitions (e.g. @ethic_attunement1 = 25)
     variables: dict[str, float] = {}
@@ -153,18 +164,20 @@ def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
         fanatic_variant = ethic_data.get('fanatic_variant') or None
         regular_variant = ethic_data.get('regular_variant') or None
         gestalt = 1 if ethic_key == 'ethic_gestalt_consciousness' else 0
+        category_value, category_opposite = _ethic_axis(ethic_data)
 
         raw_label = loc.get(ethic_key)
         label = _clean_loc(raw_label, loc) if raw_label else None
 
         w.execute(
             """INSERT OR REPLACE INTO ethic
-               (key, label, cost, category, fanatic_variant, regular_variant, gestalt)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+               (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
+                category_value, category_opposite)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (ethic_key, label, cost, category,
              str(fanatic_variant) if fanatic_variant else None,
              str(regular_variant) if regular_variant else None,
-             gestalt),
+             gestalt, category_value, category_opposite),
         )
 
         modifier = ethic_data.get('country_modifier')
