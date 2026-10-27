@@ -53,6 +53,9 @@ The game's script format has quirks that produce silently wrong trees rather tha
 
 - **Duplicate keys are promoted to a list** — `option = {…} option = {…}` becomes
   `{'option': [d1, d2]}`. Code reading such a key must handle both shapes.
+  **That also loses the order between different keys**, which effect scripts depend on (a zone
+  added before the building put into it). Read effects with `parse_ordered()` in `game_start.py`,
+  which keeps file order and parses only `limit` blocks as dicts.
 - **`key { }` without `=` is valid** and parses the same as `key = { }`.
 - **Anonymous sub-blocks** (`{ key = X }` inside a list) consume the `{` as a key and recurse. This
   was a bug fix: previously the stray `}` terminated the **wrong outer block**, making later keys

@@ -3,8 +3,22 @@
 import unittest
 
 from extractor.clausewitz import IfBlock
-from extractor.government import _civic_requirements, _granted_traits, ascension_restrictions
+from extractor.government import (_civic_requirements, _ethic_axis, _granted_traits,
+                                  ascension_restrictions)
 from extractor.traits import _trait_requirements
+
+
+class TestEthicAxis(unittest.TestCase):
+    # shaped like ethic_fanatic_egalitarian and ethic_authoritarian in common/ethics/00_ethics.txt
+    def test_opposite_pole(self):
+        self.assertEqual(_ethic_axis({'category': '"col"', 'category_value': '4',
+                                      'category_opposite': 'yes'}), (4, 1))
+
+    def test_first_pole(self):
+        self.assertEqual(_ethic_axis({'category': '"col"', 'category_value': '1'}), (1, 0))
+
+    def test_missing(self):
+        self.assertEqual(_ethic_axis({}), (None, 0))
 
 
 class TestNomadicGate(unittest.TestCase):

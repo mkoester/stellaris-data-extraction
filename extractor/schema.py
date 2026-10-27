@@ -220,7 +220,9 @@ CREATE TABLE ethic (
     category        TEXT,               -- "col" for normal empire ethics
     fanatic_variant TEXT,               -- key of the fanatic variant (if this is regular)
     regular_variant TEXT,               -- key of the regular variant (if this is fanatic)
-    gestalt         INTEGER DEFAULT 0   -- 1 for ethic_gestalt_consciousness
+    gestalt         INTEGER DEFAULT 0,  -- 1 for ethic_gestalt_consciousness
+    category_value  INTEGER,            -- place on the category's axis: fanatic 0, regular 1 | 3, fanatic 4
+    category_opposite INTEGER NOT NULL DEFAULT 0  -- 1 on the axis' second pole (egalitarian, xenophile, …)
 );
 
 CREATE TABLE ethic_modifier (
@@ -1278,6 +1280,13 @@ DROP TABLE IF EXISTS zone;
 CREATE TABLE zone (
     key   TEXT PRIMARY KEY,                -- e.g. "zone_research_unity"
     name  TEXT                             -- e.g. "Archives"
+);
+-- The scripts that build a new empire's capital (planner: starting capital), as an ordered
+-- effect list (see extractor/game_start.py). One row per setup effect.
+DROP TABLE IF EXISTS game_start_script;
+CREATE TABLE game_start_script (
+    key          TEXT PRIMARY KEY,         -- "generate_start_buildings_and_districts" | "void_dweller_home_planet_setup"
+    effects_json TEXT NOT NULL
 );
 -- What researching a tech needs (empire dashboard: techs within reach).
 DROP TABLE IF EXISTS technology_requirement;
