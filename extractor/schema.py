@@ -222,7 +222,8 @@ CREATE TABLE ethic (
     regular_variant TEXT,               -- key of the regular variant (if this is fanatic)
     gestalt         INTEGER DEFAULT 0,  -- 1 for ethic_gestalt_consciousness
     category_value  INTEGER,            -- place on the category's axis: fanatic 0, regular 1 | 3, fanatic 4
-    category_opposite INTEGER NOT NULL DEFAULT 0  -- 1 on the axis' second pole (egalitarian, xenophile, …)
+    category_opposite INTEGER NOT NULL DEFAULT 0, -- 1 on the axis' second pole (egalitarian, xenophile, …)
+    sort_order      INTEGER NOT NULL DEFAULT 0  -- order in the files: the index of a save's per-ethic arrays
 );
 
 CREATE TABLE ethic_modifier (

@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `ethic.sort_order`: the order the ethics are defined in, which is the index of a save's
+  per-ethic lists (`country.ethics_distribution`, …), for the empire dashboard's ethics tab.
+
 ## [0.1.3] - 2026-10-27
 
 ### Added

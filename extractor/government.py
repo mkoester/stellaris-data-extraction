@@ -126,6 +126,12 @@ def _ethic_axis(ethic_data: dict) -> tuple[int | None, int]:
     return value, 1 if ethic_data.get('category_opposite') == 'yes' else 0
 
 
+def _ethic_entries(data: dict) -> list[tuple[str, dict]]:
+    """The ethics in the order the files define them: the game's ethic index, which a save's
+    per-ethic arrays (`country.ethics_distribution`, …) follow."""
+    return [(k, v) for k, v in data.items() if not k.startswith('@') and isinstance(v, dict)]
+
+
 def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
     # Collect @variable definitions (e.g. @ethic_attunement1 = 25)
     variables: dict[str, float] = {}
@@ -147,10 +153,7 @@ def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
         except ValueError:
             return None
 
-    for ethic_key, ethic_data in data.items():
-        if ethic_key.startswith('@') or not isinstance(ethic_data, dict):
-            continue
-
+    for index, (ethic_key, ethic_data) in enumerate(_ethic_entries(data)):
         cost_raw = ethic_data.get('cost', 1)
         try:
             cost = int(cost_raw)
@@ -172,12 +175,12 @@ def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
         w.execute(
             """INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                category_value, category_opposite, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (ethic_key, label, cost, category,
              str(fanatic_variant) if fanatic_variant else None,
              str(regular_variant) if regular_variant else None,
-             gestalt, category_value, category_opposite),
+             gestalt, category_value, category_opposite, index),
         )
 
         modifier = ethic_data.get('country_modifier')

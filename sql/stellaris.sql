@@ -217,7 +217,8 @@ CREATE TABLE ethic (
     regular_variant TEXT,               -- key of the regular variant (if this is fanatic)
     gestalt         INTEGER DEFAULT 0,  -- 1 for ethic_gestalt_consciousness
     category_value  INTEGER,            -- place on the category's axis: fanatic 0, regular 1 | 3, fanatic 4
-    category_opposite INTEGER NOT NULL DEFAULT 0  -- 1 on the axis' second pole (egalitarian, xenophile, …)
+    category_opposite INTEGER NOT NULL DEFAULT 0, -- 1 on the axis' second pole (egalitarian, xenophile, …)
+    sort_order      INTEGER NOT NULL DEFAULT 0  -- order in the files: the index of a save's per-ethic arrays
 );
 
 CREATE TABLE ethic_modifier (
@@ -12968,8 +12969,8 @@ INSERT OR REPLACE INTO trait_category (key, label, color_key, display_order)
             VALUES ('mutation', 'Mutation Traits', 'trait_bg_negative', 7);
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_fanatic_authoritarian', 'Fanatic Authoritarian', 2, 'col', NULL, 'ethic_authoritarian', 0, 0, 0);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_fanatic_authoritarian', 'Fanatic Authoritarian', 2, 'col', NULL, 'ethic_authoritarian', 0, 0, 0, 0);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_authoritarian', 'country_ethic_influence_produces_add', '1.0', 0);
@@ -12994,8 +12995,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_ONLY_AUTOCRACY', 'Must have Autocratic Government form');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_authoritarian', 'Authoritarian', 1, 'col', 'ethic_fanatic_authoritarian', NULL, 0, 1, 0);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_authoritarian', 'Authoritarian', 1, 'col', 'ethic_fanatic_authoritarian', NULL, 0, 1, 0, 1);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_authoritarian', 'country_ethic_influence_produces_add', '0.5', 0);
@@ -13020,8 +13021,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_NEVER_DEMOCRACY', 'Cannot use Democratic Government forms');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_fanatic_egalitarian', 'Fanatic Egalitarian', 2, 'col', NULL, 'ethic_egalitarian', 0, 4, 1);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_fanatic_egalitarian', 'Fanatic Egalitarian', 2, 'col', NULL, 'ethic_egalitarian', 0, 4, 1, 2);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_egalitarian', 'pop_factions_produces_mult', '0.3', 0);
@@ -13042,8 +13043,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_ALLOWS_UTOPIA', 'Allows Utopian Living Standards');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_egalitarian', 'Egalitarian', 1, 'col', 'ethic_fanatic_egalitarian', NULL, 0, 3, 1);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_egalitarian', 'Egalitarian', 1, 'col', 'ethic_fanatic_egalitarian', NULL, 0, 3, 1, 3);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_egalitarian', 'pop_factions_produces_mult', '0.15', 0);
@@ -13064,8 +13065,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_ALLOWS_UTOPIA', 'Allows Utopian Living Standards');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_fanatic_xenophobe', 'Fanatic Xenophobe', 2, 'xen', NULL, 'ethic_xenophobe', 0, 0, 0);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_fanatic_xenophobe', 'Fanatic Xenophobe', 2, 'xen', NULL, 'ethic_xenophobe', 0, 0, 0, 4);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_xenophobe', 'founder_species_growth_mult', '0.2', 0);
@@ -13102,8 +13103,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_NO_REFUGEES', 'Cannot use Refugees Welcome species policy');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_xenophobe', 'Xenophobe', 1, 'xen', 'ethic_fanatic_xenophobe', NULL, 0, 1, 0);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_xenophobe', 'Xenophobe', 1, 'xen', 'ethic_fanatic_xenophobe', NULL, 0, 1, 0, 5);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_xenophobe', 'founder_species_growth_mult', '0.1', 0);
@@ -13140,8 +13141,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_NO_REFUGEES', 'Cannot use Refugees Welcome species policy');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_fanatic_xenophile', 'Fanatic Xenophile', 2, 'xen', NULL, 'ethic_xenophile', 0, 4, 1);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_fanatic_xenophile', 'Fanatic Xenophile', 2, 'xen', NULL, 'ethic_xenophile', 0, 4, 1, 6);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_xenophile', 'planet_jobs_trade_produces_mult', '0.2', 0);
@@ -13173,8 +13174,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_DISALLOWS_DISPLACE', 'Cannot Displace aliens');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_xenophile', 'Xenophile', 1, 'xen', 'ethic_fanatic_xenophile', NULL, 0, 3, 1);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_xenophile', 'Xenophile', 1, 'xen', 'ethic_fanatic_xenophile', NULL, 0, 3, 1, 7);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_xenophile', 'planet_jobs_trade_produces_mult', '0.1', 0);
@@ -13206,8 +13207,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_DISALLOWS_DISPLACE', 'Cannot Displace aliens');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_fanatic_militarist', 'Fanatic Militarist', 2, 'mil', NULL, 'ethic_militarist', 0, 0, 0);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_fanatic_militarist', 'Fanatic Militarist', 2, 'mil', NULL, 'ethic_militarist', 0, 0, 0, 8);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_militarist', 'ship_fire_rate_mult', '0.2', 0);
@@ -13219,8 +13220,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_ALLOW_NO_RETREAT', 'Can use the No Retreat War Doctrine');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_militarist', 'Militarist', 1, 'mil', 'ethic_fanatic_militarist', NULL, 0, 1, 0);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_militarist', 'Militarist', 1, 'mil', 'ethic_fanatic_militarist', NULL, 0, 1, 0, 9);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_militarist', 'ship_fire_rate_mult', '0.1', 0);
@@ -13232,8 +13233,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_ALLOW_NO_RETREAT', 'Can use the No Retreat War Doctrine');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_fanatic_pacifist', 'Fanatic Pacifist', 2, 'mil', NULL, 'ethic_pacifist', 0, 4, 1);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_fanatic_pacifist', 'Fanatic Pacifist', 2, 'mil', NULL, 'ethic_pacifist', 0, 4, 1, 10);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_pacifist', 'empire_size_pops_mult', '-0.2', 0);
@@ -13259,8 +13260,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_DISALLOW_FULL_BOMBARDMENT', 'Cannot engage in Indiscriminate Orbital Bombardment');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_pacifist', 'Pacifist', 1, 'mil', 'ethic_fanatic_pacifist', NULL, 0, 3, 1);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_pacifist', 'Pacifist', 1, 'mil', 'ethic_fanatic_pacifist', NULL, 0, 3, 1, 11);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_pacifist', 'empire_size_pops_mult', '-0.1', 0);
@@ -13286,8 +13287,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_DISALLOW_FULL_BOMBARDMENT', 'Cannot engage in Indiscriminate Orbital Bombardment');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_fanatic_spiritualist', 'Fanatic Spiritualist', 2, 'spi', NULL, 'ethic_spiritualist', 0, 0, 0);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_fanatic_spiritualist', 'Fanatic Spiritualist', 2, 'spi', NULL, 'ethic_spiritualist', 0, 0, 0, 12);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_spiritualist', 'country_unity_produces_mult', '0.2', 0);
@@ -13313,8 +13314,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_DISALLOW_AI', 'Cannot use Full AI Rights policy');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_spiritualist', 'Spiritualist', 1, 'spi', 'ethic_fanatic_spiritualist', NULL, 0, 1, 0);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_spiritualist', 'Spiritualist', 1, 'spi', 'ethic_fanatic_spiritualist', NULL, 0, 1, 0, 13);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_spiritualist', 'country_unity_produces_mult', '0.1', 0);
@@ -13340,8 +13341,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_DISALLOW_AI', 'Cannot use Full AI Rights policy');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_fanatic_materialist', 'Fanatic Materialist', 2, 'spi', NULL, 'ethic_materialist', 0, 4, 1);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_fanatic_materialist', 'Fanatic Materialist', 2, 'spi', NULL, 'ethic_materialist', 0, 4, 1, 14);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_fanatic_materialist', 'planet_pops_robotics_upkeep_mult', '-0.2', 0);
@@ -13364,8 +13365,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_DISALLOW_BAN_ROBOTS', 'Cannot use Robotic Workers Outlawed policy');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_materialist', 'Materialist', 1, 'spi', 'ethic_fanatic_materialist', NULL, 0, 3, 1);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_materialist', 'Materialist', 1, 'spi', 'ethic_fanatic_materialist', NULL, 0, 3, 1, 15);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_materialist', 'planet_pops_robotics_upkeep_mult', '-0.1', 0);
@@ -13388,8 +13389,8 @@ INSERT OR REPLACE INTO ethic_tag_label (tag, label)
                            VALUES ('ETHIC_DISALLOW_BAN_ROBOTS', 'Cannot use Robotic Workers Outlawed policy');
 INSERT OR REPLACE INTO ethic
                (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite)
-               VALUES ('ethic_gestalt_consciousness', 'Gestalt Consciousness', 3, 'hive', NULL, NULL, 1, 0, 0);
+                category_value, category_opposite, sort_order)
+               VALUES ('ethic_gestalt_consciousness', 'Gestalt Consciousness', 3, 'hive', NULL, NULL, 1, 0, 0, 16);
 INSERT OR REPLACE INTO ethic_modifier
                    (ethic_key, modifier_key, modifier_value, sort_order)
                    VALUES ('ethic_gestalt_consciousness', 'country_war_exhaustion_mult', '-0.2', 0);
